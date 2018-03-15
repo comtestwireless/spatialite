@@ -1104,7 +1104,7 @@ gaiaTextReaderAlloc (const char *path, char field_separator,
 }
 
 static void
-vrttxt_line_init (struct vrttxt_line *line, off_t offset)
+vrttxt_line_init (struct vrttxt_line *line, gaia_off_t offset)
 {
 /* initializing a LINE struct */
     line->offset = offset;
@@ -1114,14 +1114,14 @@ vrttxt_line_init (struct vrttxt_line *line, off_t offset)
 }
 
 static void
-vrttxt_line_end (struct vrttxt_line *line, off_t offset)
+vrttxt_line_end (struct vrttxt_line *line, gaia_off_t offset)
 {
 /* completing a Line struct (EndOfLine encountered) */
     line->len = offset - line->offset;
 }
 
 static void
-vrttxt_add_field (struct vrttxt_line *line, off_t offset)
+vrttxt_add_field (struct vrttxt_line *line, gaia_off_t offset)
 {
 /* adding a Field offset to the current Line */
     if (line->num_fields >= VRTTXT_FIELDS_MAX)
@@ -1615,7 +1615,7 @@ gaiaTextReaderParse (gaiaTextReaderPtr txt)
     int masked = 0;
     int token_start = 1;
     int row_offset = 0;
-    off_t offset = 0;
+    gaia_off_t offset = 0;
     struct vrttxt_line line;
     vrttxt_line_init (&line, 0);
     txt->current_buf_off = 0;
@@ -1774,7 +1774,7 @@ gaiaTextReaderGetRow (gaiaTextReaderPtr txt, int line_no)
     if (line_no < 0 || line_no >= txt->num_rows || txt->rows == NULL)
 	return 0;
     p_row = *(txt->rows + line_no);
-    if (fseek (txt->text_file, p_row->offset, SEEK_SET) != 0)
+    if (gaia_fseek (txt->text_file, p_row->offset, SEEK_SET) != 0)
 	return 0;
     if (fread (txt->line_buffer, 1, p_row->len, txt->text_file) !=
 	(unsigned int) (p_row->len))

@@ -68,7 +68,8 @@ check_PROGRAMS = check_endian \
 		check_virtualknn \
 		check_sequence \
 		check_stored_proc \
-		check_wms
+		check_wms \
+		routing_test
 		
 if ENABLE_GEOPACKAGE
 check_PROGRAMS += \
@@ -203,7 +204,7 @@ EXTRA_DIST = fnmatch_impl4win.h \
 	elba-ln.shp elba-ln.shx elba-ln.dbf \
 	Gpx-sample.gpx 000323485.gpx \
 	sqlproc_sample.txt sqlproc_logfile.txt \
-	sqlproc_error.txt
+	sqlproc_error.txt orbetello.sqlite
 
 SUBDIRS = sql_stmt_geosadvanced_tests sql_stmt_geos_tests \
 	sql_stmt_libxml2_tests sql_stmt_rtgeom_tests \

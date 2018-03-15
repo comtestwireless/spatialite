@@ -1495,7 +1495,7 @@ a Geometry will be returned representing the MBR for the corresponding GARS area
 				<td>CastToXYM( geom <i>Geometry</i> ) : geom <i>Geometry</i></td>
 				<td></td>
 				<td align="center" bgcolor="#d0f0d0">base</td>
-				<td>returns a Geometry using the [<b>XYZM</b>] space dimension</td></tr>
+				<td>returns a Geometry using the [<b>XYM</b>] space dimension</td></tr>
 			<tr><td><b>CastToXYZM</b></td>
 				<td>CastToXYZM( geom <i>Geometry</i> ) : geom <i>Geometry</i></td>
 				<td></td>
@@ -1780,7 +1780,7 @@ This function only supports Long/Lat coordinates, and will return NULL for any p
 					ST_InteriorRingN( polyg <i>Polygon</i> , n <i>Integer</i> ) : <i>LineString</i></td>
 				<td align="center" bgcolor="#d0f0d0">X</td>
 				<td align="center" bgcolor="#d0f0d0">base</td>
-				<td>return the nth interiorRing. The order of Rings is not geometrically significant.</td></tr>
+				<td>return the nth (1-based) interiorRing. The order of Rings is not geometrically significant.</td></tr>
 			<tr><td colspan="5" align="center" bgcolor="#f0f0c0">
 				<h3><a name="p10">SQL functions on type GeomCollection</a></h3></td></tr>
 			<tr><th bgcolor="#d0d0d0">Function</th>
@@ -1799,7 +1799,7 @@ This function only supports Long/Lat coordinates, and will return NULL for any p
 					ST_GeometryN( geom <i>GeomCollection</i> , n <i>Integer</i> ) : <i>Geometry</i></td>
 				<td align="center" bgcolor="#d0f0d0">X</td>
 				<td align="center" bgcolor="#d0f0d0">base</td>
-				<td>return the nth geometric object in the collection.
+				<td>return the nth (1-based) geometric object in the collection.
 					The order of the elements in the collection is not geometrically significant.</td></tr>
 			<tr><td colspan="5" align="center" bgcolor="#f0f0c0">
 				<h3><a name="p11">SQL functions that test approximate spatial relationships via MBRs</a></h3></td></tr>
@@ -3812,7 +3812,7 @@ geom_type <i>Integer</i> , dimension <i>Integer</i>, geometry_format <i>String</
 				<li><b>7</b> <i>GEOMETRYCOLLECTION</i></li>
 				</ul><b>dimension</b> may be <b>2</b>, <b>3</b> or <b>4</b>, accordingly to OGR/FDO specs<br>
 				<b>geometry_format</b> has to be one of the followings:<ul>
-				<li>'WBT'</li>
+				<li>'WKB'</li>
 				<li>'WKT'</li>
 				<li>'FGF'</li>
 				</ul><hr>
@@ -5855,21 +5855,21 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				    <ul>
                     <li>The <i>Input</i> dataset is always expected to declare a <b>Primary Key</b> and must declare a <i>POINT</i>, <i>LINESTRING</i>, <i>POLYGON</i>,
                     <i>MULTIPOINT</i>, <i>MULTILINESTRING</i> or <i>MULTIPOLYGON</i> Geometry type.<br>
-                    It could be indifferently located on the <b>MAIN</b> database or on any other <b>attached DB</b>, and is fully identified by the <b>input-db-prefix</b>,
+                    It can be located either in the <b>MAIN</b> database or in any other <b>attached DB</b>, and must be fully identified by the <b>input-db-prefix</b>, 
                     <b>input-table</b> and <b>input-geometry</b> arguments.</li>
-                    <li>The <i>Blade</i> dataset is always expected to declare a <b>Primary Key</b> and must declare a <i>POLYGON</i> or <i>MULTIPOLYGON</i> Geometry type.<br>
-                    It could be indifferently located on the <b>MAIN</b> database or on any other <b>attached DB</b>, and is fully identified by the <b>blade-db-prefix</b>,
+                    <li>The <i>Blade</i> dataset is always expected to be a <i>POLYGON</i> or <i>MULTIPOLYGON</i>, with a defined <b>Primary Key</b>.<br> 
+                    It can be located either in the <b>MAIN</b> database or in any other <b>attached DB</b>, and is fully identified by the <b>blade-db-prefix</b>,
                     <b>blade-table</b> and <b>blade-geometry</b> arguments.<br>
-                    <u>Note</u>: both the <i>Input</i> and <i>Blade</i> Geometries must share the same identical <i>SRID</i> value.</li>
-                    <li>The <i>Output</i> dataset will be always located into the <b>MAIN</b> database.<br>
-                    The Output Geometry will always preserve the name and SRID declared by <b>input-geom</b>: the Geometry type will be always be one between
+                    <u>Note</u>: both the <i>Input</i> and <i>Blade</i> Geometries must have the same identical <i>SRID</i> value.</li>
+                    <li>The <i>Output</i> dataset will be always created in the <b>MAIN</b> database.<br>
+                    The Output Geometry will have the same name and SRID as the <b>input-geom</b>: the Geometry type will always be one of
                     <i>POINT</i>, <i>LINESTRING</i> or <i>POLYGON</i> (all cut fragments will be stored as simple features on distinct rows).</li>
 					</ul>
 					<ul>
-					<li>Both the <b>input-db-prefix</b> and <b>blade-db-prefix</b> arguments could be legitimately declared as <b>NULL</b>, and in this case the <b>MAIN</b> database will be always assumed.</li>
-					<li>and also the <b>input-geom</b> and <b>blade-geom</b> arguments could be legitimately declared as <b>NULL</b>.<br>
-					In this case the appropriate Geometry column name will be implicitly determined, but only if the corresponding table declares just a single Geometry column, otherwise an exception will be raised.</li>
-					<li>The <i>optional</i> argument <b>transaction</b> determines if an internal SQL Transaction should be automatically started or not (the default setting if not explicitly overridden is FALSE).</li>
+					<li>Both the <b>input-db-prefix</b> and <b>blade-db-prefix</b> arguments could be set as <b>NULL</b>, where the <b>MAIN</b> database will then always be assumed.</li>
+					<li>also the <b>input-geom</b> and <b>blade-geom</b> arguments can be set as <b>NULL</b>.<br>
+					In such a case the appropriate Geometry column name will be chosen when only one Geometry column is defined, otherwise an exception will be raised.</li>
+					<li>The <i>optional</i> argument <b>transaction</b> determines if an internal SQL Transaction should be automatically started or not (the default setting, if not explicitly overridden, is FALSE).</li>
 					<li>The <i>optional</i> argument <b>ram-tmp-storage</b> determines if the intermediate <i>temporary tables</i> internally used by this function should be created in RAM or not 
 					(the default setting if not explicitly overridden is FALSE).</li>
 					</ul>
@@ -5905,7 +5905,8 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 					<li><b>geom_column</b>: name of the input Table column containing Geometries.<br>
 						Could be eventually <b>NULL</b> for Networks just describing relations but lacking any Spatial representation.</li>
 					<li><b>cost_column</b>: name of the input Table column containing Cost values.<br>
-						Could be eventually <b>NULL</b> and in this case <b>ST_Length(geom_column)</b> will be assumed to be the Cost.</li>
+						Could be eventually <b>NULL</b> and in this case <b>ST_Length(geom_column)</b> will be assumed to be the Cost: in the case of Networks based on some <i>Geographic Reference System</i>
+						(<b>long/lat</b>, as e.g. <b>SRID=4326</b>) a precise measure of lengths expressed in <b>meters</b></b> will be computed by using <i>geodesic formulas</i>.</li>
 					<li><b>road_name_column</b>: name of the input Table column containing Road Name values. Could be eventually <b>NULL</b>.</li>
 					<li><b>a_star_enabled</b>: if the <b>A*</b> algorithm should be enabled or not (default: <b>1</b>).</li>
 					<li><b>bidirectional</b>: if arcs/links should be considered uni- or bi-directionals (default: <b>0</b>).</li>
@@ -5913,10 +5914,21 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 					<li><b>oneway_to</b>: name of the input Table column containing OneWay flags in the To-From direction. Could be eventually <b>NULL</b>.</li>
 					<li><b>overwrite</b>: if set to <b>TRUE</b> already existing Routing Binary Data and/or VirtualRouting Tables will be silently overwritten (default: <b>0</b>).</li>
 				</ul><hr>
+				<b>1</b> (aka <b>TRUE</b>) will be returned on success, an <b>exception</b> will be raised on failure.</td></tr>
+			<tr><td><b>CreateRoutingNodes()</b></td>
+				<td>CreateRoutingNodes( db_prefix <i>String</i> , spatial_table <i>String</i> , geom_column <i>String</i> ,  node_from <i>String</i> , node_to <i>String</i> ) : <i>Boolean</i></td>
+				<td colspan="3">Will attempt to add both <b>node_from</b> and <b>nodes_to</b> columns to the Spatial Table identified by <b>db_prefix</b>, <b>spatial_table</b> and <b>geom_column</b>.
+				These two columns will be populated by inserting appropriate <b>Node-IDs</b> (of the <i>INTEGER</i> type) fully respecting the topological consistency of the network.<br>
+				<ul>
+					<li><b>db_prefix</b> could be <b>NULL</b>, and in this case the <b>MAIN</b> DB is implicitly assumed.</li>
+					<li>also <b>geom_column</b> could be <b>NULL</b>, and in this case the name of the Geometry column will be automatically detected if the Spatial Table has just a single Geometry.</li>
+					<li><b>geom_column</b> must contain Geometries of the <b>LINESTRING</b> type.</li>
+					<li>both <b>node_from</b> and <b>node_to</b> columns should not exist.</li>
+				</ul><hr>
 				<b>1</b> (aka <b>TRUE</b>) will be returned on success, an <b>exception</b> will be raised on failure.</td></tr>				
 			<tr><td><b>CreateRouting_GetLastError()</b></td>
 				<td>CreateRouting_GetLastError( <i>void</i> ) : <i>String</i></td>
-				<td colspan="3">Will return the most <i>recent error message</i> emitted by <b>CreateRouting()</b>.<br>
+				<td colspan="3">Will return the most <i>recent error message</i> emitted by <b>CreateRouting()</b> or <b>CreateRoutingNodes()</b>.<br>
 				<b>NULL</b> will be returned if no such error message currently exists.</td></tr>	
 			<tr><td><b>IsLowASCII()</b></td>
 				<td>IsLowASCII( text_string <i>String</i> ) : <i>Integer</i></td>

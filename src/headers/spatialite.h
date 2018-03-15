@@ -1672,6 +1672,31 @@ extern "C"
 				       char **message);
 
 /**
+  Will attempt to create the Routing Nodes columns for a spatial table
+  
+ \param db_handle handle to the current SQLite connection
+ \param cache a memory pointer returned by spatialite_alloc_connection()
+ \param prefix schema prefix identifying the target DB (could be 
+  eventually NULL)\n
+ \param table name of the table to be processed.
+ \param geom_column name of the table column containing Linestring Geometries
+ (could be eventually NULL).
+ \param from_column name of the table column where NodeFrom values 
+  will be stored.
+ \param to_column name of the column where ToFrom values 
+  will be stored.
+ 
+ \return 0 on failure, any other value on success
+ */
+    SPATIALITE_DECLARE int gaia_create_routing_nodes (sqlite3 * db_handle,
+						      const void *cache,
+						      const char *prefix,
+						      const char *table,
+						      const char *geom_column,
+						      const char *from_column,
+						      const char *to_column);
+
+/**
   Will attempt to create a VirtualRouting from an input table
   
  \param db_handle handle to the current SQLite connection
@@ -1680,7 +1705,7 @@ extern "C"
  \param virtual_routing_table name of the VirtualRouting Table to be created.
  \param input_table name of the input table to be processed.
  \param from_column name of the input table column containing NodeFrom.
- \param to_column name of the input table column containing ToFrom.
+ \param to_column name of the input table column containing NodeTo.
  \param geom_column name of the input table column containing Linestring Geometries
  (could be eventually NULL).
  \param cost_column name of the input table column containing Cost values
@@ -1725,8 +1750,10 @@ extern "C"
 						const char *oneway_from,
 						const char *oneway_to,
 						int overwrite);
-						
-    SPATIALITE_DECLARE const char * gaia_create_routing_get_last_error (const void *cache);
+
+    SPATIALITE_DECLARE const char *gaia_create_routing_get_last_error (const
+								       void
+								       *cache);
 
     SPATIALITE_DECLARE int gaiaGPKG2Spatialite (sqlite3 * handle_in,
 						const char *gpkg_in_path,

@@ -102,15 +102,6 @@ extern const char *locale_charset (void);
 #define strcasecmp	_stricmp
 #endif /* not WIN32 */
 
-/* supporting DBF and Shapefiles bigger than 2 GB */
-#ifdef _WIN32	/* windows */
-#define gaia_off_t	__int64
-#define gaia_fseek	_fseeki64
-#else	/* not windows */
-#define gaia_off_t	off_t
-#define gaia_fseek	fseeko
-#endif
-
 struct auxdbf_fld
 {
 /* auxiliary DBF field struct */
@@ -1709,7 +1700,7 @@ gaiaReadShpEntity_ex (gaiaShapefilePtr shp, int current_row, int srid,
     ringsColl.First = NULL;
     ringsColl.Last = NULL;
 /* positioning and reading the SHX file */
-    offset = 100 + ((gaia_off_t)current_row * (gaia_off_t)8);	/* 100 bytes for the header + current row displacement; each SHX row = 8 bytes */
+    offset = 100 + ((gaia_off_t) current_row * (gaia_off_t) 8);	/* 100 bytes for the header + current row displacement; each SHX row = 8 bytes */
     skpos = gaia_fseek (shp->flShx, offset, SEEK_SET);
     if (skpos != 0)
 	goto eof;
@@ -1718,7 +1709,9 @@ gaiaReadShpEntity_ex (gaiaShapefilePtr shp, int current_row, int srid,
 	goto eof;
     off_shp = gaiaImport32 (buf, GAIA_BIG_ENDIAN, shp->endian_arch);
 /* positioning and reading the DBF file */
-    offset = shp->DbfHdsz + ((gaia_off_t)current_row * (gaia_off_t)(shp->DbfReclen));
+    offset =
+	shp->DbfHdsz +
+	((gaia_off_t) current_row * (gaia_off_t) (shp->DbfReclen));
     skpos = gaia_fseek (shp->flDbf, offset, SEEK_SET);
     if (skpos != 0)
 	goto error;
@@ -1729,15 +1722,17 @@ gaiaReadShpEntity_ex (gaiaShapefilePtr shp, int current_row, int srid,
     if (*(shp->BufDbf) == '*')
 	goto dbf_deleted;
 /* positioning and reading corresponding SHP entity - geometry */
-    offset = (gaia_off_t)off_shp * 2;
+    offset = (gaia_off_t) off_shp *2;
     skpos = gaia_fseek (shp->flShp, offset, SEEK_SET);
     if (skpos != 0)
 	goto error;
     rd = fread (buf, sizeof (unsigned char), 12, shp->flShp);
     if (rd != 12)
 	goto error;
+    int rno = gaiaImport32 (buf, GAIA_BIG_ENDIAN, shp->endian_arch);
     sz = gaiaImport32 (buf + 4, GAIA_BIG_ENDIAN, shp->endian_arch);
     shape = gaiaImport32 (buf + 8, GAIA_LITTLE_ENDIAN, shp->endian_arch);
+    fprintf (stderr, "\t%d\t%d\t%d\n", rno, sz, shape);
     if (shape == GAIA_SHP_NULL)
       {
 	  /* handling a NULL shape */
@@ -1864,16 +1859,41 @@ gaiaReadShpEntity_ex (gaiaShapefilePtr shp, int current_row, int srid,
     if (shape == GAIA_SHP_POLYLINE)
       {
 	  /* shape polyline */
+	  int extra_check = 0;
 	  rd = fread (shp->BufShp, sizeof (unsigned char), 32, shp->flShp);
 	  if (rd != 32)
 	      goto error;
 	  rd = fread (shp->BufShp, sizeof (unsigned char), (sz * 2) - 36,
 		      shp->flShp);
 	  if (rd != (sz * 2) - 36)
-	      goto error;
+	    {
+		if (rd == (sz * 2) - 44)
+		  {
+		      /* sandro 2018-02-17
+		       * it could be some defective SHP badly computing the
+		       * expected record length.
+		       * some unknown software producing defective shapefiles
+		       * of the 2D PolyLine type has been positively identified;
+		       * all record lengths were constantly declaring 4 extra words,
+		       * possibly because the Record Number and the Content Length 
+		       * fields were wrongly included into the record length 
+		       * calculation.
+		       */
+		      extra_check = 1;
+		  }
+		else
+		    goto error;
+	    }
 	  n = gaiaImport32 (shp->BufShp, GAIA_LITTLE_ENDIAN, shp->endian_arch);
 	  n1 = gaiaImport32 (shp->BufShp + 4, GAIA_LITTLE_ENDIAN,
 			     shp->endian_arch);
+	  if (extra_check)
+	    {
+		/* checking the expected buffer size */
+		int expected = 8 + (n * 4) + (n1 * 16);
+		if (rd != expected)
+		    goto error;
+	    }
 	  base = 8 + (n * 4);
 	  start = 0;
 	  for (ind = 0; ind < n; ind++)
@@ -4495,7 +4515,7 @@ gaiaShpAnalyze (gaiaShapefilePtr shp)
     while (1)
       {
 	  /* positioning and reading the SHX file */
-	  offset = 100 + ((gaia_off_t)current_row * (gaia_off_t)8);	/* 100 bytes for the header + current row displacement; each SHX row = 8 bytes */
+	  offset = 100 + ((gaia_off_t) current_row * (gaia_off_t) 8);	/* 100 bytes for the header + current row displacement; each SHX row = 8 bytes */
 	  skpos = gaia_fseek (shp->flShx, offset, SEEK_SET);
 	  if (skpos != 0)
 	      goto exit;
@@ -4504,7 +4524,7 @@ gaiaShpAnalyze (gaiaShapefilePtr shp)
 	      goto exit;
 	  off_shp = gaiaImport32 (buf, GAIA_BIG_ENDIAN, shp->endian_arch);
 	  /* positioning and reading corresponding SHP entity - geometry */
-	  offset = (gaia_off_t)off_shp * 2;
+	  offset = (gaia_off_t) off_shp *2;
 	  skpos = gaia_fseek (shp->flShp, offset, SEEK_SET);
 	  if (skpos != 0)
 	      goto exit;
@@ -5243,7 +5263,9 @@ gaiaReadDbfEntity_ex (gaiaDbfPtr dbf, int current_row, int *deleted,
     char errMsg[1024];
     gaiaDbfFieldPtr pFld;
 /* positioning and reading the DBF file */
-    offset = dbf->DbfHdsz + ((gaia_off_t)current_row * (gaia_off_t)(dbf->DbfReclen));
+    offset =
+	dbf->DbfHdsz +
+	((gaia_off_t) current_row * (gaia_off_t) (dbf->DbfReclen));
     skpos = gaia_fseek (dbf->flDbf, offset, SEEK_SET);
     if (skpos != 0)
 	goto eof;

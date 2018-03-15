@@ -62,6 +62,15 @@ extern "C"
 {
 #endif
 
+/* supporting files bigger than 2 GB */
+#ifdef _WIN32			/* windows */
+#define gaia_off_t	__int64
+#define gaia_fseek	_fseeki64
+#else /* not windows */
+#define gaia_off_t	off_t
+#define gaia_fseek	fseeko
+#endif
+
 /**
  Container for OGC POINT Geometry
  */
@@ -499,7 +508,7 @@ extern "C"
     {
 /* a struct representing a full LINE (aka Record) */
 /** current offset (parsing) */
-	off_t offset;
+	gaia_off_t offset;
 /** line length (in bytes) */
 	int len;
 /** array of field offsets (where each field starts) */
@@ -519,7 +528,7 @@ extern "C"
 /** Line Number */
 	int line_no;
 /** start offset */
-	off_t offset;
+	gaia_off_t offset;
 /** record (line) length (in bytes) */
 	int len;
 /** number of fields into this record */

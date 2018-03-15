@@ -121,7 +121,8 @@ check_PROGRAMS = check_endian$(EXEEXT) check_version$(EXEEXT) \
 	check_toposnap$(EXEEXT) check_network2d$(EXEEXT) \
 	check_network3d$(EXEEXT) check_network_log$(EXEEXT) \
 	check_virtualknn$(EXEEXT) check_sequence$(EXEEXT) \
-	check_stored_proc$(EXEEXT) check_wms$(EXEEXT) $(am__EXEEXT_1)
+	check_stored_proc$(EXEEXT) check_wms$(EXEEXT) \
+	routing_test$(EXEEXT) $(am__EXEEXT_1)
 @ENABLE_GEOPACKAGE_TRUE@am__append_1 = \
 @ENABLE_GEOPACKAGE_TRUE@		check_createBaseTables \
 @ENABLE_GEOPACKAGE_TRUE@		check_gpkgCreateTilesTable \
@@ -512,6 +513,9 @@ check_wms_LDADD = $(LDADD)
 check_xls_load_SOURCES = check_xls_load.c
 check_xls_load_OBJECTS = check_xls_load.$(OBJEXT)
 check_xls_load_LDADD = $(LDADD)
+routing_test_SOURCES = routing_test.c
+routing_test_OBJECTS = routing_test.$(OBJEXT)
+routing_test_LDADD = $(LDADD)
 shape_3d_SOURCES = shape_3d.c
 shape_3d_OBJECTS = shape_3d.$(OBJEXT)
 shape_3d_LDADD = $(LDADD)
@@ -605,8 +609,9 @@ SOURCES = check_add_tile_triggers.c \
 	check_virtualtable3.c check_virtualtable4.c \
 	check_virtualtable5.c check_virtualtable6.c \
 	check_virtualxpath.c check_wfsin.c check_wms.c \
-	check_xls_load.c shape_3d.c shape_cp1252.c shape_primitives.c \
-	shape_utf8_1.c shape_utf8_1ex.c shape_utf8_2.c
+	check_xls_load.c routing_test.c shape_3d.c shape_cp1252.c \
+	shape_primitives.c shape_utf8_1.c shape_utf8_1ex.c \
+	shape_utf8_2.c
 DIST_SOURCES = check_add_tile_triggers.c \
 	check_add_tile_triggers_bad_table_name.c check_bufovflw.c \
 	check_clone_table.c check_control_points.c check_create.c \
@@ -648,8 +653,9 @@ DIST_SOURCES = check_add_tile_triggers.c \
 	check_virtualtable3.c check_virtualtable4.c \
 	check_virtualtable5.c check_virtualtable6.c \
 	check_virtualxpath.c check_wfsin.c check_wms.c \
-	check_xls_load.c shape_3d.c shape_cp1252.c shape_primitives.c \
-	shape_utf8_1.c shape_utf8_1ex.c shape_utf8_2.c
+	check_xls_load.c routing_test.c shape_3d.c shape_cp1252.c \
+	shape_primitives.c shape_utf8_1.c shape_utf8_1ex.c \
+	shape_utf8_2.c
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -1146,7 +1152,7 @@ EXTRA_DIST = fnmatch_impl4win.h \
 	elba-ln.shp elba-ln.shx elba-ln.dbf \
 	Gpx-sample.gpx 000323485.gpx \
 	sqlproc_sample.txt sqlproc_logfile.txt \
-	sqlproc_error.txt
+	sqlproc_error.txt orbetello.sqlite
 
 SUBDIRS = sql_stmt_geosadvanced_tests sql_stmt_geos_tests \
 	sql_stmt_libxml2_tests sql_stmt_rtgeom_tests \
@@ -1574,6 +1580,10 @@ check_xls_load$(EXEEXT): $(check_xls_load_OBJECTS) $(check_xls_load_DEPENDENCIES
 	@rm -f check_xls_load$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(check_xls_load_OBJECTS) $(check_xls_load_LDADD) $(LIBS)
 
+routing_test$(EXEEXT): $(routing_test_OBJECTS) $(routing_test_DEPENDENCIES) $(EXTRA_routing_test_DEPENDENCIES) 
+	@rm -f routing_test$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(routing_test_OBJECTS) $(routing_test_LDADD) $(LIBS)
+
 shape_3d$(EXEEXT): $(shape_3d_OBJECTS) $(shape_3d_DEPENDENCIES) $(EXTRA_shape_3d_DEPENDENCIES) 
 	@rm -f shape_3d$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(shape_3d_OBJECTS) $(shape_3d_LDADD) $(LIBS)
@@ -1696,6 +1706,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_wfsin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_wms.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_xls_load.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/routing_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shape_3d.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shape_cp1252.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shape_primitives.Po@am__quote@
@@ -2449,6 +2460,13 @@ check_stored_proc.log: check_stored_proc$(EXEEXT)
 check_wms.log: check_wms$(EXEEXT)
 	@p='check_wms$(EXEEXT)'; \
 	b='check_wms'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+routing_test.log: routing_test$(EXEEXT)
+	@p='routing_test$(EXEEXT)'; \
+	b='routing_test'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

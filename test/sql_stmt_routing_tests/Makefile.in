@@ -265,7 +265,27 @@ EXTRA_DIST = createrouterr.testcase \
 	createrouting11.testcase \
 	createrouting12.testcase \
 	createrouting13.testcase \
-	createrouting14.testcase 	
+	createrouting14.testcase \
+	createroutnodes1.testcase \
+	createroutnodes2.testcase \
+	createroutnodes3.testcase \
+	createroutnodes4.testcase \
+	createroutnodes5.testcase \
+	createroutnodes6.testcase \
+	createroutnodes7.testcase \
+	createroutnodes8.testcase \
+	createroutnodes9.testcase \
+	createroutnodes10.testcase \
+	createroutnodes11.testcase \
+	createroutnodes12.testcase \
+	createroutnodes13.testcase \
+	createroutnodes14.testcase \
+	createroutnodes15.testcase \
+	createroutnodes16.testcase \
+	createroutnodes17.testcase \
+	createroutnodes18.testcase \
+	createroutnodes19.testcase \
+	createroutnodes20.testcase	
 
 all: all-am
 

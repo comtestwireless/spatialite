@@ -33209,6 +33209,97 @@ fnct_sp_var_update_value (sqlite3_context * context, int argc,
 }
 
 static void
+fnct_create_routing_nodes (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ CreateRoutingNodes(db-prefix TEXT, input-table TEXT , geom-column TEXT,
+/                    node-from-column TEXT , node-to-column TEXT )
+/
+/ returns:
+/ 1 on succes
+/ raises an exception on invalid arguments or errors
+*/
+    const char *db_prefix;
+    const char *input_table;
+    const char *geom_column;
+    const char *from_column;
+    const char *to_column;
+    const char *msg;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) == SQLITE_NULL)
+	db_prefix = NULL;
+    else if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
+	db_prefix = (const char *) sqlite3_value_text (argv[0]);
+    else
+	goto invalid_argument_1;
+    if (sqlite3_value_type (argv[1]) != SQLITE_TEXT)
+	goto invalid_argument_2;
+	else
+    input_table = (const char *) sqlite3_value_text (argv[1]);
+    if (sqlite3_value_type (argv[2]) == SQLITE_NULL)
+	geom_column = NULL;
+    else if (sqlite3_value_type (argv[2]) == SQLITE_TEXT)
+	geom_column = (const char *) sqlite3_value_text (argv[2]);
+    else
+	goto invalid_argument_3;
+    if (sqlite3_value_type (argv[3]) != SQLITE_TEXT)
+	goto invalid_argument_4;
+    from_column = (const char *) sqlite3_value_text (argv[3]);
+    if (sqlite3_value_type (argv[4]) != SQLITE_TEXT)
+	goto invalid_argument_5;
+    to_column = (const char *) sqlite3_value_text (argv[4]);
+    if (gaia_create_routing_nodes
+	(sqlite, cache, db_prefix, input_table, geom_column, from_column, to_column))
+	sqlite3_result_int (context, 1);
+    else
+      {
+	  /* there was an error, raising an Exception */
+	  char *msg_err;
+	  msg = gaia_create_routing_get_last_error (cache);
+	  if (msg == NULL)
+	      msg_err =
+		  sqlite3_mprintf ("CreateRoutingNodes exception - Unknown reason");
+	  else
+	      msg_err = sqlite3_mprintf ("CreateRoutingNodes exception - %s", msg);
+	  sqlite3_result_error (context, msg_err, -1);
+	  sqlite3_free (msg_err);
+      }
+    return;
+
+  invalid_argument_1:
+    msg =
+	"CreateRoutingNodes exception - illegal DB-prefix [not a TEXT string].";
+    sqlite3_result_error (context, msg, -1);
+    return;
+
+  invalid_argument_2:
+    msg =
+	"CreateRoutingNodes exception - illegal Spatial-Table Name [not a TEXT string].";
+    sqlite3_result_error (context, msg, -1);
+    return;
+
+  invalid_argument_3:
+    msg =
+	"CreateRoutingNodes exception - illegal Geometry Column Name [not a TEXT string].";
+    sqlite3_result_error (context, msg, -1);
+    return;
+
+  invalid_argument_4:
+    msg =
+	"CreateRoutingNodes exception - illegal FromNode Column Name [not a TEXT string].";
+    sqlite3_result_error (context, msg, -1);
+    return;
+
+  invalid_argument_5:
+    msg =
+	"CreateRoutingNodes exception - illegal ToNode Column Name [not a TEXT string].";
+    sqlite3_result_error (context, msg, -1);
+    return;
+}
+
+static void
 fnct_create_routing (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
 /* SQL function:
@@ -43342,7 +43433,9 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 				cache, fnct_sp_stored_execute, 0, 0, 0);
     sqlite3_create_function_v2 (db, "StoredProc_Execute", 17, SQLITE_UTF8,
 				cache, fnct_sp_stored_execute, 0, 0, 0);
-
+				
+	sqlite3_create_function_v2 (db, "CreateRoutingNodes", 5, SQLITE_UTF8,
+				cache, fnct_create_routing_nodes, 0, 0, 0);
     sqlite3_create_function_v2 (db, "CreateRouting", 7, SQLITE_UTF8,
 				cache, fnct_create_routing, 0, 0, 0);
     sqlite3_create_function_v2 (db, "CreateRouting", 10, SQLITE_UTF8,
