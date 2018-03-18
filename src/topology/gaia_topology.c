@@ -2110,13 +2110,17 @@ fnctaux_GetFaceGeometry (const void *xcontext, int argc, const void *xargv)
     gaiaGeomCollPtr geom;
     GaiaTopologyAccessorPtr accessor = NULL;
     int gpkg_mode = 0;
+    int tiny_point = 0;
     sqlite3_context *context = (sqlite3_context *) xcontext;
     sqlite3_value **argv = (sqlite3_value **) xargv;
     sqlite3 *sqlite = sqlite3_context_db_handle (context);
     struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (cache != NULL)
-	gpkg_mode = cache->gpkg_mode;
+      {
+	  gpkg_mode = cache->gpkg_mode;
+	  tiny_point = cache->tinyPointEnabled;
+      }
     if (sqlite3_value_type (argv[0]) == SQLITE_NULL)
 	goto null_arg;
     else if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
@@ -2149,7 +2153,7 @@ fnctaux_GetFaceGeometry (const void *xcontext, int argc, const void *xargv)
 	  sqlite3_result_null (context);
 	  return;
       }
-    gaiaToSpatiaLiteBlobWkbEx (geom, &p_blob, &n_bytes, gpkg_mode);
+    gaiaToSpatiaLiteBlobWkbEx2 (geom, &p_blob, &n_bytes, gpkg_mode, tiny_point);
     gaiaFreeGeomColl (geom);
     if (p_blob == NULL)
 	sqlite3_result_null (context);
@@ -3687,6 +3691,7 @@ fnctaux_TopoGeo_TopoSnap (const void *xcontext, int argc, const void *xargv)
     GaiaTopologyAccessorPtr accessor = NULL;
     int gpkg_amphibious = 0;
     int gpkg_mode = 0;
+    int tiny_point = 0;
     sqlite3_context *context = (sqlite3_context *) xcontext;
     sqlite3_value **argv = (sqlite3_value **) xargv;
     sqlite3 *sqlite = sqlite3_context_db_handle (context);
@@ -3696,6 +3701,7 @@ fnctaux_TopoGeo_TopoSnap (const void *xcontext, int argc, const void *xargv)
       {
 	  gpkg_amphibious = cache->gpkg_amphibious_mode;
 	  gpkg_mode = cache->gpkg_mode;
+	  tiny_point = cache->tinyPointEnabled;
       }
     if (sqlite3_value_type (argv[0]) == SQLITE_NULL)
 	goto null_arg;
@@ -3786,7 +3792,7 @@ fnctaux_TopoGeo_TopoSnap (const void *xcontext, int argc, const void *xargv)
 	  sqlite3_result_null (context);
 	  return;
       }
-    gaiaToSpatiaLiteBlobWkbEx (g2, &p_blob, &n_bytes, gpkg_mode);
+    gaiaToSpatiaLiteBlobWkbEx2 (g2, &p_blob, &n_bytes, gpkg_mode, tiny_point);
     gaiaFreeGeomColl (g2);
     if (p_blob == NULL)
 	sqlite3_result_null (context);
@@ -4084,7 +4090,7 @@ SPATIALITE_PRIVATE int
 gaia_check_output_table (const void *handle, const char *table)
 {
 /* checking if an output Table do already exist */
-	sqlite3 * sqlite = (sqlite3 *)handle;
+    sqlite3 *sqlite = (sqlite3 *) handle;
     int ret;
     int i;
     char **results;
@@ -4358,6 +4364,7 @@ fnctaux_TopoGeo_SubdivideLines (const void *xcontext, int argc,
     double max_length = -1.0;
     int gpkg_amphibious = 0;
     int gpkg_mode = 0;
+    int tiny_point = 0;
     sqlite3_context *context = (sqlite3_context *) xcontext;
     sqlite3_value **argv = (sqlite3_value **) xargv;
     struct splite_internal_cache *cache = sqlite3_user_data (context);
@@ -4366,6 +4373,7 @@ fnctaux_TopoGeo_SubdivideLines (const void *xcontext, int argc,
       {
 	  gpkg_amphibious = cache->gpkg_amphibious_mode;
 	  gpkg_mode = cache->gpkg_mode;
+	  tiny_point = cache->tinyPointEnabled;
       }
     if (sqlite3_value_type (argv[0]) == SQLITE_NULL)
 	goto null_arg;
@@ -4418,7 +4426,8 @@ fnctaux_TopoGeo_SubdivideLines (const void *xcontext, int argc,
     gaiaFreeGeomColl (geom);
     if (result == NULL)
 	goto invalid_geom;
-    gaiaToSpatiaLiteBlobWkbEx (result, &p_blob, &n_bytes, gpkg_mode);
+    gaiaToSpatiaLiteBlobWkbEx2 (result, &p_blob, &n_bytes, gpkg_mode,
+				tiny_point);
     gaiaFreeGeomColl (result);
     if (p_blob == NULL)
 	goto invalid_geom;
@@ -6028,17 +6037,18 @@ check_matching_srid (GaiaTopologyAccessorPtr accessor, int srid)
 
 SPATIALITE_PRIVATE int
 gaia_check_reference_geo_table (const void *handle, const char *db_prefix,
-			   const char *table, const char *column, char **xtable,
-			   char **xcolumn, int *srid, int *family)
+				const char *table, const char *column,
+				char **xtable, char **xcolumn, int *srid,
+				int *family)
 {
-	sqlite3 *sqlite = (sqlite3*)handle;
+    sqlite3 *sqlite = (sqlite3 *) handle;
     int dims;
     return check_input_geo_table (sqlite, db_prefix, table, column, xtable,
 				  xcolumn, srid, family, &dims);
 }
 
 static int
-check_reference_table (sqlite3 *sqlite, const char *db_prefix,
+check_reference_table (sqlite3 * sqlite, const char *db_prefix,
 		       const char *table)
 {
 /* checking if an input GeoTable do really exist */
@@ -8021,13 +8031,17 @@ fnctaux_TopoGeo_GetEdgeSeed (const void *xcontext, int argc, const void *xargv)
     gaiaGeomCollPtr geom;
     GaiaTopologyAccessorPtr accessor = NULL;
     int gpkg_mode = 0;
+    int tiny_point = 0;
     sqlite3_context *context = (sqlite3_context *) xcontext;
     sqlite3_value **argv = (sqlite3_value **) xargv;
     sqlite3 *sqlite = sqlite3_context_db_handle (context);
     struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (cache != NULL)
-	gpkg_mode = cache->gpkg_mode;
+      {
+	  gpkg_mode = cache->gpkg_mode;
+	  tiny_point = cache->tinyPointEnabled;
+      }
     if (sqlite3_value_type (argv[0]) == SQLITE_NULL)
 	goto null_arg;
     else if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
@@ -8060,7 +8074,7 @@ fnctaux_TopoGeo_GetEdgeSeed (const void *xcontext, int argc, const void *xargv)
 	  sqlite3_result_null (context);
 	  return;
       }
-    gaiaToSpatiaLiteBlobWkbEx (geom, &p_blob, &n_bytes, gpkg_mode);
+    gaiaToSpatiaLiteBlobWkbEx2 (geom, &p_blob, &n_bytes, gpkg_mode, tiny_point);
     gaiaFreeGeomColl (geom);
     if (p_blob == NULL)
 	sqlite3_result_null (context);
@@ -8104,13 +8118,17 @@ fnctaux_TopoGeo_GetFaceSeed (const void *xcontext, int argc, const void *xargv)
     gaiaGeomCollPtr geom;
     GaiaTopologyAccessorPtr accessor = NULL;
     int gpkg_mode = 0;
+    int tiny_point = 0;
     sqlite3_context *context = (sqlite3_context *) xcontext;
     sqlite3_value **argv = (sqlite3_value **) xargv;
     sqlite3 *sqlite = sqlite3_context_db_handle (context);
     struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (cache != NULL)
-	gpkg_mode = cache->gpkg_mode;
+      {
+	  gpkg_mode = cache->gpkg_mode;
+	  tiny_point = cache->tinyPointEnabled;
+      }
     if (sqlite3_value_type (argv[0]) == SQLITE_NULL)
 	goto null_arg;
     else if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
@@ -8143,7 +8161,7 @@ fnctaux_TopoGeo_GetFaceSeed (const void *xcontext, int argc, const void *xargv)
 	  sqlite3_result_null (context);
 	  return;
       }
-    gaiaToSpatiaLiteBlobWkbEx (geom, &p_blob, &n_bytes, gpkg_mode);
+    gaiaToSpatiaLiteBlobWkbEx2 (geom, &p_blob, &n_bytes, gpkg_mode, tiny_point);
     gaiaFreeGeomColl (geom);
     if (p_blob == NULL)
 	sqlite3_result_null (context);
@@ -8345,6 +8363,7 @@ fnctaux_TopoGeo_SnapPointToSeed (const void *xcontext, int argc,
     int invalid = 0;
     int gpkg_amphibious = 0;
     int gpkg_mode = 0;
+    int tiny_point = 0;
     sqlite3_context *context = (sqlite3_context *) xcontext;
     sqlite3_value **argv = (sqlite3_value **) xargv;
     sqlite3 *sqlite = sqlite3_context_db_handle (context);
@@ -8355,6 +8374,7 @@ fnctaux_TopoGeo_SnapPointToSeed (const void *xcontext, int argc,
       {
 	  gpkg_amphibious = cache->gpkg_amphibious_mode;
 	  gpkg_mode = cache->gpkg_mode;
+	  tiny_point = cache->tinyPointEnabled;
       }
 
     if (sqlite3_value_type (argv[0]) == SQLITE_NULL)
@@ -8414,7 +8434,8 @@ fnctaux_TopoGeo_SnapPointToSeed (const void *xcontext, int argc,
 	  sqlite3_result_null (context);
 	  return;
       }
-    gaiaToSpatiaLiteBlobWkbEx (result, &p_blob, &n_bytes, gpkg_mode);
+    gaiaToSpatiaLiteBlobWkbEx2 (result, &p_blob, &n_bytes, gpkg_mode,
+				tiny_point);
     gaiaFreeGeomColl (geom);
     gaiaFreeGeomColl (result);
     if (p_blob == NULL)
@@ -8486,6 +8507,7 @@ fnctaux_TopoGeo_SnapLineToSeed (const void *xcontext, int argc,
     int invalid = 0;
     int gpkg_amphibious = 0;
     int gpkg_mode = 0;
+    int tiny_point = 0;
     sqlite3_context *context = (sqlite3_context *) xcontext;
     sqlite3_value **argv = (sqlite3_value **) xargv;
     sqlite3 *sqlite = sqlite3_context_db_handle (context);
@@ -8496,6 +8518,7 @@ fnctaux_TopoGeo_SnapLineToSeed (const void *xcontext, int argc,
       {
 	  gpkg_amphibious = cache->gpkg_amphibious_mode;
 	  gpkg_mode = cache->gpkg_mode;
+	  tiny_point = cache->tinyPointEnabled;
       }
 
     if (sqlite3_value_type (argv[0]) == SQLITE_NULL)
@@ -8556,7 +8579,8 @@ fnctaux_TopoGeo_SnapLineToSeed (const void *xcontext, int argc,
 	  sqlite3_result_null (context);
 	  return;
       }
-    gaiaToSpatiaLiteBlobWkbEx (result, &p_blob, &n_bytes, gpkg_mode);
+    gaiaToSpatiaLiteBlobWkbEx2 (result, &p_blob, &n_bytes, gpkg_mode,
+				tiny_point);
     gaiaFreeGeomColl (geom);
     gaiaFreeGeomColl (result);
     if (p_blob == NULL)

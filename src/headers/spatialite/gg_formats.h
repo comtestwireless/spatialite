@@ -513,9 +513,10 @@ extern "C"
  \param result on completion will containt a pointer to BLOB-Geometry:
  NULL on failure.
  \param size on completion this variable will contain the BLOB's size (in bytes)
- \param gpkg_mode is set to TRUE will always return GPKG Geometry-BLOBs
+ \param gpkg_mode if set to TRUE will always return GPKG Geometry-BLOBs
 
- \sa gaiaFromSpatiaLiteBlobWkb, gaiaToCompressedBlobWkb
+ \sa gaiaFromSpatiaLiteBlobWkb, gaiaToCompressedBlobWkb,
+ gaiaToSpatiaLiteBlobWkbEx2
 
  \note the BLOB buffer corresponds to dynamically allocated memory:
  so you are responsible to free() it [unless SQLite will take care
@@ -524,6 +525,29 @@ extern "C"
     GAIAGEO_DECLARE void gaiaToSpatiaLiteBlobWkbEx (gaiaGeomCollPtr geom,
 						    unsigned char **result,
 						    int *size, int gpkg_mode);
+
+/**
+ Creates a BLOB-Geometry corresponding to a Geometry object
+
+ \param geom pointer to the Geometry object.
+ \param result on completion will containt a pointer to BLOB-Geometry:
+ NULL on failure.
+ \param size on completion this variable will contain the BLOB's size (in bytes)
+ \param gpkg_mode if set to TRUE will always return GPKG Geometry-BLOBs
+ \param tiny_point if set to TRUE all POINT Geometries will be encoded
+ by using the TinyPoint BLOB format.
+
+ \sa gaiaFromSpatiaLiteBlobWkb, gaiaToCompressedBlobWkb,
+ gaiaToSpatiaLiteBlobWkbEx
+
+ \note the BLOB buffer corresponds to dynamically allocated memory:
+ so you are responsible to free() it [unless SQLite will take care
+ of memory cleanup via buffer binding].
+ */
+    GAIAGEO_DECLARE void gaiaToSpatiaLiteBlobWkbEx2 (gaiaGeomCollPtr geom,
+						     unsigned char **result,
+						     int *size, int gpkg_mode,
+						     int tiny_point);
 
 /**
  Creates a Compressed BLOB-Geometry corresponding to a Geometry object

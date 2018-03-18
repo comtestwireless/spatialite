@@ -2160,12 +2160,14 @@ do_insert_output_row (struct output_table *tbl, const void *cache,
     unsigned char *blob;
     int size;
     int gpkg_mode = 0;
+    int tiny_point = 0;
 
     if (cache != NULL)
       {
 	  struct splite_internal_cache *pcache =
 	      (struct splite_internal_cache *) cache;
 	  gpkg_mode = pcache->gpkg_mode;
+	  tiny_point = pcache->tinyPointEnabled;
       }
 
     sqlite3_reset (stmt_out);
@@ -2268,7 +2270,7 @@ do_insert_output_row (struct output_table *tbl, const void *cache,
 	  do_update_message (message, "UNEXPECTED NULL OUTPUT GEOMETRY");
 	  return 0;
       }
-    gaiaToSpatiaLiteBlobWkbEx (geom, &blob, &size, gpkg_mode);
+    gaiaToSpatiaLiteBlobWkbEx2 (geom, &blob, &size, gpkg_mode, tiny_point);
     if (blob == NULL)
       {
 	  do_update_message (message, "UNEXPECTED NULL OUTPUT BLOB GEOMETRY");
@@ -2835,6 +2837,7 @@ do_insert_temporary_linestrings (struct output_table *tbl, sqlite3 * handle,
     unsigned char *blob;
     int size;
     int gpkg_mode = 0;
+    int tiny_point = 0;
     gaiaGeomCollPtr g;
 
     if (cache != NULL)
@@ -2842,6 +2845,7 @@ do_insert_temporary_linestrings (struct output_table *tbl, sqlite3 * handle,
 	  struct splite_internal_cache *pcache =
 	      (struct splite_internal_cache *) cache;
 	  gpkg_mode = pcache->gpkg_mode;
+	  tiny_point = pcache->tinyPointEnabled;
       }
 
     if (ngeom < 0)
@@ -2938,7 +2942,7 @@ do_insert_temporary_linestrings (struct output_table *tbl, sqlite3 * handle,
 	  sqlite3_bind_null (stmt_out, icol);
 	  icol++;
 	  /* binding Geometry */
-	  gaiaToSpatiaLiteBlobWkbEx (g, &blob, &size, gpkg_mode);
+	  gaiaToSpatiaLiteBlobWkbEx2 (g, &blob, &size, gpkg_mode, tiny_point);
 	  if (blob == NULL)
 	    {
 		do_update_message (message,
@@ -2982,12 +2986,14 @@ do_insert_temporary_linestring_intersection (struct output_table *tbl,
     unsigned char *blob;
     int size;
     int gpkg_mode = 0;
+    int tiny_point = 0;
 
     if (cache != NULL)
       {
 	  struct splite_internal_cache *pcache =
 	      (struct splite_internal_cache *) cache;
 	  gpkg_mode = pcache->gpkg_mode;
+	  tiny_point = pcache->tinyPointEnabled;
       }
 
     sqlite3_reset (stmt_out);
@@ -3065,7 +3071,7 @@ do_insert_temporary_linestring_intersection (struct output_table *tbl,
 	  col = col->next;
       }
     /* binding Nodes */
-    gaiaToSpatiaLiteBlobWkbEx (nodes, &blob, &size, gpkg_mode);
+    gaiaToSpatiaLiteBlobWkbEx2 (nodes, &blob, &size, gpkg_mode, tiny_point);
     if (blob == NULL)
       {
 	  do_update_message (message,
@@ -3101,6 +3107,7 @@ do_extract_linestring_nodes (const void *cache, sqlite3_stmt * stmt_nodes,
     int blade_blob_sz;
     int gpkg_mode = 0;
     int gpkg_amphibious = 0;
+    int tiny_point = 0;
 
     if (cache != NULL)
       {
@@ -3108,14 +3115,17 @@ do_extract_linestring_nodes (const void *cache, sqlite3_stmt * stmt_nodes,
 	      (struct splite_internal_cache *) cache;
 	  gpkg_mode = pcache->gpkg_mode;
 	  gpkg_amphibious = pcache->gpkg_amphibious_mode;
+	  tiny_point = pcache->tinyPointEnabled;
       }
 
     sqlite3_reset (stmt_nodes);
     sqlite3_clear_bindings (stmt_nodes);
     input_g = do_prepare_linestring (input_ln, srid);
-    gaiaToSpatiaLiteBlobWkbEx (input_g, &input_blob, &input_blob_sz, gpkg_mode);
+    gaiaToSpatiaLiteBlobWkbEx2 (input_g, &input_blob, &input_blob_sz, gpkg_mode,
+				tiny_point);
     gaiaFreeGeomColl (input_g);
-    gaiaToSpatiaLiteBlobWkbEx (blade_g, &blade_blob, &blade_blob_sz, gpkg_mode);
+    gaiaToSpatiaLiteBlobWkbEx2 (blade_g, &blade_blob, &blade_blob_sz, gpkg_mode,
+				tiny_point);
     sqlite3_bind_blob (stmt_nodes, 1, input_blob, input_blob_sz, free);
     sqlite3_bind_blob (stmt_nodes, 2, blade_blob, blade_blob_sz, free);
 
@@ -3667,6 +3677,7 @@ do_cut_tmp_linestrings (sqlite3 * handle, const void *cache,
     gaiaGeomCollPtr blade_g;
     int gpkg_amphibious = 0;
     int gpkg_mode = 0;
+    int tiny_point = 0;
 
     if (cache != NULL)
       {
@@ -3674,6 +3685,7 @@ do_cut_tmp_linestrings (sqlite3 * handle, const void *cache,
 	      (struct splite_internal_cache *) cache;
 	  gpkg_amphibious = pcache->gpkg_amphibious_mode;
 	  gpkg_mode = pcache->gpkg_mode;
+	  tiny_point = pcache->tinyPointEnabled;
       }
 
     blade_g = gaiaFromSpatiaLiteBlobWkbEx (blade_blob, blade_blob_sz,
@@ -3734,8 +3746,8 @@ do_cut_tmp_linestrings (sqlite3 * handle, const void *cache,
 			  gaiaGeometryIntersection_r (cache, input_g, blade_g);
 		      if (result != NULL)
 			{
-			    gaiaToSpatiaLiteBlobWkbEx (result, &blob, &blob_sz,
-						       gpkg_mode);
+			    gaiaToSpatiaLiteBlobWkbEx2 (result, &blob, &blob_sz,
+							gpkg_mode, tiny_point);
 			    gaiaFreeGeomColl (result);
 			}
 		      gaiaFreeGeomColl (input_g);
@@ -4109,6 +4121,7 @@ do_insert_temporary_polygons (struct output_table *tbl, sqlite3 * handle,
     unsigned char *blob;
     int size;
     int gpkg_mode = 0;
+    int tiny_point = 0;
     gaiaGeomCollPtr g;
 
     if (cache != NULL)
@@ -4116,6 +4129,7 @@ do_insert_temporary_polygons (struct output_table *tbl, sqlite3 * handle,
 	  struct splite_internal_cache *pcache =
 	      (struct splite_internal_cache *) cache;
 	  gpkg_mode = pcache->gpkg_mode;
+	  tiny_point = pcache->tinyPointEnabled;
       }
 
     if (ngeom < 0)
@@ -4209,7 +4223,7 @@ do_insert_temporary_polygons (struct output_table *tbl, sqlite3 * handle,
 		col = col->next;
 	    }
 	  /* binding Geometry */
-	  gaiaToSpatiaLiteBlobWkbEx (g, &blob, &size, gpkg_mode);
+	  gaiaToSpatiaLiteBlobWkbEx2 (g, &blob, &size, gpkg_mode, tiny_point);
 	  if (blob == NULL)
 	    {
 		do_update_message (message,
@@ -4360,6 +4374,7 @@ do_populate_temp_polygons (struct output_table *tbl, sqlite3 * handle,
     int cast2d = 0;
     int cast3d = 0;
     int gpkg_mode = 0;
+    int tiny_point = 0;
 
     if (cache != NULL)
       {
@@ -4769,8 +4784,9 @@ do_populate_temp_polygons (struct output_table *tbl, sqlite3 * handle,
 		      int pg_blob_sz;
 		      gaiaGeomCollPtr pg_geom =
 			  do_prepare_polygon (pg, input_g->Srid);
-		      gaiaToSpatiaLiteBlobWkbEx (pg_geom, &pg_blob, &pg_blob_sz,
-						 gpkg_mode);
+		      gaiaToSpatiaLiteBlobWkbEx2 (pg_geom, &pg_blob,
+						  &pg_blob_sz, gpkg_mode,
+						  tiny_point);
 		      n_geom++;
 		      if (gaiaGeomCollPreparedIntersects
 			  (cache, pg_geom, pg_blob, pg_blob_sz, blade_g,
@@ -4863,6 +4879,7 @@ do_cut_tmp_polygons (sqlite3 * handle, const void *cache,
     gaiaGeomCollPtr blade_g;
     int gpkg_amphibious = 0;
     int gpkg_mode = 0;
+    int tiny_point = 0;
 
     if (cache != NULL)
       {
@@ -4870,6 +4887,7 @@ do_cut_tmp_polygons (sqlite3 * handle, const void *cache,
 	      (struct splite_internal_cache *) cache;
 	  gpkg_amphibious = pcache->gpkg_amphibious_mode;
 	  gpkg_mode = pcache->gpkg_mode;
+	  tiny_point = pcache->tinyPointEnabled;
       }
 
     blade_g = gaiaFromSpatiaLiteBlobWkbEx (blade_blob, blade_blob_sz,
@@ -4930,8 +4948,8 @@ do_cut_tmp_polygons (sqlite3 * handle, const void *cache,
 			  gaiaGeometryIntersection_r (cache, input_g, blade_g);
 		      if (result != NULL)
 			{
-			    gaiaToSpatiaLiteBlobWkbEx (result, &blob, &blob_sz,
-						       gpkg_mode);
+			    gaiaToSpatiaLiteBlobWkbEx2 (result, &blob, &blob_sz,
+							gpkg_mode, tiny_point);
 			    gaiaFreeGeomColl (result);
 			}
 		      gaiaFreeGeomColl (input_g);
@@ -5295,6 +5313,7 @@ do_compute_diff_polygs (const void *cache, sqlite3_stmt * stmt_diff,
     int union_blob_sz;
     int gpkg_mode = 0;
     int gpkg_amphibious = 0;
+    int tiny_point = 0;
 
     if (cache != NULL)
       {
@@ -5302,14 +5321,17 @@ do_compute_diff_polygs (const void *cache, sqlite3_stmt * stmt_diff,
 	      (struct splite_internal_cache *) cache;
 	  gpkg_mode = pcache->gpkg_mode;
 	  gpkg_amphibious = pcache->gpkg_amphibious_mode;
+	  tiny_point = pcache->tinyPointEnabled;
       }
 
     sqlite3_reset (stmt_diff);
     sqlite3_clear_bindings (stmt_diff);
     input_g = do_prepare_polygon (input_pg, srid);
-    gaiaToSpatiaLiteBlobWkbEx (input_g, &input_blob, &input_blob_sz, gpkg_mode);
+    gaiaToSpatiaLiteBlobWkbEx2 (input_g, &input_blob, &input_blob_sz, gpkg_mode,
+				tiny_point);
     gaiaFreeGeomColl (input_g);
-    gaiaToSpatiaLiteBlobWkbEx (union_g, &union_blob, &union_blob_sz, gpkg_mode);
+    gaiaToSpatiaLiteBlobWkbEx2 (union_g, &union_blob, &union_blob_sz, gpkg_mode,
+				tiny_point);
     sqlite3_bind_blob (stmt_diff, 1, input_blob, input_blob_sz, SQLITE_STATIC);
     sqlite3_bind_blob (stmt_diff, 2, union_blob, union_blob_sz, SQLITE_STATIC);
     sqlite3_bind_blob (stmt_diff, 3, union_blob, union_blob_sz, SQLITE_STATIC);
@@ -6044,6 +6066,7 @@ do_compute_diff_lines (const void *cache, sqlite3_stmt * stmt_diff,
     int union_blob_sz;
     int gpkg_mode = 0;
     int gpkg_amphibious = 0;
+    int tiny_point = 0;
 
     if (cache != NULL)
       {
@@ -6051,14 +6074,17 @@ do_compute_diff_lines (const void *cache, sqlite3_stmt * stmt_diff,
 	      (struct splite_internal_cache *) cache;
 	  gpkg_mode = pcache->gpkg_mode;
 	  gpkg_amphibious = pcache->gpkg_amphibious_mode;
+	  tiny_point = pcache->tinyPointEnabled;
       }
 
     sqlite3_reset (stmt_diff);
     sqlite3_clear_bindings (stmt_diff);
     input_g = do_prepare_linestring (input_ln, srid);
-    gaiaToSpatiaLiteBlobWkbEx (input_g, &input_blob, &input_blob_sz, gpkg_mode);
+    gaiaToSpatiaLiteBlobWkbEx2 (input_g, &input_blob, &input_blob_sz, gpkg_mode,
+				tiny_point);
     gaiaFreeGeomColl (input_g);
-    gaiaToSpatiaLiteBlobWkbEx (union_g, &union_blob, &union_blob_sz, gpkg_mode);
+    gaiaToSpatiaLiteBlobWkbEx2 (union_g, &union_blob, &union_blob_sz, gpkg_mode,
+				tiny_point);
     sqlite3_bind_blob (stmt_diff, 1, input_blob, input_blob_sz, SQLITE_STATIC);
     sqlite3_bind_blob (stmt_diff, 2, union_blob, union_blob_sz, SQLITE_STATIC);
     sqlite3_bind_blob (stmt_diff, 3, union_blob, union_blob_sz, SQLITE_STATIC);

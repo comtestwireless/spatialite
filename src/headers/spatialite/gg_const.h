@@ -126,6 +126,10 @@ extern "C"
 #define GAIA_BIG_ENDIAN		0
 /** Little-Endian marker */
 #define GAIA_LITTLE_ENDIAN	1
+/** TinyPoint Big-Endian marker */
+#define GAIA_TINYPOINT_BIG_ENDIAN		0x80
+/** TinyPoint Little-Endian marker */
+#define GAIA_TINYPOINT_LITTLE_ENDIAN	0x81
 
 /* constants that defines special markers used for encoding of SpatiaLite internal BLOB geometries  */
 /** BLOB-Geometry internal marker: START */
@@ -196,6 +200,16 @@ extern "C"
 #define GAIA_MULTIPOLYGONZM		3006
 /** BLOB-Geometry CLASS: GEOMETRYCOLLECTION ZM */
 #define GAIA_GEOMETRYCOLLECTIONZM	3007
+
+/* constants that defines TinyPoint Types */
+/** BLOB-TinyPoint Type: POINT XY */
+#define GAIA_TINYPOINT_XY		0x01
+/** BLOB-TinyPoint Type: POINT XYZ */
+#define GAIA_TINYPOINT_XYZ		0x02
+/** BLOB-TinyPoint Type: POINT XYM */
+#define GAIA_TINYPOINT_XYM		0x03
+/** BLOB-TinyPoint Type: POINT XYZM */
+#define GAIA_TINYPOINT_XYZM		0x04
 
 /* constants that defines Compressed GEOMETRY CLASSes */
 /** BLOB-Geometry CLASS: compressed LINESTRING */

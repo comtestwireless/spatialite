@@ -2436,6 +2436,7 @@ do_check_spatial_table (sqlite3 * db_handle, const void *cache,
 		  ("%Q.%Q is not a valid Spatial Table (LINESTRING)", table,
 		   geom_column);
 	  gaia_create_routing_set_error (cache, msg);
+	  sqlite3_free(msg);
 	  return 0;
       }
 

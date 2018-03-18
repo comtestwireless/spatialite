@@ -194,6 +194,7 @@ extern "C"
 	char *SqlProcLogfile;
 	FILE *SqlProcLog;
 	int SqlProcContinue;
+	int tinyPointEnabled;
 	unsigned char magic2;
     };
 

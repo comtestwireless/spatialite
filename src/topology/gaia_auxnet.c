@@ -3644,12 +3644,14 @@ do_eval_toponet_seeds (struct gaia_network *net, sqlite3_stmt * stmt_ref,
 				  unsigned char *p_blob;
 				  int n_bytes;
 				  int gpkg_mode = 0;
+				  int tiny_point = 0;
 				  if (net->cache != NULL)
 				    {
 					struct splite_internal_cache *cache =
 					    (struct splite_internal_cache
 					     *) (net->cache);
 					gpkg_mode = cache->gpkg_mode;
+					tiny_point = cache->tinyPointEnabled;
 				    }
 				  result =
 				      do_eval_toponet_geom (net, geom,
@@ -3660,10 +3662,11 @@ do_eval_toponet_seeds (struct gaia_network *net, sqlite3_stmt * stmt_ref,
 				  gaiaFreeGeomColl (geom);
 				  if (result != NULL)
 				    {
-					gaiaToSpatiaLiteBlobWkbEx (result,
-								   &p_blob,
-								   &n_bytes,
-								   gpkg_mode);
+					gaiaToSpatiaLiteBlobWkbEx2 (result,
+								    &p_blob,
+								    &n_bytes,
+								    gpkg_mode,
+								    tiny_point);
 					gaiaFreeGeomColl (result);
 					sqlite3_bind_blob (stmt_ins, icol + 1,
 							   p_blob, n_bytes,

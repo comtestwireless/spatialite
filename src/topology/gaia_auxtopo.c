@@ -2253,6 +2253,7 @@ gaiaTopologyFromDBMS (sqlite3 * handle, const void *p_cache,
 	  char *msg =
 	      sqlite3_mprintf ("Topology \"%s\" is undefined !!!", topo_name);
 	  gaiaSetRtTopoErrorMsg (p_cache, msg);
+	  sqlite3_free(msg);
 	  goto invalid;
       }
 

@@ -2362,6 +2362,7 @@ gaiaGuessBlobType (const unsigned char *blob, int size)
     int exif = 0;
     int exif_gps = 0;
     int geom = 1;
+    int tiny_point = 1;
     gaiaExifTagListPtr exif_list;
     gaiaExifTagPtr pT;
     unsigned char jpeg1_signature[2];
@@ -2539,17 +2540,43 @@ gaiaGuessBlobType (const unsigned char *blob, int size)
       {
 	  if (*(blob + 0) != GAIA_MARK_START)
 	      geom = 0;
+	  if (*(blob + 1) == GAIA_LITTLE_ENDIAN
+	      || *(blob + 1) == GAIA_BIG_ENDIAN)
+	      ;
+	  else
+	      geom = 0;
 	  if (*(blob + (size - 1)) != GAIA_MARK_END)
 	      geom = 0;
 	  if (*(blob + 38) != GAIA_MARK_MBR)
 	      geom = 0;
-	  if (*(blob + 1) == 0 || *(blob + 1) == 1)
-	      ;
-	  else
-	      geom = 0;
       }
     if (geom)
 	return GAIA_GEOMETRY_BLOB;
+
+/* testing for TinyPoint */
+    if (size < 24)
+	tiny_point = 0;
+    else
+      {
+	  if (*(blob + 0) != GAIA_MARK_START)
+	      tiny_point = 0;
+	  if (*(blob + 1) == GAIA_TINYPOINT_LITTLE_ENDIAN
+	      || *(blob + 1) == GAIA_TINYPOINT_BIG_ENDIAN)
+	      ;
+	  else
+	      tiny_point = 0;
+	  if (*(blob + 6) == GAIA_TINYPOINT_XY
+	      || *(blob + 6) == GAIA_TINYPOINT_XYZ
+	      || *(blob + 6) == GAIA_TINYPOINT_XYM
+	      || *(blob + 6) == GAIA_TINYPOINT_XYZM)
+	      ;
+	  else
+	      tiny_point = 0;
+	  if (*(blob + (size - 1)) != GAIA_MARK_END)
+	      tiny_point = 0;
+      }
+    if (tiny_point)
+	return GAIA_TINYPOINT_BLOB;
 
 #ifdef ENABLE_LIBXML2		/* LIBXML2 enabled: supporting XML documents */
 

@@ -2477,12 +2477,14 @@ do_eval_topogeo_seeds (struct gaia_topology *topo, sqlite3_stmt * stmt_ref,
 				  unsigned char *p_blob;
 				  int n_bytes;
 				  int gpkg_mode = 0;
+				  int tiny_point = 0;
 				  if (topo->cache != NULL)
 				    {
 					struct splite_internal_cache *cache =
 					    (struct splite_internal_cache
 					     *) (topo->cache);
 					gpkg_mode = cache->gpkg_mode;
+					tiny_point = cache->tinyPointEnabled;
 				    }
 				  result = do_eval_topogeo_geom (topo, geom,
 								 stmt_seed_edge,
@@ -2495,10 +2497,11 @@ do_eval_topogeo_seeds (struct gaia_topology *topo, sqlite3_stmt * stmt_ref,
 				  gaiaFreeGeomColl (geom);
 				  if (result != NULL)
 				    {
-					gaiaToSpatiaLiteBlobWkbEx (result,
-								   &p_blob,
-								   &n_bytes,
-								   gpkg_mode);
+					gaiaToSpatiaLiteBlobWkbEx2 (result,
+								    &p_blob,
+								    &n_bytes,
+								    gpkg_mode,
+								    tiny_point);
 					gaiaFreeGeomColl (result);
 					sqlite3_bind_blob (stmt_ins, icol + 1,
 							   p_blob, n_bytes,
@@ -7673,12 +7676,14 @@ do_topo_snap (struct gaia_topology *topo, int geom_col, int geo_type,
 				  unsigned char *p_blob;
 				  int n_bytes;
 				  int gpkg_mode = 0;
+				  int tiny_point = 0;
 				  if (topo->cache != NULL)
 				    {
 					struct splite_internal_cache *cache =
 					    (struct splite_internal_cache
 					     *) (topo->cache);
 					gpkg_mode = cache->gpkg_mode;
+					tiny_point = cache->tinyPointEnabled;
 				    }
 				  result =
 				      gaiaTopoSnap ((GaiaTopologyAccessorPtr)
@@ -7688,10 +7693,11 @@ do_topo_snap (struct gaia_topology *topo, int geom_col, int geo_type,
 				  if (result != NULL)
 				    {
 					result->DeclaredType = geo_type;
-					gaiaToSpatiaLiteBlobWkbEx (result,
-								   &p_blob,
-								   &n_bytes,
-								   gpkg_mode);
+					gaiaToSpatiaLiteBlobWkbEx2 (result,
+								    &p_blob,
+								    &n_bytes,
+								    gpkg_mode,
+								    tiny_point);
 					gaiaFreeGeomColl (result);
 					sqlite3_bind_blob (stmt_out, icol + 1,
 							   p_blob, n_bytes,
@@ -8013,8 +8019,7 @@ topoGeo_EdgeHeal_common (GaiaTopologyAccessorPtr accessor, int mode_new)
     sql =
 	sqlite3_mprintf ("SELECT n.node_id, Count(*) AS cnt FROM \"%s\" AS n "
 			 "JOIN \"%s\" AS e ON (n.node_id = e.start_node OR n.node_id = e.end_node) "
-			 "GROUP BY n.node_id HAVING cnt = 2",
-			 xnode, xedge);
+			 "GROUP BY n.node_id HAVING cnt = 2", xnode, xedge);
     free (xnode);
     free (xedge);
     ret = sqlite3_prepare_v2 (topo->db_handle, sql, strlen (sql), &stmt1, NULL);

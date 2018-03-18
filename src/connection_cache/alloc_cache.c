@@ -351,6 +351,7 @@ init_splite_internal_cache (struct splite_internal_cache *cache)
 /* common initialization of the internal cache */
     gaiaOutBufferPtr out;
     int i;
+    const char *tinyPoint;
     struct splite_geos_cache_item *p;
     struct splite_xmlSchema_cache_item *p_xmlSchema;
     if (cache == NULL)
@@ -377,6 +378,12 @@ init_splite_internal_cache (struct splite_internal_cache *cache)
     cache->gaia_rttopo_error_msg = NULL;
     cache->gaia_rttopo_warning_msg = NULL;
     cache->silent_mode = 0;
+    cache->tinyPointEnabled = 0;
+    tinyPoint = getenv ("SPATIALITE_TINYPOINT");
+    if (tinyPoint == NULL)
+	;
+    else if (atoi (tinyPoint) != 0)
+	cache->tinyPointEnabled = 1;
 /* initializing an empty linked list of Topologies */
     cache->firstTopology = NULL;
     cache->lastTopology = NULL;

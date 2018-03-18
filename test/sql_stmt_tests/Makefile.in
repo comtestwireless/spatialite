@@ -1704,7 +1704,6 @@ EXTRA_DIST = addpoint10.testcase \
 	isvalidrastertile7.testcase \
 	isvalidrastertile8.testcase \
 	isvalidrastertile9.testcase \
-	isXblob5.testcase \
 	isXblob6.testcase \
 	isXblob7.testcase \
 	k3b-icon.png \

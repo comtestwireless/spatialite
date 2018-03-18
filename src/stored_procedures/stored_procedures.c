@@ -181,7 +181,7 @@ static int
 parse_variable_name_value (const char *str, char **name, char **value)
 {
 /* attempting to parse a Variable with Value definition */
-    char marker;
+    char marker = '\0';
     int end = 0;
     int start;
     int name_len;

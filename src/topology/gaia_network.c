@@ -4084,6 +4084,7 @@ fnctaux_TopoNet_GetLinkSeed (const void *xcontext, int argc, const void *xargv)
     gaiaGeomCollPtr geom;
     GaiaNetworkAccessorPtr accessor;
     int gpkg_mode = 0;
+    int tiny_point = 0;
     sqlite3_context *context = (sqlite3_context *) xcontext;
     sqlite3_value **argv = (sqlite3_value **) xargv;
     sqlite3 *sqlite = sqlite3_context_db_handle (context);
@@ -4091,7 +4092,10 @@ fnctaux_TopoNet_GetLinkSeed (const void *xcontext, int argc, const void *xargv)
     struct gaia_network *net;
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (cache != NULL)
-	gpkg_mode = cache->gpkg_mode;
+      {
+	  gpkg_mode = cache->gpkg_mode;
+	  tiny_point = cache->tinyPointEnabled;
+      }
     if (sqlite3_value_type (argv[0]) == SQLITE_NULL)
 	goto null_arg;
     else if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
@@ -4127,7 +4131,7 @@ fnctaux_TopoNet_GetLinkSeed (const void *xcontext, int argc, const void *xargv)
 	  sqlite3_result_null (context);
 	  return;
       }
-    gaiaToSpatiaLiteBlobWkbEx (geom, &p_blob, &n_bytes, gpkg_mode);
+    gaiaToSpatiaLiteBlobWkbEx2 (geom, &p_blob, &n_bytes, gpkg_mode, tiny_point);
     gaiaFreeGeomColl (geom);
     if (p_blob == NULL)
 	sqlite3_result_null (context);

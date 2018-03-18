@@ -1829,6 +1829,7 @@ callback_insertNodes (const RTT_BE_TOPOLOGY * rtt_topo, RTT_ISO_NODE * nodes,
     unsigned char *p_blob;
     int n_bytes;
     int gpkg_mode = 0;
+    int tiny_point = 0;
     if (accessor == NULL)
 	return 0;
 
@@ -1851,6 +1852,7 @@ callback_insertNodes (const RTT_BE_TOPOLOGY * rtt_topo, RTT_ISO_NODE * nodes,
 	  struct splite_internal_cache *cache =
 	      (struct splite_internal_cache *) (accessor->cache);
 	  gpkg_mode = cache->gpkg_mode;
+	  tiny_point = cache->tinyPointEnabled;
       }
 
     for (i = 0; i < numelems; i++)
@@ -1885,7 +1887,8 @@ callback_insertNodes (const RTT_BE_TOPOLOGY * rtt_topo, RTT_ISO_NODE * nodes,
 	      gaiaAddPointToGeomColl (geom, x, y);
 	  geom->Srid = accessor->srid;
 	  geom->DeclaredType = GAIA_POINT;
-	  gaiaToSpatiaLiteBlobWkbEx (geom, &p_blob, &n_bytes, gpkg_mode);
+	  gaiaToSpatiaLiteBlobWkbEx2 (geom, &p_blob, &n_bytes, gpkg_mode,
+				      tiny_point);
 	  gaiaFreeGeomColl (geom);
 	  sqlite3_bind_blob (stmt, 3, p_blob, n_bytes, free);
 	  ret = sqlite3_step (stmt);
@@ -2319,6 +2322,7 @@ callback_insertEdges (const RTT_BE_TOPOLOGY * rtt_topo, RTT_ISO_EDGE * edges,
     unsigned char *p_blob;
     int n_bytes;
     int gpkg_mode = 0;
+    int tiny_point = 0;
     if (accessor == NULL)
 	return 0;
 
@@ -2341,6 +2345,7 @@ callback_insertEdges (const RTT_BE_TOPOLOGY * rtt_topo, RTT_ISO_EDGE * edges,
 	  struct splite_internal_cache *cache =
 	      (struct splite_internal_cache *) (accessor->cache);
 	  gpkg_mode = cache->gpkg_mode;
+	  tiny_point = cache->tinyPointEnabled;
       }
 
     for (i = 0; i < numelems; i++)
@@ -2367,7 +2372,8 @@ callback_insertEdges (const RTT_BE_TOPOLOGY * rtt_topo, RTT_ISO_EDGE * edges,
 	  sqlite3_bind_int64 (stmt, 7, eg->next_right);
 	  /* transforming the RTLINE into a Geometry-Linestring */
 	  geom = do_rtline_to_geom (ctx, eg->geom, accessor->srid);
-	  gaiaToSpatiaLiteBlobWkbEx (geom, &p_blob, &n_bytes, gpkg_mode);
+	  gaiaToSpatiaLiteBlobWkbEx2 (geom, &p_blob, &n_bytes, gpkg_mode,
+				      tiny_point);
 	  gaiaFreeGeomColl (geom);
 	  sqlite3_bind_blob (stmt, 8, p_blob, n_bytes, free);
 	  ret = sqlite3_step (stmt);
@@ -2416,6 +2422,7 @@ callback_updateEdges (const RTT_BE_TOPOLOGY * rtt_topo,
     unsigned char *p_blob;
     int n_bytes;
     int gpkg_mode = 0;
+    int tiny_point = 0;
     int changed = 0;
     if (accessor == NULL)
 	return -1;
@@ -2435,6 +2442,7 @@ callback_updateEdges (const RTT_BE_TOPOLOGY * rtt_topo,
 	  struct splite_internal_cache *cache =
 	      (struct splite_internal_cache *) (accessor->cache);
 	  gpkg_mode = cache->gpkg_mode;
+	  tiny_point = cache->tinyPointEnabled;
       }
 
 /* composing the SQL prepared statement */
@@ -2827,7 +2835,8 @@ callback_updateEdges (const RTT_BE_TOPOLOGY * rtt_topo,
 	  /* transforming the RTLINE into a Geometry-Linestring */
 	  gaiaGeomCollPtr geom =
 	      do_rtline_to_geom (ctx, upd_edge->geom, accessor->srid);
-	  gaiaToSpatiaLiteBlobWkbEx (geom, &p_blob, &n_bytes, gpkg_mode);
+	  gaiaToSpatiaLiteBlobWkbEx2 (geom, &p_blob, &n_bytes, gpkg_mode,
+				      tiny_point);
 	  gaiaFreeGeomColl (geom);
 	  sqlite3_bind_blob (stmt, icol, p_blob, n_bytes, free);
 	  icol++;
@@ -4794,6 +4803,7 @@ callback_updateEdgesById (const RTT_BE_TOPOLOGY * rtt_topo,
     unsigned char *p_blob;
     int n_bytes;
     int gpkg_mode = 0;
+    int tiny_point = 0;
     if (accessor == NULL)
 	return -1;
 
@@ -4812,6 +4822,7 @@ callback_updateEdgesById (const RTT_BE_TOPOLOGY * rtt_topo,
 	  struct splite_internal_cache *cache =
 	      (struct splite_internal_cache *) (accessor->cache);
 	  gpkg_mode = cache->gpkg_mode;
+	  tiny_point = cache->tinyPointEnabled;
       }
 
 /* composing the SQL prepared statement */
@@ -4969,7 +4980,8 @@ callback_updateEdgesById (const RTT_BE_TOPOLOGY * rtt_topo,
 		/* transforming the RTLINE into a Geometry-Linestring */
 		gaiaGeomCollPtr geom =
 		    do_rtline_to_geom (ctx, upd_edge->geom, accessor->srid);
-		gaiaToSpatiaLiteBlobWkbEx (geom, &p_blob, &n_bytes, gpkg_mode);
+		gaiaToSpatiaLiteBlobWkbEx2 (geom, &p_blob, &n_bytes, gpkg_mode,
+					    tiny_point);
 		gaiaFreeGeomColl (geom);
 		sqlite3_bind_blob (stmt, icol, p_blob, n_bytes, free);
 		icol++;

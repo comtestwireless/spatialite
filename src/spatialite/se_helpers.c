@@ -4159,7 +4159,6 @@ find_vector_coverage_type (sqlite3 * sqlite, const char *coverage_name)
     char **results;
     int rows;
     int columns;
-    char *errMsg = NULL;
     char *value1;
     char *value2;
     int type = VECTOR_UNKNOWN;
@@ -4170,7 +4169,7 @@ find_vector_coverage_type (sqlite3 * sqlite, const char *coverage_name)
 	("SELECT f_table_name, f_geometry_column, view_name, view_geometry, "
 	 "virt_name, virt_geometry, topology_name, network_name "
 	 "FROM vector_coverages WHERE coverage_name = %Q", coverage_name);
-    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, &errMsg);
+    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, NULL);
     sqlite3_free (sql);
     if (ret != SQLITE_OK)
 	return VECTOR_UNKNOWN;

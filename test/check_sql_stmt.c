@@ -292,6 +292,7 @@ do_one_case (struct db_conn *conn, const struct test_data *data,
 		  {
 		      /* we expected this */
 		      sqlite3_free (err_msg);
+		      sqlite3_free_table (results);
 		      return 0;
 		  }
 	    }
@@ -303,6 +304,7 @@ do_one_case (struct db_conn *conn, const struct test_data *data,
       {
 	  fprintf (stderr, "Unexpected error: bad result: %i/%i.\n", rows,
 		   columns);
+	  sqlite3_free_table (results);
 	  return -11;
       }
     for (i = 0; i < (data->expected_rows + 1) * data->expected_columns; ++i)
@@ -323,6 +325,7 @@ do_one_case (struct db_conn *conn, const struct test_data *data,
 		      fprintf (stderr, "Null value at %i.\n", i);
 		      fprintf (stderr, "Expected value was: %s\n",
 			       data->expected_results[i]);
+		      sqlite3_free_table (results);
 		      return -12;
 		  }
 	    }
@@ -331,6 +334,7 @@ do_one_case (struct db_conn *conn, const struct test_data *data,
 		fprintf (stderr, "zero length result at %i\n", i);
 		fprintf (stderr, "Expected value was    : %s|\n",
 			 data->expected_results[i]);
+		sqlite3_free_table (results);
 		return -13;
 	    }
 	  else if (strncmp
@@ -341,6 +345,7 @@ do_one_case (struct db_conn *conn, const struct test_data *data,
 			 results[i]);
 		fprintf (stderr, "Expected value was   : %s|\n",
 			 data->expected_results[i]);
+		sqlite3_free_table (results);
 		return -14;
 	    }
       }
@@ -512,12 +517,13 @@ run_subdir_test (const char *subdirname, struct db_conn *conn,
 
 	  cleanup_test_data (data);
 	  if (result != 0)
-	    {
-		return result;
-	    }
-	  free (namelist[i]);
+	      break;
       }
+/* cleaning up */
+    for (i = 0; i < n; ++i)
+	free (namelist[i]);
     free (namelist);
+    
     return result;
 }
 
@@ -527,11 +533,34 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
     int ret;
     int result = 0;
     const char *security_level;
+    int tiny_point = 0;
 
     result = run_subdir_test ("sql_stmt_tests", conn, load_extension, 0);
     if (result != 0)
       {
 	  return result;
+      }
+
+    if (getenv ("SPATIALITE_TINYPOINT") != NULL)
+	tiny_point = atoi (getenv ("SPATIALITE_TINYPOINT"));
+
+    if (tiny_point)
+      {
+	  result =
+	      run_subdir_test ("sql_stmt_tiny_point", conn, load_extension, 0);
+	  if (result != 0)
+	    {
+		return result;
+	    }
+      }
+    else
+      {
+	  result =
+	      run_subdir_test ("sql_stmt_point_geom", conn, load_extension, 0);
+	  if (result != 0)
+	    {
+		return result;
+	    }
       }
 
     security_level = getenv ("SPATIALITE_SECURITY");
@@ -910,6 +939,38 @@ main (int argc, char *argv[])
     close_connection (&conn);
     spatialite_cleanup_ex (conn.cache);
     conn.cache = NULL;
+
+    if (result == 0)
+      {
+	  /* testing again by enabling the TinyPoint encoding */
+	  fprintf (stderr,
+		   "\n****************** testing again by enabling the TinyPoint encoding\n\n");
+	  /* enabling TinyPoint */
+#ifdef _WIN32
+	  putenv ("SPATIALITE_TINYPOINT=1");
+#else /* not WIN32 */
+	  setenv ("SPATIALITE_TINYPOINT", "1", 1);
+#endif
+	  cache = spatialite_alloc_connection ();
+	  conn.cache = cache;
+	  if (argc == 1)
+	    {
+		result = run_all_testcases (&conn, 0, 0);
+	    }
+	  else
+	    {
+		result = run_specified_testcases (argc, argv, &conn, 0);
+	    }
+	  close_connection (&conn);
+	  spatialite_cleanup_ex (conn.cache);
+	  conn.cache = NULL;
+	  /* disabling TinyPoint */
+#ifdef _WIN32
+	  putenv ("SPATIALITE_TINYPOINTY=");
+#else /* not WIN32 */
+	  unsetenv ("SPATIALITE_TINYPOINT");
+#endif
+      }
 
     if (result == 0)
       {

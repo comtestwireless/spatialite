@@ -95,6 +95,8 @@ extern "C"
 #define GAIA_XML_BLOB		12
 /** this BLOB does actually contain a GPKG Geometry */
 #define GAIA_GPB_BLOB		13
+/** this BLOB does actually contain a SpatiaLite TinyPoint */
+#define GAIA_TINYPOINT_BLOB	14
 
 /* constants used for EXIF value types */
 /** unrecognized EXIF value */
