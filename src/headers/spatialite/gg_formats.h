@@ -338,7 +338,7 @@ extern "C"
 						const char *text);
 
 /**
- Creates a BLOB-Geometry representing a Point
+ Creates a BLOB-Geometry representing a Point (BLOB-Geometry)
 
  \param x Point X coordinate.
  \param y Point Y coordinate.
@@ -347,7 +347,7 @@ extern "C"
  NULL on failure.
  \param size on completion this variable will contain the BLOB's size (in bytes)
 
- \sa gaiaFromSpatiaLiteBlobWkb
+ \sa gaiaFromSpatiaLiteBlobWkb, gaiaMakePointEx
 
  \note the BLOB buffer corresponds to dynamically allocated memory:
  so you are responsible to free() it [unless SQLite will take care
@@ -357,7 +357,7 @@ extern "C"
 					unsigned char **result, int *size);
 
 /**
- Creates a BLOB-Geometry representing a PointZ
+ Creates a BLOB-Geometry representing a PointZ (BLOB-Geometry)
 
  \param x Point X coordinate.
  \param y Point Y coordinate.
@@ -367,7 +367,7 @@ extern "C"
  NULL on failure.
  \param size on completion this variable will contain the BLOB's size (in bytes)
 
- \sa gaiaFromSpatiaLiteBlobWkb
+ \sa gaiaFromSpatiaLiteBlobWkb, gaiaMakePointZEx
 
  \note the BLOB buffer corresponds to dynamically allocated memory:
  so you are responsible to free() it [unless SQLite will take care
@@ -378,7 +378,7 @@ extern "C"
 					 int *size);
 
 /**
- Creates a BLOB-Geometry representing a PointM
+ Creates a BLOB-Geometry representing a PointM (BLOB-Geometry)
 
  \param x Point X coordinate.
  \param y Point Y coordinate.
@@ -388,7 +388,7 @@ extern "C"
  NULL on failure.
  \param size on completion this variable will contain the BLOB's size (in bytes)
 
- \sa gaiaFromSpatiaLiteBlobWkb
+ \sa gaiaFromSpatiaLiteBlobWkb, gaiaMakePointMEx
 
  \note the BLOB buffer corresponds to dynamically allocated memory:
  so you are responsible to free() it [unless SQLite will take care
@@ -399,7 +399,7 @@ extern "C"
 					 int *size);
 
 /**
- Creates a BLOB-Geometry representing a PointZM
+ Creates a BLOB-Geometry representing a PointZM (BLOB-Geometry)
 
  \param x Point X coordinate.
  \param y Point Y coordinate.
@@ -410,7 +410,7 @@ extern "C"
  NULL on failure.
  \param size on completion this variable will contain the BLOB's size (in bytes)
 
- \sa gaiaFromSpatiaLiteBlobWkb
+ \sa gaiaFromSpatiaLiteBlobWkb, gaiaMakePointZMEx
 
  \note the BLOB buffer corresponds to dynamically allocated memory:
  so you are responsible to free() it [unless SQLite will take care
@@ -419,6 +419,98 @@ extern "C"
     GAIAGEO_DECLARE void gaiaMakePointZM (double x, double y, double z,
 					  double m, int srid,
 					  unsigned char **result, int *size);
+
+/**
+ Creates a BLOB-Geometry representing a Point (BLOB-Geometry or BLOB-TinyPoint)
+
+ \param tiny_point if set to TRUE the POINT Geometry will be encoded
+ by using the TinyPoint BLOB format.
+ \param x Point X coordinate.
+ \param y Point Y coordinate.
+ \param srid the SRID to be set for the Point.
+ \param result on completion will containt a pointer to BLOB-Geometry:
+ NULL on failure.
+ \param size on completion this variable will contain the BLOB's size (in bytes)
+
+ \sa gaiaFromSpatiaLiteBlobWkb, gaiaMakePoint
+
+ \note the BLOB buffer corresponds to dynamically allocated memory:
+ so you are responsible to free() it [unless SQLite will take care
+ of memory cleanup via buffer binding].
+ */
+    GAIAGEO_DECLARE void gaiaMakePointEx (int tiny_point, double x, double y,
+					  int srid, unsigned char **result,
+					  int *size);
+
+/**
+ Creates a BLOB-Geometry representing a PointZ (BLOB-Geometry or BLOB-TinyPoint)
+
+ \param tiny_point if set to TRUE the POINT Geometry will be encoded
+ by using the TinyPoint BLOB format.
+ \param x Point X coordinate.
+ \param y Point Y coordinate.
+ \param z Point Z coordinate.
+ \param srid the SRID to be set for the Point.
+ \param result on completion will containt a pointer to BLOB-Geometry:
+ NULL on failure.
+ \param size on completion this variable will contain the BLOB's size (in bytes)
+
+ \sa gaiaFromSpatiaLiteBlobWkb, gaiaMakePointZ
+
+ \note the BLOB buffer corresponds to dynamically allocated memory:
+ so you are responsible to free() it [unless SQLite will take care
+ of memory cleanup via buffer binding].
+ */
+    GAIAGEO_DECLARE void gaiaMakePointZEx (int tiny_point, double x, double y,
+					   double z, int srid,
+					   unsigned char **result, int *size);
+
+/**
+ Creates a BLOB-Geometry representing a PointM (BLOB-Geometry or BLOB-TinyPoint)
+
+ \param tiny_point if set to TRUE the POINT Geometry will be encoded
+ by using the TinyPoint BLOB format.
+ \param x Point X coordinate.
+ \param y Point Y coordinate.
+ \param m Point M coordinate.
+ \param srid the SRID to be set for the Point.
+ \param result on completion will containt a pointer to BLOB-Geometry:
+ NULL on failure.
+ \param size on completion this variable will contain the BLOB's size (in bytes)
+
+ \sa gaiaFromSpatiaLiteBlobWkb, gaiaMakePointM
+
+ \note the BLOB buffer corresponds to dynamically allocated memory:
+ so you are responsible to free() it [unless SQLite will take care
+ of memory cleanup via buffer binding].
+ */
+    GAIAGEO_DECLARE void gaiaMakePointMEx (int tiny_point, double x, double y,
+					   double m, int srid,
+					   unsigned char **result, int *size);
+
+/**
+ Creates a BLOB-Geometry representing a PointZM (BLOB-Geometry or BLOB-TinyPoint)
+
+ \param tiny_point if set to TRUE the POINT Geometry will be encoded
+ by using the TinyPoint BLOB format.
+ \param x Point X coordinate.
+ \param y Point Y coordinate.
+ \param z Point Z coordinate.
+ \param m Point M coordinate.
+ \param srid the SRID to be set for the Point.
+ \param result on completion will containt a pointer to BLOB-Geometry:
+ NULL on failure.
+ \param size on completion this variable will contain the BLOB's size (in bytes)
+
+ \sa gaiaFromSpatiaLiteBlobWkb, gaiaMakePointZM
+
+ \note the BLOB buffer corresponds to dynamically allocated memory:
+ so you are responsible to free() it [unless SQLite will take care
+ of memory cleanup via buffer binding].
+ */
+    GAIAGEO_DECLARE void gaiaMakePointZMEx (int tiny_point, double x, double y,
+					    double z, double m, int srid,
+					    unsigned char **result, int *size);
 
 /**
  Creates a BLOB-Geometry representing a Segment (2-Points Linestring)

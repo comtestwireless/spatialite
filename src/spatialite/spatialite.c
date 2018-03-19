@@ -10348,7 +10348,11 @@ fnct_MakePoint1 (sqlite3_context * context, int argc, sqlite3_value ** argv)
     unsigned char *p_result = NULL;
     double x;
     double y;
+    int tiny_point = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+	tiny_point = cache->tinyPointEnabled;
     if (sqlite3_value_type (argv[0]) == SQLITE_FLOAT)
 	x = sqlite3_value_double (argv[0]);
     else if (sqlite3_value_type (argv[0]) == SQLITE_INTEGER)
@@ -10373,7 +10377,7 @@ fnct_MakePoint1 (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  sqlite3_result_null (context);
 	  return;
       }
-    gaiaMakePoint (x, y, 0, &p_result, &len);
+    gaiaMakePointEx (tiny_point, x, y, 0, &p_result, &len);
     if (!p_result)
 	sqlite3_result_null (context);
     else
@@ -10395,7 +10399,11 @@ fnct_MakePoint2 (sqlite3_context * context, int argc, sqlite3_value ** argv)
     double x;
     double y;
     int srid;
+    int tiny_point = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+	tiny_point = cache->tinyPointEnabled;
     if (sqlite3_value_type (argv[0]) == SQLITE_FLOAT)
 	x = sqlite3_value_double (argv[0]);
     else if (sqlite3_value_type (argv[0]) == SQLITE_INTEGER)
@@ -10427,7 +10435,7 @@ fnct_MakePoint2 (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  sqlite3_result_null (context);
 	  return;
       }
-    gaiaMakePoint (x, y, srid, &p_result, &len);
+    gaiaMakePointEx (tiny_point, x, y, srid, &p_result, &len);
     if (!p_result)
 	sqlite3_result_null (context);
     else
@@ -10449,7 +10457,11 @@ fnct_MakePointZ1 (sqlite3_context * context, int argc, sqlite3_value ** argv)
     double x;
     double y;
     double z;
+    int tiny_point = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+	tiny_point = cache->tinyPointEnabled;
     if (sqlite3_value_type (argv[0]) == SQLITE_FLOAT)
 	x = sqlite3_value_double (argv[0]);
     else if (sqlite3_value_type (argv[0]) == SQLITE_INTEGER)
@@ -10486,7 +10498,7 @@ fnct_MakePointZ1 (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  sqlite3_result_null (context);
 	  return;
       }
-    gaiaMakePointZ (x, y, z, 0, &p_result, &len);
+    gaiaMakePointZEx (tiny_point, x, y, z, 0, &p_result, &len);
     if (!p_result)
 	sqlite3_result_null (context);
     else
@@ -10509,7 +10521,11 @@ fnct_MakePointZ2 (sqlite3_context * context, int argc, sqlite3_value ** argv)
     double y;
     double z;
     int srid;
+    int tiny_point = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+	tiny_point = cache->tinyPointEnabled;
     if (sqlite3_value_type (argv[0]) == SQLITE_FLOAT)
 	x = sqlite3_value_double (argv[0]);
     else if (sqlite3_value_type (argv[0]) == SQLITE_INTEGER)
@@ -10553,7 +10569,7 @@ fnct_MakePointZ2 (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  sqlite3_result_null (context);
 	  return;
       }
-    gaiaMakePointZ (x, y, z, srid, &p_result, &len);
+    gaiaMakePointZEx (tiny_point, x, y, z, srid, &p_result, &len);
     if (!p_result)
 	sqlite3_result_null (context);
     else
@@ -10575,7 +10591,11 @@ fnct_MakePointM1 (sqlite3_context * context, int argc, sqlite3_value ** argv)
     double x;
     double y;
     double m;
+    int tiny_point = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+	tiny_point = cache->tinyPointEnabled;
     if (sqlite3_value_type (argv[0]) == SQLITE_FLOAT)
 	x = sqlite3_value_double (argv[0]);
     else if (sqlite3_value_type (argv[0]) == SQLITE_INTEGER)
@@ -10612,7 +10632,7 @@ fnct_MakePointM1 (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  sqlite3_result_null (context);
 	  return;
       }
-    gaiaMakePointM (x, y, m, 0, &p_result, &len);
+    gaiaMakePointMEx (tiny_point, x, y, m, 0, &p_result, &len);
     if (!p_result)
 	sqlite3_result_null (context);
     else
@@ -10635,7 +10655,11 @@ fnct_MakePointM2 (sqlite3_context * context, int argc, sqlite3_value ** argv)
     double y;
     double m;
     int srid;
+    int tiny_point = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+	tiny_point = cache->tinyPointEnabled;
     if (sqlite3_value_type (argv[0]) == SQLITE_FLOAT)
 	x = sqlite3_value_double (argv[0]);
     else if (sqlite3_value_type (argv[0]) == SQLITE_INTEGER)
@@ -10679,7 +10703,7 @@ fnct_MakePointM2 (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  sqlite3_result_null (context);
 	  return;
       }
-    gaiaMakePointM (x, y, m, srid, &p_result, &len);
+    gaiaMakePointMEx (tiny_point, x, y, m, srid, &p_result, &len);
     if (!p_result)
 	sqlite3_result_null (context);
     else
@@ -10702,7 +10726,11 @@ fnct_MakePointZM1 (sqlite3_context * context, int argc, sqlite3_value ** argv)
     double y;
     double z;
     double m;
+    int tiny_point = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+	tiny_point = cache->tinyPointEnabled;
     if (sqlite3_value_type (argv[0]) == SQLITE_FLOAT)
 	x = sqlite3_value_double (argv[0]);
     else if (sqlite3_value_type (argv[0]) == SQLITE_INTEGER)
@@ -10751,7 +10779,7 @@ fnct_MakePointZM1 (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  sqlite3_result_null (context);
 	  return;
       }
-    gaiaMakePointZM (x, y, z, m, 0, &p_result, &len);
+    gaiaMakePointZMEx (tiny_point, x, y, z, m, 0, &p_result, &len);
     if (!p_result)
 	sqlite3_result_null (context);
     else
@@ -10775,7 +10803,11 @@ fnct_MakePointZM2 (sqlite3_context * context, int argc, sqlite3_value ** argv)
     double z;
     double m;
     int srid;
+    int tiny_point = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+	tiny_point = cache->tinyPointEnabled;
     if (sqlite3_value_type (argv[0]) == SQLITE_FLOAT)
 	x = sqlite3_value_double (argv[0]);
     else if (sqlite3_value_type (argv[0]) == SQLITE_INTEGER)
@@ -10831,7 +10863,7 @@ fnct_MakePointZM2 (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  sqlite3_result_null (context);
 	  return;
       }
-    gaiaMakePointZM (x, y, z, m, srid, &p_result, &len);
+    gaiaMakePointZMEx (tiny_point, x, y, z, m, srid, &p_result, &len);
     if (!p_result)
 	sqlite3_result_null (context);
     else
@@ -28068,12 +28100,14 @@ fnct_Project (sqlite3_context * context, int argc, sqlite3_value ** argv)
     sqlite3 *sqlite = sqlite3_context_db_handle (context);
     int gpkg_amphibious = 0;
     int gpkg_mode = 0;
+    int tiny_point = 0;
     struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (cache != NULL)
       {
 	  gpkg_amphibious = cache->gpkg_amphibious_mode;
 	  gpkg_mode = cache->gpkg_mode;
+	  tiny_point = cache->tinyPointEnabled;
       }
     if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
       {
@@ -28132,7 +28166,7 @@ fnct_Project (sqlite3_context * context, int argc, sqlite3_value ** argv)
     if (distance == 0.0)
       {
 	  /* returning the Start Point */
-	  gaiaMakePoint (x1, y1, srid, &p_blob, &n_bytes);
+	  gaiaMakePointEx (tiny_point, x1, y1, srid, &p_blob, &n_bytes);
 	  if (!p_blob)
 	      sqlite3_result_null (context);
 	  else
@@ -28142,7 +28176,7 @@ fnct_Project (sqlite3_context * context, int argc, sqlite3_value ** argv)
 
     if (gaiaProjectedPoint (cache, x1, y1, a, b, distance, azimuth, &x2, &y2))
       {
-	  gaiaMakePoint (x2, y2, srid, &p_blob, &n_bytes);
+	  gaiaMakePointEx (tiny_point, x2, y2, srid, &p_blob, &n_bytes);
 	  if (!p_blob)
 	      sqlite3_result_null (context);
 	  else
@@ -43334,31 +43368,31 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_MbrMaxY, 0, 0, 0);
     sqlite3_create_function_v2 (db, "ST_Point", 2,
-				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_MakePoint1, 0, 0, 0);
     sqlite3_create_function_v2 (db, "MakePoint", 2,
-				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_MakePoint1, 0, 0, 0);
     sqlite3_create_function_v2 (db, "MakePoint", 3,
-				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_MakePoint2, 0, 0, 0);
     sqlite3_create_function_v2 (db, "MakePointZ", 3,
-				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_MakePointZ1, 0, 0, 0);
     sqlite3_create_function_v2 (db, "MakePointZ", 4,
-				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_MakePointZ2, 0, 0, 0);
     sqlite3_create_function_v2 (db, "MakePointM", 3,
-				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_MakePointM1, 0, 0, 0);
     sqlite3_create_function_v2 (db, "MakePointM", 4,
-				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_MakePointM2, 0, 0, 0);
     sqlite3_create_function_v2 (db, "MakePointZM", 4,
-				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_MakePointZM1, 0, 0, 0);
     sqlite3_create_function_v2 (db, "MakePointZM", 5,
-				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_MakePointZM2, 0, 0, 0);
     sqlite3_create_function_v2 (db, "MakeLine", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache, 0,

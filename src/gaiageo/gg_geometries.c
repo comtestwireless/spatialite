@@ -3458,8 +3458,8 @@ gaiaMbrsWithin (gaiaGeomCollPtr mbr1, gaiaGeomCollPtr mbr2)
     return 0;
 }
 
-GAIAGEO_DECLARE void
-gaiaMakePoint (double x, double y, int srid, unsigned char **result, int *size)
+static void
+fatMakePoint (double x, double y, int srid, unsigned char **result, int *size)
 {
 /* build a Blob encoded Geometry representing a POINT */
     unsigned char *ptr;
@@ -3484,9 +3484,47 @@ gaiaMakePoint (double x, double y, int srid, unsigned char **result, int *size)
     *(ptr + 59) = GAIA_MARK_END;	/* END signature */
 }
 
+static void
+tinyMakePoint (double x, double y, int srid, unsigned char **result, int *size)
+{
+/* build a Blob encoded TinyPoint representing a POINT */
+    unsigned char *ptr;
+    int endian_arch = gaiaEndianArch ();
+/* allocating the BLOB */
+    *size = 24;
+    *result = malloc (*size);
+    ptr = *result;
+/* setting the Blob value */
+    *ptr = GAIA_MARK_START;	/* START signature */
+    *(ptr + 1) = GAIA_TINYPOINT_LITTLE_ENDIAN;	/* byte ordering */
+    gaiaExport32 (ptr + 2, srid, 1, endian_arch);	/* the SRID */
+    *(ptr + 6) = GAIA_TINYPOINT_XY;	/* Point Type */
+    gaiaExport64 (ptr + 7, x, 1, endian_arch);	/* X */
+    gaiaExport64 (ptr + 15, y, 1, endian_arch);	/* Y */
+    *(ptr + 23) = GAIA_MARK_END;	/* END signature */
+}
+
 GAIAGEO_DECLARE void
-gaiaMakePointZ (double x, double y, double z, int srid, unsigned char **result,
-		int *size)
+gaiaMakePoint (double x, double y, int srid, unsigned char **result, int *size)
+{
+/* always returns a BLOB-Geometry encoded POINT */
+    gaiaMakePointEx (0, x, y, srid, result, size);
+}
+
+GAIAGEO_DECLARE void
+gaiaMakePointEx (int tiny_point, double x, double y, int srid,
+		 unsigned char **result, int *size)
+{
+/* conditionally returns either a BLOB-Geometry or BLOB-TinyPoint encoded POINT */
+    if (tiny_point)
+	tinyMakePoint (x, y, srid, result, size);
+    else
+	fatMakePoint (x, y, srid, result, size);
+}
+
+static void
+fatMakePointZ (double x, double y, double z, int srid, unsigned char **result,
+	       int *size)
 {
 /* build a Blob encoded Geometry representing a POINT Z */
     unsigned char *ptr;
@@ -3512,9 +3550,50 @@ gaiaMakePointZ (double x, double y, double z, int srid, unsigned char **result,
     *(ptr + 67) = GAIA_MARK_END;	/* END signature */
 }
 
-GAIAGEO_DECLARE void
-gaiaMakePointM (double x, double y, double m, int srid, unsigned char **result,
+static void
+tinyMakePointZ (double x, double y, double z, int srid, unsigned char **result,
 		int *size)
+{
+/* build a Blob encoded TinyPoint representing a POINT Z */
+    unsigned char *ptr;
+    int endian_arch = gaiaEndianArch ();
+/* allocating the BLOB */
+    *size = 32;
+    *result = malloc (*size);
+    ptr = *result;
+/* setting the Blob value */
+    *ptr = GAIA_MARK_START;	/* START signature */
+    *(ptr + 1) = GAIA_TINYPOINT_LITTLE_ENDIAN;	/* byte ordering */
+    gaiaExport32 (ptr + 2, srid, 1, endian_arch);	/* the SRID */
+    *(ptr + 6) = GAIA_TINYPOINT_XYZ;	/* Point Type */
+    gaiaExport64 (ptr + 7, x, 1, endian_arch);	/* X */
+    gaiaExport64 (ptr + 15, y, 1, endian_arch);	/* Y */
+    gaiaExport64 (ptr + 23, z, 1, endian_arch);	/* Z */
+    *(ptr + 31) = GAIA_MARK_END;	/* END signature */
+}
+
+GAIAGEO_DECLARE void
+gaiaMakePointZ (double x, double y, double z, int srid, unsigned char **result,
+		int *size)
+{
+/* always returns a BLOB-Geometry encoded POINT Z */
+    gaiaMakePointZEx (0, x, y, z, srid, result, size);
+}
+
+GAIAGEO_DECLARE void
+gaiaMakePointZEx (int tiny_point, double x, double y, double z, int srid,
+		  unsigned char **result, int *size)
+{
+/* conditionally returns either a BLOB-Geometry or BLOB-TinyPoint encoded POINT Z */
+    if (tiny_point)
+	tinyMakePointZ (x, y, z, srid, result, size);
+    else
+	fatMakePointZ (x, y, z, srid, result, size);
+}
+
+static void
+fatMakePointM (double x, double y, double m, int srid, unsigned char **result,
+	       int *size)
 {
 /* build a Blob encoded Geometry representing a POINT M */
     unsigned char *ptr;
@@ -3540,9 +3619,50 @@ gaiaMakePointM (double x, double y, double m, int srid, unsigned char **result,
     *(ptr + 67) = GAIA_MARK_END;	/* END signature */
 }
 
+static void
+tinyMakePointM (double x, double y, double m, int srid, unsigned char **result,
+		int *size)
+{
+/* build a Blob encoded TinyPoint representing a POINT M */
+    unsigned char *ptr;
+    int endian_arch = gaiaEndianArch ();
+/* allocating the BLOB */
+    *size = 32;
+    *result = malloc (*size);
+    ptr = *result;
+/* setting the Blob value */
+    *ptr = GAIA_MARK_START;	/* START signature */
+    *(ptr + 1) = GAIA_TINYPOINT_LITTLE_ENDIAN;	/* byte ordering */
+    gaiaExport32 (ptr + 2, srid, 1, endian_arch);	/* the SRID */
+    *(ptr + 6) = GAIA_TINYPOINT_XYM;	/* Point Type */
+    gaiaExport64 (ptr + 7, x, 1, endian_arch);	/* X */
+    gaiaExport64 (ptr + 15, y, 1, endian_arch);	/* Y */
+    gaiaExport64 (ptr + 23, m, 1, endian_arch);	/* M */
+    *(ptr + 31) = GAIA_MARK_END;	/* END signature */
+}
+
 GAIAGEO_DECLARE void
-gaiaMakePointZM (double x, double y, double z, double m, int srid,
-		 unsigned char **result, int *size)
+gaiaMakePointM (double x, double y, double m, int srid, unsigned char **result,
+		int *size)
+{
+/* always returns a BLOB-Geometry encoded POINT M */
+    gaiaMakePointMEx (0, x, y, m, srid, result, size);
+}
+
+GAIAGEO_DECLARE void
+gaiaMakePointMEx (int tiny_point, double x, double y, double m, int srid,
+		  unsigned char **result, int *size)
+{
+/* conditionally returns either a BLOB-Geometry or BLOB-TinyPoint encoded POINT M */
+    if (tiny_point)
+	tinyMakePointM (x, y, m, srid, result, size);
+    else
+	fatMakePointM (x, y, m, srid, result, size);
+}
+
+static void
+fatMakePointZM (double x, double y, double z, double m, int srid,
+		unsigned char **result, int *size)
 {
 /* build a Blob encoded Geometry representing a POINT ZM */
     unsigned char *ptr;
@@ -3567,6 +3687,48 @@ gaiaMakePointZM (double x, double y, double z, double m, int srid,
     gaiaExport64 (ptr + 59, z, 1, endian_arch);	/* Z */
     gaiaExport64 (ptr + 67, m, 1, endian_arch);	/* M */
     *(ptr + 75) = GAIA_MARK_END;	/* END signature */
+}
+
+static void
+tinyMakePointZM (double x, double y, double z, double m, int srid,
+		 unsigned char **result, int *size)
+{
+/* build a Blob encoded TinyPoint representing a POINT ZM */
+    unsigned char *ptr;
+    int endian_arch = gaiaEndianArch ();
+/* allocating the BLOB */
+    *size = 40;
+    *result = malloc (*size);
+    ptr = *result;
+/* setting the Blob value */
+    *ptr = GAIA_MARK_START;	/* START signature */
+    *(ptr + 1) = GAIA_TINYPOINT_LITTLE_ENDIAN;	/* byte ordering */
+    gaiaExport32 (ptr + 2, srid, 1, endian_arch);	/* the SRID */
+    *(ptr + 6) = GAIA_TINYPOINT_XYZM;	/* Point Type */
+    gaiaExport64 (ptr + 7, x, 1, endian_arch);	/* X */
+    gaiaExport64 (ptr + 15, y, 1, endian_arch);	/* Y */
+    gaiaExport64 (ptr + 23, z, 1, endian_arch);	/* Z */
+    gaiaExport64 (ptr + 31, m, 1, endian_arch);	/* M */
+    *(ptr + 39) = GAIA_MARK_END;	/* END signature */
+}
+
+GAIAGEO_DECLARE void
+gaiaMakePointZM (double x, double y, double z, double m, int srid,
+		 unsigned char **result, int *size)
+{
+/* always returns a BLOB-Geometry encoded POINT ZM */
+    gaiaMakePointZMEx (0, x, y, z, m, srid, result, size);
+}
+
+GAIAGEO_DECLARE void
+gaiaMakePointZMEx (int tiny_point, double x, double y, double z, double m,
+		   int srid, unsigned char **result, int *size)
+{
+/* conditionally returns either a BLOB-Geometry or BLOB-TinyPoint encoded POINT ZM */
+    if (tiny_point)
+	tinyMakePointZM (x, y, z, m, srid, result, size);
+    else
+	fatMakePointZM (x, y, z, m, srid, result, size);
 }
 
 GAIAGEO_DECLARE void
