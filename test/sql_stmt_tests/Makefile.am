@@ -1277,6 +1277,16 @@ EXTRA_DIST = addpoint10.testcase \
 	geomfromtext7.testcase \
 	geomfromtext8.testcase \
 	geomfromtext9.testcase \
+	geompointencode1.testcase \
+	geompointencode2.testcase \
+	geompointencode3.testcase \
+	geompointencode4.testcase \
+	geompointencode5.testcase \
+	geompointencode6.testcase \
+	geompointencode7.testcase \
+	geompointencode8.testcase \
+	geompointencode9.testcase \
+	geompointencode10.testcase \
 	geomtype10.testcase \
 	geomtype11.testcase \
 	geomtype12.testcase \
@@ -2446,6 +2456,16 @@ EXTRA_DIST = addpoint10.testcase \
 	sridax2orient4.testcase \
 	sridax2orient5.testcase \
 	sridax2orient6.testcase \
+	tinypointencode1.testcase \
+	tinypointencode2.testcase \
+	tinypointencode3.testcase \
+	tinypointencode4.testcase \
+	tinypointencode5.testcase \
+	tinypointencode6.testcase \
+	tinypointencode7.testcase \
+	tinypointencode8.testcase \
+	tinypointencode9.testcase \
+	tinypointencode10.testcase \
 	wms_defaultsetting1.testcase \
 	wms_defaultsetting2.testcase \
 	wms_defaultsetting3.testcase \

@@ -10333,6 +10333,199 @@ fnct_AsFGF (sqlite3_context * context, int argc, sqlite3_value ** argv)
 }
 
 static void
+fnct_tiny_point_encode (sqlite3_context * context, int argc,
+			sqlite3_value ** argv)
+{
+/* SQL function:
+/ TinyPointEncode(variable-type)
+/
+/ returns a BLOB TinyPoint if the received argument is a BLOB-GEOMETRY POINT
+/ in any other case the received argument will be returned "as is"
+*/
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) == SQLITE_BLOB)
+      {
+	  int geom_point = 1;
+	  const unsigned char *blob =
+	      (const unsigned char *) sqlite3_value_blob (argv[0]);
+	  int size = sqlite3_value_bytes (argv[0]);
+	  if (size < 45)
+	      geom_point = 0;
+	  else
+	    {
+		int endian_arch = gaiaEndianArch ();
+		int type;
+		int little_endian = 0;
+		if (*(blob + 0) != GAIA_MARK_START)
+		    geom_point = 0;
+		if (*(blob + (size - 1)) != GAIA_MARK_END)
+		    geom_point = 0;
+		if (*(blob + 38) != GAIA_MARK_MBR)
+		    geom_point = 0;
+		if (*(blob + 1) == GAIA_LITTLE_ENDIAN)
+		    little_endian = 1;
+		else if (*(blob + 1) == GAIA_BIG_ENDIAN)
+		    ;
+		else
+		    geom_point = 0;
+		type = gaiaImport32 (blob + 39, little_endian, endian_arch);
+		if (type == GAIA_POINT || type == GAIA_POINTZ
+		    || type == GAIA_POINTM || type == GAIA_POINTZM)
+		    ;
+		else
+		    geom_point = 0;
+	    }
+	  if (geom_point)
+	    {
+		int endian_arch = gaiaEndianArch ();
+		int type;
+		int little_endian = 0;
+		int srid;
+		double x;
+		double y;
+		double z;
+		double m;
+		unsigned char *out;
+		int out_sz;
+		if (*(blob + 1) == GAIA_LITTLE_ENDIAN)
+		    little_endian = 1;
+		srid = gaiaImport32 (blob + 2, little_endian, endian_arch);
+		type = gaiaImport32 (blob + 39, little_endian, endian_arch);
+		x = gaiaImport64 (blob + 43, little_endian, endian_arch);
+		y = gaiaImport64 (blob + 51, little_endian, endian_arch);
+		switch (type)
+		  {
+		  case GAIA_POINT:
+		      gaiaMakePointEx (1, x, y, srid, &out, &out_sz);
+		      break;
+		  case GAIA_POINTZ:
+		      z = gaiaImport64 (blob + 59, little_endian, endian_arch);
+		      gaiaMakePointZEx (1, x, y, z, srid, &out, &out_sz);
+		      break;
+		  case GAIA_POINTM:
+		      m = gaiaImport64 (blob + 59, little_endian, endian_arch);
+		      gaiaMakePointMEx (1, x, y, m, srid, &out, &out_sz);
+		      break;
+		  case GAIA_POINTZM:
+		      z = gaiaImport64 (blob + 59, little_endian, endian_arch);
+		      m = gaiaImport64 (blob + 67, little_endian, endian_arch);
+		      gaiaMakePointZMEx (1, x, y, z, m, srid, &out, &out_sz);
+		      break;
+		  };
+		sqlite3_result_blob (context, out, out_sz, free);
+	    }
+	  else
+	      sqlite3_result_blob (context, blob, size, SQLITE_TRANSIENT);
+
+      }
+    else if (sqlite3_value_type (argv[0]) == SQLITE_INTEGER)
+	sqlite3_result_int (context, sqlite3_value_int (argv[0]));
+    else if (sqlite3_value_type (argv[0]) == SQLITE_FLOAT)
+	sqlite3_result_double (context, sqlite3_value_double (argv[0]));
+    else if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
+	sqlite3_result_text (context,
+			     (const char *) sqlite3_value_text (argv[0]),
+			     sqlite3_value_bytes (argv[0]), SQLITE_TRANSIENT);
+    else
+	sqlite3_result_null (context);
+}
+
+static void
+fnct_geometry_point_encode (sqlite3_context * context, int argc,
+			    sqlite3_value ** argv)
+{
+/* SQL function:
+/ GeometryPointEncode(variable-type)
+/
+/ returns a BLOB GEOMETRY if the received argument is a BLOB-TinyPoint POINT
+/ in any other case the received argument will be returned "as is"
+*/
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) == SQLITE_BLOB)
+      {
+	  int tiny_point = 1;
+	  const unsigned char *blob =
+	      (const unsigned char *) sqlite3_value_blob (argv[0]);
+	  int size = sqlite3_value_bytes (argv[0]);
+	  if (size < 24)
+	      tiny_point = 0;
+	  else
+	    {
+		if (size == 24 || size == 32 || size == 40)
+		    ;
+		else
+		    tiny_point = 0;
+		if (*(blob + 0) != GAIA_MARK_START)
+		    tiny_point = 0;
+		if (*(blob + 1) == GAIA_TINYPOINT_LITTLE_ENDIAN
+		    || *(blob + 1) == GAIA_TINYPOINT_BIG_ENDIAN)
+		    ;
+		else
+		    tiny_point = 0;
+		if (*(blob + 6) == GAIA_TINYPOINT_XY
+		    || *(blob + 6) == GAIA_TINYPOINT_XYZ
+		    || *(blob + 6) == GAIA_TINYPOINT_XYM
+		    || *(blob + 6) == GAIA_TINYPOINT_XYZM)
+		    ;
+		else
+		    tiny_point = 0;
+		if (*(blob + (size - 1)) != GAIA_MARK_END)
+		    tiny_point = 0;
+	    }
+	  if (tiny_point)
+	    {
+		int endian_arch = gaiaEndianArch ();
+		int type = *(blob + 6);
+		int little_endian = 0;
+		int srid;
+		double x;
+		double y;
+		double z;
+		double m;
+		unsigned char *out;
+		int out_sz;
+		if (*(blob + 1) == GAIA_TINYPOINT_LITTLE_ENDIAN)
+		    little_endian = 1;
+		srid = gaiaImport32 (blob + 2, little_endian, endian_arch);
+		x = gaiaImport64 (blob + 7, little_endian, endian_arch);
+		y = gaiaImport64 (blob + 15, little_endian, endian_arch);
+		switch (type)
+		  {
+		  case GAIA_TINYPOINT_XY:
+		      gaiaMakePointEx (0, x, y, srid, &out, &out_sz);
+		      break;
+		  case GAIA_TINYPOINT_XYZ:
+		      z = gaiaImport64 (blob + 23, little_endian, endian_arch);
+		      gaiaMakePointZEx (0, x, y, z, srid, &out, &out_sz);
+		      break;
+		  case GAIA_TINYPOINT_XYM:
+		      m = gaiaImport64 (blob + 23, little_endian, endian_arch);
+		      gaiaMakePointMEx (0, x, y, m, srid, &out, &out_sz);
+		      break;
+		  case GAIA_TINYPOINT_XYZM:
+		      z = gaiaImport64 (blob + 23, little_endian, endian_arch);
+		      m = gaiaImport64 (blob + 31, little_endian, endian_arch);
+		      gaiaMakePointZMEx (0, x, y, z, m, srid, &out, &out_sz);
+		      break;
+		  };
+		sqlite3_result_blob (context, out, out_sz, free);
+	    }
+	  else
+	      sqlite3_result_blob (context, blob, size, SQLITE_TRANSIENT);
+      }
+    else if (sqlite3_value_type (argv[0]) == SQLITE_INTEGER)
+	sqlite3_result_int (context, sqlite3_value_int (argv[0]));
+    else if (sqlite3_value_type (argv[0]) == SQLITE_FLOAT)
+	sqlite3_result_double (context, sqlite3_value_double (argv[0]));
+    else if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
+	sqlite3_result_text (context,
+			     (const char *) sqlite3_value_text (argv[0]),
+			     sqlite3_value_bytes (argv[0]), SQLITE_TRANSIENT);
+    else
+	sqlite3_result_null (context);
+}
+
+static void
 fnct_MakePoint1 (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
 /* SQL function:
@@ -43367,6 +43560,12 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "MbrMaxY", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_MbrMaxY, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "TinyPointEncode", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_tiny_point_encode, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "GeometryPointEncode", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_geometry_point_encode, 0, 0, 0);
     sqlite3_create_function_v2 (db, "ST_Point", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_MakePoint1, 0, 0, 0);
