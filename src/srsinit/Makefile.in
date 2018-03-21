@@ -151,6 +151,11 @@ am__objects_1 = libsrsinit_la-srs_init.lo \
 	libsrsinit_la-epsg_inlined_44.lo \
 	libsrsinit_la-epsg_inlined_45.lo \
 	libsrsinit_la-epsg_inlined_46.lo \
+	libsrsinit_la-epsg_inlined_47.lo \
+	libsrsinit_la-epsg_inlined_48.lo \
+	libsrsinit_la-epsg_inlined_49.lo \
+	libsrsinit_la-epsg_inlined_50.lo \
+	libsrsinit_la-epsg_inlined_51.lo \
 	libsrsinit_la-epsg_inlined_wgs84_00.lo \
 	libsrsinit_la-epsg_inlined_wgs84_01.lo \
 	libsrsinit_la-epsg_inlined_prussian.lo \
@@ -189,6 +194,9 @@ am__objects_2 = srsinit_la-srs_init.lo srsinit_la-epsg_inlined_00.lo \
 	srsinit_la-epsg_inlined_41.lo srsinit_la-epsg_inlined_42.lo \
 	srsinit_la-epsg_inlined_43.lo srsinit_la-epsg_inlined_44.lo \
 	srsinit_la-epsg_inlined_45.lo srsinit_la-epsg_inlined_46.lo \
+	srsinit_la-epsg_inlined_47.lo srsinit_la-epsg_inlined_48.lo \
+	srsinit_la-epsg_inlined_49.lo srsinit_la-epsg_inlined_50.lo \
+	srsinit_la-epsg_inlined_51.lo \
 	srsinit_la-epsg_inlined_wgs84_00.lo \
 	srsinit_la-epsg_inlined_wgs84_01.lo \
 	srsinit_la-epsg_inlined_prussian.lo \
@@ -482,6 +490,11 @@ SRSINIT_COMMON_SOURCES = srs_init.c \
 	epsg_inlined_44.c \
 	epsg_inlined_45.c \
 	epsg_inlined_46.c \
+	epsg_inlined_47.c \
+	epsg_inlined_48.c \
+	epsg_inlined_49.c \
+	epsg_inlined_50.c \
+	epsg_inlined_51.c \
 	epsg_inlined_wgs84_00.c \
 	epsg_inlined_wgs84_01.c \
 	epsg_inlined_prussian.c \
@@ -599,6 +612,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsrsinit_la-epsg_inlined_44.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsrsinit_la-epsg_inlined_45.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsrsinit_la-epsg_inlined_46.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsrsinit_la-epsg_inlined_47.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsrsinit_la-epsg_inlined_48.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsrsinit_la-epsg_inlined_49.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsrsinit_la-epsg_inlined_50.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsrsinit_la-epsg_inlined_51.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsrsinit_la-epsg_inlined_extra.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsrsinit_la-epsg_inlined_prussian.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsrsinit_la-epsg_inlined_wgs84_00.Plo@am__quote@
@@ -651,6 +669,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srsinit_la-epsg_inlined_44.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srsinit_la-epsg_inlined_45.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srsinit_la-epsg_inlined_46.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srsinit_la-epsg_inlined_47.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srsinit_la-epsg_inlined_48.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srsinit_la-epsg_inlined_49.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srsinit_la-epsg_inlined_50.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srsinit_la-epsg_inlined_51.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srsinit_la-epsg_inlined_extra.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srsinit_la-epsg_inlined_prussian.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srsinit_la-epsg_inlined_wgs84_00.Plo@am__quote@
@@ -1013,6 +1036,41 @@ libsrsinit_la-epsg_inlined_46.lo: epsg_inlined_46.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='epsg_inlined_46.c' object='libsrsinit_la-epsg_inlined_46.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsrsinit_la_CFLAGS) $(CFLAGS) -c -o libsrsinit_la-epsg_inlined_46.lo `test -f 'epsg_inlined_46.c' || echo '$(srcdir)/'`epsg_inlined_46.c
+
+libsrsinit_la-epsg_inlined_47.lo: epsg_inlined_47.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsrsinit_la_CFLAGS) $(CFLAGS) -MT libsrsinit_la-epsg_inlined_47.lo -MD -MP -MF $(DEPDIR)/libsrsinit_la-epsg_inlined_47.Tpo -c -o libsrsinit_la-epsg_inlined_47.lo `test -f 'epsg_inlined_47.c' || echo '$(srcdir)/'`epsg_inlined_47.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libsrsinit_la-epsg_inlined_47.Tpo $(DEPDIR)/libsrsinit_la-epsg_inlined_47.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='epsg_inlined_47.c' object='libsrsinit_la-epsg_inlined_47.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsrsinit_la_CFLAGS) $(CFLAGS) -c -o libsrsinit_la-epsg_inlined_47.lo `test -f 'epsg_inlined_47.c' || echo '$(srcdir)/'`epsg_inlined_47.c
+
+libsrsinit_la-epsg_inlined_48.lo: epsg_inlined_48.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsrsinit_la_CFLAGS) $(CFLAGS) -MT libsrsinit_la-epsg_inlined_48.lo -MD -MP -MF $(DEPDIR)/libsrsinit_la-epsg_inlined_48.Tpo -c -o libsrsinit_la-epsg_inlined_48.lo `test -f 'epsg_inlined_48.c' || echo '$(srcdir)/'`epsg_inlined_48.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libsrsinit_la-epsg_inlined_48.Tpo $(DEPDIR)/libsrsinit_la-epsg_inlined_48.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='epsg_inlined_48.c' object='libsrsinit_la-epsg_inlined_48.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsrsinit_la_CFLAGS) $(CFLAGS) -c -o libsrsinit_la-epsg_inlined_48.lo `test -f 'epsg_inlined_48.c' || echo '$(srcdir)/'`epsg_inlined_48.c
+
+libsrsinit_la-epsg_inlined_49.lo: epsg_inlined_49.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsrsinit_la_CFLAGS) $(CFLAGS) -MT libsrsinit_la-epsg_inlined_49.lo -MD -MP -MF $(DEPDIR)/libsrsinit_la-epsg_inlined_49.Tpo -c -o libsrsinit_la-epsg_inlined_49.lo `test -f 'epsg_inlined_49.c' || echo '$(srcdir)/'`epsg_inlined_49.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libsrsinit_la-epsg_inlined_49.Tpo $(DEPDIR)/libsrsinit_la-epsg_inlined_49.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='epsg_inlined_49.c' object='libsrsinit_la-epsg_inlined_49.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsrsinit_la_CFLAGS) $(CFLAGS) -c -o libsrsinit_la-epsg_inlined_49.lo `test -f 'epsg_inlined_49.c' || echo '$(srcdir)/'`epsg_inlined_49.c
+
+libsrsinit_la-epsg_inlined_50.lo: epsg_inlined_50.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsrsinit_la_CFLAGS) $(CFLAGS) -MT libsrsinit_la-epsg_inlined_50.lo -MD -MP -MF $(DEPDIR)/libsrsinit_la-epsg_inlined_50.Tpo -c -o libsrsinit_la-epsg_inlined_50.lo `test -f 'epsg_inlined_50.c' || echo '$(srcdir)/'`epsg_inlined_50.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libsrsinit_la-epsg_inlined_50.Tpo $(DEPDIR)/libsrsinit_la-epsg_inlined_50.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='epsg_inlined_50.c' object='libsrsinit_la-epsg_inlined_50.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsrsinit_la_CFLAGS) $(CFLAGS) -c -o libsrsinit_la-epsg_inlined_50.lo `test -f 'epsg_inlined_50.c' || echo '$(srcdir)/'`epsg_inlined_50.c
+
+libsrsinit_la-epsg_inlined_51.lo: epsg_inlined_51.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsrsinit_la_CFLAGS) $(CFLAGS) -MT libsrsinit_la-epsg_inlined_51.lo -MD -MP -MF $(DEPDIR)/libsrsinit_la-epsg_inlined_51.Tpo -c -o libsrsinit_la-epsg_inlined_51.lo `test -f 'epsg_inlined_51.c' || echo '$(srcdir)/'`epsg_inlined_51.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libsrsinit_la-epsg_inlined_51.Tpo $(DEPDIR)/libsrsinit_la-epsg_inlined_51.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='epsg_inlined_51.c' object='libsrsinit_la-epsg_inlined_51.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsrsinit_la_CFLAGS) $(CFLAGS) -c -o libsrsinit_la-epsg_inlined_51.lo `test -f 'epsg_inlined_51.c' || echo '$(srcdir)/'`epsg_inlined_51.c
 
 libsrsinit_la-epsg_inlined_wgs84_00.lo: epsg_inlined_wgs84_00.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsrsinit_la_CFLAGS) $(CFLAGS) -MT libsrsinit_la-epsg_inlined_wgs84_00.lo -MD -MP -MF $(DEPDIR)/libsrsinit_la-epsg_inlined_wgs84_00.Tpo -c -o libsrsinit_la-epsg_inlined_wgs84_00.lo `test -f 'epsg_inlined_wgs84_00.c' || echo '$(srcdir)/'`epsg_inlined_wgs84_00.c
@@ -1377,6 +1435,41 @@ srsinit_la-epsg_inlined_46.lo: epsg_inlined_46.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='epsg_inlined_46.c' object='srsinit_la-epsg_inlined_46.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(srsinit_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(srsinit_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o srsinit_la-epsg_inlined_46.lo `test -f 'epsg_inlined_46.c' || echo '$(srcdir)/'`epsg_inlined_46.c
+
+srsinit_la-epsg_inlined_47.lo: epsg_inlined_47.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(srsinit_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(srsinit_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT srsinit_la-epsg_inlined_47.lo -MD -MP -MF $(DEPDIR)/srsinit_la-epsg_inlined_47.Tpo -c -o srsinit_la-epsg_inlined_47.lo `test -f 'epsg_inlined_47.c' || echo '$(srcdir)/'`epsg_inlined_47.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/srsinit_la-epsg_inlined_47.Tpo $(DEPDIR)/srsinit_la-epsg_inlined_47.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='epsg_inlined_47.c' object='srsinit_la-epsg_inlined_47.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(srsinit_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(srsinit_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o srsinit_la-epsg_inlined_47.lo `test -f 'epsg_inlined_47.c' || echo '$(srcdir)/'`epsg_inlined_47.c
+
+srsinit_la-epsg_inlined_48.lo: epsg_inlined_48.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(srsinit_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(srsinit_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT srsinit_la-epsg_inlined_48.lo -MD -MP -MF $(DEPDIR)/srsinit_la-epsg_inlined_48.Tpo -c -o srsinit_la-epsg_inlined_48.lo `test -f 'epsg_inlined_48.c' || echo '$(srcdir)/'`epsg_inlined_48.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/srsinit_la-epsg_inlined_48.Tpo $(DEPDIR)/srsinit_la-epsg_inlined_48.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='epsg_inlined_48.c' object='srsinit_la-epsg_inlined_48.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(srsinit_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(srsinit_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o srsinit_la-epsg_inlined_48.lo `test -f 'epsg_inlined_48.c' || echo '$(srcdir)/'`epsg_inlined_48.c
+
+srsinit_la-epsg_inlined_49.lo: epsg_inlined_49.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(srsinit_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(srsinit_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT srsinit_la-epsg_inlined_49.lo -MD -MP -MF $(DEPDIR)/srsinit_la-epsg_inlined_49.Tpo -c -o srsinit_la-epsg_inlined_49.lo `test -f 'epsg_inlined_49.c' || echo '$(srcdir)/'`epsg_inlined_49.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/srsinit_la-epsg_inlined_49.Tpo $(DEPDIR)/srsinit_la-epsg_inlined_49.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='epsg_inlined_49.c' object='srsinit_la-epsg_inlined_49.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(srsinit_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(srsinit_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o srsinit_la-epsg_inlined_49.lo `test -f 'epsg_inlined_49.c' || echo '$(srcdir)/'`epsg_inlined_49.c
+
+srsinit_la-epsg_inlined_50.lo: epsg_inlined_50.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(srsinit_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(srsinit_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT srsinit_la-epsg_inlined_50.lo -MD -MP -MF $(DEPDIR)/srsinit_la-epsg_inlined_50.Tpo -c -o srsinit_la-epsg_inlined_50.lo `test -f 'epsg_inlined_50.c' || echo '$(srcdir)/'`epsg_inlined_50.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/srsinit_la-epsg_inlined_50.Tpo $(DEPDIR)/srsinit_la-epsg_inlined_50.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='epsg_inlined_50.c' object='srsinit_la-epsg_inlined_50.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(srsinit_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(srsinit_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o srsinit_la-epsg_inlined_50.lo `test -f 'epsg_inlined_50.c' || echo '$(srcdir)/'`epsg_inlined_50.c
+
+srsinit_la-epsg_inlined_51.lo: epsg_inlined_51.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(srsinit_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(srsinit_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT srsinit_la-epsg_inlined_51.lo -MD -MP -MF $(DEPDIR)/srsinit_la-epsg_inlined_51.Tpo -c -o srsinit_la-epsg_inlined_51.lo `test -f 'epsg_inlined_51.c' || echo '$(srcdir)/'`epsg_inlined_51.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/srsinit_la-epsg_inlined_51.Tpo $(DEPDIR)/srsinit_la-epsg_inlined_51.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='epsg_inlined_51.c' object='srsinit_la-epsg_inlined_51.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(srsinit_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(srsinit_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o srsinit_la-epsg_inlined_51.lo `test -f 'epsg_inlined_51.c' || echo '$(srcdir)/'`epsg_inlined_51.c
 
 srsinit_la-epsg_inlined_wgs84_00.lo: epsg_inlined_wgs84_00.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(srsinit_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(srsinit_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT srsinit_la-epsg_inlined_wgs84_00.lo -MD -MP -MF $(DEPDIR)/srsinit_la-epsg_inlined_wgs84_00.Tpo -c -o srsinit_la-epsg_inlined_wgs84_00.lo `test -f 'epsg_inlined_wgs84_00.c' || echo '$(srcdir)/'`epsg_inlined_wgs84_00.c

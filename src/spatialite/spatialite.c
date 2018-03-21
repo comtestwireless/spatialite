@@ -6652,7 +6652,7 @@ check_spatial_index (sqlite3 * sqlite, const unsigned char *table,
 	  if (ret == SQLITE_DONE)
 	      break;
 	  if (ret == SQLITE_ROW)
-	      count_geom = sqlite3_column_int (stmt, 0);
+	      count_geom = sqlite3_column_int64 (stmt, 0);
 	  else
 	    {
 		spatialite_e ("sqlite3_step() error: %s\n",
@@ -6680,7 +6680,7 @@ check_spatial_index (sqlite3 * sqlite, const unsigned char *table,
 	  if (ret == SQLITE_DONE)
 	      break;
 	  if (ret == SQLITE_ROW)
-	      count_rtree = sqlite3_column_int (stmt, 0);
+	      count_rtree = sqlite3_column_int64 (stmt, 0);
 	  else
 	    {
 		spatialite_e ("sqlite3_step() error: %s\n",
@@ -32989,7 +32989,11 @@ fnct_sp_var_arg (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  value = sqlite3_mprintf ("%s", "NULL");
 	  break;
       case SQLITE_INTEGER:
-	  value = sqlite3_mprintf ("%d", sqlite3_value_int (argv[1]));
+#if defined(_WIN32) && !defined(__MINGW32__)
+	  value = sqlite3_mprintf ("%I64d", sqlite3_value_int64 (argv[1]));
+#else
+	  value = sqlite3_mprintf ("%lld", sqlite3_value_int64 (argv[1]));
+#endif
 	  break;
       case SQLITE_FLOAT:
 	  value = sqlite3_mprintf ("%1.10f", sqlite3_value_double (argv[1]));
@@ -33892,7 +33896,11 @@ fnct_sp_var_update_value (sqlite3_context * context, int argc,
 	  value = sqlite3_mprintf ("%s", "NULL");
 	  break;
       case SQLITE_INTEGER:
-	  value = sqlite3_mprintf ("%d", sqlite3_value_int (argv[1]));
+#if defined(_WIN32) && !defined(__MINGW32__)
+	  value = sqlite3_mprintf ("%I64d", sqlite3_value_int64 (argv[1]));
+#else
+	  value = sqlite3_mprintf ("%lld", sqlite3_value_int64 (argv[1]));
+#endif
 	  break;
       case SQLITE_FLOAT:
 	  value = sqlite3_mprintf ("%1.10f", sqlite3_value_double (argv[1]));
