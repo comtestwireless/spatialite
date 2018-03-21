@@ -4319,6 +4319,26 @@ gaiaGetMbrMinX (const unsigned char *blob, unsigned int size, double *minx)
 /* returns the MinX coordinate value for a Blob encoded Geometry */
     int little_endian;
     int endian_arch = gaiaEndianArch ();
+
+    if (size == 24 || size == 32 || size == 40)
+      {
+	  /* testing for a possible TinyPoint BLOB */
+	  if (*(blob + 0) == GAIA_MARK_START &&
+	      (*(blob + 1) == GAIA_TINYPOINT_LITTLE_ENDIAN
+	       || *(blob + 1) == GAIA_TINYPOINT_BIG_ENDIAN)
+	      && *(blob + (size - 1)) == GAIA_MARK_END)
+	    {
+		if (*(blob + 1) == GAIA_TINYPOINT_LITTLE_ENDIAN)
+		    little_endian = 1;
+		else if (*(blob + 1) == GAIA_TINYPOINT_BIG_ENDIAN)
+		    little_endian = 0;
+		else
+		    return 0;	/* unknown encoding; neither little-endian nor big-endian */
+		*minx = gaiaImport64 (blob + 7, little_endian, endian_arch);
+		return 1;
+	    }
+      }
+
     if (size < 45)
 	return 0;		/* cannot be an internal BLOB WKB geometry */
     if (*(blob + 0) != GAIA_MARK_START)
@@ -4343,6 +4363,26 @@ gaiaGetMbrMaxX (const unsigned char *blob, unsigned int size, double *maxx)
 /* returns the MaxX coordinate value for a Blob encoded Geometry */
     int little_endian;
     int endian_arch = gaiaEndianArch ();
+
+    if (size == 24 || size == 32 || size == 40)
+      {
+	  /* testing for a possible TinyPoint BLOB */
+	  if (*(blob + 0) == GAIA_MARK_START &&
+	      (*(blob + 1) == GAIA_TINYPOINT_LITTLE_ENDIAN
+	       || *(blob + 1) == GAIA_TINYPOINT_BIG_ENDIAN)
+	      && *(blob + (size - 1)) == GAIA_MARK_END)
+	    {
+		if (*(blob + 1) == GAIA_TINYPOINT_LITTLE_ENDIAN)
+		    little_endian = 1;
+		else if (*(blob + 1) == GAIA_TINYPOINT_BIG_ENDIAN)
+		    little_endian = 0;
+		else
+		    return 0;	/* unknown encoding; neither little-endian nor big-endian */
+		*maxx = gaiaImport64 (blob + 7, little_endian, endian_arch);
+		return 1;
+	    }
+      }
+
     if (size < 45)
 	return 0;		/* cannot be an internal BLOB WKB geometry */
     if (*(blob + 0) != GAIA_MARK_START)
@@ -4367,6 +4407,26 @@ gaiaGetMbrMinY (const unsigned char *blob, unsigned int size, double *miny)
 /* returns the MinY coordinate value for a Blob encoded Geometry */
     int little_endian;
     int endian_arch = gaiaEndianArch ();
+
+    if (size == 24 || size == 32 || size == 40)
+      {
+	  /* testing for a possible TinyPoint BLOB */
+	  if (*(blob + 0) == GAIA_MARK_START &&
+	      (*(blob + 1) == GAIA_TINYPOINT_LITTLE_ENDIAN
+	       || *(blob + 1) == GAIA_TINYPOINT_BIG_ENDIAN)
+	      && *(blob + (size - 1)) == GAIA_MARK_END)
+	    {
+		if (*(blob + 1) == GAIA_TINYPOINT_LITTLE_ENDIAN)
+		    little_endian = 1;
+		else if (*(blob + 1) == GAIA_TINYPOINT_BIG_ENDIAN)
+		    little_endian = 0;
+		else
+		    return 0;	/* unknown encoding; neither little-endian nor big-endian */
+		*miny = gaiaImport64 (blob + 15, little_endian, endian_arch);
+		return 1;
+	    }
+      }
+
     if (size < 45)
 	return 0;		/* cannot be an internal BLOB WKB geometry */
     if (*(blob + 0) != GAIA_MARK_START)
@@ -4391,6 +4451,26 @@ gaiaGetMbrMaxY (const unsigned char *blob, unsigned int size, double *maxy)
 /* returns the MaxY coordinate value for a Blob encoded Geometry */
     int little_endian;
     int endian_arch = gaiaEndianArch ();
+
+    if (size == 24 || size == 32 || size == 40)
+      {
+	  /* testing for a possible TinyPoint BLOB */
+	  if (*(blob + 0) == GAIA_MARK_START &&
+	      (*(blob + 1) == GAIA_TINYPOINT_LITTLE_ENDIAN
+	       || *(blob + 1) == GAIA_TINYPOINT_BIG_ENDIAN)
+	      && *(blob + (size - 1)) == GAIA_MARK_END)
+	    {
+		if (*(blob + 1) == GAIA_TINYPOINT_LITTLE_ENDIAN)
+		    little_endian = 1;
+		else if (*(blob + 1) == GAIA_TINYPOINT_BIG_ENDIAN)
+		    little_endian = 0;
+		else
+		    return 0;	/* unknown encoding; neither little-endian nor big-endian */
+		*maxy = gaiaImport64 (blob + 15, little_endian, endian_arch);
+		return 1;
+	    }
+      }
+
     if (size < 45)
 	return 0;		/* cannot be an internal BLOB WKB geometry */
     if (*(blob + 0) != GAIA_MARK_START)
