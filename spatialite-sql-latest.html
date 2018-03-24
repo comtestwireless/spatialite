@@ -1515,20 +1515,30 @@ a Geometry will be returned representing the MBR for the corresponding GARS area
 				<td align="center" bgcolor="#d0f0d0">base</td>
 				<td>returns a Geometry using the [<b>XY</b>] space dimension</td></tr>
 			<tr><td><b>CastToXYZ</b></td>
-				<td>CastToXYZ( geom <i>Geometry</i> ) : geom <i>Geometry</i></td>
+				<td>CastToXYZ( geom <i>Geometry</i> ) : geom <i>Geometry</i><hr>
+				    CastToXYZ( geom <i>Geometry</i> , no_data <i>Double</i> ) : geom <i>Geometry</i></td>
 				<td></td>
 				<td align="center" bgcolor="#d0f0d0">base</td>
-				<td>returns a Geometry using the [<b>XYZ</b>] space dimension</td></tr>
+				<td>returns a Geometry using the [<b>XYZ</b>] space dimension.<br>
+				    If the input Geometry already supports <b>Z</b> coordinates they'll be preserved as they are.<br>
+				    If the input Geometry does not support <b>Z</b> coordinates they'll be set to <b>no_data</b> (defaulting to <b>0.0</b> if <b>no_data</b> is not specified).</td></tr>
 			<tr><td><b>CastToXYM</b></td>
-				<td>CastToXYM( geom <i>Geometry</i> ) : geom <i>Geometry</i></td>
+				<td>CastToXYM( geom <i>Geometry</i> ) : geom <i>Geometry</i><hr>
+				    CastToXYM( geom <i>Geometry</i> , no_data <i>Double</i> ) : geom <i>Geometry</i></td>
 				<td></td>
 				<td align="center" bgcolor="#d0f0d0">base</td>
-				<td>returns a Geometry using the [<b>XYM</b>] space dimension</td></tr>
+				<td>returns a Geometry using the [<b>XYM</b>] space dimension.<br>
+				    If the input Geometry already supports <b>M</b> coordinates they'll be preserved as they are.<br>
+				    If the input Geometry does not support <b>M</b> coordinates they'll be set to <b>no_data</b> (defaulting to <b>0.0</b> if <b>no_data</b> is not specified).</td></tr>
 			<tr><td><b>CastToXYZM</b></td>
-				<td>CastToXYZM( geom <i>Geometry</i> ) : geom <i>Geometry</i></td>
+				<td>CastToXYZM( geom <i>Geometry</i> ) : geom <i>Geometry</i><hr>
+				    CastToXYZM( geom <i>Geometry</i> , z_no_data <i>Double</i> , m_no_data <i>Double</i> ) : geom <i>Geometry</i></td>
 				<td></td>
 				<td align="center" bgcolor="#d0f0d0">base</td>
-				<td>returns a Geometry using the [<b>XYZM</b>] space dimension</td></tr>
+				<td>returns a Geometry using the [<b>XYZM</b>] space dimension.<br>
+				    If the input Geometry already supports <b>Z</b> coordinates they'll be preserved as they are.<br>
+				    If the input Geometry does not support <b>Z</b> coordinates they'll be set to <b>z_no_data</b> (defaulting to <b>0.0</b> if <b>z_no_data</b> is not specified).<br>
+				    The same rule applies to <b>M</b> coordinates and <b>m_no_data</b>.</td></tr>
 			<tr><td colspan="7" align="center" bgcolor="#f0f0c0">
 				<h3><a name="p5">SQL functions on type Point</a></h3></td></tr>
 			<tr><th bgcolor="#d0d0d0">Function</th>

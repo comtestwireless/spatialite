@@ -690,18 +690,38 @@ EXTRA_DIST = addpoint10.testcase \
 	casttoxym4.testcase \
 	casttoxym5.testcase \
 	casttoxym6.testcase \
+	casttoxym7.testcase \
+	casttoxym8.testcase \
+	casttoxym9.testcase \
+	casttoxym10.testcase \
+	casttoxym11.testcase \
 	casttoxyz1.testcase \
 	casttoxyz2.testcase \
 	casttoxyz3.testcase \
 	casttoxyz4.testcase \
 	casttoxyz5.testcase \
 	casttoxyz6.testcase \
+	casttoxyz7.testcase \
+	casttoxyz8.testcase \
+	casttoxyz9.testcase \
+	casttoxyz10.testcase \
+	casttoxyz11.testcase \
 	casttoxyzm1.testcase \
 	casttoxyzm2.testcase \
 	casttoxyzm3.testcase \
 	casttoxyzm4.testcase \
 	casttoxyzm5.testcase \
 	casttoxyzm6.testcase \
+	casttoxyzm7.testcase \
+	casttoxyzm8.testcase \
+	casttoxyzm9.testcase \
+	casttoxyzm10.testcase \
+	casttoxyzm11.testcase \
+	casttoxyzm12.testcase \
+	casttoxyzm13.testcase \
+	casttoxyzm14.testcase \
+	casttoxyzm15.testcase \
+	casttoxyzm16.testcase \
 	checkdupl1.testcase \
 	checkdupl2.testcase \
 	checkspatialmetadata1.testcase \

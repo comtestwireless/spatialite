@@ -250,7 +250,7 @@ extern "C"
  \param dst destination LINESTRING [output]
  \param src origin LINESTRING [input]
 
- \sa gaiaCopyLinestringCoordsReverse
+ \sa gaiaCopyLinestringCoordsReverse, gaiaCopyLinestringCoordsEx
 
  \note both LINESTRING objects must have exactly the same number of points:
  if dimensions aren't the same for both objects, then the appropriate 
@@ -258,6 +258,25 @@ extern "C"
  */
     GAIAGEO_DECLARE void gaiaCopyLinestringCoords (gaiaLinestringPtr dst,
 						   gaiaLinestringPtr src);
+
+/**
+ Copies coordinates between two LINESTRING objects
+
+ \param dst destination LINESTRING [output]
+ \param src origin LINESTRING [input]
+ \param z_no_data the default Z value
+ \parma m_no_data the default M value
+
+ \sa gaiaCopyLinestringCoords
+
+ \note both LINESTRING objects must have exactly the same number of points:
+ if dimensions aren't the same for both objects, then the appropriate 
+ conversion will be silently applied.
+ */
+    GAIAGEO_DECLARE void gaiaCopyLinestringCoordsEx (gaiaLinestringPtr dst,
+						     gaiaLinestringPtr src,
+						     double z_no_data,
+						     double m_no_data);
 
 /**
  Copies coordinates between two LINESTRING objects in reverse order
@@ -364,13 +383,31 @@ extern "C"
  \param dst destination RING [output]
  \param src origin RING [input]
 
- \sa gaiaCopyRingCoordsReverse
+ \sa gaiaCopyRingCoordsReverse, gaiaCopyRingCoordEx
 
  \note both RING objects must have exactly the same number of points:
  if dimensions aren't the same for both objects, then the appropriate
  conversion will be silently applied.
  */
     GAIAGEO_DECLARE void gaiaCopyRingCoords (gaiaRingPtr dst, gaiaRingPtr src);
+
+/**
+ Copies coordinates between two RING objects
+
+ \param dst destination RING [output]
+ \param src origin RING [input]
+ \param z_no_data the default Z value
+ \param m_no_data the default M value
+
+ \sa gaiaCopyRingCoords
+
+ \note both RING objects must have exactly the same number of points:
+ if dimensions aren't the same for both objects, then the appropriate
+ conversion will be silently applied.
+ */
+    GAIAGEO_DECLARE void gaiaCopyRingCoordsEx (gaiaRingPtr dst, gaiaRingPtr src,
+					       double z_no_data,
+					       double m_no_data);
 
 /**
  Copies coordinates between two RING objects in reverse order
@@ -948,7 +985,8 @@ extern "C"
  \return the pointer to newly created Geometry object: NULL on failure.
 
  \sa gaiaCloneGeomColl, gaiaCastGeomCollToXY, 
- gaiaCastGeomCollToXYM, gaiaCastGeomCollToXYZM
+ gaiaCastGeomCollToXYM, gaiaCastGeomCollToXYZM,
+ gaiaCostGeomCollToXYZnoData
 
  \note the newly created object is an exact copy of the original one; except
  in that any elementary item  will be cast to 3D [XYZ] dimensions.
@@ -964,7 +1002,7 @@ extern "C"
  \return the pointer to newly created Geometry object: NULL on failure.
 
  \sa gaiaCloneGeomColl, gaiaCastGeomCollToXY, gaiaCastGeomCollToXYZ,
- gaiaCastGeomCollToXYZM
+ gaiaCastGeomCollToXYZM, gaiaCastGeomCollToXYMnoData
 
  \note the newly created object is an exact copy of the original one; except
  in that any elementary item  will be cast to 2D [XYM] dimensions.
@@ -980,13 +1018,67 @@ extern "C"
  \return the pointer to newly created Geometry object: NULL on failure.
 
  \sa gaiaCloneGeomColl, gaiaCastGeomCollToXY, gaiaCastGeomCollToXYZ,
- gaiaCastGeomCollToXYM
+ gaiaCastGeomCollToXYM, gaiaCastGeomCollToXYZMnoData
 
  \note the newly created object is an exact copy of the original one; except
  in that any elementary item  will be cast to 3D [XYZM] dimensions.
  */
     GAIAGEO_DECLARE gaiaGeomCollPtr gaiaCastGeomCollToXYZM (gaiaGeomCollPtr
 							    geom);
+
+/**
+ Duplicates a Geometry object [casting dimensions to 3D XYZ - noData]
+
+ \param geom pointer to Geometry object [origin].
+ \param no_data the default Z value
+
+ \return the pointer to newly created Geometry object: NULL on failure.
+
+ \sa gaiaCostGeomCollToXYZ
+
+ \note the newly created object is an exact copy of the original one; except
+ in that any elementary item  will be cast to 3D [XYZ] dimensions.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr gaiaCastGeomCollToXYZnoData (gaiaGeomCollPtr
+								 geom,
+								 double
+								 no_data);
+
+/**
+ Duplicates a Geometry object [casting dimensions to 2D XYM - noData]
+
+ \param geom pointer to Geometry object [origin].
+ \param no_data the default M value
+
+ \return the pointer to newly created Geometry object: NULL on failure.
+
+ \sa gaiaCastGeomCollToXYM
+
+ \note the newly created object is an exact copy of the original one; except
+ in that any elementary item  will be cast to 2D [XYM] dimensions.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr gaiaCastGeomCollToXYMnoData (gaiaGeomCollPtr
+								 geom,
+								 double
+								 no_data);
+
+/**
+ Duplicates a Geometry object [casting dimensions to 3D XYZM - noData]
+
+ \param geom pointer to Geometry object [origin].
+ \param z_no_data the default Z value
+ \param m_no_data the default M value
+
+ \return the pointer to newly created Geometry object: NULL on failure.
+
+ \sa gaiaCastGeomCollToXYZM
+
+ \note the newly created object is an exact copy of the original one; except
+ in that any elementary item  will be cast to 3D [XYZM] dimensions.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr
+	gaiaCastGeomCollToXYZMnoData (gaiaGeomCollPtr geom, double z_no_data,
+				      double m_no_data);
 
 /**
  Gets coodinates from a Linestring's Point

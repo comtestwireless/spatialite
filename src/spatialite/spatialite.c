@@ -14395,7 +14395,9 @@ static void
 fnct_CastToXYZ (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
 /* SQL function:
-/ CastToXY(BLOB encoded geometry)
+/ CastToXYZ(BLOB encoded geometry)
+/    or
+/ CastToXYZ(BLOB encoded geometry, nodata double)
 /
 / returns an XY-dimension Geometry [if conversion is possible] 
 / or NULL in any other case
@@ -14404,6 +14406,8 @@ fnct_CastToXYZ (sqlite3_context * context, int argc, sqlite3_value ** argv)
     int n_bytes;
     int len;
     unsigned char *p_result = NULL;
+    double no_data;
+    int has_no_data = 0;
     gaiaGeomCollPtr geo = NULL;
     gaiaGeomCollPtr geom2 = NULL;
     int gpkg_amphibious = 0;
@@ -14424,6 +14428,25 @@ fnct_CastToXYZ (sqlite3_context * context, int argc, sqlite3_value ** argv)
       }
     p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
     n_bytes = sqlite3_value_bytes (argv[0]);
+    if (argc >= 2)
+      {
+	  if (sqlite3_value_type (argv[1]) == SQLITE_INTEGER)
+	    {
+		int val = sqlite3_value_int (argv[1]);
+		no_data = val;
+		has_no_data = 1;
+	    }
+	  else if (sqlite3_value_type (argv[1]) == SQLITE_FLOAT)
+	    {
+		no_data = sqlite3_value_double (argv[1]);
+		has_no_data = 1;
+	    }
+	  else
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+      }
     geo =
 	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
 				     gpkg_amphibious);
@@ -14431,7 +14454,10 @@ fnct_CastToXYZ (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	sqlite3_result_null (context);
     else
       {
-	  geom2 = gaiaCastGeomCollToXYZ (geo);
+	  if (has_no_data)
+	      geom2 = gaiaCastGeomCollToXYZnoData (geo, no_data);
+	  else
+	      geom2 = gaiaCastGeomCollToXYZ (geo);
 	  if (geom2)
 	    {
 		geom2->Srid = geo->Srid;
@@ -14450,7 +14476,9 @@ static void
 fnct_CastToXYM (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
 /* SQL function:
-/ CastToXY(BLOB encoded geometry)
+/ CastToXYM(BLOB encoded geometry)
+/    or
+/ CastToXYM(BLOB encoded geometry. nodata double)
 /
 / returns an XYM-dimension Geometry [if conversion is possible] 
 / or NULL in any other case
@@ -14459,6 +14487,8 @@ fnct_CastToXYM (sqlite3_context * context, int argc, sqlite3_value ** argv)
     int n_bytes;
     int len;
     unsigned char *p_result = NULL;
+    double no_data;
+    int has_no_data = 0;
     gaiaGeomCollPtr geo = NULL;
     gaiaGeomCollPtr geom2 = NULL;
     int gpkg_amphibious = 0;
@@ -14479,6 +14509,25 @@ fnct_CastToXYM (sqlite3_context * context, int argc, sqlite3_value ** argv)
       }
     p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
     n_bytes = sqlite3_value_bytes (argv[0]);
+    if (argc >= 2)
+      {
+	  if (sqlite3_value_type (argv[1]) == SQLITE_INTEGER)
+	    {
+		int val = sqlite3_value_int (argv[1]);
+		no_data = val;
+		has_no_data = 1;
+	    }
+	  else if (sqlite3_value_type (argv[1]) == SQLITE_FLOAT)
+	    {
+		no_data = sqlite3_value_double (argv[1]);
+		has_no_data = 1;
+	    }
+	  else
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+      }
     geo =
 	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
 				     gpkg_amphibious);
@@ -14486,7 +14535,10 @@ fnct_CastToXYM (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	sqlite3_result_null (context);
     else
       {
-	  geom2 = gaiaCastGeomCollToXYM (geo);
+	  if (has_no_data)
+	      geom2 = gaiaCastGeomCollToXYMnoData (geo, no_data);
+	  else
+	      geom2 = gaiaCastGeomCollToXYM (geo);
 	  if (geom2)
 	    {
 		geom2->Srid = geo->Srid;
@@ -14505,7 +14557,9 @@ static void
 fnct_CastToXYZM (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
 /* SQL function:
-/ CastToXY(BLOB encoded geometry)
+/ CastToXYZM(BLOB encoded geometry)
+/    or
+/ CastToXYZM(BLOB encoded geometry, nodata_z double, nodata_m double)
 /
 / returns an XYZM-dimension Geometry [if conversion is possible] 
 / or NULL in any other case
@@ -14514,6 +14568,9 @@ fnct_CastToXYZM (sqlite3_context * context, int argc, sqlite3_value ** argv)
     int n_bytes;
     int len;
     unsigned char *p_result = NULL;
+    double z_no_data;
+    double m_no_data;
+    int has_no_data = 0;
     gaiaGeomCollPtr geo = NULL;
     gaiaGeomCollPtr geom2 = NULL;
     int gpkg_amphibious = 0;
@@ -14534,6 +14591,34 @@ fnct_CastToXYZM (sqlite3_context * context, int argc, sqlite3_value ** argv)
       }
     p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
     n_bytes = sqlite3_value_bytes (argv[0]);
+    if (argc >= 3)
+      {
+	  if (sqlite3_value_type (argv[1]) == SQLITE_INTEGER)
+	    {
+		int val = sqlite3_value_int (argv[1]);
+		z_no_data = val;
+	    }
+	  else if (sqlite3_value_type (argv[1]) == SQLITE_FLOAT)
+	      z_no_data = sqlite3_value_double (argv[1]);
+	  else
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  if (sqlite3_value_type (argv[2]) == SQLITE_INTEGER)
+	    {
+		int val = sqlite3_value_int (argv[2]);
+		m_no_data = val;
+	    }
+	  else if (sqlite3_value_type (argv[2]) == SQLITE_FLOAT)
+	      m_no_data = sqlite3_value_double (argv[2]);
+	  else
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  has_no_data = 1;
+      }
     geo =
 	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
 				     gpkg_amphibious);
@@ -14541,7 +14626,10 @@ fnct_CastToXYZM (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	sqlite3_result_null (context);
     else
       {
-	  geom2 = gaiaCastGeomCollToXYZM (geo);
+	  if (has_no_data)
+	      geom2 = gaiaCastGeomCollToXYZMnoData (geo, z_no_data, m_no_data);
+	  else
+	      geom2 = gaiaCastGeomCollToXYZM (geo);
 	  if (geom2)
 	    {
 		geom2->Srid = geo->Srid;
@@ -43275,10 +43363,19 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "CastToXYZ", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_CastToXYZ, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "CastToXYZ", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_CastToXYZ, 0, 0, 0);
     sqlite3_create_function_v2 (db, "CastToXYM", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_CastToXYM, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "CastToXYM", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_CastToXYM, 0, 0, 0);
     sqlite3_create_function_v2 (db, "CastToXYZM", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_CastToXYZM, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "CastToXYZM", 3,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_CastToXYZM, 0, 0, 0);
     sqlite3_create_function_v2 (db, "ExtractMultiPoint", 1,

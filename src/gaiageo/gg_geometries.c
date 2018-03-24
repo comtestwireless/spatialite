@@ -289,6 +289,17 @@ gaiaCopyLinestringCoords (gaiaLinestringPtr dst, gaiaLinestringPtr src)
 / copying coords from one Linestring to another
 / maybe, converting from one Dimension Model to a different one
 */
+    gaiaCopyLinestringCoordsEx (dst, src, 0.0, 0.0);
+}
+
+GAIAGEO_DECLARE void
+gaiaCopyLinestringCoordsEx (gaiaLinestringPtr dst, gaiaLinestringPtr src,
+			    double z_no_data, double m_no_data)
+{
+/* 
+/ copying coords from one Linestring to another
+/ maybe, converting from one Dimension Model to a different one
+*/
     int iv;
     double x;
     double y;
@@ -302,8 +313,8 @@ gaiaCopyLinestringCoords (gaiaLinestringPtr dst, gaiaLinestringPtr src)
 	return;
     for (iv = 0; iv < dst->Points; iv++)
       {
-	  z = 0.0;
-	  m = 0.0;
+	  z = z_no_data;
+	  m = m_no_data;
 	  if (src->DimensionModel == GAIA_XY_Z)
 	    {
 		gaiaGetPointXYZ (src->Coords, iv, &x, &y, &z);
@@ -608,6 +619,17 @@ gaiaCopyRingCoords (gaiaRingPtr dst, gaiaRingPtr src)
 / copying coords from one Ring to another
 / maybe, converting from one Dimension Model to a different one
 */
+    gaiaCopyRingCoordsEx (dst, src, 0.0, 0.0);
+}
+
+GAIAGEO_DECLARE void
+gaiaCopyRingCoordsEx (gaiaRingPtr dst, gaiaRingPtr src, double z_no_data,
+		      double m_no_data)
+{
+/* 
+/ copying coords from one Ring to another
+/ maybe, converting from one Dimension Model to a different one
+*/
     int iv;
     double x;
     double y;
@@ -621,8 +643,8 @@ gaiaCopyRingCoords (gaiaRingPtr dst, gaiaRingPtr src)
 	return;
     for (iv = 0; iv < dst->Points; iv++)
       {
-	  z = 0.0;
-	  m = 0.0;
+	  z = z_no_data;
+	  m = m_no_data;
 	  if (src->DimensionModel == GAIA_XY_Z)
 	    {
 		gaiaGetPointXYZ (src->Coords, iv, &x, &y, &z);
@@ -1476,6 +1498,13 @@ GAIAGEO_DECLARE gaiaGeomCollPtr
 gaiaCastGeomCollToXYZ (gaiaGeomCollPtr geom)
 {
 /* clones a GEOMETRYCOLLECTION converting to XYZ-dimensions */
+    return gaiaCastGeomCollToXYZnoData (geom, 0.0);
+}
+
+GAIAGEO_DECLARE gaiaGeomCollPtr
+gaiaCastGeomCollToXYZnoData (gaiaGeomCollPtr geom, double no_data)
+{
+/* clones a GEOMETRYCOLLECTION converting to XYZ-dimensions */
     int ib;
     gaiaPointPtr point;
     gaiaLinestringPtr line;
@@ -1485,8 +1514,12 @@ gaiaCastGeomCollToXYZ (gaiaGeomCollPtr geom)
     gaiaGeomCollPtr new_geom;
     gaiaRingPtr i_ring;
     gaiaRingPtr o_ring;
+    int has_z = 0;
     if (!geom)
 	return NULL;
+    if (geom->DimensionModel == GAIA_XY_Z
+	|| geom->DimensionModel == GAIA_XY_Z_M)
+	has_z = 1;
     new_geom = gaiaAllocGeomCollXYZ ();
     new_geom->Srid = geom->Srid;
     new_geom->DeclaredType = geom->DeclaredType;
@@ -1494,7 +1527,11 @@ gaiaCastGeomCollToXYZ (gaiaGeomCollPtr geom)
     while (point)
       {
 	  /* copying POINTs */
-	  gaiaAddPointToGeomCollXYZ (new_geom, point->X, point->Y, point->Z);
+	  if (has_z)
+	      gaiaAddPointToGeomCollXYZ (new_geom, point->X, point->Y,
+					 point->Z);
+	  else
+	      gaiaAddPointToGeomCollXYZ (new_geom, point->X, point->Y, no_data);
 	  point = point->Next;
       }
     line = geom->FirstLinestring;
@@ -1502,7 +1539,7 @@ gaiaCastGeomCollToXYZ (gaiaGeomCollPtr geom)
       {
 	  /* copying LINESTRINGs */
 	  new_line = gaiaAddLinestringToGeomColl (new_geom, line->Points);
-	  gaiaCopyLinestringCoords (new_line, line);
+	  gaiaCopyLinestringCoordsEx (new_line, line, no_data, 0.0);
 	  line = line->Next;
       }
     polyg = geom->FirstPolygon;
@@ -1515,13 +1552,13 @@ gaiaCastGeomCollToXYZ (gaiaGeomCollPtr geom)
 					polyg->NumInteriors);
 	  o_ring = new_polyg->Exterior;
 	  /* copying points for the EXTERIOR RING */
-	  gaiaCopyRingCoords (o_ring, i_ring);
+	  gaiaCopyRingCoordsEx (o_ring, i_ring, no_data, 0.0);
 	  for (ib = 0; ib < new_polyg->NumInteriors; ib++)
 	    {
 		/* copying each INTERIOR RING [if any] */
 		i_ring = polyg->Interiors + ib;
 		o_ring = gaiaAddInteriorRing (new_polyg, ib, i_ring->Points);
-		gaiaCopyRingCoords (o_ring, i_ring);
+		gaiaCopyRingCoordsEx (o_ring, i_ring, no_data, 0.0);
 	    }
 	  polyg = polyg->Next;
       }
@@ -1530,6 +1567,13 @@ gaiaCastGeomCollToXYZ (gaiaGeomCollPtr geom)
 
 GAIAGEO_DECLARE gaiaGeomCollPtr
 gaiaCastGeomCollToXYM (gaiaGeomCollPtr geom)
+{
+/* clones a GEOMETRYCOLLECTION converting to XYM-dimensions */
+    return gaiaCastGeomCollToXYMnoData (geom, 0.0);
+}
+
+GAIAGEO_DECLARE gaiaGeomCollPtr
+gaiaCastGeomCollToXYMnoData (gaiaGeomCollPtr geom, double no_data)
 {
 /* clones a GEOMETRYCOLLECTION converting to XYM-dimensions */
     int ib;
@@ -1541,8 +1585,12 @@ gaiaCastGeomCollToXYM (gaiaGeomCollPtr geom)
     gaiaGeomCollPtr new_geom;
     gaiaRingPtr i_ring;
     gaiaRingPtr o_ring;
+    int has_m = 0;
     if (!geom)
 	return NULL;
+    if (geom->DimensionModel == GAIA_XY_M
+	|| geom->DimensionModel == GAIA_XY_Z_M)
+	has_m = 1;
     new_geom = gaiaAllocGeomCollXYM ();
     new_geom->Srid = geom->Srid;
     new_geom->DeclaredType = geom->DeclaredType;
@@ -1550,7 +1598,11 @@ gaiaCastGeomCollToXYM (gaiaGeomCollPtr geom)
     while (point)
       {
 	  /* copying POINTs */
-	  gaiaAddPointToGeomCollXYM (new_geom, point->X, point->Y, point->M);
+	  if (has_m)
+	      gaiaAddPointToGeomCollXYM (new_geom, point->X, point->Y,
+					 point->M);
+	  else
+	      gaiaAddPointToGeomCollXYM (new_geom, point->X, point->Y, no_data);
 	  point = point->Next;
       }
     line = geom->FirstLinestring;
@@ -1558,7 +1610,7 @@ gaiaCastGeomCollToXYM (gaiaGeomCollPtr geom)
       {
 	  /* copying LINESTRINGs */
 	  new_line = gaiaAddLinestringToGeomColl (new_geom, line->Points);
-	  gaiaCopyLinestringCoords (new_line, line);
+	  gaiaCopyLinestringCoordsEx (new_line, line, 0.0, no_data);
 	  line = line->Next;
       }
     polyg = geom->FirstPolygon;
@@ -1571,13 +1623,13 @@ gaiaCastGeomCollToXYM (gaiaGeomCollPtr geom)
 					polyg->NumInteriors);
 	  o_ring = new_polyg->Exterior;
 	  /* copying points for the EXTERIOR RING */
-	  gaiaCopyRingCoords (o_ring, i_ring);
+	  gaiaCopyRingCoordsEx (o_ring, i_ring, 0.0, no_data);
 	  for (ib = 0; ib < new_polyg->NumInteriors; ib++)
 	    {
 		/* copying each INTERIOR RING [if any] */
 		i_ring = polyg->Interiors + ib;
 		o_ring = gaiaAddInteriorRing (new_polyg, ib, i_ring->Points);
-		gaiaCopyRingCoords (o_ring, i_ring);
+		gaiaCopyRingCoordsEx (o_ring, i_ring, 0.0, no_data);
 	    }
 	  polyg = polyg->Next;
       }
@@ -1586,6 +1638,14 @@ gaiaCastGeomCollToXYM (gaiaGeomCollPtr geom)
 
 GAIAGEO_DECLARE gaiaGeomCollPtr
 gaiaCastGeomCollToXYZM (gaiaGeomCollPtr geom)
+{
+/* clones a GEOMETRYCOLLECTION converting to XYZM-dimensions */
+    return gaiaCastGeomCollToXYZMnoData (geom, 0.0, 0.0);
+}
+
+GAIAGEO_DECLARE gaiaGeomCollPtr
+gaiaCastGeomCollToXYZMnoData (gaiaGeomCollPtr geom, double z_no_data,
+			      double m_no_data)
 {
 /* clones a GEOMETRYCOLLECTION converting to XYZM-dimensions */
     int ib;
@@ -1597,8 +1657,16 @@ gaiaCastGeomCollToXYZM (gaiaGeomCollPtr geom)
     gaiaGeomCollPtr new_geom;
     gaiaRingPtr i_ring;
     gaiaRingPtr o_ring;
+    int has_z = 0;
+    int has_m = 0;
     if (!geom)
 	return NULL;
+    if (geom->DimensionModel == GAIA_XY_Z
+	|| geom->DimensionModel == GAIA_XY_Z_M)
+	has_z = 1;
+    if (geom->DimensionModel == GAIA_XY_M
+	|| geom->DimensionModel == GAIA_XY_Z_M)
+	has_m = 1;
     new_geom = gaiaAllocGeomCollXYZM ();
     new_geom->Srid = geom->Srid;
     new_geom->DeclaredType = geom->DeclaredType;
@@ -1606,8 +1674,18 @@ gaiaCastGeomCollToXYZM (gaiaGeomCollPtr geom)
     while (point)
       {
 	  /* copying POINTs */
-	  gaiaAddPointToGeomCollXYZM (new_geom, point->X, point->Y, point->Z,
-				      point->M);
+	  if (has_z && has_m)
+	      gaiaAddPointToGeomCollXYZM (new_geom, point->X, point->Y,
+					  point->Z, point->M);
+	  else if (has_z)
+	      gaiaAddPointToGeomCollXYZM (new_geom, point->X, point->Y,
+					  point->Z, m_no_data);
+	  else if (has_m)
+	      gaiaAddPointToGeomCollXYZM (new_geom, point->X, point->Y,
+					  z_no_data, point->M);
+	  else
+	      gaiaAddPointToGeomCollXYZM (new_geom, point->X, point->Y,
+					  z_no_data, m_no_data);
 	  point = point->Next;
       }
     line = geom->FirstLinestring;
@@ -1615,7 +1693,7 @@ gaiaCastGeomCollToXYZM (gaiaGeomCollPtr geom)
       {
 	  /* copying LINESTRINGs */
 	  new_line = gaiaAddLinestringToGeomColl (new_geom, line->Points);
-	  gaiaCopyLinestringCoords (new_line, line);
+	  gaiaCopyLinestringCoordsEx (new_line, line, z_no_data, m_no_data);
 	  line = line->Next;
       }
     polyg = geom->FirstPolygon;
@@ -1628,13 +1706,13 @@ gaiaCastGeomCollToXYZM (gaiaGeomCollPtr geom)
 					polyg->NumInteriors);
 	  o_ring = new_polyg->Exterior;
 	  /* copying points for the EXTERIOR RING */
-	  gaiaCopyRingCoords (o_ring, i_ring);
+	  gaiaCopyRingCoordsEx (o_ring, i_ring, z_no_data, m_no_data);
 	  for (ib = 0; ib < new_polyg->NumInteriors; ib++)
 	    {
 		/* copying each INTERIOR RING [if any] */
 		i_ring = polyg->Interiors + ib;
 		o_ring = gaiaAddInteriorRing (new_polyg, ib, i_ring->Points);
-		gaiaCopyRingCoords (o_ring, i_ring);
+		gaiaCopyRingCoordsEx (o_ring, i_ring, z_no_data, m_no_data);
 	    }
 	  polyg = polyg->Next;
       }
