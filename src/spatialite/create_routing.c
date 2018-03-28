@@ -299,6 +299,71 @@ do_update_internal_index (sqlite3 * db_handle, const void *cache,
 }
 
 static int
+do_search_view (sqlite3 * handle, const char *view, const char *geom,
+		int *srid, int *dims, int *is_geographic)
+{
+/* seraching the SRID and DIMS for Geometry - Spatial View */
+    char *sql;
+    int ret;
+    sqlite3_stmt *stmt = NULL;
+    int xsrid;
+    int type;
+    int count = 0;
+
+    sql =
+	sqlite3_mprintf
+	("SELECT g.srid, g.geometry_type FROM views_geometry_columns AS v "
+	 "JOIN geometry_columns AS g ON (g.f_table_name = v.f_table_name "
+	 "AND g.f_geometry_column = v.f_geometry_column) WHERE "
+	 "Lower(v.view_name) = Lower(%Q) AND Lower(v.view_geometry) = Lower(%Q)",
+	 view, geom);
+    ret = sqlite3_prepare_v2 (handle, sql, strlen (sql), &stmt, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+	return 0;
+    while (1)
+      {
+	  ret = sqlite3_step (stmt);
+	  if (ret == SQLITE_DONE)
+	      break;
+	  if (ret == SQLITE_ROW)
+	    {
+		xsrid = sqlite3_column_int (stmt, 0);
+		type = sqlite3_column_int (stmt, 1);
+		count++;
+	    }
+      }
+    sqlite3_finalize (stmt);
+    if (count == 1)
+      {
+	  int geographic;
+	  if (!srid_is_geographic (handle, xsrid, &geographic))
+	      return 0;
+	  switch (type)
+	    {
+	    case GAIA_LINESTRING:
+		*dims = GAIA_XY;
+		break;
+	    case GAIA_LINESTRINGZ:
+		*dims = GAIA_XY_Z;
+		break;
+	    case GAIA_LINESTRINGM:
+		*dims = GAIA_XY_M;
+		break;
+	    case GAIA_LINESTRINGZM:
+		*dims = GAIA_XY_Z_M;
+		break;
+	    default:
+		return 0;
+	    };
+	  *srid = xsrid;
+	  *is_geographic = geographic;
+	  return 1;
+      }
+    return 0;
+}
+
+static int
 do_search_srid (sqlite3 * handle, const char *table, const char *geom,
 		int *srid, int *dims, int *is_geographic)
 {
@@ -358,6 +423,13 @@ do_search_srid (sqlite3 * handle, const char *table, const char *geom,
 	  *is_geographic = geographic;
 	  return 1;
       }
+      
+      if (count == 0)
+      {
+		  /* testing for a possible Spatial View */
+		  if (do_search_view (handle, table, geom, srid, dims, is_geographic))
+		  return 1;
+	  }
     return 0;
 }
 

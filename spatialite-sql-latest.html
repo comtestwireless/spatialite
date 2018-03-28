@@ -335,10 +335,10 @@
 				<td colspan="3">returns the natural logarithm of <b>x</b>; that is, the base-<b><i>e</i></b> logarithm of <b>x</b><br>
 				If <b>x</b> is less than or equal to 0, then NULL is returned</td></tr>
 			<tr><td><b>Log</b></td>
-				<td>Log( b <i>Double precision</i> , x <i>Double precision</i> ) : <i>Double precision</i></td>
+				<td>Log( x <i>Double precision</i> , b <i>Double precision</i> ) : <i>Double precision</i></td>
 				<td colspan="3">returns the logarithm of <b>x</b> to the base <b>b</b><br>
 				If <b>x</b> is less than or equal to 0, or if <b>b</b> is less than or equal to 1, then NULL is returned<hr>
-				<b>Log(b, x)</b>  is equivalent to <b>Log(x)</b> / <b>Log(b)</b></td></tr>
+				<b>Log(x, b)</b>  is equivalent to <b>Log(x)</b> / <b>Log(b)</b></td></tr>
 			<tr><td><b>Log2</b></td>
 				<td>Log2( x <i>Double precision</i> ) : <i>Double precision</i></td>
 				<td colspan="3">returns the base-2 logarithm of <b>x</b><hr>
@@ -1194,7 +1194,28 @@ a Geometry will be returned representing the MBR for the corresponding GARS area
 				<td>GeomFromTWKB( twkbGeometry <i>BLOB</i> [ , SRID <i>Integer</i>]  ) : <i>Geometry</i></td>
 				<td></td>
 				<td align="center" bgcolor="#f0d0f0">RTTOPO</td>
-				<td>construct a geometric object given its TWKB Representation</td></tr>	
+				<td>construct a geometric object given its TWKB Representation</td></tr>
+			<tr><td><b>AsEncodedPolyline</b></td>
+				<td>ST_AsEncodedPolyline( geom <i>Geometry</i> ) : <i>TEXT</i><hr>
+				    ST_AsEncodedPolyline( geom <i>Geometry</i> , precision <i>Integer</i> ) : <i>TEXT</i></td>
+				<td></td>
+				<td align="center" bgcolor="#f0d0f0">RTTOPO</td>
+				<td>returns a <i>GoogleMaps encoded Polyline</i> from a Geometry.<br>
+				    The optional arguments <b>precision</b> is intended to specify how many decimal digist should be preserved (<i>default value</i>: <b>5</b>).<br>
+				    <u>Note</u>: the input Geometry must be a <b>LINESTRING</b> in some <b>geographic SRID</b> (coordinates expressed as <b>longitude</b> and <b>latitude</b> angles).<hr>
+				    <b>NULL</b> will be returned on invalid arguments.
+				</td></tr>	
+				
+			<tr><td><b>LineFromEncodedPolyline</b></td>
+				<td>ST_LineFromEncodedPolyline( polyline <i>TEXT</i> ) : <i>Geometry</i><hr>
+				    ST_LineFromEncodedPolyline( polyline <i>TEXT</i> , precision <i>Integer</i> ) : <i>Geometry</i></td>
+				<td></td>
+				<td align="center" bgcolor="#f0d0f0">RTTOPO</td>
+				<td>returns a Geometry from a <i>GoogleMaps encoded Polyline</i>.<br>
+				    The optional arguments <b>precision</b> is intended to specify how many decimal digist should be preserved (<i>default value</i>: <b>5</b>).<br>
+				    <u>Note</u>: the returned Geometry will always be a <b>LINESTRING</b> in the <b>SRID=4326</b>.<hr>
+				    <b>NULL</b> will be returned on invalid arguments.
+				</td></tr>	
 			<tr><td colspan="5" align="center" bgcolor="#f0f0c0">
 				<h3><a name="p4">SQL functions on type Geometry</a></h3></td></tr>
 			<tr><th bgcolor="#d0d0d0">Function</th>

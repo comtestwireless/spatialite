@@ -1787,7 +1787,8 @@ extern "C"
 
  \remark \b GEOS support required.
  */
-    GAIAGEO_DECLARE int gaiaIntersectionMatrixPatternMatch (const char *matrix,
+    GAIAGEO_DECLARE int gaiaIntersectionMatrixPatternMatch (const char
+							    *matrix,
 							    const char
 							    *pattern);
 
@@ -3964,6 +3965,54 @@ extern "C"
     GAIAGEO_DECLARE gaiaGeomCollPtr gaiaFromTWKB (const void *p_cache,
 						  const unsigned char *twkb,
 						  int twkb_size, int srid);
+
+/**
+ Converts a native binary Geometry into a GoogleMaps encoded PolyLine
+
+ \param p_cache a memory pointer returned by spatialite_alloc_connection()
+ \param geom the Geometry to be converted 
+ \param precision how much precision (decimal digits)
+ \param encoded on succesfull completion this pointer will reference the
+  GoogleMaps encoded PolyLine
+ \param len on succesfull completion this pointer will reference 
+ the length (in bytes) of the GoogleMaps encoded PolyLine
+
+ \return 0 on failure: any other value on success.
+
+ \sa gaiaLineFromEncodedPolyline
+
+ \note you are responsible to free (before or after) the TWKB geometry
+ created by gaiaToTWKB().
+
+ \remark \b RTTOPO support required.
+ */
+    GAIAGEO_DECLARE int gaiaAsEncodedPolyLine (const void *p_cache,
+					       gaiaGeomCollPtr geom,
+					       unsigned char precision,
+					       char **encoded, int *len);
+
+/**
+ Converts a GoogleMaps encoded PolyLine into a native binary Geometry (Linestring)
+
+ \param p_cache a memory pointer returned by spatialite_alloc_connection()
+ \param encoded pointer to GoogleMaps encoded PolyLine
+ \param precision how much precision (decimal digits)
+
+ \return the pointer to newly created Geometry object: NULL on failure.
+
+ \sa gaiaAsEncodedPolyLine
+
+ \note you are responsible to destroy the native geometry
+ returned by gaiaFromTWKB().
+
+ \remark \b RTTOPO support required.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr gaiaLineFromEncodedPolyline (const void
+								 *p_cache,
+								 const char
+								 *encoded,
+								 unsigned char
+								 precision);
 
 #endif				/* end RTTOPO support */
 

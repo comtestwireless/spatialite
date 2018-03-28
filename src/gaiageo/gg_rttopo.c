@@ -61,6 +61,7 @@ the current version depends on the newer RTTOPO support
 #include <stdio.h>
 #include <string.h>
 #include <float.h>
+#include <math.h>
 
 #if defined(_WIN32) && !defined(__MINGW32__)
 #include "config-msvc.h"
@@ -78,6 +79,12 @@ the current version depends on the newer RTTOPO support
 #ifdef ENABLE_RTTOPO		/* enabling RTTOPO support */
 
 #include <librttopo_geom.h>
+
+extern char *rtgeom_to_encoded_polyline (const RTCTX * ctx, const RTGEOM * geom,
+					 int precision);
+static RTGEOM *rtgeom_from_encoded_polyline (const RTCTX * ctx,
+					     const char *encodedpolyline,
+					     int precision);
 
 SPATIALITE_PRIVATE const char *
 splite_rttopo_version (void)
@@ -2720,5 +2727,145 @@ gaiaFromTWKB (const void *p_cache, const unsigned char *twkb, int twkb_size,
 	result->Srid = srid;
     return result;
 }
+
+GAIAGEO_DECLARE int
+gaiaAsEncodedPolyLine (const void *p_cache, gaiaGeomCollPtr geom,
+		       unsigned char precision, char **encoded, int *len)
+{
+/* wrapping RTGEOM rtline_to_encoded_polyline */
+    const RTCTX *ctx = NULL;
+    struct splite_internal_cache *cache =
+	(struct splite_internal_cache *) p_cache;
+    RTGEOM *g;
+    char *p_encoded;
+
+    *encoded = NULL;
+    *len = 0;
+
+    if (!geom)
+	return 0;
+    if (cache == NULL)
+	return 0;
+    if (cache->magic1 != SPATIALITE_CACHE_MAGIC1
+	|| cache->magic2 != SPATIALITE_CACHE_MAGIC2)
+	return 0;
+    ctx = cache->RTTOPO_handle;
+    if (ctx == NULL)
+	return 0;
+
+    g = toRTGeom (ctx, geom);
+    p_encoded = rtgeom_to_encoded_polyline (ctx, g, precision);
+    rtgeom_free (ctx, g);
+
+    if (p_encoded == NULL)
+	return 0;
+    *encoded = p_encoded;
+    *len = strlen (p_encoded);
+    return 1;
+}
+
+GAIAGEO_DECLARE gaiaGeomCollPtr
+gaiaLineFromEncodedPolyline (const void *p_cache, const char *encoded,
+			     unsigned char precision)
+{
+/* wrapping RTGEOM rtline_from_encoded_polyline */
+    const RTCTX *ctx = NULL;
+    struct splite_internal_cache *cache =
+	(struct splite_internal_cache *) p_cache;
+    RTGEOM *g;
+    gaiaGeomCollPtr result;
+    int dims = GAIA_XY;
+    int type = GAIA_LINESTRING;
+
+    if (encoded == NULL)
+	return NULL;
+    if (cache == NULL)
+	return NULL;
+    if (cache->magic1 != SPATIALITE_CACHE_MAGIC1
+	|| cache->magic2 != SPATIALITE_CACHE_MAGIC2)
+	return NULL;
+    ctx = cache->RTTOPO_handle;
+    if (ctx == NULL)
+	return NULL;
+
+    g = rtgeom_from_encoded_polyline (ctx, encoded, precision);
+    if (g == NULL)
+	return NULL;
+    result = fromRTGeom (ctx, g, dims, type);
+    spatialite_init_geos ();
+    rtgeom_free (ctx, g);
+    if (result != NULL)
+	result->Srid = 4326;
+    return result;
+}
+
+static RTGEOM *
+rtgeom_from_encoded_polyline (const RTCTX * ctx, const char *encodedpolyline,
+			      int precision)
+{
+/*
+ * RTTOPO lacks an implementation of rtgeom_from_encoded_polyline
+ * 
+ * this simply is a rearranged version of the original code available
+ * on LWGOEM lwin_encoded_polyline.c
+ * 
+ * Copyright 2014 Kashif Rasul <kashif.rasul@gmail.com>
+ * 
+ * the original code was released under the terms of the GNU General 
+ * Public License as published by the Free Software Foundation, either
+ *  version 2 of the License, or (at your option) any later version.
+*/
+    RTGEOM *geom = NULL;
+    RTPOINTARRAY *pa = NULL;
+    int length = strlen (encodedpolyline);
+    int idx = 0;
+    double scale = pow (10, precision);
+
+    float latitude = 0.0f;
+    float longitude = 0.0f;
+
+    pa = ptarray_construct_empty (ctx, RT_FALSE, RT_FALSE, 1);
+
+    while (idx < length)
+      {
+	  RTPOINT4D pt;
+	  char byte = 0;
+
+	  int res = 0;
+	  char shift = 0;
+	  do
+	    {
+		byte = encodedpolyline[idx++] - 63;
+		res |= (byte & 0x1F) << shift;
+		shift += 5;
+	    }
+	  while (byte >= 0x20);
+	  float deltaLat = ((res & 1) ? ~(res >> 1) : (res >> 1));
+	  latitude += deltaLat;
+
+	  shift = 0;
+	  res = 0;
+	  do
+	    {
+		byte = encodedpolyline[idx++] - 63;
+		res |= (byte & 0x1F) << shift;
+		shift += 5;
+	    }
+	  while (byte >= 0x20);
+	  float deltaLon = ((res & 1) ? ~(res >> 1) : (res >> 1));
+	  longitude += deltaLon;
+
+	  pt.x = longitude / scale;
+	  pt.y = latitude / scale;
+	  pt.m = pt.z = 0.0;
+	  ptarray_append_point (ctx, pa, &pt, RT_FALSE);
+      }
+
+    geom = (RTGEOM *) rtline_construct (ctx, 4326, NULL, pa);
+    rtgeom_add_bbox (ctx, geom);
+
+    return geom;
+}
+
 
 #endif /* end enabling RTTOPO support */
