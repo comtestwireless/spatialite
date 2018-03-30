@@ -1185,3 +1185,45 @@ spatialite_set_verbose_mode (const void *p_cache)
 	return;
     cache->silent_mode = 0;
 }
+
+SPATIALITE_DECLARE void
+enable_tiny_point (const void *p_cache)
+{
+/* Enabling the BLOB-TinyPoint encoding */
+    struct splite_internal_cache *cache =
+	(struct splite_internal_cache *) p_cache;
+    if (cache == NULL)
+	return;
+    if (cache->magic1 != SPATIALITE_CACHE_MAGIC1
+	|| cache->magic2 != SPATIALITE_CACHE_MAGIC2)
+	return;
+    cache->tinyPointEnabled = 1;
+}
+
+SPATIALITE_DECLARE void
+disable_tiny_point (const void *p_cache)
+{
+/* Disabling the BLOB-TinyPoint encoding */
+    struct splite_internal_cache *cache =
+	(struct splite_internal_cache *) p_cache;
+    if (cache == NULL)
+	return;
+    if (cache->magic1 != SPATIALITE_CACHE_MAGIC1
+	|| cache->magic2 != SPATIALITE_CACHE_MAGIC2)
+	return;
+    cache->tinyPointEnabled = 0;
+}
+
+SPATIALITE_DECLARE int
+is_tiny_point_enabled (const void *p_cache)
+{
+/* Checking if the BLOB-TinyPoint encoding is enabled or not */
+    struct splite_internal_cache *cache =
+	(struct splite_internal_cache *) p_cache;
+    if (cache == NULL)
+	return 0;
+    if (cache->magic1 != SPATIALITE_CACHE_MAGIC1
+	|| cache->magic2 != SPATIALITE_CACHE_MAGIC2)
+	return 0;
+    return cache->tinyPointEnabled;
+}

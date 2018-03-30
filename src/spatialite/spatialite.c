@@ -6536,6 +6536,8 @@ eval_rtree_entry (int ok_geom, double geom_value, int ok_rtree,
 	  float r = (float) rtree_value;
 	  double tic = fabs (geom_value - r) * 2.0;
 	  float diff = g - r;
+	  if (diff >= 1.5)
+	      return 0;
 	  if (diff > tic)
 	      return 0;
 	  return 1;
@@ -22884,7 +22886,7 @@ fnct_LineFromEncodedPolyline (sqlite3_context * context, int argc,
 	  return;
       }
     else
-	  encoded = (const char *) sqlite3_value_text (argv[0]);
+	encoded = (const char *) sqlite3_value_text (argv[0]);
     if (argc >= 2)
       {
 	  if (sqlite3_value_type (argv[1]) != SQLITE_INTEGER)
@@ -41603,11 +41605,9 @@ fnct_enableTinyPoint (sqlite3_context * context, int argc,
 /
 / returns: nothing
 */
-    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    const void *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
-    if (cache == NULL)
-	return;
-    cache->tinyPointEnabled = 1;
+    enable_tiny_point (cache);
 }
 
 static void
@@ -41619,11 +41619,9 @@ fnct_disableTinyPoint (sqlite3_context * context, int argc,
 /
 / returns: nothing
 */
-    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    const void *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
-    if (cache == NULL)
-	return;
-    cache->tinyPointEnabled = 0;
+    disable_tiny_point (cache);
 }
 
 static void
@@ -41635,14 +41633,11 @@ fnct_isTinyPointEnabled (sqlite3_context * context, int argc,
 /
 / returns: TRUE or FALSE
 */
-    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    int enabled;
+    const void *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
-    if (cache == NULL)
-      {
-	  sqlite3_result_int (context, -1);
-	  return;
-      }
-    sqlite3_result_int (context, cache->tinyPointEnabled);
+    enabled = is_tiny_point_enabled (cache);
+    sqlite3_result_int (context, enabled);
 }
 
 static void

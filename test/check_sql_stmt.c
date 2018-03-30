@@ -523,7 +523,7 @@ run_subdir_test (const char *subdirname, struct db_conn *conn,
     for (i = 0; i < n; ++i)
 	free (namelist[i]);
     free (namelist);
-    
+
     return result;
 }
 
@@ -533,16 +533,13 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
     int ret;
     int result = 0;
     const char *security_level;
-    int tiny_point = 0;
+    int tiny_point = is_tiny_point_enabled (conn->cache);
 
     result = run_subdir_test ("sql_stmt_tests", conn, load_extension, 0);
     if (result != 0)
       {
 	  return result;
       }
-
-    if (getenv ("SPATIALITE_TINYPOINT") != NULL)
-	tiny_point = atoi (getenv ("SPATIALITE_TINYPOINT"));
 
     if (tiny_point)
       {
@@ -945,14 +942,10 @@ main (int argc, char *argv[])
 	  /* testing again by enabling the TinyPoint encoding */
 	  fprintf (stderr,
 		   "\n****************** testing again by enabling the TinyPoint encoding\n\n");
-	  /* enabling TinyPoint */
-#ifdef _WIN32
-	  putenv ("SPATIALITE_TINYPOINT=1");
-#else /* not WIN32 */
-	  setenv ("SPATIALITE_TINYPOINT", "1", 1);
-#endif
 	  cache = spatialite_alloc_connection ();
 	  conn.cache = cache;
+	  /* enabling TinyPoint */
+	  enable_tiny_point (cache);
 	  if (argc == 1)
 	    {
 		result = run_all_testcases (&conn, 0, 0);
@@ -964,12 +957,6 @@ main (int argc, char *argv[])
 	  close_connection (&conn);
 	  spatialite_cleanup_ex (conn.cache);
 	  conn.cache = NULL;
-	  /* disabling TinyPoint */
-#ifdef _WIN32
-	  putenv ("SPATIALITE_TINYPOINTY=");
-#else /* not WIN32 */
-	  unsetenv ("SPATIALITE_TINYPOINT");
-#endif
       }
 
     if (result == 0)

@@ -222,6 +222,38 @@ extern "C"
     SPATIALITE_DECLARE void spatialite_finalize_topologies (const void *ptr);
 
 /**
+ Enables the BLOB-TinyPoint encoding
+ 
+ \param ptr the same memory pointer passed to the corresponding call to
+ spatialite_init_ex() and returned by spatialite_alloc_connection()
+ 
+ \sa disable_tiny_point, is_tiny_point_enabled
+*/
+    SPATIALITE_DECLARE void enable_tiny_point (const void *ptr);
+
+/**
+ Disables the BLOB-TinyPoint encoding
+ 
+ \param ptr the same memory pointer passed to the corresponding call to
+ spatialite_init_ex() and returned by spatialite_alloc_connection()
+ 
+ \sa disable_tiny_point, is_tiny_point_enabled
+*/
+    SPATIALITE_DECLARE void disable_tiny_point (const void *ptr);
+
+/**
+ Checks if the BLOB-TinyPoint encoding is enabled or not
+ 
+ \param ptr the same memory pointer passed to the corresponding call to
+ spatialite_init_ex() and returned by spatialite_alloc_connection()
+ 
+ \return 0 (FALSE) if not enabled, any other value (TRUE) if enabled
+ 
+ \sa enable_tiny_point, disable_tiny_point
+*/
+    SPATIALITE_DECLARE int is_tiny_point_enabled (const void *ptr);
+
+/**
  Dumps a full geometry-table into an external Shapefile
 
  \param sqlite handle to current DB connection
