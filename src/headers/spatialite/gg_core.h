@@ -1666,6 +1666,42 @@ extern "C"
 				   double m_end);
 
 /**
+ Checks if a Geometry object is valid Trajectory
+
+ \param geom pointer to Geometry object
+
+ \return 0 if false; any other value if true
+
+ \sa gaiaTrajectoryInterpolatePoint
+ 
+ \note a Geometry is considered to be a valid Trajectory if it contains
+ a simple LINESTRING supporting M-values growing from each vertex to the next.
+ */
+    GAIAGEO_DECLARE int gaiaIsValidTrajectory (gaiaGeomCollPtr geom);
+
+/**
+ Attempts to interpolate a Point along a Trajectory accordingly to given M-Value
+
+ \param geom pointer to Geometry object (expected to be a valid Trajectory)
+ \param m the M-Value to be interpolated
+
+ \return the pointer to newly created Geometry object representing a Point
+ laying on the input Geometry and positioned at the given M-Value
+ NULL on failure.
+
+ \sa gaiaIsValidTrajectory, gaiaFreeGeomColl
+
+ \note you are responsible to destroy (before or after) any allocated Geometry,
+ this including any Geometry returned by gaiaLineInterpolatePoint()\n
+ not reentrant and thread unsafe.
+ 
+ \note a Geometry is considered to be a valid Trajectory if it contains
+ a simple LINESTRING supporting M-values growing from each vertex to the next.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr
+	gaiaTrajectoryInterpolatePoint (gaiaGeomCollPtr geom, double m);
+
+/**
  Measures the geometric length for a Linestring or Ring
 
  \param dims dimensions: one of GAIA_XY, GAIA_XY_Z, GAIA_XY_M or GAIA_XY_ZM

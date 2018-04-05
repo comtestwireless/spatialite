@@ -5010,6 +5010,167 @@ gaiaLocateBetweenMeasures (gaiaGeomCollPtr geom, double m_start, double m_end)
     return new_geom;
 }
 
+GAIAGEO_DECLARE int
+gaiaIsValidTrajectory (gaiaGeomCollPtr geom)
+{
+/* Checks if a Geometry object is valid Trajectory */
+    gaiaLinestringPtr ln;
+    int iv;
+    double x;
+    double y;
+    double z;
+    double m;
+    double prev_m;
+    if (!geom)
+	return 0;
+    if (geom->FirstPoint != NULL || geom->FirstLinestring == NULL
+	|| geom->FirstPolygon != NULL)
+	return 0;		/* not a Linestring */
+    if (geom->FirstLinestring != geom->LastLinestring)
+	return 0;		/* not a simple Linestring */
+    if (geom->DimensionModel == GAIA_XY_M
+	|| geom->DimensionModel == GAIA_XY_Z_M)
+	;
+    else
+	return 0;		/* not supporting M_values */
+    ln = geom->FirstLinestring;
+    for (iv = 0; iv < ln->Points; iv++)
+      {
+	  z = 0.0;
+	  if (ln->DimensionModel == GAIA_XY_Z_M)
+	    {
+		gaiaGetPointXYZM (ln->Coords, iv, &x, &y, &z, &m);
+	    }
+	  else
+	    {
+		gaiaGetPointXYM (ln->Coords, iv, &x, &y, &m);
+	    }
+	  if (iv != 0)
+	    {
+		if (m <= prev_m)
+		    return 0;
+	    }
+	  prev_m = m;
+      }
+    return 1;
+}
+
+GAIAGEO_DECLARE gaiaGeomCollPtr
+gaiaTrajectoryInterpolatePoint (gaiaGeomCollPtr geom, double m_value)
+{
+/* attempts to interpolate a Point along a Trajectory accordingly to given M-Value */
+    gaiaGeomCollPtr point;
+    gaiaLinestringPtr ln;
+    int iv;
+    double x;
+    double y;
+    double z;
+    double m;
+    double prev_x;
+    double prev_y;
+    double prev_z;
+    double prev_m;
+    if (!gaiaIsValidTrajectory (geom))
+	return NULL;
+
+/* creating the Geometry to be returned */
+    if (geom->DimensionModel == GAIA_XY_M)
+	point = gaiaAllocGeomCollXYM ();
+    else if (geom->DimensionModel == GAIA_XY_Z_M)
+	point = gaiaAllocGeomCollXYZM ();
+    else
+	return NULL;
+    point->Srid = geom->Srid;
+    point->DeclaredType = GAIA_POINT;
+
+    ln = geom->FirstLinestring;	
+/* testing if m < StartPoint */
+    if (ln->DimensionModel == GAIA_XY_Z_M)
+      {
+	  gaiaGetPointXYZM (ln->Coords, 0, &x, &y, &z, &m);
+      }
+    else
+      {
+	  gaiaGetPointXYM (ln->Coords, 0, &x, &y, &m);
+      }
+    if (m_value < m)
+      {
+	  if (ln->DimensionModel == GAIA_XY_Z_M)
+	      gaiaAddPointToGeomCollXYZM (point, x, y, z, m_value);
+	  else
+	      gaiaAddPointToGeomCollXYM (point, x, y, m_value);
+	  return point;
+      }
+
+/* testing if m > EndPoint */
+    iv = ln->Points - 1;
+    if (ln->DimensionModel == GAIA_XY_Z_M)
+      {
+	  gaiaGetPointXYZM (ln->Coords, iv, &x, &y, &z, &m);
+      }
+    else
+      {
+	  gaiaGetPointXYM (ln->Coords, iv, &x, &y, &m);
+      }
+    if (m_value > m)
+      {
+	  if (ln->DimensionModel == GAIA_XY_Z_M)
+	      gaiaAddPointToGeomCollXYZM (point, x, y, z, m_value);
+	  else
+	      gaiaAddPointToGeomCollXYM (point, x, y, m_value);
+	  return point;
+      }
+
+    ln = geom->FirstLinestring;
+    for (iv = 0; iv < ln->Points; iv++)
+      {
+	  z = 0.0;
+	  if (ln->DimensionModel == GAIA_XY_Z_M)
+	    {
+		gaiaGetPointXYZM (ln->Coords, iv, &x, &y, &z, &m);
+	    }
+	  else
+	    {
+		gaiaGetPointXYM (ln->Coords, iv, &x, &y, &m);
+	    }
+	  if (m_value == m)
+	    {
+		if (ln->DimensionModel == GAIA_XY_Z_M)
+		    gaiaAddPointToGeomCollXYZM (point, x, y, z, m_value);
+		else
+		    gaiaAddPointToGeomCollXYM (point, x, y, m_value);
+		return point;
+	    }
+	  if (m_value > prev_m && m_value < m)
+	    {
+		/* interpolating the Point */
+		double ix;
+		double iy;
+		double iz;
+		double diff = m - prev_m;
+		double ratio = diff / m_value;
+		diff = x - prev_x;
+		ix = prev_x + (diff / ratio);
+		diff = y - prev_y;
+		iy = prev_y + (diff / ratio);
+		diff = z - prev_z;
+		iz = prev_z + (diff / ratio);
+		if (ln->DimensionModel == GAIA_XY_Z_M)
+		    gaiaAddPointToGeomCollXYZM (point, ix, iy, iz, m_value);
+		else
+		    gaiaAddPointToGeomCollXYM (point, ix, iy, m_value);
+		return point;
+	    }
+	  prev_x = x;
+	  prev_y = y;
+	  prev_z = z;
+	  prev_m = m;
+      }
+
+    gaiaFreeGeomColl (point);
+    return NULL;
+}
+
 static int
 check_closed_multi_linestring (gaiaGeomCollPtr geom, int single)
 {

@@ -2506,7 +2506,9 @@ fnct_CloneTable (sqlite3_context * context, int argc, sqlite3_value ** argv)
     const void *cloner = NULL;
     sqlite3 *sqlite = sqlite3_context_db_handle (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
-    if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
+    if (sqlite3_value_type (argv[0]) == SQLITE_NULL)
+	db_prefix = "MAIN";
+    else if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
 	db_prefix = (const char *) sqlite3_value_text (argv[0]);
     else
       {
@@ -21391,7 +21393,9 @@ fnct_LocateBetweenMeasures (sqlite3_context * context, int argc,
 {
 /* SQL functions:
 / ST_Locate_Along_Measure(BLOBencoded geometry, Double m_value)
+/ ST_LocateAlong(BLOBencoded geometry, Double m_value)
 / ST_Locate_Between_Measures(BLOBencoded geometry, Double m_start, Double m_end)
+/ ST_LocateBetween(BLOBencoded geometry, Double m_start, Double m_end)
 /
 / Extracts from a GEOMETRY (supporting M) any Point/Linestring
 / matching the range of measures
@@ -21474,6 +21478,125 @@ fnct_LocateBetweenMeasures (sqlite3_context * context, int argc,
 	    }
       }
     gaiaFreeGeomColl (geo);
+}
+
+static void
+fnct_IsValidTrajectory (sqlite3_context * context, int argc,
+			sqlite3_value ** argv)
+{
+/* SQL function:
+/ ST_IsValidTrajectory(BLOBencoded geometry)
+/
+/ returns:
+/ 1 if this GEOMETRY is a LINESTRING supporting M-values and
+/   presenting M-values growing from o vertex to the next
+/ 0 otherwise
+/ or -1 if any error is encountered
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    int intval;
+    gaiaGeomCollPtr geo = NULL;
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_int (context, -1);
+	  return;
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geo =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (geo == NULL)
+	sqlite3_result_int (context, -1);
+    else
+      {
+	  intval = gaiaIsValidTrajectory (geo);
+	  sqlite3_result_int (context, intval);
+	  gaiaFreeGeomColl (geo);
+      }
+}
+
+static void
+fnct_TrajectoryInterpolatePoint (sqlite3_context * context, int argc,
+				 sqlite3_value ** argv)
+{
+/* SQL function:
+/ ST_TrajectoryInterpolatePoint(BLOBencoded geometry, DOUBLE m)
+/
+/ returns a new geometry representing a point interpolated along a Trajectory
+/ accordingly to given M-Value
+/ or NULL if any error is encountered
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    int intval;
+    double m;
+    gaiaGeomCollPtr geo = NULL;
+    gaiaGeomCollPtr result;
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    int tiny_point = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+	  tiny_point = cache->tinyPointEnabled;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (sqlite3_value_type (argv[1]) == SQLITE_INTEGER)
+      {
+	  intval = sqlite3_value_int (argv[1]);
+	  m = intval;
+      }
+    else if (sqlite3_value_type (argv[1]) == SQLITE_FLOAT)
+	m = sqlite3_value_double (argv[1]);
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geo =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (geo == NULL)
+	sqlite3_result_int (context, -1);
+    else
+      {
+	  intval = gaiaIsValidTrajectory (geo);
+	  result = gaiaTrajectoryInterpolatePoint (geo, m);
+	  if (result == NULL)
+	      sqlite3_result_null (context);
+	  else
+	    {
+		/* builds the BLOB geometry to be returned */
+		int len;
+		unsigned char *p_result = NULL;
+		result->Srid = geo->Srid;
+		gaiaToSpatiaLiteBlobWkbEx2 (result, &p_result, &len,
+					    gpkg_mode, tiny_point);
+		sqlite3_result_blob (context, p_result, len, free);
+		gaiaFreeGeomColl (result);
+	    }
+	  gaiaFreeGeomColl (geo);
+      }
 }
 
 #ifndef OMIT_PROJ		/* including PROJ.4 */
@@ -44215,6 +44338,13 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "ST_LocateBetween", 3,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_LocateBetweenMeasures, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_IsValidTrajectory", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_IsValidTrajectory, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_TrajectoryInterpolatePoint", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_TrajectoryInterpolatePoint, 0, 0, 0);
+
 #ifndef OMIT_GEOCALLBACKS	/* supporting RTree geometry callbacks */
     sqlite3_rtree_geometry_callback (db, "RTreeWithin", fnct_RTreeIntersects,
 				     0);

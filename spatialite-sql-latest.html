@@ -2125,7 +2125,22 @@ This function only supports Long/Lat coordinates, and will return NULL for any p
 				<td align="center" bgcolor="#d0f0d0">base</td>
 				<td>Return a derived geometry collection value with elements that match the specified range of measures.<br>
 				NULL will be returned if any error is encountered (or when no element corresponding to the given range of measures is found).<br>
-                                <u>Please note</u>: NULL will be returned if geom doesn't contain M-dimension, or if geom contains a Polygon, or if geom is a GeometryCollection.</td></tr>
+                                <u>Please note</u>: NULL will be returned if geom doesn't contain M-dimension, or if geom contains a Polygon, or if geom is a GeometryCollection.</td></tr>                            
+			<tr><td><b>IsValidTrajectory</b></td>
+				<td>ST_IsValidTrajectory( geom <i>Geometry</i> ) : <i>Integer</i></td>
+				<td></td>
+				<td align="center" bgcolor="#d0f0d0">base</td>
+				<td>Check if a Geometry corresponds to a valid Trajectory.<br>
+				a Trajectory is assumed to be a LINESTRING supporting M-values growing from each vertex to the next.<hr>
+				NULL will be returned on invalid arguments.</td></tr>                           
+			<tr><td><b>TrajectoryInterpolatePoint</b></td>
+				<td>ST_TrajectoryInterpolarePoint( geom <i>Geometry</i> , m_value <i>Double</i> ) : <i>Geometry</i></td>
+				<td></td>
+				<td align="center" bgcolor="#d0f0d0">base</td>
+				<td>Check if a Geometry corresponds to a valid Trajectory.<br>
+				Return a POINT Geometry being interpolated along the Geometry (that is expected to be a valid Trajectory) accordingly to the given M-value.<br>
+				The interpolated Point will have the same dimensions and SRID of the Trajectory.<hr>
+				NULL will be returned on invalid arguments.</td></tr>
 			<tr><td colspan="5" align="center" bgcolor="#f0f0c0">
 				<h3><a name="p14">SQL functions that implement spatial operators</a></h3></td></tr>
 			<tr><th bgcolor="#d0d0d0">Function</th>
@@ -5565,7 +5580,8 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				assumed to be located into the primary DB.<ul>
 				<li>Mandatory arguments:
 				<ul>
-					<li><b>db-prefix</b> corresponding to the origin; the primary DB always corresponds to the <i>main</i> prefix.</li>
+					<li><b>db-prefix</b> corresponding to the origin; the primary DB always corresponds to the <i>main</i> prefix.<br>
+					    Can be legitimately set to <b>NULL</b>, and in this case <b>MAIN</b> will be implicitly assumed.</b></b></li>
 					<li><b>input_table</b> name of the origin table</li>
 					<li><b>output_table</b> name of the destination table</li>
 					<li><b>transaction</b> a <i>boolean</i> values stating if the whole operation has to be atomically confined

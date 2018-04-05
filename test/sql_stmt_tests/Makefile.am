@@ -1482,6 +1482,13 @@ EXTRA_DIST = addpoint10.testcase \
 	isvalidrastertile7.testcase \
 	isvalidrastertile8.testcase \
 	isvalidrastertile9.testcase \
+	isvalidtrajectory1.testcase \
+	isvalidtrajectory2.testcase \
+	isvalidtrajectory3.testcase \
+	isvalidtrajectory4.testcase \
+	isvalidtrajectory5.testcase \
+	isvalidtrajectory6.testcase \
+	isvalidtrajectory7.testcase \
 	isXblob6.testcase \
 	isXblob7.testcase \
 	k3b-icon.png \
@@ -2486,6 +2493,18 @@ EXTRA_DIST = addpoint10.testcase \
 	tinypointencode8.testcase \
 	tinypointencode9.testcase \
 	tinypointencode10.testcase \
+	trajectorypoint1.testcase \
+	trajectorypoint2.testcase \
+	trajectorypoint3.testcase \
+	trajectorypoint4.testcase \
+	trajectorypoint5.testcase \
+	trajectorypoint6.testcase \
+	trajectorypoint7.testcase \
+	trajectorypoint8.testcase \
+	trajectorypoint9.testcase \
+	trajectorypoint10.testcase \
+	trajectorypoint11.testcase \
+	trajectorypoint12.testcase \
 	wms_defaultsetting1.testcase \
 	wms_defaultsetting2.testcase \
 	wms_defaultsetting3.testcase \
