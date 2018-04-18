@@ -709,6 +709,43 @@ fnct_has_topology (sqlite3_context * context, int argc, sqlite3_value ** argv)
 }
 
 static void
+fnct_has_knn (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ HasKNN()
+/
+/ return 1 if built including KNN support; otherwise 0
+*/
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+#ifndef OMIT_GEOS		/* only if GEOS is enabled */
+#ifndef OMIT_KNN		/* only if KNN is enabled */
+    sqlite3_result_int (context, 1);
+#else
+    sqlite3_result_int (context, 0);
+#endif
+#else
+    sqlite3_result_int (context, 0);
+#endif
+}
+
+static void
+fnct_has_routing (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ HasRouting()
+/
+/ return 1 if built including VirtualRouting support; otherwise 0
+*/
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+#ifndef OMIT_GEOS		/* only if GEOS is enabled */
+    sqlite3_result_int (context, 1);
+#else
+    sqlite3_result_int (context, 0);
+#endif
+}
+
+
+static void
 fnct_GeometryConstraints (sqlite3_context * context, int argc,
 			  sqlite3_value ** argv)
 {
@@ -42693,6 +42730,12 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "HasTopology", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_has_topology, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "HasKNN", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_has_knn, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "HasRouting", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_has_routing, 0, 0, 0);
     sqlite3_create_function_v2 (db, "GeometryConstraints", 3,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_GeometryConstraints, 0, 0, 0);
@@ -46798,8 +46841,6 @@ init_spatialite_virtualtables (void *p_db, const void *p_cache)
 
 /* initializing the VirtualNetwork  extension */
     virtualnetwork_extension_init (db);
-/* initializing the VirtualRouting  extension */
-    virtualrouting_extension_init (db);
 /* initializing the MbrCache  extension */
     mbrcache_extension_init (db);
 /* initializing the VirtualFDO  extension */
@@ -46811,10 +46852,14 @@ init_spatialite_virtualtables (void *p_db, const void *p_cache)
 /* initializing the VirtualElementary  extension */
     virtual_elementary_extension_init (db);
 
+#ifndef OMIT_GEOS		/* only if GEOS is supported */
+/* initializing the VirtualRouting  extension */
+    virtualrouting_extension_init (db);
 #ifndef OMIT_KNN		/* only if KNN is enabled */
 /* initializing the VirtualKNN  extension */
     virtual_knn_extension_init (db);
 #endif /* end KNN conditional */
+#endif /* end GEOS conditional */
 
 #ifdef ENABLE_GEOPACKAGE	/* only if GeoPackage support is enabled */
 /* initializing the VirtualFDO  extension */

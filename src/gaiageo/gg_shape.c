@@ -1729,10 +1729,8 @@ gaiaReadShpEntity_ex (gaiaShapefilePtr shp, int current_row, int srid,
     rd = fread (buf, sizeof (unsigned char), 12, shp->flShp);
     if (rd != 12)
 	goto error;
-    int rno = gaiaImport32 (buf, GAIA_BIG_ENDIAN, shp->endian_arch);
     sz = gaiaImport32 (buf + 4, GAIA_BIG_ENDIAN, shp->endian_arch);
     shape = gaiaImport32 (buf + 8, GAIA_LITTLE_ENDIAN, shp->endian_arch);
-    fprintf (stderr, "\t%d\t%d\t%d\n", rno, sz, shape);
     if (shape == GAIA_SHP_NULL)
       {
 	  /* handling a NULL shape */

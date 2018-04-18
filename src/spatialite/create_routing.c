@@ -2589,7 +2589,6 @@ do_insert_temp_aux_node (sqlite3 * db_handle, sqlite3_stmt * stmt, double x,
 
 /* some error occurred */
     *msg = sqlite3_mprintf ("SQL error: %s", sqlite3_errmsg (db_handle));
-    fprintf (stderr, "%s\n", *msg);
     return 0;
 }
 

@@ -58,6 +58,8 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #include "config.h"
 #endif
 
+#ifndef OMIT_GEOS		/* GEOS is supported */
+
 #include <spatialite/sqlite.h>
 
 #include <spatialite.h>
@@ -174,6 +176,7 @@ typedef struct RoutingStruct
     char *GeometryColumn;
     char *NameColumn;
     double AStarHeuristicCoeff;
+    int HasZ;
     int Srid;
     RouteNodePtr Nodes;
 } Routing;
@@ -861,8 +864,8 @@ add_link_geometry_to_solution (ShortestPathSolutionPtr solution,
 	    }
 	  else if (geom->DimensionModel == GAIA_XY_Z_M)
 	    {
-		gaiaGetPointXYZM
-		    (geom->FirstLinestring->Coords, iv, &x, &y, &z, &m);
+		gaiaGetPointXYZM (geom->FirstLinestring->Coords, iv, &x, &y, &z,
+				  &m);
 	    }
 	  else
 	    {
@@ -1025,8 +1028,8 @@ findLinkCost (sqlite3_int64 linkRowid, ShortestPathSolutionPtr solution)
 
 static void
 build_solution (sqlite3 * handle, int options, RoutingPtr graph,
-		ShortestPathSolutionPtr solution, RouteLinkPtr * shortest_path,
-		int cnt)
+		ShortestPathSolutionPtr solution,
+		RouteLinkPtr * shortest_path, int cnt)
 {
 /* formatting the Shortest Path solution */
     int i;
@@ -1396,8 +1399,8 @@ build_solution (sqlite3 * handle, int options, RoutingPtr graph,
 		/* copying points from Dynamic Line to Linestring */
 		if (has_z)
 		  {
-		      gaiaSetPointXYZM (ln->Coords, iv, pt->X, pt->Y,
-					pt->Z, pt->M);
+		      gaiaSetPointXYZM (ln->Coords, iv, pt->X, pt->Y, pt->Z,
+					pt->M);
 		  }
 		else
 		  {
@@ -1659,6 +1662,14 @@ aux_build_tsp (MultiSolutionPtr multiSolution, TspTargetsPtr targets,
 	  aux_tsp_add_solution (multiSolution, pS, &route_num, dyn);
       }
     /* adding the final trip closing the circular path */
+    if (targets->LastSolution->Geometry == NULL)
+      {
+	  gaiaFreeDynamicLine (dyn);
+	  return NULL;
+      }
+    if (targets->LastSolution->Geometry->DimensionModel == GAIA_XY_Z
+	|| targets->LastSolution->Geometry->DimensionModel == GAIA_XY_Z_M)
+	has_z = 1;
     aux_tsp_add_solution (multiSolution, targets->LastSolution, &route_num,
 			  dyn);
 
@@ -2726,9 +2737,9 @@ astar_shortest_path (RoutingNodesPtr e, RouteNodePtr nodes,
 			    p_to->Distance = n->Distance + p_link->Cost;
 			    pOrg = nodes + p_to->Id;
 			    p_to->HeuristicDistance =
-				p_to->Distance +
-				astar_heuristic_distance (pOrg, pDest,
-							  heuristic_coeff);
+				p_to->Distance + astar_heuristic_distance (pOrg,
+									   pDest,
+									   heuristic_coeff);
 			    p_to->PreviousNode = n;
 			    p_to->xLink = p_link;
 			    astar_enqueue (heap, p_to);
@@ -2739,9 +2750,9 @@ astar_shortest_path (RoutingNodesPtr e, RouteNodePtr nodes,
 			    p_to->Distance = n->Distance + p_link->Cost;
 			    pOrg = nodes + p_to->Id;
 			    p_to->HeuristicDistance =
-				p_to->Distance +
-				astar_heuristic_distance (pOrg, pDest,
-							  heuristic_coeff);
+				p_to->Distance + astar_heuristic_distance (pOrg,
+									   pDest,
+									   heuristic_coeff);
 			    p_to->PreviousNode = n;
 			    p_to->xLink = p_link;
 			}
@@ -3494,35 +3505,95 @@ alloc_point2PointSolution (void)
     return p;
 }
 
-static int
+static void
 find_srid (sqlite3 * handle, RoutingPtr graph)
 {
 /* attempting to retrieve the appropriate Srid */
     sqlite3_stmt *stmt;
     int ret;
+    int type = GAIA_UNKNOWN;
     int srid = VROUTE_INVALID_SRID;
     char *sql;
 
-    if (graph->GeometryColumn == NULL)
-	return srid;
+    graph->Srid = srid;
+    graph->HasZ = 0;
 
-    sql = sqlite3_mprintf ("SELECT srid FROM geometry_columns WHERE "
-			   "Lower(f_table_name) = Lower(%Q) AND Lower(f_geometry_column) = Lower(%Q)",
-			   graph->TableName, graph->GeometryColumn);
+    if (graph->GeometryColumn == NULL)
+	return;
+
+    sql =
+	sqlite3_mprintf
+	("SELECT geometry_type, srid FROM geometry_columns WHERE "
+	 "Lower(f_table_name) = Lower(%Q) AND Lower(f_geometry_column) = Lower(%Q)",
+	 graph->TableName, graph->GeometryColumn);
     ret = sqlite3_prepare_v2 (handle, sql, strlen (sql), &stmt, NULL);
     sqlite3_free (sql);
     if (ret != SQLITE_OK)
-	return srid;
+	return;
     while (1)
       {
 	  ret = sqlite3_step (stmt);
 	  if (ret == SQLITE_DONE)
 	      break;
 	  if (ret == SQLITE_ROW)
-	      srid = sqlite3_column_int (stmt, 0);
+	    {
+		type = sqlite3_column_int (stmt, 0);
+		srid = sqlite3_column_int (stmt, 1);
+	    }
       }
     sqlite3_finalize (stmt);
-    return srid;
+
+    if (srid == VROUTE_INVALID_SRID)
+      {
+	  /* it could be a Network based on some Spatial VIEW */
+	  sql =
+	      sqlite3_mprintf
+	      ("SELECT g.geometry_type, g.srid FROM views_geometry_columns AS v "
+	       "JOIN geometry_columns AS g ON (v.f_table_name = g.f_table_name "
+	       "AND v.f_geometry_column = g.f_geometry_column) "
+	       "WHERE Lower(v.view_name) = Lower(%Q) AND Lower(v.view_geometry) = Lower(%Q)",
+	       graph->TableName, graph->GeometryColumn);
+	  ret = sqlite3_prepare_v2 (handle, sql, strlen (sql), &stmt, NULL);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	      return;
+	  while (1)
+	    {
+		ret = sqlite3_step (stmt);
+		if (ret == SQLITE_DONE)
+		    break;
+		if (ret == SQLITE_ROW)
+		  {
+		      type = sqlite3_column_int (stmt, 0);
+		      srid = sqlite3_column_int (stmt, 1);
+		  }
+	    }
+	  sqlite3_finalize (stmt);
+      }
+
+    switch (type)
+      {
+      case GAIA_POINTZ:
+      case GAIA_LINESTRINGZ:
+      case GAIA_POLYGONZ:
+      case GAIA_MULTIPOINTZ:
+      case GAIA_MULTILINESTRINGZ:
+      case GAIA_MULTIPOLYGONZ:
+      case GAIA_GEOMETRYCOLLECTIONZ:
+      case GAIA_POINTZM:
+      case GAIA_LINESTRINGZM:
+      case GAIA_POLYGONZM:
+      case GAIA_MULTIPOINTZM:
+      case GAIA_MULTILINESTRINGZM:
+      case GAIA_MULTIPOLYGONZM:
+      case GAIA_GEOMETRYCOLLECTIONZM:
+	  graph->HasZ = 1;
+	  break;
+      default:
+	  graph->HasZ = 0;
+	  break;
+      };
+    graph->Srid = srid;
 }
 
 static void
@@ -3575,8 +3646,8 @@ astar_solve (sqlite3 * handle, int options, RoutingPtr graph,
     if (to == NULL)
 	return;
     shortest_path =
-	astar_shortest_path (routing, graph->Nodes, multiSolution->From,
-			     to, graph->AStarHeuristicCoeff, &cnt);
+	astar_shortest_path (routing, graph->Nodes, multiSolution->From, to,
+			     graph->AStarHeuristicCoeff, &cnt);
     solution = add2multiSolution (multiSolution, multiSolution->From, to);
     build_solution (handle, options, graph, solution, shortest_path, cnt);
     build_multi_solution (multiSolution);
@@ -4280,10 +4351,10 @@ tsp_ga_compute_route (sqlite3 * handle, int options, RouteNodePtr origin,
 }
 
 static void
-completing_tsp_ga_solution (sqlite3 * handle, int options, RouteNodePtr origin,
-			    RouteNodePtr destination, RoutingPtr graph,
-			    RoutingNodesPtr routing, TspTargetsPtr targets,
-			    int j)
+completing_tsp_ga_solution (sqlite3 * handle, int options,
+			    RouteNodePtr origin, RouteNodePtr destination,
+			    RoutingPtr graph, RoutingNodesPtr routing,
+			    TspTargetsPtr targets, int j)
 {
 /* completing a TSP GA solution */
     ShortestPathSolutionPtr solution;
@@ -4341,16 +4412,16 @@ set_tsp_ga_targets (sqlite3 * handle, int options, RoutingPtr graph,
       {
 	  from = *(bestSolution->CitiesFrom + j);
 	  to = *(bestSolution->CitiesTo + j);
-	  completing_tsp_ga_solution (handle, options, from, to,
-				      graph, routing, targets, j);
+	  completing_tsp_ga_solution (handle, options, from, to, graph, routing,
+				      targets, j);
 	  *(targets->To + j) = to;
 	  *(targets->Found + j) = 'Y';
       }
     /* this is the final City closing the circular path */
     from = *(bestSolution->CitiesFrom + targets->Count);
     to = *(bestSolution->CitiesTo + targets->Count);
-    completing_tsp_ga_solution (handle, options, from, to, graph,
-				routing, targets, -1);
+    completing_tsp_ga_solution (handle, options, from, to, graph, routing,
+				targets, -1);
 }
 
 static TspTargetsPtr
@@ -4887,6 +4958,8 @@ network_init (const unsigned char *blob, int size)
     if (*ptr != GAIA_NET_END)	/* signature */
 	return NULL;
     graph = malloc (sizeof (Routing));
+    graph->Srid = VROUTE_INVALID_SRID;
+    graph->HasZ = 0;
     graph->Net64 = net64;
     graph->AStar = aStar;
     graph->EndianArch = endian_arch;
@@ -5118,7 +5191,6 @@ load_network (sqlite3 * handle, const char *table)
     const unsigned char *blob;
     int size;
     char *xname;
-    int srid;
     xname = gaiaDoubleQuotedSql (table);
     sql = sqlite3_mprintf ("SELECT NetworkData FROM \"%s\" ORDER BY Id", xname);
     free (xname);
@@ -5172,8 +5244,7 @@ load_network (sqlite3 * handle, const char *table)
 	    }
       }
     sqlite3_finalize (stmt);
-    srid = find_srid (handle, graph);
-    graph->Srid = srid;
+    find_srid (handle, graph);
     return graph;
   abort:
     network_free (graph);
@@ -5366,14 +5437,15 @@ do_prepare_point (virtualroutingPtr net, int mode)
     xto = gaiaDoubleQuotedSql (graph->ToColumn);
     xtable = gaiaDoubleQuotedSql (graph->TableName);
     xgeom = gaiaDoubleQuotedSql (graph->GeometryColumn);
-    sql = sqlite3_mprintf ("SELECT r.rowid, r.\"%s\", r.\"%s\", "
-			   "ST_Distance(p.geom, r.\"%s\") AS dist "
-			   "FROM \"%s\" AS r, (SELECT MakePoint(?, ?) AS geom) AS p "
-			   "WHERE dist <= ? AND r.rowid IN "
-			   "(SELECT rowid FROM SpatialIndex WHERE f_table_name = %Q  AND "
-			   "f_geometry_column = %Q AND search_frame = BuildCircleMBR(?, ?, ?)) "
-			   "ORDER BY dist LIMIT 4", xfrom, xto, xgeom, xtable,
-			   graph->TableName, graph->GeometryColumn);
+    sql =
+	sqlite3_mprintf ("SELECT r.rowid, r.\"%s\", r.\"%s\", "
+			 "ST_Distance(p.geom, r.\"%s\") AS dist "
+			 "FROM \"%s\" AS r, (SELECT MakePoint(?, ?) AS geom) AS p "
+			 "WHERE dist <= ? AND r.rowid IN "
+			 "(SELECT rowid FROM SpatialIndex WHERE f_table_name = %Q  AND "
+			 "f_geometry_column = %Q AND search_frame = BuildCircleMBR(?, ?, ?)) "
+			 "ORDER BY dist", xfrom, xto, xgeom, xtable,
+			 graph->TableName, graph->GeometryColumn);
     free (xfrom);
     free (xto);
     free (xtable);
@@ -5504,6 +5576,58 @@ do_prepare_point (virtualroutingPtr net, int mode)
     return ok;
 }
 
+static double
+doComputeExtraLength (virtualroutingPtr net, double xFrom, double yFrom,
+		      Point2PointCandidatePtr ptr, int end_node)
+{
+/* computing an Ingress / Egress length */
+    RouteNodePtr node = NULL;
+    RoutingPtr graph = net->graph;
+    if (ptr->reverse)
+      {
+	  if (graph->NodeCode)
+	    {
+		/* nodes are identified by TEXT codes */
+		if (end_node)
+		    node = find_node_by_code (graph, ptr->codNodeFrom);
+		else
+		    node = find_node_by_code (graph, ptr->codNodeTo);
+	    }
+	  else
+	    {
+		/* nodes are identified by integer IDs */
+		if (end_node)
+		    node = find_node_by_id (graph, ptr->idNodeFrom);
+		else
+		    node = find_node_by_id (graph, ptr->idNodeTo);
+	    }
+      }
+    else
+      {
+	  if (graph->NodeCode)
+	    {
+		/* nodes are identified by TEXT codes */
+		if (end_node)
+		    node = find_node_by_code (graph, ptr->codNodeTo);
+		else
+		    node = find_node_by_code (graph, ptr->codNodeFrom);
+	    }
+	  else
+	    {
+		/* nodes are identified by integer IDs */
+		if (end_node)
+		    node = find_node_by_id (graph, ptr->idNodeTo);
+		else
+		    node = find_node_by_id (graph, ptr->idNodeFrom);
+	    }
+      }
+    if (node == NULL)
+	return 0.0;
+
+    return sqrt (((node->CoordX - xFrom) * (node->CoordX - xFrom)) +
+		 ((node->CoordY - yFrom) * (node->CoordY - yFrom)));
+}
+
 static int
 build_ingress_path (virtualroutingPtr net, double xFrom, double yFrom,
 		    Point2PointCandidatePtr ptr, int srid)
@@ -5534,9 +5658,10 @@ build_ingress_path (virtualroutingPtr net, double xFrom, double yFrom,
 			     "MakePoint(?, ?)) FROM \"%s\" WHERE rowid = ?",
 			     xgeom, xtable);
     else
-	sql = sqlite3_mprintf ("SELECT ST_Line_Locate_Point(\"%s\", "
-			       "MakePoint(?, ?)) FROM \"%s\" WHERE rowid = ?",
-			       xgeom, xtable);
+	sql =
+	    sqlite3_mprintf ("SELECT ST_Line_Locate_Point(\"%s\", "
+			     "MakePoint(?, ?)) FROM \"%s\" WHERE rowid = ?",
+			     xgeom, xtable);
     free (xgeom);
     free (xtable);
     ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
@@ -5566,10 +5691,18 @@ build_ingress_path (virtualroutingPtr net, double xFrom, double yFrom,
     sqlite3_finalize (stmt);
     if (!ok)
 	return 0;
+    if (percent <= 0.0)
+      {
+	  /* special case: the insertion point is the Start Node */
+	  ptr->valid = 1;
+	  ptr->extraLen = doComputeExtraLength (net, xFrom, yFrom, ptr, 0);
+	  return 1;
+      }
     if (percent >= 1.0)
       {
 	  /* special case: the insertion point is the End Node */
 	  ptr->valid = 1;
+	  ptr->extraLen = doComputeExtraLength (net, xFrom, yFrom, ptr, 1);
 	  return 1;
       }
 
@@ -5579,28 +5712,32 @@ build_ingress_path (virtualroutingPtr net, double xFrom, double yFrom,
     if (is_geographic)
       {
 	  if (ptr->reverse)
-	      sql = sqlite3_mprintf ("SELECT g.geom, ST_Length(g.geom, 1) FROM "
-				     "(SELECT ST_Line_Substring(ST_Reverse(\"%s\"), ?, 100.0) AS geom "
-				     "FROM \"%s\" WHERE rowid = ?) AS g", xgeom,
-				     xtable);
+	      sql =
+		  sqlite3_mprintf ("SELECT g.geom, ST_Length(g.geom, 1) FROM "
+				   "(SELECT ST_Line_Substring(ST_Reverse(\"%s\"), ?, 100.0) AS geom "
+				   "FROM \"%s\" WHERE rowid = ?) AS g", xgeom,
+				   xtable);
 	  else
-	      sql = sqlite3_mprintf ("SELECT g.geom, ST_Length(g.geom, 1) FROM "
-				     "(SELECT ST_Line_Substring(\"%s\", ?, 100.0) AS geom "
-				     "FROM \"%s\" WHERE rowid = ?) AS g", xgeom,
-				     xtable);
+	      sql =
+		  sqlite3_mprintf ("SELECT g.geom, ST_Length(g.geom, 1) FROM "
+				   "(SELECT ST_Line_Substring(\"%s\", ?, 100.0) AS geom "
+				   "FROM \"%s\" WHERE rowid = ?) AS g", xgeom,
+				   xtable);
       }
     else
       {
 	  if (ptr->reverse)
-	      sql = sqlite3_mprintf ("SELECT g.geom, ST_Length(g.geom) FROM "
-				     "(SELECT ST_Line_Substring(ST_Reverse(\"%s\"), ?, 100.0) AS geom "
-				     "FROM \"%s\" WHERE rowid = ?) AS g", xgeom,
-				     xtable);
+	      sql =
+		  sqlite3_mprintf ("SELECT g.geom, ST_Length(g.geom) FROM "
+				   "(SELECT ST_Line_Substring(ST_Reverse(\"%s\"), ?, 100.0) AS geom "
+				   "FROM \"%s\" WHERE rowid = ?) AS g", xgeom,
+				   xtable);
 	  else
-	      sql = sqlite3_mprintf ("SELECT g.geom, ST_Length(g.geom) FROM "
-				     "(SELECT ST_Line_Substring(\"%s\", ?, 100.0) AS geom "
-				     "FROM \"%s\" WHERE rowid = ?) AS g", xgeom,
-				     xtable);
+	      sql =
+		  sqlite3_mprintf ("SELECT g.geom, ST_Length(g.geom) FROM "
+				   "(SELECT ST_Line_Substring(\"%s\", ?, 100.0) AS geom "
+				   "FROM \"%s\" WHERE rowid = ?) AS g", xgeom,
+				   xtable);
       }
     free (xgeom);
     free (xtable);
@@ -5645,8 +5782,8 @@ build_ingress_path (virtualroutingPtr net, double xFrom, double yFrom,
 			      }
 			    else if (ln->DimensionModel == GAIA_XY_Z_M)
 			      {
-				  gaiaGetPointXYZM (ln->Coords, 0, &x, &y,
-						    &z, &m);
+				  gaiaGetPointXYZM (ln->Coords, 0, &x, &y, &z,
+						    &m);
 			      }
 			    else
 			      {
@@ -5704,9 +5841,10 @@ build_egress_path (virtualroutingPtr net, double xTo, double yTo,
 			     "MakePoint(?, ?)) FROM \"%s\" WHERE rowid = ?",
 			     xgeom, xtable);
     else
-	sql = sqlite3_mprintf ("SELECT ST_Line_Locate_Point(\"%s\", "
-			       "MakePoint(?, ?)) FROM \"%s\" WHERE rowid = ?",
-			       xgeom, xtable);
+	sql =
+	    sqlite3_mprintf ("SELECT ST_Line_Locate_Point(\"%s\", "
+			     "MakePoint(?, ?)) FROM \"%s\" WHERE rowid = ?",
+			     xgeom, xtable);
     free (xgeom);
     free (xtable);
     ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
@@ -5736,8 +5874,16 @@ build_egress_path (virtualroutingPtr net, double xTo, double yTo,
 	return 0;
     if (percent >= 1.0)
       {
+	  /* special case: the insertion point is the Start Node */
+	  ptr->valid = 1;
+	  ptr->extraLen = doComputeExtraLength (net, xTo, yTo, ptr, 0);
+	  return 1;
+      }
+    if (percent >= 1.0)
+      {
 	  /* special case: the insertion point is the End Node */
 	  ptr->valid = 1;
+	  ptr->extraLen = doComputeExtraLength (net, xTo, yTo, ptr, 1);
 	  return 1;
       }
 
@@ -5747,28 +5893,32 @@ build_egress_path (virtualroutingPtr net, double xTo, double yTo,
     if (is_geographic)
       {
 	  if (ptr->reverse)
-	      sql = sqlite3_mprintf ("SELECT g.geom, ST_Length(g.geom, 1) FROM "
-				     "(SELECT ST_Line_Substring(ST_Reverse(\"%s\"), 0.0, ?) AS geom "
-				     "FROM \"%s\" WHERE rowid = ?) AS g", xgeom,
-				     xtable);
+	      sql =
+		  sqlite3_mprintf ("SELECT g.geom, ST_Length(g.geom, 1) FROM "
+				   "(SELECT ST_Line_Substring(ST_Reverse(\"%s\"), 0.0, ?) AS geom "
+				   "FROM \"%s\" WHERE rowid = ?) AS g", xgeom,
+				   xtable);
 	  else
-	      sql = sqlite3_mprintf ("SELECT g.geom, ST_Length(g.geom, 1) FROM "
-				     "(SELECT ST_Line_Substring(\"%s\", 0.0, ?) AS geom "
-				     "FROM \"%s\" WHERE rowid = ?) AS g", xgeom,
-				     xtable);
+	      sql =
+		  sqlite3_mprintf ("SELECT g.geom, ST_Length(g.geom, 1) FROM "
+				   "(SELECT ST_Line_Substring(\"%s\", 0.0, ?) AS geom "
+				   "FROM \"%s\" WHERE rowid = ?) AS g", xgeom,
+				   xtable);
       }
     else
       {
 	  if (ptr->reverse)
-	      sql = sqlite3_mprintf ("SELECT g.geom, ST_Length(g.geom) FROM "
-				     "(SELECT ST_Line_Substring(ST_Reverse(\"%s\"), 0.0, ?) AS geom "
-				     "FROM \"%s\" WHERE rowid = ?) AS g", xgeom,
-				     xtable);
+	      sql =
+		  sqlite3_mprintf ("SELECT g.geom, ST_Length(g.geom) FROM "
+				   "(SELECT ST_Line_Substring(ST_Reverse(\"%s\"), 0.0, ?) AS geom "
+				   "FROM \"%s\" WHERE rowid = ?) AS g", xgeom,
+				   xtable);
 	  else
-	      sql = sqlite3_mprintf ("SELECT g.geom, ST_Length(g.geom) FROM "
-				     "(SELECT ST_Line_Substring(\"%s\", 0.0, ?) AS geom "
-				     "FROM \"%s\" WHERE rowid = ?) AS g", xgeom,
-				     xtable);
+	      sql =
+		  sqlite3_mprintf ("SELECT g.geom, ST_Length(g.geom) FROM "
+				   "(SELECT ST_Line_Substring(\"%s\", 0.0, ?) AS geom "
+				   "FROM \"%s\" WHERE rowid = ?) AS g", xgeom,
+				   xtable);
       }
     free (xgeom);
     free (xtable);
@@ -5853,7 +6003,8 @@ do_define_ingress_paths (virtualroutingPtr net)
     ptr = p2p->firstFromCandidate;
     while (ptr != NULL)
       {
-	  if (!build_ingress_path (net, p2p->xFrom, p2p->yFrom, ptr, p2p->srid))
+	  if (!build_ingress_path
+	      (net, p2p->xFrom, p2p->yFrom, ptr, net->graph->Srid))
 	      return 0;
 	  ptr = ptr->next;
       }
@@ -5870,7 +6021,8 @@ do_define_egress_paths (virtualroutingPtr net)
     ptr = p2p->firstToCandidate;
     while (ptr != NULL)
       {
-	  if (!build_egress_path (net, p2p->xTo, p2p->yTo, ptr, p2p->srid))
+	  if (!build_egress_path
+	      (net, p2p->xTo, p2p->yTo, ptr, net->graph->Srid))
 	      return 0;
 	  ptr = ptr->next;
       }
@@ -5878,7 +6030,8 @@ do_define_egress_paths (virtualroutingPtr net)
 }
 
 static void
-add_point2point_node_from_by_code (Point2PointSolutionPtr p2p, const char *node,
+add_point2point_node_from_by_code (Point2PointSolutionPtr p2p,
+				   const char *node,
 				   Point2PointCandidatePtr parent)
 {
 /* adding to the Point2Point FromNodes list (if not already defined) */
@@ -6145,16 +6298,18 @@ find_link (sqlite3 * sqlite, RoutingPtr graph, sqlite3_int64 linkRowid)
     return ptr;
 }
 
-static int
+static void
 add2DynLine (gaiaDynamicLinePtr dyn, gaiaGeomCollPtr geom, int reverse,
 	     double extra, double cost)
 {
 /* adding points from Linestring to Dynamic line */
     int iv;
-    int has_z = 0;
     double startCost;
     double endCost;
     gaiaGeomCollPtr geo2;
+
+    if (geom == NULL)
+	return;
 
     /* interpolating M-Values */
     if (dyn->Last == NULL)
@@ -6172,20 +6327,17 @@ add2DynLine (gaiaDynamicLinePtr dyn, gaiaGeomCollPtr geom, int reverse,
       {
 	  /* reverse direction */
 	  for (iv = line->Points - 1; iv >= 0; iv--)
-	      if (addPoint2DynLine
-		  (line->Coords, line->DimensionModel, iv, dyn, 0.0))
-		  has_z = 1;
+	      addPoint2DynLine
+		  (line->Coords, line->DimensionModel, iv, dyn, 0.0);
       }
     else
       {
 	  /* natural direction */
 	  for (iv = 0; iv < line->Points; iv++)
-	      if (addPoint2DynLine
-		  (line->Coords, line->DimensionModel, iv, dyn, 0.0))
-		  has_z = 1;
+	      addPoint2DynLine
+		  (line->Coords, line->DimensionModel, iv, dyn, 0.0);
       }
     gaiaFreeGeomColl (geo2);
-    return has_z;
 }
 
 static void
@@ -6196,14 +6348,15 @@ build_point2point_solution (sqlite3 * sqlite, int options, RoutingPtr graph,
     ResultsetRowPtr row;
     int error = 0;
 
-    if (options == VROUTE_SHORTEST_PATH_SIMPLE)
-	return;
+    p2p->hasZ = graph->HasZ;
+
     if (graph->GeometryColumn == NULL && graph->NameColumn == NULL)
 	return;
     if (options == VROUTE_SHORTEST_PATH_NO_GEOMS && graph->NameColumn == NULL)
 	return;
 
     if (options == VROUTE_SHORTEST_PATH_NO_GEOMS
+	|| options == VROUTE_SHORTEST_PATH_SIMPLE
 	|| graph->GeometryColumn == NULL)
 	;
     else
@@ -6241,6 +6394,12 @@ build_point2point_solution (sqlite3 * sqlite, int options, RoutingPtr graph,
 		no_geom = 1;
 		ask_geom = 0;
 	    }
+	  if (options == VROUTE_SHORTEST_PATH_SIMPLE)
+	    {
+		no_geom = 1;
+		ask_geom = 0;
+		ask_name = 0;
+	    }
 
 	  if (!no_geom)
 	    {
@@ -6249,18 +6408,14 @@ build_point2point_solution (sqlite3 * sqlite, int options, RoutingPtr graph,
 						    p2p->yFrom, p2p->zFrom,
 						    0.0);
 		if (row->Point2PointRole == VROUTE_POINT2POINT_START)
-		    if (add2DynLine
-			(p2p->dynLine, p2p->fromCandidate->path,
-			 p2p->fromCandidate->reverse,
+		    add2DynLine
+			(p2p->dynLine, p2p->fromCandidate->path, 0,
 			 p2p->fromCandidate->extraLen,
-			 p2p->fromCandidate->pathLen))
-			p2p->hasZ = 1;
+			 p2p->fromCandidate->pathLen);
 		if (row->Point2PointRole == VROUTE_POINT2POINT_END)
-		    if (add2DynLine
-			(p2p->dynLine, p2p->toCandidate->path,
-			 p2p->toCandidate->reverse, 0.0,
-			 p2p->toCandidate->pathLen))
-			p2p->hasZ = 1;
+		    add2DynLine
+			(p2p->dynLine, p2p->toCandidate->path, 0, 0.0,
+			 p2p->toCandidate->pathLen);
 		if (row->Point2PointRole == VROUTE_POINT2POINT_EGRESS)
 		    gaiaAppendPointZMToDynamicLine (p2p->dynLine, p2p->xTo,
 						    p2p->yTo, p2p->zTo,
@@ -6483,11 +6638,10 @@ build_point2point_solution (sqlite3 * sqlite, int options, RoutingPtr graph,
 							&& to_id == to)
 							reverse = 0;
 						}
-					      if (add2DynLine
+					      add2DynLine
 						  (p2p->dynLine, geom, reverse,
 						   0.0,
-						   row->linkRef->Link->Cost))
-						  p2p->hasZ = 1;
+						   row->linkRef->Link->Cost);
 					  }
 					else
 					    error = 1;
@@ -6533,7 +6687,7 @@ build_point2point_solution (sqlite3 * sqlite, int options, RoutingPtr graph,
 	      geom = gaiaAllocGeomCollXYZM ();
 	  else
 	      geom = gaiaAllocGeomCollXYM ();
-	  geom->Srid = p2p->srid;
+	  geom->Srid = graph->Srid;
 	  pt = p2p->dynLine->First;
 	  while (pt != NULL)
 	    {
@@ -6565,7 +6719,8 @@ build_point2point_solution (sqlite3 * sqlite, int options, RoutingPtr graph,
 	  p2p->dynLine = NULL;
       }
 
-    if (options == VROUTE_SHORTEST_PATH_NO_LINKS)
+    if (options == VROUTE_SHORTEST_PATH_NO_LINKS
+	|| options == VROUTE_SHORTEST_PATH_SIMPLE)
       {
 	  /* deleting Links */
 	  ResultsetRowPtr pR;
@@ -6703,16 +6858,11 @@ point2point_resolve (virtualroutingCursorPtr cursor)
 	      set_multi_by_code (multiple, graph);
 	  else
 	      set_multi_by_id (multiple, graph);
-	  if (net->currentAlgorithm == VROUTE_A_STAR_ALGORITHM)
-	      astar_solve (cursor->pVtab->db,
-			   VROUTE_SHORTEST_PATH_SIMPLE, graph,
-			   cursor->pVtab->routing,
-			   cursor->pVtab->multiSolution);
-	  else
-	      dijkstra_multi_solve (cursor->pVtab->db,
-				    VROUTE_SHORTEST_PATH_SIMPLE, graph,
-				    cursor->pVtab->routing,
-				    cursor->pVtab->multiSolution);
+/* always using Dijktra's */
+	  dijkstra_multi_solve (cursor->pVtab->db,
+				VROUTE_SHORTEST_PATH_SIMPLE, graph,
+				cursor->pVtab->routing,
+				cursor->pVtab->multiSolution);
 	  solution = cursor->pVtab->multiSolution->First;
 	  while (solution != NULL)
 	    {
@@ -6795,51 +6945,57 @@ point2point_resolve (virtualroutingCursorPtr cursor)
     if (p2p->LastRow != NULL)
 	p2p->LastRow->Next = row;
     p2p->LastRow = row;
-/* inserting the Route Ingress */
-    row = malloc (sizeof (ResultsetRow));
-    row->RouteNum = 0;
-    row->RouteRow = route_row++;
-    row->Point2PointRole = VROUTE_POINT2POINT_INGRESS;
-    row->From = NULL;
-    row->To = NULL;
-    row->Undefined = solution->Undefined;
-    solution->Undefined = NULL;
-    row->UndefinedId = solution->UndefinedId;
-    row->linkRef = NULL;
-    row->TotalCost = p2p->fromCandidate->extraLen;
-    row->Geometry = NULL;
-    row->Next = NULL;
-    if (p2p->FirstRow == NULL)
-	p2p->FirstRow = row;
-    if (p2p->LastRow != NULL)
-	p2p->LastRow->Next = row;
-    p2p->LastRow = row;
-/* inserting the Start partial Link */
-    row = malloc (sizeof (ResultsetRow));
-    row->RouteNum = 0;
-    row->RouteRow = route_row++;
-    row->Point2PointRole = VROUTE_POINT2POINT_START;
-    row->From = NULL;
-    row->To = NULL;
-    row->Undefined = solution->Undefined;
-    solution->Undefined = NULL;
-    row->UndefinedId = solution->UndefinedId;
-    /* creating a RowSolution object */
-    link =
-	find_link (cursor->pVtab->db, cursor->pVtab->graph,
-		   p2p->fromCandidate->linkRowid);
-    row->linkRef = malloc (sizeof (RowSolution));
-    row->linkRef->Link = link;
-    row->linkRef->Name = NULL;
-    row->linkRef->Next = NULL;
-    row->TotalCost = p2p->fromCandidate->pathLen;
-    row->Geometry = NULL;
-    row->Next = NULL;
-    if (p2p->FirstRow == NULL)
-	p2p->FirstRow = row;
-    if (p2p->LastRow != NULL)
-	p2p->LastRow->Next = row;
-    p2p->LastRow = row;
+    if (p2p->fromCandidate->extraLen > 0.0)
+      {
+	  /* inserting the Route Ingress */
+	  row = malloc (sizeof (ResultsetRow));
+	  row->RouteNum = 0;
+	  row->RouteRow = route_row++;
+	  row->Point2PointRole = VROUTE_POINT2POINT_INGRESS;
+	  row->From = NULL;
+	  row->To = NULL;
+	  row->Undefined = solution->Undefined;
+	  solution->Undefined = NULL;
+	  row->UndefinedId = solution->UndefinedId;
+	  row->linkRef = NULL;
+	  row->TotalCost = p2p->fromCandidate->extraLen;
+	  row->Geometry = NULL;
+	  row->Next = NULL;
+	  if (p2p->FirstRow == NULL)
+	      p2p->FirstRow = row;
+	  if (p2p->LastRow != NULL)
+	      p2p->LastRow->Next = row;
+	  p2p->LastRow = row;
+      }
+    if (p2p->fromCandidate->pathLen > 0.0)
+      {
+	  /* inserting the Start partial Link */
+	  row = malloc (sizeof (ResultsetRow));
+	  row->RouteNum = 0;
+	  row->RouteRow = route_row++;
+	  row->Point2PointRole = VROUTE_POINT2POINT_START;
+	  row->From = NULL;
+	  row->To = NULL;
+	  row->Undefined = solution->Undefined;
+	  solution->Undefined = NULL;
+	  row->UndefinedId = solution->UndefinedId;
+	  /* creating a RowSolution object */
+	  link =
+	      find_link (cursor->pVtab->db, cursor->pVtab->graph,
+			 p2p->fromCandidate->linkRowid);
+	  row->linkRef = malloc (sizeof (RowSolution));
+	  row->linkRef->Link = link;
+	  row->linkRef->Name = NULL;
+	  row->linkRef->Next = NULL;
+	  row->TotalCost = p2p->fromCandidate->pathLen;
+	  row->Geometry = NULL;
+	  row->Next = NULL;
+	  if (p2p->FirstRow == NULL)
+	      p2p->FirstRow = row;
+	  if (p2p->LastRow != NULL)
+	      p2p->LastRow->Next = row;
+	  p2p->LastRow = row;
+      }
 
     pA = solution->First;
     while (pA != NULL)
@@ -6863,51 +7019,58 @@ point2point_resolve (virtualroutingCursorPtr cursor)
 	  p2p->LastRow = row;
 	  pA = pA->Next;
       }
-/* inserting the End partial Link */
-    row = malloc (sizeof (ResultsetRow));
-    row->RouteNum = 0;
-    row->RouteRow = route_row++;
-    row->Point2PointRole = VROUTE_POINT2POINT_END;
-    row->From = NULL;
-    row->To = NULL;
-    row->Undefined = solution->Undefined;
-    solution->Undefined = NULL;
-    row->UndefinedId = solution->UndefinedId;
-    /* creating a RowSolution object */
-    link =
-	find_link (cursor->pVtab->db, cursor->pVtab->graph,
-		   p2p->toCandidate->linkRowid);
-    row->linkRef = malloc (sizeof (RowSolution));
-    row->linkRef->Link = link;
-    row->linkRef->Name = NULL;
-    row->linkRef->Next = NULL;
-    row->TotalCost = p2p->toCandidate->pathLen;
-    row->Geometry = NULL;
-    row->Next = NULL;
-    if (p2p->FirstRow == NULL)
-	p2p->FirstRow = row;
-    if (p2p->LastRow != NULL)
-	p2p->LastRow->Next = row;
-    p2p->LastRow = row;
-/* inserting the Route Egress */
-    row = malloc (sizeof (ResultsetRow));
-    row->RouteNum = 0;
-    row->RouteRow = route_row++;
-    row->Point2PointRole = VROUTE_POINT2POINT_EGRESS;
-    row->From = NULL;
-    row->To = NULL;
-    row->Undefined = solution->Undefined;
-    solution->Undefined = NULL;
-    row->UndefinedId = solution->UndefinedId;
-    row->linkRef = NULL;
-    row->TotalCost = p2p->toCandidate->extraLen;
-    row->Geometry = NULL;
-    row->Next = NULL;
-    if (p2p->FirstRow == NULL)
-	p2p->FirstRow = row;
-    if (p2p->LastRow != NULL)
-	p2p->LastRow->Next = row;
-    p2p->LastRow = row;
+
+    if (p2p->toCandidate->pathLen > 0.0)
+      {
+	  /* inserting the End partial Link */
+	  row = malloc (sizeof (ResultsetRow));
+	  row->RouteNum = 0;
+	  row->RouteRow = route_row++;
+	  row->Point2PointRole = VROUTE_POINT2POINT_END;
+	  row->From = NULL;
+	  row->To = NULL;
+	  row->Undefined = solution->Undefined;
+	  solution->Undefined = NULL;
+	  row->UndefinedId = solution->UndefinedId;
+	  /* creating a RowSolution object */
+	  link =
+	      find_link (cursor->pVtab->db, cursor->pVtab->graph,
+			 p2p->toCandidate->linkRowid);
+	  row->linkRef = malloc (sizeof (RowSolution));
+	  row->linkRef->Link = link;
+	  row->linkRef->Name = NULL;
+	  row->linkRef->Next = NULL;
+	  row->TotalCost = p2p->toCandidate->pathLen;
+	  row->Geometry = NULL;
+	  row->Next = NULL;
+	  if (p2p->FirstRow == NULL)
+	      p2p->FirstRow = row;
+	  if (p2p->LastRow != NULL)
+	      p2p->LastRow->Next = row;
+	  p2p->LastRow = row;
+      }
+    if (p2p->toCandidate->extraLen > 0.0)
+      {
+	  /* inserting the Route Egress */
+	  row = malloc (sizeof (ResultsetRow));
+	  row->RouteNum = 0;
+	  row->RouteRow = route_row++;
+	  row->Point2PointRole = VROUTE_POINT2POINT_EGRESS;
+	  row->From = NULL;
+	  row->To = NULL;
+	  row->Undefined = solution->Undefined;
+	  solution->Undefined = NULL;
+	  row->UndefinedId = solution->UndefinedId;
+	  row->linkRef = NULL;
+	  row->TotalCost = p2p->toCandidate->extraLen;
+	  row->Geometry = NULL;
+	  row->Next = NULL;
+	  if (p2p->FirstRow == NULL)
+	      p2p->FirstRow = row;
+	  if (p2p->LastRow != NULL)
+	      p2p->LastRow->Next = row;
+	  p2p->LastRow = row;
+      }
 
     build_point2point_solution (cursor->pVtab->db,
 				cursor->pVtab->currentOptions,
@@ -7021,44 +7184,48 @@ vroute_create (sqlite3 * db, void *pAux, int argc, const char *const *argv,
       {
 	  if (p_vt->graph->NameColumn)
 	    {
-		sql = sqlite3_mprintf ("CREATE TABLE \"%s\" (Algorithm TEXT, "
-				       "Request TEXT, Options TEXT, Delimiter TEXT, "
-				       "RouteId INTEGER, RouteRow INTEGER, Role TEXT, "
-				       "LinkRowid INTEGER, NodeFrom TEXT, NodeTo TEXT,"
-				       "PointFrom BLOB, PointTo BLOB, Tolerance DOUBLE, "
-				       "Cost DOUBLE, Geometry BLOB, Name TEXT)",
-				       xname);
+		sql =
+		    sqlite3_mprintf ("CREATE TABLE \"%s\" (Algorithm TEXT, "
+				     "Request TEXT, Options TEXT, Delimiter TEXT, "
+				     "RouteId INTEGER, RouteRow INTEGER, Role TEXT, "
+				     "LinkRowid INTEGER, NodeFrom TEXT, NodeTo TEXT,"
+				     "PointFrom BLOB, PointTo BLOB, Tolerance DOUBLE, "
+				     "Cost DOUBLE, Geometry BLOB, Name TEXT)",
+				     xname);
 	    }
 	  else
 	    {
-		sql = sqlite3_mprintf ("CREATE TABLE \"%s\" (Algorithm TEXT, "
-				       "Request TEXT, Options TEXT, Delimiter TEXT, "
-				       "RouteId INTEGER, RouteRow INTEGER, Role TEXT, "
-				       "LinkRowid INTEGER, NodeFrom TEXT, NodeTo TEXT,"
-				       "PointFrom BLOB, PointTo BLOB, Tolerance DOUBLE, "
-				       "Cost DOUBLE, Geometry BLOB)", xname);
+		sql =
+		    sqlite3_mprintf ("CREATE TABLE \"%s\" (Algorithm TEXT, "
+				     "Request TEXT, Options TEXT, Delimiter TEXT, "
+				     "RouteId INTEGER, RouteRow INTEGER, Role TEXT, "
+				     "LinkRowid INTEGER, NodeFrom TEXT, NodeTo TEXT,"
+				     "PointFrom BLOB, PointTo BLOB, Tolerance DOUBLE, "
+				     "Cost DOUBLE, Geometry BLOB)", xname);
 	    }
       }
     else
       {
 	  if (p_vt->graph->NameColumn)
 	    {
-		sql = sqlite3_mprintf ("CREATE TABLE \"%s\" (Algorithm TEXT, "
-				       "Request TEXT, Options TEXT, Delimiter TEXT, "
-				       "RouteId INTEGER, RouteRow INTEGER, Role TEXT, "
-				       "LinkRowid INTEGER, NodeFrom INTEGER, NodeTo INTEGER, "
-				       "PointFrom BLOB, PointTo BLOB, Tolerance Double, "
-				       "Cost DOUBLE, Geometry BLOB, Name TEXT)",
-				       xname);
+		sql =
+		    sqlite3_mprintf ("CREATE TABLE \"%s\" (Algorithm TEXT, "
+				     "Request TEXT, Options TEXT, Delimiter TEXT, "
+				     "RouteId INTEGER, RouteRow INTEGER, Role TEXT, "
+				     "LinkRowid INTEGER, NodeFrom INTEGER, NodeTo INTEGER, "
+				     "PointFrom BLOB, PointTo BLOB, Tolerance Double, "
+				     "Cost DOUBLE, Geometry BLOB, Name TEXT)",
+				     xname);
 	    }
 	  else
 	    {
-		sql = sqlite3_mprintf ("CREATE TABLE \"%s\" (Algorithm TEXT, "
-				       "Request TEXT, Options TEXT, Delimiter TEXT, "
-				       "RouteId INTEGER, RouteRow INTEGER, Role TEXT, "
-				       "LinkRowid INTEGER, NodeFrom INTEGER, NodeTo INTEGER, "
-				       "PointFrom BLOB, PointTo BLOB, Tolerance DOUBLE, "
-				       "Cost DOUBLE, Geometry BLOB)", xname);
+		sql =
+		    sqlite3_mprintf ("CREATE TABLE \"%s\" (Algorithm TEXT, "
+				     "Request TEXT, Options TEXT, Delimiter TEXT, "
+				     "RouteId INTEGER, RouteRow INTEGER, Role TEXT, "
+				     "LinkRowid INTEGER, NodeFrom INTEGER, NodeTo INTEGER, "
+				     "PointFrom BLOB, PointTo BLOB, Tolerance DOUBLE, "
+				     "Cost DOUBLE, Geometry BLOB)", xname);
 	    }
       }
     free (xname);
@@ -7320,16 +7487,16 @@ vroute_filter (sqlite3_vtab_cursor * pCursor, int idxNum, const char *idxStr,
 	    {
 		/* Nodes are identified by TEXT Codes */
 		if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
-		    multiSolution->From = find_node_by_code (net->graph,
-							     (char *)
-							     sqlite3_value_text
-							     (argv[0]));
+		    multiSolution->From =
+			find_node_by_code (net->graph,
+					   (char *)
+					   sqlite3_value_text (argv[0]));
 		if (sqlite3_value_type (argv[1]) == SQLITE_TEXT)
 		  {
 		      multiple =
 			  vroute_get_multiple_destinations (1,
-							    cursor->pVtab->
-							    currentDelimiter,
+							    cursor->
+							    pVtab->currentDelimiter,
 							    (const char *)
 							    sqlite3_value_text
 							    (argv[1]));
@@ -7344,15 +7511,15 @@ vroute_filter (sqlite3_vtab_cursor * pCursor, int idxNum, const char *idxStr,
 	    {
 		/* Nodes are identified by INT Ids */
 		if (sqlite3_value_type (argv[0]) == SQLITE_INTEGER)
-		    multiSolution->From = find_node_by_id (net->graph,
-							   sqlite3_value_int
-							   (argv[0]));
+		    multiSolution->From =
+			find_node_by_id (net->graph,
+					 sqlite3_value_int (argv[0]));
 		if (sqlite3_value_type (argv[1]) == SQLITE_TEXT)
 		  {
 		      multiple =
 			  vroute_get_multiple_destinations (0,
-							    cursor->pVtab->
-							    currentDelimiter,
+							    cursor->
+							    pVtab->currentDelimiter,
 							    (const char *)
 							    sqlite3_value_text
 							    (argv[1]));
@@ -7385,8 +7552,8 @@ vroute_filter (sqlite3_vtab_cursor * pCursor, int idxNum, const char *idxStr,
 		  {
 		      multiple =
 			  vroute_get_multiple_destinations (1,
-							    cursor->pVtab->
-							    currentDelimiter,
+							    cursor->
+							    pVtab->currentDelimiter,
 							    (const char *)
 							    sqlite3_value_text
 							    (argv[0]));
@@ -7398,10 +7565,10 @@ vroute_filter (sqlite3_vtab_cursor * pCursor, int idxNum, const char *idxStr,
 		  }
 		if (sqlite3_value_type (argv[1]) == SQLITE_TEXT)
 		  {
-		      multiSolution->From = find_node_by_code (net->graph,
-							       (char *)
-							       sqlite3_value_text
-							       (argv[1]));
+		      multiSolution->From =
+			  find_node_by_code (net->graph,
+					     (char *)
+					     sqlite3_value_text (argv[1]));
 		  }
 	    }
 	  else
@@ -7411,8 +7578,8 @@ vroute_filter (sqlite3_vtab_cursor * pCursor, int idxNum, const char *idxStr,
 		  {
 		      multiple =
 			  vroute_get_multiple_destinations (0,
-							    cursor->pVtab->
-							    currentDelimiter,
+							    cursor->
+							    pVtab->currentDelimiter,
 							    (const char *)
 							    sqlite3_value_text
 							    (argv[0]));
@@ -7434,9 +7601,9 @@ vroute_filter (sqlite3_vtab_cursor * pCursor, int idxNum, const char *idxStr,
 			}
 		  }
 		if (sqlite3_value_type (argv[1]) == SQLITE_INTEGER)
-		    multiSolution->From = find_node_by_id (net->graph,
-							   sqlite3_value_int
-							   (argv[1]));
+		    multiSolution->From =
+			find_node_by_id (net->graph,
+					 sqlite3_value_int (argv[1]));
 	    }
       }
     if (idxNum == 3 && argc == 2)
@@ -7446,18 +7613,18 @@ vroute_filter (sqlite3_vtab_cursor * pCursor, int idxNum, const char *idxStr,
 	    {
 		/* Nodes are identified by TEXT Codes */
 		if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
-		    multiSolution->From = find_node_by_code (net->graph,
-							     (char *)
-							     sqlite3_value_text
-							     (argv[0]));
+		    multiSolution->From =
+			find_node_by_code (net->graph,
+					   (char *)
+					   sqlite3_value_text (argv[0]));
 	    }
 	  else
 	    {
 		/* Nodes are identified by INT Ids */
 		if (sqlite3_value_type (argv[0]) == SQLITE_INTEGER)
-		    multiSolution->From = find_node_by_id (net->graph,
-							   sqlite3_value_int
-							   (argv[0]));
+		    multiSolution->From =
+			find_node_by_id (net->graph,
+					 sqlite3_value_int (argv[0]));
 	    }
 	  if (sqlite3_value_type (argv[1]) == SQLITE_INTEGER)
 	    {
@@ -7474,18 +7641,18 @@ vroute_filter (sqlite3_vtab_cursor * pCursor, int idxNum, const char *idxStr,
 	    {
 		/* Nodes are identified by TEXT Codes */
 		if (sqlite3_value_type (argv[1]) == SQLITE_TEXT)
-		    multiSolution->From = find_node_by_code (net->graph,
-							     (char *)
-							     sqlite3_value_text
-							     (argv[1]));
+		    multiSolution->From =
+			find_node_by_code (net->graph,
+					   (char *)
+					   sqlite3_value_text (argv[1]));
 	    }
 	  else
 	    {
 		/* Nodes are identified by INT Ids */
 		if (sqlite3_value_type (argv[1]) == SQLITE_INTEGER)
-		    multiSolution->From = find_node_by_id (net->graph,
-							   sqlite3_value_int
-							   (argv[1]));
+		    multiSolution->From =
+			find_node_by_id (net->graph,
+					 sqlite3_value_int (argv[1]));
 	    }
 	  if (sqlite3_value_type (argv[0]) == SQLITE_INTEGER)
 	    {
@@ -7521,7 +7688,6 @@ vroute_filter (sqlite3_vtab_cursor * pCursor, int idxNum, const char *idxStr,
 				      p2p->zFrom = pt->Z;
 				  else
 				      p2p->zFrom = 0.0;
-				  p2p->srid = point->Srid;
 			      }
 			    gaiaFreeGeomColl (point);
 			}
@@ -7676,8 +7842,18 @@ vroute_filter (sqlite3_vtab_cursor * pCursor, int idxNum, const char *idxStr,
 	    {
 		multiSolution->Mode = VROUTE_ROUTING_SOLUTION;
 		if (net->currentAlgorithm == VROUTE_A_STAR_ALGORITHM)
-		    astar_solve (net->db, net->currentOptions, net->graph,
-				 net->routing, multiSolution);
+		  {
+		      if (multiSolution->MultiTo->Items > 1)
+			{
+			    /* multiple destinations: always defaulting to Dijkstra */
+			    dijkstra_multi_solve (net->db, net->currentOptions,
+						  net->graph, net->routing,
+						  multiSolution);
+			}
+		      else
+			  astar_solve (net->db, net->currentOptions, net->graph,
+				       net->routing, multiSolution);
+		  }
 		else
 		    dijkstra_multi_solve (net->db, net->currentOptions,
 					  net->graph, net->routing,
@@ -7689,15 +7865,14 @@ vroute_filter (sqlite3_vtab_cursor * pCursor, int idxNum, const char *idxStr,
       }
     if (multiSolution->From && multiSolution->MaxCost > 0.0)
       {
-	  int srid = find_srid (net->db, net->graph);
+	  find_srid (net->db, net->graph);
 	  cursor->pVtab->eof = 0;
 	  multiSolution->Mode = VROUTE_RANGE_SOLUTION;
-	  if (net->currentAlgorithm == VROUTE_DIJKSTRA_ALGORITHM)
-	    {
-		dijkstra_within_cost_range (net->routing, multiSolution, srid);
-		multiSolution->CurrentRowId = 0;
-		multiSolution->CurrentNodeRow = multiSolution->FirstNode;
-	    }
+	  /* always defaulting to Dijkstra's Shortest Path */
+	  dijkstra_within_cost_range (net->routing, multiSolution,
+				      net->graph->Srid);
+	  multiSolution->CurrentRowId = 0;
+	  multiSolution->CurrentNodeRow = multiSolution->FirstNode;
 	  return SQLITE_OK;
       }
     cursor->pVtab->eof = 0;
@@ -7813,8 +7988,8 @@ do_cost_range_column (virtualroutingCursorPtr cursor,
 	  if (row_node != first)
 	      sqlite3_result_null (pContext);
 	  else
-	      sqlite3_result_text (pContext, algorithm,
-				   strlen (algorithm), SQLITE_TRANSIENT);
+	      sqlite3_result_text (pContext, algorithm, strlen (algorithm),
+				   SQLITE_TRANSIENT);
       }
     if (column == 3)
       {
@@ -7945,6 +8120,7 @@ do_common_column (virtualroutingCursorPtr cursor, virtualroutingPtr net,
     char delimiter[128];
     const char *role;
     ResultsetRowPtr first = cursor->pVtab->multiSolution->FirstRow;
+    MultiSolutionPtr multiSolution = cursor->pVtab->multiSolution;
 
     if (row == NULL)
       {
@@ -8022,10 +8198,20 @@ do_common_column (virtualroutingCursorPtr cursor, virtualroutingPtr net,
 	  if (column == 0)
 	    {
 		/* the currently used Algorithm */
-		if (net->currentAlgorithm == VROUTE_A_STAR_ALGORITHM)
-		    algorithm = "A*";
+		fprintf (stderr, "common_column_undefined %d\n",
+			 multiSolution->MultiTo->Items);
+		if (multiSolution->MultiTo->Items > 1)
+		  {
+		      /* multiple destinations: always defaulting to Dijkstra */
+		      algorithm = "Dijkstra";
+		  }
 		else
-		    algorithm = "Dijkstra";
+		  {
+		      if (net->currentAlgorithm == VROUTE_A_STAR_ALGORITHM)
+			  algorithm = "A*";
+		      else
+			  algorithm = "Dijkstra";
+		  }
 		if (row != first)
 		    sqlite3_result_null (pContext);
 		else
@@ -8113,8 +8299,7 @@ do_common_column (virtualroutingCursorPtr cursor, virtualroutingPtr net,
 		if (row->From == NULL)
 		  {
 		      if (node_code)
-			  sqlite3_result_text (pContext,
-					       row->Undefined,
+			  sqlite3_result_text (pContext, row->Undefined,
 					       strlen (row->Undefined),
 					       SQLITE_STATIC);
 		      else
@@ -8123,8 +8308,7 @@ do_common_column (virtualroutingCursorPtr cursor, virtualroutingPtr net,
 		else
 		  {
 		      if (node_code)
-			  sqlite3_result_text (pContext,
-					       row->From->Code,
+			  sqlite3_result_text (pContext, row->From->Code,
 					       strlen (row->From->Code),
 					       SQLITE_STATIC);
 		      else
@@ -8135,8 +8319,7 @@ do_common_column (virtualroutingCursorPtr cursor, virtualroutingPtr net,
 	    {
 		/* the NodeTo column */
 		if (node_code)
-		    sqlite3_result_text (pContext,
-					 row->Undefined,
+		    sqlite3_result_text (pContext, row->Undefined,
 					 strlen (row->Undefined),
 					 SQLITE_STATIC);
 		else
@@ -8180,10 +8363,20 @@ do_common_column (virtualroutingCursorPtr cursor, virtualroutingPtr net,
 	  if (column == 0)
 	    {
 		/* the currently used Algorithm */
-		if (net->currentAlgorithm == VROUTE_A_STAR_ALGORITHM)
-		    algorithm = "A*";
+		fprintf (stderr, "common_column_summary %d\n",
+			 multiSolution->MultiTo->Items);
+		if (multiSolution->MultiTo->Items > 1)
+		  {
+		      /* multiple destinations: always defaulting to Dijkstra */
+		      algorithm = "Dijkstra";
+		  }
 		else
-		    algorithm = "Dijkstra";
+		  {
+		      if (net->currentAlgorithm == VROUTE_A_STAR_ALGORITHM)
+			  algorithm = "A*";
+		      else
+			  algorithm = "Dijkstra";
+		  }
 		if (row != first)
 		    sqlite3_result_null (pContext);
 		else
@@ -8253,8 +8446,8 @@ do_common_column (virtualroutingCursorPtr cursor, virtualroutingPtr net,
 	  if (column == 6)
 	    {
 		/* role of this row */
-		if (cursor->pVtab->multiSolution->Mode ==
-		    VROUTE_TSP_SOLUTION && row->RouteNum == 0)
+		if (cursor->pVtab->multiSolution->Mode == VROUTE_TSP_SOLUTION
+		    && row->RouteNum == 0)
 		    role = "TSP Solution";
 		else
 		  {
@@ -8282,8 +8475,7 @@ do_common_column (virtualroutingCursorPtr cursor, virtualroutingPtr net,
 	    {
 		/* the NodeFrom column */
 		if (node_code)
-		    sqlite3_result_text (pContext,
-					 row->From->Code,
+		    sqlite3_result_text (pContext, row->From->Code,
 					 strlen (row->From->Code),
 					 SQLITE_STATIC);
 		else
@@ -8293,8 +8485,7 @@ do_common_column (virtualroutingCursorPtr cursor, virtualroutingPtr net,
 	    {
 		/* the NodeTo column */
 		if (node_code)
-		    sqlite3_result_text (pContext,
-					 row->To->Code,
+		    sqlite3_result_text (pContext, row->To->Code,
 					 strlen (row->To->Code), SQLITE_STATIC);
 		else
 		    sqlite3_result_int64 (pContext, row->To->Id);
@@ -8466,49 +8657,76 @@ do_point2point_column (virtualroutingCursorPtr cursor, virtualroutingPtr net,
 	  /* special case: this one is the solution summary */
 	  if (column == 0)
 	    {
-		/* the currently used Algorithm */
-		if (net->currentAlgorithm == VROUTE_A_STAR_ALGORITHM)
-		    algorithm = "A*";
+		/* the currently used Algorithm always defaults to Dijkstra */
+		if (row->linkRef == NULL
+		    && row->Point2PointRole == VROUTE_POINT2POINT_NONE)
+		  {
+		      algorithm = "Dijkstra";
+		      sqlite3_result_text (pContext, algorithm,
+					   strlen (algorithm),
+					   SQLITE_TRANSIENT);
+		  }
 		else
-		    algorithm = "Dijkstra";
-		sqlite3_result_text (pContext, algorithm,
-				     strlen (algorithm), SQLITE_TRANSIENT);
+		    sqlite3_result_null (pContext);
 	    }
 	  if (column == 1)
 	    {
 		/* the current Request type */
-		algorithm = "Point2Point Path";
-		sqlite3_result_text (pContext, algorithm,
-				     strlen (algorithm), SQLITE_TRANSIENT);
+		if (row->linkRef == NULL
+		    && row->Point2PointRole == VROUTE_POINT2POINT_NONE)
+		  {
+		      algorithm = "Point2Point Path";
+		      sqlite3_result_text (pContext, algorithm,
+					   strlen (algorithm),
+					   SQLITE_TRANSIENT);
+		  }
+		else
+		    sqlite3_result_null (pContext);
 	    }
 	  if (column == 2)
 	    {
 		/* the currently set Options */
-		if (net->currentOptions == VROUTE_SHORTEST_PATH_SIMPLE)
-		    algorithm = "Simple";
-		else if (net->currentOptions == VROUTE_SHORTEST_PATH_NO_LINKS)
-		    algorithm = "No Links";
-		else if (net->currentOptions == VROUTE_SHORTEST_PATH_NO_GEOMS)
-		    algorithm = "No Geometries";
+		if (row->linkRef == NULL
+		    && row->Point2PointRole == VROUTE_POINT2POINT_NONE)
+		  {
+		      if (net->currentOptions == VROUTE_SHORTEST_PATH_SIMPLE)
+			  algorithm = "Simple";
+		      else if (net->currentOptions ==
+			       VROUTE_SHORTEST_PATH_NO_LINKS)
+			  algorithm = "No Links";
+		      else if (net->currentOptions ==
+			       VROUTE_SHORTEST_PATH_NO_GEOMS)
+			  algorithm = "No Geometries";
+		      else
+			  algorithm = "Full";
+		      sqlite3_result_text (pContext, algorithm,
+					   strlen (algorithm),
+					   SQLITE_TRANSIENT);
+		  }
 		else
-		    algorithm = "Full";
-		sqlite3_result_text (pContext, algorithm,
-				     strlen (algorithm), SQLITE_TRANSIENT);
+		    sqlite3_result_null (pContext);
 	    }
 	  if (column == 3)
 	    {
 		/* the currently set delimiter char */
-		if (isprint (cursor->pVtab->currentDelimiter))
-		    sprintf (delimiter, "%c [dec=%d, hex=%02x]",
-			     cursor->pVtab->currentDelimiter,
-			     cursor->pVtab->currentDelimiter,
-			     cursor->pVtab->currentDelimiter);
+		if (row->linkRef == NULL
+		    && row->Point2PointRole == VROUTE_POINT2POINT_NONE)
+		  {
+		      if (isprint (cursor->pVtab->currentDelimiter))
+			  sprintf (delimiter, "%c [dec=%d, hex=%02x]",
+				   cursor->pVtab->currentDelimiter,
+				   cursor->pVtab->currentDelimiter,
+				   cursor->pVtab->currentDelimiter);
+		      else
+			  sprintf (delimiter, "[dec=%d, hex=%02x]",
+				   cursor->pVtab->currentDelimiter,
+				   cursor->pVtab->currentDelimiter);
+		      sqlite3_result_text (pContext, delimiter,
+					   strlen (delimiter),
+					   SQLITE_TRANSIENT);
+		  }
 		else
-		    sprintf (delimiter, "[dec=%d, hex=%02x]",
-			     cursor->pVtab->currentDelimiter,
-			     cursor->pVtab->currentDelimiter);
-		sqlite3_result_text (pContext, delimiter,
-				     strlen (delimiter), SQLITE_TRANSIENT);
+		    sqlite3_result_null (pContext);
 	    }
 	  if (column == 4)
 	    {
@@ -8555,8 +8773,8 @@ do_point2point_column (virtualroutingCursorPtr cursor, virtualroutingPtr net,
 			  sqlite3_result_text (pContext,
 					       row->linkRef->Link->
 					       NodeFrom->Code,
-					       strlen (row->linkRef->Link->
-						       NodeFrom->Code),
+					       strlen (row->linkRef->
+						       Link->NodeFrom->Code),
 					       SQLITE_STATIC);
 		      else
 			  sqlite3_result_int64 (pContext,
@@ -8574,8 +8792,8 @@ do_point2point_column (virtualroutingCursorPtr cursor, virtualroutingPtr net,
 		      if (node_code)
 			  sqlite3_result_text (pContext,
 					       row->linkRef->Link->NodeTo->Code,
-					       strlen (row->linkRef->Link->
-						       NodeTo->Code),
+					       strlen (row->linkRef->
+						       Link->NodeTo->Code),
 					       SQLITE_STATIC);
 		      else
 			  sqlite3_result_int64 (pContext,
@@ -8623,7 +8841,10 @@ do_point2point_column (virtualroutingCursorPtr cursor, virtualroutingPtr net,
 	  if (column == 12)
 	    {
 		/* the Tolerance column */
-		sqlite3_result_double (pContext, cursor->pVtab->Tolerance);
+		if (row->Point2PointRole == VROUTE_POINT2POINT_NONE)
+		    sqlite3_result_double (pContext, cursor->pVtab->Tolerance);
+		else
+		    sqlite3_result_null (pContext);
 	    }
 	  if (column == 13)
 	    {
@@ -8666,49 +8887,23 @@ do_point2point_column (virtualroutingCursorPtr cursor, virtualroutingPtr net,
 	  /* ordinary case: this one is a Link used by the solution */
 	  if (column == 0)
 	    {
-		/* the currently used Algorithm */
-		if (net->currentAlgorithm == VROUTE_A_STAR_ALGORITHM)
-		    algorithm = "A*";
-		else
-		    algorithm = "Dijkstra";
-		sqlite3_result_text (pContext, algorithm,
-				     strlen (algorithm), SQLITE_TRANSIENT);
+		/* the currently used Algorithm always defaults to NULL */
+		sqlite3_result_null (pContext);
 	    }
 	  if (column == 1)
 	    {
-		/* the current Request type */
-		algorithm = "Point2Point Path";
-		sqlite3_result_text (pContext, algorithm,
-				     strlen (algorithm), SQLITE_TRANSIENT);
+		/* the current Request type always defaults to NULL */
+		sqlite3_result_null (pContext);
 	    }
 	  if (column == 2)
 	    {
-		/* the currently set Options */
-		if (net->currentOptions == VROUTE_SHORTEST_PATH_SIMPLE)
-		    algorithm = "Simple";
-		else if (net->currentOptions == VROUTE_SHORTEST_PATH_NO_LINKS)
-		    algorithm = "No Links";
-		else if (net->currentOptions == VROUTE_SHORTEST_PATH_NO_GEOMS)
-		    algorithm = "No Geometries";
-		else
-		    algorithm = "Full";
-		sqlite3_result_text (pContext, algorithm,
-				     strlen (algorithm), SQLITE_TRANSIENT);
+		/* the currently set Options always defaults to NULL */
+		sqlite3_result_null (pContext);
 	    }
 	  if (column == 3)
 	    {
-		/* the currently set delimiter char */
-		if (isprint (cursor->pVtab->currentDelimiter))
-		    sprintf (delimiter, "%c [dec=%d, hex=%02x]",
-			     cursor->pVtab->currentDelimiter,
-			     cursor->pVtab->currentDelimiter,
-			     cursor->pVtab->currentDelimiter);
-		else
-		    sprintf (delimiter, "[dec=%d, hex=%02x]",
-			     cursor->pVtab->currentDelimiter,
-			     cursor->pVtab->currentDelimiter);
-		sqlite3_result_text (pContext, delimiter,
-				     strlen (delimiter), SQLITE_TRANSIENT);
+		/* the currently set delimiter char always defaults to NULL */
+		sqlite3_result_null (pContext);
 	    }
 	  if (column == 4)
 	    {
@@ -8756,11 +8951,6 @@ do_point2point_column (virtualroutingCursorPtr cursor, virtualroutingPtr net,
 		else
 		    sqlite3_result_int64 (pContext,
 					  row->linkRef->Link->NodeTo->Id);
-	    }
-	  if (column == 12)
-	    {
-		/* the Tolerance column */
-		sqlite3_result_double (pContext, cursor->pVtab->Tolerance);
 	    }
 	  if (column == 13)
 	    {
@@ -8879,11 +9069,11 @@ vroute_update (sqlite3_vtab * pVTab, int argc, sqlite3_value ** argv,
 				sqlite3_value_text (argv[3]);
 			    if (strcasecmp ((char *) request, "TSP") == 0)
 				p_vtab->currentRequest = VROUTE_TSP_NN;
-			    else if (strcasecmp
-				     ((char *) request, "TSP NN") == 0)
+			    else if (strcasecmp ((char *) request, "TSP NN") ==
+				     0)
 				p_vtab->currentRequest = VROUTE_TSP_NN;
-			    else if (strcasecmp
-				     ((char *) request, "TSP GA") == 0)
+			    else if (strcasecmp ((char *) request, "TSP GA") ==
+				     0)
 				p_vtab->currentRequest = VROUTE_TSP_GA;
 			    else if (strcasecmp
 				     ((char *) request, "SHORTEST PATH") == 0)
@@ -9003,3 +9193,5 @@ virtualrouting_extension_init (void *xdb)
     sqlite3 *db = (sqlite3 *) xdb;
     return splitevirtualroutingInit (db);
 }
+
+#endif /* end GEOS conditional */

@@ -5148,7 +5148,8 @@ gaiaTrajectoryInterpolatePoint (gaiaGeomCollPtr geom, double m_value)
 		double iy;
 		double iz;
 		double diff = m - prev_m;
-		double ratio = diff / m_value;
+		double m_diff = m_value - prev_m;
+		double ratio = diff / m_diff;
 		diff = x - prev_x;
 		ix = prev_x + (diff / ratio);
 		diff = y - prev_y;

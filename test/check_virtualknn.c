@@ -50,6 +50,7 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #include "sqlite3.h"
 #include "spatialite.h"
 
+#ifndef OMIT_GEOS		/* GEOS is supported */
 #ifndef OMIT_KNN		/* only if KNN is enabled */
 
 static int
@@ -429,6 +430,7 @@ test_knn (sqlite3 * sqlite, int mode)
 }
 
 #endif
+#endif
 
 int
 main (int argc, char *argv[])
@@ -455,6 +457,7 @@ main (int argc, char *argv[])
 
     spatialite_init_ex (db_handle, cache, 0);
 
+#ifndef OMIT_GEOS		/* GEOS is supported */
 #ifndef OMIT_KNN		/* only if KNN is enabled */
 
     ret =
@@ -619,6 +622,7 @@ main (int argc, char *argv[])
       }
 
 #endif /* end KNN conditional */
+#endif /* end GEOS conditional */
 
     sqlite3_close (db_handle);
     spatialite_cleanup_ex (cache);

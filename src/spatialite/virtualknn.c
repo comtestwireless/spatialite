@@ -123,6 +123,7 @@ nearest features will be found.
 #include "config.h"
 #endif
 
+#ifndef OMIT_GEOS		/* GEOS is supported */
 #ifndef OMIT_KNN		/* only if KNN is enabled */
 
 #include <spatialite/sqlite.h>
@@ -1487,7 +1488,7 @@ vknn_filter (sqlite3_vtab_cursor * pCursor, int idxNum, const char *idxStr,
 /* building the Buffer query */
     sql_statement =
 	"SELECT MbrMinX(x.g), MbrMinY(x.g), MbrMaxX(x.g), MbrMaxY(x.g) "
-	"FROM (SELECT ST_Buffer(?, ?) AS g) AS x";
+	"FROM (SELECT ST_Buffer(ST_Envelope(?), ?) AS g) AS x";
     ret =
 	sqlite3_prepare_v2 (knn->db, sql_statement, strlen (sql_statement),
 			    &stmt_buffer, NULL);
@@ -1861,3 +1862,4 @@ virtual_knn_extension_init (void *xdb)
 }
 
 #endif /* end KNN conditional */
+#endif /* end GEOS conditional */
