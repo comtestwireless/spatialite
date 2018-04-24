@@ -2166,6 +2166,7 @@ gaiaExifTagGetHumanReadable (const gaiaExifTagPtr tag, char *str, int len,
 		      break;
 		  case 11:
 		      human = "Shade";
+		      break;
 		  case 12:
 		      human = "Daylight fluorescent (D 5700 - 7100K)";
 		      break;
@@ -2174,6 +2175,7 @@ gaiaExifTagGetHumanReadable (const gaiaExifTagPtr tag, char *str, int len,
 		      break;
 		  case 14:
 		      human = "Cool white fluorescent (W 3900 - 4500K)";
+		      break;
 		  case 15:
 		      human = "White fluorescent (WW 3200 - 3700K)";
 		      break;

@@ -1161,6 +1161,29 @@ EXTRA_DIST = addpoint10.testcase \
 	geodesic-len6.testcase \
 	geodesic-len7.testcase \
 	geodesic-len8.testcase \
+	geodesicangle1.testcase \
+	geodesicangle2.testcase \
+	geodesicangle3.testcase \
+	geodesicangle4.testcase \
+	geodesicangle5.testcase \
+	geodesicangle6.testcase \
+	geodesicangle7.testcase \
+	geodesicarcarea1.testcase \
+	geodesicarcarea2.testcase \
+	geodesicarcarea3.testcase \
+	geodesicarcheight1.testcase \
+	geodesicarcheight2.testcase \
+	geodesicarcheight3.testcase \
+	geodesicarclen1.testcase \
+	geodesicarclen2.testcase \
+	geodesicarclen3.testcase \
+	geodesicarclen4.testcase \
+	geodesicarclen5.testcase \
+	geodesicchordlen1.testcase \
+	geodesicchordlen2.testcase \
+	geodesicchordlen3.testcase \
+	geodesicchordlen4.testcase \
+	geodesicchordlen5.testcase \
 	geojson1.testcase \
 	geojson2.testcase \
 	geojson3.testcase \

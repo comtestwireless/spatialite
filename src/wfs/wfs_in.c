@@ -3322,6 +3322,7 @@ do_adjust_geoms (sqlite3 * sqlite, const char *table, const char *geometry,
 		break;
 	    case GAIA_MULTIPOINTM:
 		nType = 2004;
+		break;
 	    case GAIA_MULTIPOINTZM:
 		nType = 3004;
 		break;
@@ -3333,6 +3334,7 @@ do_adjust_geoms (sqlite3 * sqlite, const char *table, const char *geometry,
 		break;
 	    case GAIA_MULTILINESTRINGM:
 		nType = 2005;
+		break;
 	    case GAIA_MULTILINESTRINGZM:
 		nType = 3005;
 		break;

@@ -1440,11 +1440,10 @@ main (int argc, char *argv[])
   end:
 /* removing the origin DB */
     unlink ("clone_origin.sqlite");
+#endif
 
-#else
     if (argc > 1 || argv[0] == NULL)
 	argc = 1;		/* silencing stupid compiler warnings */
-#endif
 
     spatialite_shutdown ();
     return retcode;

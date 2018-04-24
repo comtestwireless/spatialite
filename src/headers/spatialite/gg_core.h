@@ -60,6 +60,33 @@ extern "C"
 {
 #endif
 
+/* constant values for gaiaGeodesicArcLenght return_type */
+
+/** Arc Length measured in Degrees */
+#define GAIA_GEODESIC_ARC_LENGTH_DEGREES	0
+
+/** Arc Length measured in Meters */
+#define GAIA_GEODESIC_ARC_LENGTH_METERS		1
+
+/** Chord Length measured in Degrees */
+#define GAIA_GEODESIC_CHORD_LENGTH_DEGREES	2
+
+/** Chord Length measured in Meters */
+#define GAIA_GEODESIC_CHORD_LENGTH_METERS	3
+
+/** Central Angle measured in Radians */
+#define GAIA_GEODESIC_CENTRAL_ANGLE_RADIANS	4
+
+/** Central Angle measured in Degrees */
+#define GAIA_GEODESIC_CENTRAL_ANGLE_DEGREES	5
+
+/** Area of segment/arc measured in Square Meters */
+#define GAIA_GEODESIC_ARC_AREA_METERS		6
+
+/** Height of segment/arc in Meters */
+#define GAIA_GEODESIC_ARC_HEIGHT_METERS		7
+
+
 /* function prototypes */
 
 /**
@@ -2004,7 +2031,7 @@ extern "C"
 						    double lat2, double lon2);
 
 /**
- Calculates the Geodesic Distance between between two Points
+ Calculates the Geodesic Distance between two Points
 
  \param a first geodesic parameter.
  \param b second geodesic parameter.
@@ -2017,7 +2044,7 @@ extern "C"
  \return the calculated Geodesic Distance.
 
  \sa gaiaEllipseParams, gaiaGreatCircleDistance, gaiaGreatCircleTotalLength,
- gaiaGeodesicTotalLength
+ gaiaGeodesicTotalLength, gaiaGeodesicArcLength
 
  \note the returned distance is expressed in Kilometers.
  \n the Geodesic method is much more accurate but slowest to be calculated.
@@ -2065,13 +2092,13 @@ extern "C"
  \return the calculated Geodesic Total Length.
 
  \sa gaiaEllipseParams, gaiaGreatCircleDistance, gaiaGeodesicDistance,
- gaiaGreatCircleTotalLength
+ gaiaGreatCircleTotalLength, gaiaGeodesicArcLength
 
  \note the returned length is expressed in Kilometers.
  \n the Geodesic method is much more accurate but slowest to be calculated.
  \n \b dims, \b coords and \b vert are usually expected to correspond to
  \b DimensionModel, \b Coords and \b Points members from a gaiaLinestringStruct
- or gaiaRingStruct
+ or gaiaRingStruct.
  */
     GAIAGEO_DECLARE double gaiaGeodesicTotalLength (double a, double b,
 						    double rf, int dims,
@@ -2093,6 +2120,38 @@ extern "C"
  */
     GAIAGEO_DECLARE int gaiaConvertLength (double value, int unit_from,
 					   int unit_to, double *cvt);
+
+/**
+ Computes several Geodesic values based on the Distance between two Geometries
+
+ \param db_handle handle to the current DB connection.
+ \param cache the same memory pointer passed to the corresponding call to
+ spatialite_init_ex() and returned by spatialite_alloc_connection()
+ \param geom1 the first Geometry.
+ \param geom2 the second Geometry.
+ \param return_type selects wich value has be computed.
+ Must be one between: GAIA_GEODESIC_ARC_LENGTH_METERS, 
+ GAIA_GEODESIC_ARC_LENGTH_DEGREES, GAIA_GEODESIC_CHORD_LENGTH_METERS, 
+ GAIA_GEODESIC_CHORD_LENGTH_DEGREES, GAIA_GEODESIC_CENTRAL_ANGLE_DEGREES,
+ GAIA_GEODESIC_CENTRAL_ANGLE_RADIANS, GAIA_GEODESIC_ARC_AREA_METERS or
+ GAIA_GEODESIC_ARC_HEIGHT_METERS.
+ \param retval on completion this variable will contain the computed value.
+ 
+ \return 0 on failure: any other value on success.
+ 
+ \sa gaiaGeodesicDistance, gaiaGeodesicTotalLength
+ 
+ \note Both geom1 and geom2 must share the same SRID, that is expected
+ to be of the Geographic type (longitudes and latitudes).
+ \n Requires to be supported by a recent version of PROJ (> 4.9.0).
+ \n If not supported by GEOS only two POINT Geometries will be accepted.
+ 
+ */
+    GAIAGEO_DECLARE int gaiaGeodesicArcLength (sqlite3 * sqlite,
+					       const void *cache,
+					       gaiaGeomCollPtr geom1,
+					       gaiaGeomCollPtr geom2,
+					       int return_type, double *retval);
 
 /**
  Creates a Circle (Linestring) Geometry

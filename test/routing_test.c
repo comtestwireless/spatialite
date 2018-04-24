@@ -50,6 +50,8 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #include "sqlite3.h"
 #include "spatialite.h"
 
+#ifndef OMIT_GEOS		/* GEOS is supported */
+
 static int
 perform_bad_test (sqlite3 * handle, sqlite3_stmt * stmt)
 {
@@ -1139,6 +1141,8 @@ do_test (sqlite3 * handle, const char *base_name, int srid, int has_z,
     return 0;
 }
 
+#endif
+
 int
 main (int argc, char *argv[])
 {
@@ -1169,6 +1173,8 @@ main (int argc, char *argv[])
       }
 
     spatialite_init_ex (handle, cache, 0);
+
+#ifndef OMIT_GEOS		/* GEOS is supported */
 
     ret =
 	sqlite3_exec (handle, "SELECT InitSpatialMetadata(1)", NULL, NULL,
@@ -1506,9 +1512,11 @@ main (int argc, char *argv[])
 	  fprintf (stderr, "Test Invalid cases error\n");
 	  return -4;
       }
+      
+#endif /* end GEOS conditional */
 
-    spatialite_cleanup_ex (cache);
     sqlite3_close (handle);
+    spatialite_cleanup_ex (cache);
     ret = unlink ("copy-orbetello.sqlite");
     if (ret != 0)
       {

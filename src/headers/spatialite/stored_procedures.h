@@ -120,7 +120,7 @@ extern "C"
 /**
  Return the most recent SQL Procedure error (if any)
 
- \param ptr a memory pointer returned by spatialite_alloc_connection()
+ \param p_cache a memory pointer returned by spatialite_alloc_connection()
 
  \return the most recent SQL Procedure error message (if any); 
   NULL in any other case.
@@ -130,7 +130,7 @@ extern "C"
 /**
  Will enable/disable a Logfile supporting Execute methods
 
- \param ptr a memory pointer returned by spatialite_alloc_connection()
+ \param p_cache a memory pointer returned by spatialite_alloc_connection()
  \param filepath the pathname of the Logfile. NULL to disable logging.
  \param append if TRUE the Logfile will be opened in append mode,
  otherwise will be trucated.

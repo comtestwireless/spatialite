@@ -29,6 +29,7 @@ the Initial Developer. All Rights Reserved.
 
 Contributor(s):
 Charles Karney <charles@karney.com>
+Mark Johnson <mj10777@googlemail.com>
 
 Alternatively, the contents of this file may be used under the terms of
 either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -60,6 +61,8 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #include <spatialite/sqlite.h>
 
 #include <spatialite/gaiageo.h>
+#include <spatialite.h>
+#include <spatialite_private.h>
 
 #ifndef OMIT_PROJ
 #include <proj_api.h>
@@ -392,6 +395,274 @@ gaiaGeodesicTotalLength (double a, double b, double rf, int dims,
 	  y1 = y2;
       }
     return len;
+}
+
+static int
+auxGeodesicArcLength (double a, double rf, double lat1, double lon1,
+		      double lat2, double lon2, double *parc_length_degrees,
+		      double *parc_length_meters, double *pchord_degrees,
+		      double *pchord_meters, double *pcentral_angle_radian,
+		      double *pcentral_angle_degrees,
+		      double *psegment_area_meters,
+		      double *psegment_height_meters)
+{
+/* 
+ / practical implementation of GeodesicArcLen
+ /
+ / *******************************************************************
+ / this code was kindly contributed by Mark Johnson 
+ / <mj10777@googlemail.com>
+*/
+#if PROJ_GEODESIC
+    struct geod_geodesic gd;
+    double arc_length_degrees = 0.0;	/* Arc Length = θ × r  (when θ is in radians) */
+    double arc_length_meters = 0.0;	/* Distance of Arc Length in meters between points 1 and 2 */
+    double chord_degrees = 0.0;	/* Distance in Degrees of shortest Line (chord) between points 1 and 2 */
+    double chord_meters = 0.0;	/* Distance in Meters of shortest Line (chord) between points 1 and 2 */
+    double central_angle_radian = 0.0;	/* θ: Arc Length / r (where θ is in radians) */
+    double central_angle_degrees = 0.0;	/* θ: Arc Length / r (where θ is in degrees) */
+    double segment_area_meters = 0.0;	// Area of segment/arc  in meters */
+    double segment_height_meters = 0.0;	/* Height of segment/arc [short-sagitta] in meters */
+    double a2 = (a * a);	/* pow(a,2) Radius (a) in meters */
+
+    geod_init (&gd, a, 1 / rf);
+    arc_length_degrees =
+	geod_geninverse (&gd, lat1, lon1, lat2, lon2, &arc_length_meters, 0, 0,
+			 0, 0, 0, 0);
+
+    central_angle_radian = arc_length_meters / a;	/* Central Angle [radians] from Arch Length in meters and Radius (a) in meters */
+    central_angle_degrees = central_angle_radian * (180 / PI);	/* Central Angle [degrees] from Arch Length in meters and Radius (a) in meters */
+    chord_degrees = sqrt (((lat1 - lat2) * (lat1 - lat2)) + ((lon1 - lon2) * (lon1 - lon2)));	/* Pythagoras Theorem */
+    chord_meters = sqrt ((a2 + a2) - (2 * (a2) * cos (central_angle_radian)));	/* Cosine rule using Central Angle [radians] */
+
+    segment_height_meters = a - sqrt (a2 - pow ((chord_meters / 2), 2));	/* Height of Segment/Arch [short-sagitta] in meters with Radius (a) and chord in meters */
+    segment_area_meters = ((central_angle_radian - sin (central_angle_radian)) / 2) * a2;	/* Area of Segment in meters with Radius (a) in meters */
+
+    if (parc_length_degrees)
+      {
+	  *parc_length_degrees = arc_length_degrees;
+      }
+    if (parc_length_meters)
+      {
+	  *parc_length_meters = arc_length_meters;
+      }
+    if (pchord_degrees)
+      {
+	  *pchord_degrees = chord_degrees;
+      }
+    if (pchord_meters)
+      {
+	  *pchord_meters = chord_meters;
+      }
+    if (pcentral_angle_radian)
+      {
+	  *pcentral_angle_radian = central_angle_radian;
+      }
+    if (pcentral_angle_degrees)
+      {
+	  *pcentral_angle_degrees = central_angle_degrees;
+      }
+    if (psegment_area_meters)
+      {
+	  *psegment_area_meters = segment_area_meters;
+      }
+    if (psegment_height_meters)
+      {
+	  *psegment_height_meters = segment_height_meters;
+      }
+    if ((arc_length_degrees < 0.0) || (arc_length_degrees > 180.0))
+      {
+	  return 0;
+      }
+    return 1;
+#else
+    return 0;
+#endif
+}
+
+GAIAGEO_DECLARE int
+gaiaGeodesicArcLength (sqlite3 * sqlite, const void *data,
+		       gaiaGeomCollPtr geom1, gaiaGeomCollPtr geom2,
+		       int return_type, double *retval)
+{
+/* 
+ / Computes several Geodesic values based on the Distance between two Geometries 
+ / 
+ / *******************************************************************
+ / this code was kindly contributed by Mark Johnson 
+ / <mj10777@googlemail.com>
+*/
+    int is_longlat;
+    double a;
+    double b;
+    double rf;
+    int ret;
+    gaiaGeomCollPtr shortest = NULL;
+#ifdef OMIT_GEOS		/* not including GEOS */
+    gaiaPointPtr pt1;
+    gaiaPointPtr pt2;
+    gaiaLinestringPtr ln_build;
+#endif
+    gaiaLinestringPtr ln;
+    double x0;
+    double y0;
+    double x1;
+    double y1;
+    double z;
+    double m;
+    double arc_length_degrees = 0.0;	/* Arc Length = θ × r  (when θ is in radians) */
+    double arc_length_meters = 0.0;	/* Distance of Arc Length in meters between points 1 and 2 */
+    double chord_degrees = 0.0;	/* Distance in Degrees of shortest Line (chord) between points 1 and 2 */
+    double chord_meters = 0.0;	/* Distance in Meters of shortest Line (chord) between points 1 and 2 */
+    double central_angle_radian = 0.0;	/* θ: Arc Length / r (where θ is in radians) */
+    double central_angle_degrees = 0.0;	/* θ: Arc Length / r (where θ is in degrees) */
+    double segment_area_meters = 0.0;	/* Area of segment/arc  in meters */
+    double segment_height_meters = 0.0;	/* Height of segment/arc [short-sagitta] in meters */
+
+/* preliminary checks */
+    if (geom1 == NULL || geom2 == NULL)
+	return 0;
+    if (geom1->Srid != geom2->Srid)
+	return 0;
+    if (!srid_is_geographic (sqlite, geom1->Srid, &is_longlat))
+	return 0;
+    else if (!is_longlat)
+	return 0;
+#ifdef OMIT_GEOS		/* not including GEOS */
+    if (geom1->FirstLinestring != NULL || geom1->FirstPolygon != NULL
+	|| geom2->FirstLinestring != NULL || geom2->FirstPolygon != NULL)
+	return 0;
+    if (geom1->FirstPoint == NULL || geom1->FirstPoint != geom1->LastPoint ||
+	geom2->FirstPoint == NULL || geom->FirstPoint != geom2->LastPoint)
+	return 0;
+#endif
+
+/* attempting to identify the corresponding ellipsoid */
+    if (!getEllipsoidParams (sqlite, geom1->Srid, &a, &b, &rf))
+	return 0;
+#ifndef OMIT_GEOS		/* only if GEOS is supported */
+/* checking first if an intersection exists */
+    if (data != NULL)
+	ret = gaiaGeomCollIntersects_r (data, geom1, geom2);
+    else
+	ret = gaiaGeomCollIntersects (geom1, geom2);
+    if (ret)
+      {
+	  /* if an intersection exists the distance is always ZERO */
+	  *retval = 0.0;
+	  return 1;
+      }
+/* With GEOS: create a single LINESTRING with the 2 points containing the nearst point from each geometry */
+    if (data != NULL)
+	shortest = gaiaShortestLine_r (data, geom1, geom2);
+    else
+	shortest = gaiaShortestLine (geom1, geom2);
+#else
+    pt1 = geom1->FirstPoint;
+    pt2 = geom2->FirstPoint;
+    if (pt1->X == pt2->X && pt1->Y == pt2->Y)
+      {
+	  /* The Points are the same, the distance is always ZERO */
+	  *retval = 0.0;
+	  return 1;
+      }
+/* Without GEOS: create a single, XY based LINESTRING with the 2 points */
+    shortest = gaiaAllocGeomColl ();
+    ln_build = gaiaAddLinestringToGeomColl (shortest, 2);
+    shortest->Srid = geom1->Srid;
+    shortest->DeclaredType = GAIA_LINESTRING;
+    shortest->DimensionModel = GAIA_XY;
+    gaiaSetPoint (ln_build->Coords, 0, pt1->X, pt1->Y);
+    gaiaSetPoint (ln_build->Coords, 1, pt2->X, pt2->Y);
+#endif
+    if (shortest == NULL)
+	return 0;
+    else if (shortest->FirstLinestring == NULL)
+      {
+	  gaiaFreeGeomColl (shortest);
+	  return 0;
+      }
+    ln = shortest->FirstLinestring;
+    if (ln->DimensionModel == GAIA_XY_Z)
+      {
+	  gaiaGetPointXYZ (ln->Coords, 0, &x0, &y0, &z);
+      }
+    else if (ln->DimensionModel == GAIA_XY_M)
+      {
+	  gaiaGetPointXYM (ln->Coords, 0, &x0, &y0, &m);
+      }
+    else if (ln->DimensionModel == GAIA_XY_Z_M)
+      {
+	  gaiaGetPointXYZM (ln->Coords, 0, &x0, &y0, &z, &m);
+      }
+    else
+      {
+	  gaiaGetPoint (ln->Coords, 0, &x0, &y0);
+      }
+    if (ln->DimensionModel == GAIA_XY_Z)
+      {
+	  gaiaGetPointXYZ (ln->Coords, 1, &x1, &y1, &z);
+      }
+    else if (ln->DimensionModel == GAIA_XY_M)
+      {
+	  gaiaGetPointXYM (ln->Coords, 1, &x1, &y1, &m);
+      }
+    else if (ln->DimensionModel == GAIA_XY_Z_M)
+      {
+	  gaiaGetPointXYZM (ln->Coords, 1, &x1, &y1, &z, &m);
+      }
+    else
+      {
+	  gaiaGetPoint (ln->Coords, 1, &x1, &y1);
+      }
+    if (auxGeodesicArcLength
+	(a, rf, y0, x0, y1, x1, &arc_length_degrees, &arc_length_meters,
+	 &chord_degrees, &chord_meters, &central_angle_radian,
+	 &central_angle_degrees, &segment_area_meters, &segment_height_meters))
+      {
+	  switch (return_type)
+	    {
+	    case GAIA_GEODESIC_ARC_LENGTH_METERS:
+		/*: arc_length_meters as Distance of Arc Length in meters between points 1 and 2 */
+		*retval = arc_length_meters;
+		break;
+	    case GAIA_GEODESIC_CHORD_LENGTH_DEGREES:
+		/* chord_degrees as Distance in Degrees of shortest Line (chord) between points 1 and 2 */
+		*retval = chord_degrees;
+		break;
+	    case GAIA_GEODESIC_CHORD_LENGTH_METERS:
+		/* chord_meters as Distance in Meters of shortest Line (chord) between points 1 and 2 */
+		*retval = chord_meters;
+		break;
+	    case GAIA_GEODESIC_CENTRAL_ANGLE_RADIANS:
+		/* central_angle_radian , as radians,  from Arch Length in meters and Radius (a) in meters */
+		*retval = central_angle_radian;
+		break;
+	    case GAIA_GEODESIC_CENTRAL_ANGLE_DEGREES:
+		/* central_angle_degrees, as degrees,  from Arch Length in meters and Radius (a) in meters */
+		*retval = central_angle_degrees;
+		break;
+	    case GAIA_GEODESIC_ARC_AREA_METERS:
+		/* segment_area_meters, Area of segment/arc in meters */
+		*retval = segment_area_meters;
+		break;
+	    case GAIA_GEODESIC_ARC_HEIGHT_METERS:
+		/* segment_height_meters, in meters,  Height of segment/arc [short-sagitta] in meters */
+		*retval = segment_height_meters;
+		break;
+	    case GAIA_GEODESIC_ARC_LENGTH_DEGREES:
+	    default:
+		/* arc_length_degrees as Distance of Arc Length in degrees between points 1 and 2 */
+		*retval = arc_length_degrees;
+		break;
+	    }
+	  gaiaFreeGeomColl (shortest);
+	  return 1;
+      }
+
+/* invalid distance (for Arc-Length in degrees not between 0-180) */
+    gaiaFreeGeomColl (shortest);
+    return 0;
 }
 
 GAIAGEO_DECLARE int

@@ -31,6 +31,8 @@ Contributor(s):
 Pepijn Van Eeckhoudt <pepijnvaneeckhoudt@luciad.com>
 (implementing Android support)
 
+Mark Johnson <mj10777@googlemail.com>
+
 Alternatively, the contents of this file may be used under the terms of
 either the GNU General Public License Version 2 or later (the "GPL"), or
 the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
@@ -409,6 +411,27 @@ fnct_has_proj (sqlite3_context * context, int argc, sqlite3_value ** argv)
 / HasProj()
 /
 / return 1 if built including Proj.4; otherwise 0
+*/
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+#ifndef OMIT_PROJ
+#if defined(PJ_VERSION) && PJ_VERSION >= 490
+    sqlite3_result_int (context, 1);
+#else
+    sqlite3_result_int (context, 0);
+#endif
+#else
+    sqlite3_result_int (context, 0);
+#endif
+}
+
+static void
+fnct_has_proj_geodesic (sqlite3_context * context, int argc,
+			sqlite3_value ** argv)
+{
+/* SQL function:
+/ HasProjGeodesic()
+/
+/ return 1 if built supporting Proj.4 Geodesic; otherwise 0
 */
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
 #ifndef OMIT_PROJ		/* PROJ.4 is supported */
@@ -29910,6 +29933,7 @@ text2double (const unsigned char *str, double *val)
 		    sign++;
 		else
 		    expsign++;
+		break;
 	    case '.':
 		decimal++;
 		break;
@@ -35977,6 +36001,374 @@ fnct_GreatCircleLength (sqlite3_context * context, int argc,
 	      sqlite3_result_null (context);
 	  gaiaFreeGeomColl (geo);
       }
+}
+
+static void
+fnct_GeodesicArcLength (sqlite3_context * context, int argc,
+			sqlite3_value ** argv)
+{
+/* SQL function:
+/ GeodesicArcLength(geom1 Geometry, geom2 Geometry)
+/ GeodesicArcLength(geom1 Geometry, geom2 Geometry, meters Integer)
+/
+/ returns the Arc Length between points 1 and 2
+/ or NULL if any error is encountered
+/
+/ *******************************************************************
+/ this SQL function was kindly contributed by Mark Johnson 
+/ <mj10777@googlemail.com>
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    gaiaGeomCollPtr geom1 = NULL;
+    gaiaGeomCollPtr geom2 = NULL;
+    int return_type = GAIA_GEODESIC_ARC_LENGTH_METERS;
+    double retval;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (sqlite3_value_type (argv[1]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (argc >= 3)
+      {
+	  if (sqlite3_value_type (argv[2]) != SQLITE_INTEGER)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  if (sqlite3_value_int (argv[2]) == 0)
+	      return_type = GAIA_GEODESIC_ARC_LENGTH_DEGREES;
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geom1 =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[1]);
+    n_bytes = sqlite3_value_bytes (argv[1]);
+    geom2 =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+
+    if (geom1 == NULL || geom2 == NULL)
+	sqlite3_result_null (context);
+    else
+      {
+	  if (gaiaGeodesicArcLength
+	      (sqlite, cache, geom1, geom2, return_type, &retval))
+	      sqlite3_result_double (context, retval);
+	  else
+	      sqlite3_result_null (context);
+      }
+    if (geom1 != NULL)
+	gaiaFreeGeomColl (geom1);
+    if (geom2 != NULL)
+	gaiaFreeGeomColl (geom2);
+}
+
+static void
+fnct_GeodesicChordLength (sqlite3_context * context, int argc,
+			  sqlite3_value ** argv)
+{
+/* SQL function:
+/ GeodesicChordLength(geom1 Geometry, geom2 Geometry)
+/ GeodesicChordLength(geom1 Geometry, geom2 Geometry, meters Integer)
+/
+/ returns the Chord Length between points 1 and 2
+/ or NULL if any error is encountered
+/
+/ *******************************************************************
+/ this SQL function was kindly contributed by Mark Johnson 
+/ <mj10777@googlemail.com>
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    gaiaGeomCollPtr geom1 = NULL;
+    gaiaGeomCollPtr geom2 = NULL;
+    int return_type = GAIA_GEODESIC_CHORD_LENGTH_METERS;
+    double retval;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (sqlite3_value_type (argv[1]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (argc >= 3)
+      {
+	  if (sqlite3_value_type (argv[2]) != SQLITE_INTEGER)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  if (sqlite3_value_int (argv[2]) == 0)
+	      return_type = GAIA_GEODESIC_CHORD_LENGTH_DEGREES;
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geom1 =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[1]);
+    n_bytes = sqlite3_value_bytes (argv[1]);
+    geom2 =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+
+    if (!geom1 || !geom2)
+	sqlite3_result_null (context);
+    else
+      {
+	  if (gaiaGeodesicArcLength
+	      (sqlite, cache, geom1, geom2, return_type, &retval))
+	      sqlite3_result_double (context, retval);
+	  else
+	      sqlite3_result_null (context);
+      }
+    if (geom1 != NULL)
+	gaiaFreeGeomColl (geom1);
+    if (geom2 != NULL)
+	gaiaFreeGeomColl (geom2);
+}
+
+static void
+fnct_GeodesicCentralAngle (sqlite3_context * context, int argc,
+			   sqlite3_value ** argv)
+{
+/* SQL function:
+/ GeodesicCentralAngle(geom1 Geometry, geom2 Geometry)
+/ GeodesicCentralAngle(geom1 Geometry, geom2 Geometry, radians Integer)
+/
+/ returns the Central Angle for the Arc between points 1 and 2
+/ or NULL if any error is encountered
+/
+/ *******************************************************************
+/ this SQL function was kindly contributed by Mark Johnson 
+/ <mj10777@googlemail.com>
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    gaiaGeomCollPtr geom1 = NULL;
+    gaiaGeomCollPtr geom2 = NULL;
+    int return_type = GAIA_GEODESIC_CENTRAL_ANGLE_RADIANS;
+    double retval;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (sqlite3_value_type (argv[1]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (argc >= 3)
+      {
+	  if (sqlite3_value_type (argv[2]) != SQLITE_INTEGER)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  if (sqlite3_value_int (argv[2]) == 0)
+	      return_type = GAIA_GEODESIC_CENTRAL_ANGLE_DEGREES;
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geom1 =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[1]);
+    n_bytes = sqlite3_value_bytes (argv[1]);
+    geom2 =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+
+    if (!geom1 || !geom2)
+	sqlite3_result_null (context);
+    else
+      {
+	  if (gaiaGeodesicArcLength
+	      (sqlite, cache, geom1, geom2, return_type, &retval))
+	      sqlite3_result_double (context, retval);
+	  else
+	      sqlite3_result_null (context);
+      }
+    if (geom1 != NULL)
+	gaiaFreeGeomColl (geom1);
+    if (geom2 != NULL)
+	gaiaFreeGeomColl (geom2);
+}
+
+static void
+fnct_GeodesicArcArea (sqlite3_context * context, int argc,
+		      sqlite3_value ** argv)
+{
+/* SQL function:
+/ GeodesicArcArea(geom1 Geometry, geom2 Geometry)
+/
+/ returns the Area (in sq. meters) for the Arc between points 1 and 2
+/ or NULL if any error is encountered
+/
+/ *******************************************************************
+/ this SQL function was kindly contributed by Mark Johnson 
+/ <mj10777@googlemail.com>
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    gaiaGeomCollPtr geom1 = NULL;
+    gaiaGeomCollPtr geom2 = NULL;
+    double retval;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (sqlite3_value_type (argv[1]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geom1 =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[1]);
+    n_bytes = sqlite3_value_bytes (argv[1]);
+    geom2 =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+
+    if (!geom1 || !geom2)
+	sqlite3_result_null (context);
+    else
+      {
+	  if (gaiaGeodesicArcLength
+	      (sqlite, cache, geom1, geom2, GAIA_GEODESIC_ARC_AREA_METERS,
+	       &retval))
+	      sqlite3_result_double (context, retval);
+	  else
+	      sqlite3_result_null (context);
+      }
+    if (geom1 != NULL)
+	gaiaFreeGeomColl (geom1);
+    if (geom2 != NULL)
+	gaiaFreeGeomColl (geom2);
+}
+
+static void
+fnct_GeodesicArcHeight (sqlite3_context * context, int argc,
+			sqlite3_value ** argv)
+{
+/* SQL function:
+/ GeodesicArcHeight(geom1 Geometry, geom2 Geometry)
+/
+/ returns the Height (in meters) for the Arc between points 1 and 2
+/ or NULL if any error is encountered
+/
+/ *******************************************************************
+/ this SQL function was kindly contributed by Mark Johnson 
+/ <mj10777@googlemail.com>
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    gaiaGeomCollPtr geom1 = NULL;
+    gaiaGeomCollPtr geom2 = NULL;
+    double retval;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (sqlite3_value_type (argv[1]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geom1 =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[1]);
+    n_bytes = sqlite3_value_bytes (argv[1]);
+    geom2 =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+
+    if (!geom1 || !geom2)
+	sqlite3_result_null (context);
+    else
+      {
+	  if (gaiaGeodesicArcLength
+	      (sqlite, cache, geom1, geom2, GAIA_GEODESIC_ARC_HEIGHT_METERS,
+	       &retval))
+	      sqlite3_result_double (context, retval);
+	  else
+	      sqlite3_result_null (context);
+      }
+    if (geom1 != NULL)
+	gaiaFreeGeomColl (geom1);
+    if (geom2 != NULL)
+	gaiaFreeGeomColl (geom2);
 }
 
 static void
@@ -42682,6 +43074,9 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "HasProj", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_has_proj, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "HasProjGeodesic", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_has_proj_geodesic, 0, 0, 0);
     sqlite3_create_function_v2 (db, "HasGeos", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_has_geos, 0, 0, 0);
@@ -44937,6 +45332,30 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "GeodesicLength", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_GeodesicLength, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "GeodesicArcLength", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_GeodesicArcLength, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "GeodesicArcLength", 3,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_GeodesicArcLength, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "GeodesicChordLength", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_GeodesicChordLength, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "GeodesicChordLength", 3,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_GeodesicChordLength, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "GeodesicCentralAngle", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_GeodesicCentralAngle, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "GeodesicCentralAngle", 3,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_GeodesicCentralAngle, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "GeodesicArcArea", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_GeodesicArcArea, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "GeodesicArcHeight", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_GeodesicArcHeight, 0, 0, 0);
 
 /* some Length Unit conversion functions */
     sqlite3_create_function_v2 (db, "CvtToKm", 1,
