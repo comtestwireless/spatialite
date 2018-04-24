@@ -2768,7 +2768,8 @@ Negative angle = counterclockwise rotation.</td></tr>
 				    GeodesicArcLength( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> , meters <i>Boolean</i> ) : <i>Double precision</i></td>
 				<td></td>
 				<td align="center" bgcolor="#d0d0f0">PROJ GEODESIC</td>
-				<td>??????????????
+				<td>returns  the Arc length (distance) between <i>geom1</i> and <i>geom2</i> as the <b>surface</b> measurement of the outer circle arc / earth surface.<br>
+				if <i>meters = 0</i> the result will be in degrees, otherwise meters [<b>default</b>].
 				<hr>
 				will return <b>NULL</b> on invalid arguments, or if PROJ GEODESIC is not supported.</td></tr>
 			<tr><td><b>GeodesicChordLength</b></td>
@@ -2776,7 +2777,8 @@ Negative angle = counterclockwise rotation.</td></tr>
 				    GeodesicChordLength( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> , meters <i>Boolean</i> ) : <i>Double precision</i></td>
 				<td></td>
 				<td align="center" bgcolor="#d0d0f0">PROJ GEODESIC</td>
-				<td>??????????????
+				<td>returns the length of the shortest line (distance) between <i>geom1</i> and <i>geom2</i> <b>through</b> the outer circle / earth surface.<br>
+				if <i>meters = 0</i> the result will be in degrees, otherwise meters [<b>default</b>].
 				<hr>
 				will return <b>NULL</b> on invalid arguments, or if PROJ GEODESIC is not supported.</td></tr>
 			<tr><td><b>GeodesicCentralAngle</b></td>
@@ -2784,21 +2786,24 @@ Negative angle = counterclockwise rotation.</td></tr>
 				    GeodesicCentralAngle( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> , radians <i>Boolean</i> ) : <i>Double precision</i></td>
 				<td></td>
 				<td align="center" bgcolor="#d0d0f0">PROJ GEODESIC</td>
-				<td>??????????????
+				<td>returns the angle from the circle center to the <i>geom1</i> and <i>geom2</i> on the outer circle / earth surface.<br>
+				if <i>radians = 0</i> the result will be in degrees, otherwise radians [<b>default</b>].
 				<hr>
 				will return <b>NULL</b> on invalid arguments, or if PROJ GEODESIC is not supported.</td></tr>
 			<tr><td><b>GeodesicArcArea</b></td>
 				<td>GeodesicArcArea( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> ) : <i>Double precision</i></td>
 				<td></td>
 				<td align="center" bgcolor="#d0d0f0">PROJ GEODESIC</td>
-				<td>??????????????
+				<td>returns the area of the segment/arc  between the <b>Chord</b> and <b>Arc</b>, created by <i>geom1</i> and <i>geom2</i>, inside the outer circle / earth surface.<br>
+				Since the <b>Radius</b> is in meters, only meter values can be returned.
 				<hr>
 				will return <b>NULL</b> on invalid arguments, or if PROJ GEODESIC is not supported.</td></tr>
 			<tr><td><b>GeodesicArcHeight</b></td>
 				<td>GeodesicArcHeight( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> ) : <i>Double precision</i></td>
 				<td></td>
 				<td align="center" bgcolor="#d0d0f0">PROJ GEODESIC</td>
-				<td>??????????????
+				<td>returns  the height of the segment/arc (short-Sagitta) between the <b>Chord</b> and <b>Arc</b>, created by <i>geom1</i> and <i>geom2</i>, inside the outer circle / earth surface.<br>
+				Since the <b>Radius</b> is in meters, only meter values can be returned.
 				<hr>
 				will return <b>NULL</b> on invalid arguments, or if PROJ GEODESIC is not supported.</td></tr>
 			<tr><td colspan="5" align="center" bgcolor="#f0f0c0">	
