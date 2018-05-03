@@ -1167,7 +1167,6 @@ EXTRA_DIST = addpoint10.testcase \
 	geodesicangle4.testcase \
 	geodesicangle5.testcase \
 	geodesicangle6.testcase \
-	geodesicangle7.testcase \
 	geodesicarcarea1.testcase \
 	geodesicarcarea2.testcase \
 	geodesicarcarea3.testcase \
@@ -2506,6 +2505,11 @@ EXTRA_DIST = addpoint10.testcase \
 	sridax2orient4.testcase \
 	sridax2orient5.testcase \
 	sridax2orient6.testcase \
+	stringlist1.testcase \
+	stringlist2.testcase \
+	stringlist3.testcase \
+	stringlist4.testcase \
+	stringlist5.testcase \
 	tinypointencode1.testcase \
 	tinypointencode2.testcase \
 	tinypointencode3.testcase \

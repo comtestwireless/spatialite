@@ -174,6 +174,13 @@ struct stddev_str
     double count;
 };
 
+struct string_list_str
+{
+/* a struct supporting MakeStringList aggregate function */
+    char *string;
+    char separator;
+};
+
 struct fdo_table
 {
 /* a struct to implement a linked-list for FDO-ORG table names */
@@ -30806,6 +30813,78 @@ fnct_FileExtFromPath (sqlite3_context * context, int argc,
 	sqlite3_result_text (context, ext, strlen (ext), free);
 }
 
+static void
+fnct_make_string_list_step (sqlite3_context * context, int argc,
+			    sqlite3_value ** argv)
+{
+/* SQL function:
+/ MakeStringList(X)
+/ MakeStringList(X, separator)
+/
+/ aggregate function - STEP
+/
+*/
+    struct string_list_str *p;
+    char buf[1024];
+    const char *str = buf;
+    char separator = ',';
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
+	str = (const char *) sqlite3_value_text (argv[0]);
+    else if (sqlite3_value_type (argv[0]) == SQLITE_INTEGER)
+#if defined(_WIN32) && !defined(__MINGW32__)
+	sprintf (buf, "%I64d", sqlite3_value_int64 (argv[0]));
+#else
+	sprintf (buf, "%lld", sqlite3_value_int64 (argv[0]));
+#endif
+    else
+	strcpy (buf, "ILLEGAL_VALUE");
+    if (argc >= 2)
+      {
+	  if (sqlite3_value_type (argv[1]) == SQLITE_TEXT)
+	    {
+		const char *sep = (const char *)sqlite3_value_text (argv[1]);
+		separator = *sep;
+	    }
+	  else
+	      return;
+      }
+    p = sqlite3_aggregate_context (context, sizeof (struct string_list_str));
+    if (p->separator == '\0' && p->string == NULL)
+      {
+	  /* first item */
+	  p->separator = separator;
+	  if (separator == '\0')
+	      separator = ',';
+	  p->string = sqlite3_mprintf ("%s", str);
+      }
+    else
+      {
+	  char *oldstr = p->string;
+	  p->string = sqlite3_mprintf ("%s%c%s", oldstr, p->separator, str);
+	  sqlite3_free (oldstr);
+      }
+}
+
+static void
+fnct_make_string_list_final (sqlite3_context * context)
+{
+/* SQL function:
+/ MakeStringList(X)
+/ MakeStringList(X, separator)
+/ aggregate function -  FINAL
+/
+*/
+    struct string_list_str *p = sqlite3_aggregate_context (context, 0);
+    if (!p)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    sqlite3_result_text (context, p->string, -1, sqlite3_free);
+}
+
+
 #ifndef OMIT_MATHSQL		/* supporting SQL math functions */
 
 static int
@@ -45324,6 +45403,15 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "DisableTinyPoint", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_disableTinyPoint, 0, 0, 0);
+
+    sqlite3_create_function_v2 (db, "MakeStringList", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0, 0,
+				fnct_make_string_list_step,
+				fnct_make_string_list_final, 0);
+    sqlite3_create_function_v2 (db, "MakeStringList", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0, 0,
+				fnct_make_string_list_step,
+				fnct_make_string_list_final, 0);
 
 /* some Geodesic functions */
     sqlite3_create_function_v2 (db, "GreatCircleLength", 1,

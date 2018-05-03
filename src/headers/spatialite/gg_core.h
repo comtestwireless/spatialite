@@ -60,7 +60,7 @@ extern "C"
 {
 #endif
 
-/* constant values for gaiaGeodesicArcLenght return_type */
+/* constant values for gaiaGeodesicArcLength return_type */
 
 /** Arc Length measured in Degrees */
 #define GAIA_GEODESIC_ARC_LENGTH_DEGREES	0
@@ -2143,7 +2143,7 @@ extern "C"
  
  \note Both geom1 and geom2 must share the same SRID, that is expected
  to be of the Geographic type (longitudes and latitudes).
- \n Requires to be supported by a recent version of PROJ (> 4.9.0).
+ \n Requires to be supported by a recent version of PROJ (>= 4.9.0).
  \n If not supported by GEOS only two POINT Geometries will be accepted.
  
  */

@@ -220,6 +220,13 @@
 				<td>FileExtFromPath( TEXT ) : <i>Text</i></td>
 				<td colspan="3">returns the File Extension from a relative or absolute Pathname.<br>Will return <b>NULL</b> for invalid input of for any path
 				 lacking a File Name or when no Extension is present.</td></tr>
+			<tr><td><b>MakeStringList</b></td>
+				<td>MakeStringList( value ) : <i>Text</i><hr>
+				    MakeStringList( value , delimiter <i>text</i>) : <i>Text</i></td>
+				<td colspan="3">returns a comma-delimited list of integer or text values.<br>
+				the optional argument <b>delimiter</b> can be used so to specify an alternative delimiter different from comma.<br>
+				<b><u>aggregate function</u></b><hr>
+				Will return <b>NULL</b> for invalid arguments.</td></tr>
 			<tr><td><b>eval</b></td>
 				<td>eval( X <i>TEXT</i> [ , Y <i>TEXT</i> ) : <i>Text</i></td>
 				<td colspan="3">Evaluate the SQL text in <b>X</b>.  Return the results, using string <b>Y</b> as the separator.<br>
