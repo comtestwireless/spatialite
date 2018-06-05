@@ -4019,6 +4019,7 @@ extern "C"
 /**
  Utility function: DrapeLine
 
+ \param db_handle pointer to the current DB connection.
  \param geom1 the first Geometry object (expected to be a 2D Linestring).
  \param geom2 the second Geometry object (expected to be a 3D Linestring).
  \param tolerance tolerance radius.
@@ -4044,6 +4045,7 @@ extern "C"
 /**
  Utility function: DrapeLineExceptions
 
+ \param db_handle pointer to the current DB connection.
  \param geom1 the first Geometry object (expected to be a 2D Linestring).
  \param geom2 the second Geometry object (expected to be a 3D Linestring).
  \param tolerance tolerance radius.

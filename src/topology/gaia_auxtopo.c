@@ -62,6 +62,12 @@ CIG: 6038019AE5
 #include <math.h>
 
 #if defined(_WIN32) && !defined(__MINGW32__)
+#include "process.h"
+#else
+#include "unistd.h"
+#endif
+
+#if defined(_WIN32) && !defined(__MINGW32__)
 #include "config-msvc.h"
 #else
 #include "config.h"
@@ -2253,7 +2259,7 @@ gaiaTopologyFromDBMS (sqlite3 * handle, const void *p_cache,
 	  char *msg =
 	      sqlite3_mprintf ("Topology \"%s\" is undefined !!!", topo_name);
 	  gaiaSetRtTopoErrorMsg (p_cache, msg);
-	  sqlite3_free(msg);
+	  sqlite3_free (msg);
 	  goto invalid;
       }
 
@@ -4483,10 +4489,20 @@ do_topo_check_create_aux_faces (GaiaTopologyAccessorPtr accessor)
     char *sql;
     char *errMsg;
     int ret;
+#if defined(_WIN32) && !defined(__MINGW32__)
+    int pid;
+#else
+    pid_t pid;
+#endif
     struct gaia_topology *topo = (struct gaia_topology *) accessor;
 
 /* creating the aux-face Temp Table */
-    table = sqlite3_mprintf ("%s_aux_face_%d", topo->topology_name, getpid ());
+#if defined(_WIN32) && !defined(__MINGW32__)
+    pid = _getpid ();
+#else
+    pid = getpid ();
+#endif
+    table = sqlite3_mprintf ("%s_aux_face_%d", topo->topology_name, pid);
     xtable = gaiaDoubleQuotedSql (table);
     sqlite3_free (table);
     sql = sqlite3_mprintf ("CREATE TEMPORARY TABLE \"%s\" (\n"
@@ -4507,9 +4523,7 @@ do_topo_check_create_aux_faces (GaiaTopologyAccessorPtr accessor)
       }
 
 /* creating the exotic spatial index */
-    table =
-	sqlite3_mprintf ("%s_aux_face_%d_rtree", topo->topology_name,
-			 getpid ());
+    table = sqlite3_mprintf ("%s_aux_face_%d_rtree", topo->topology_name, pid);
     xtable = gaiaDoubleQuotedSql (table);
     sqlite3_free (table);
     sql = sqlite3_mprintf ("CREATE VIRTUAL TABLE temp.\"%s\" USING RTree "
@@ -4543,9 +4557,19 @@ do_topo_check_build_aux_faces (GaiaTopologyAccessorPtr accessor,
     sqlite3_stmt *stmt_in = NULL;
     sqlite3_stmt *stmt_out = NULL;
     sqlite3_stmt *stmt_rtree = NULL;
+#if defined(_WIN32) && !defined(__MINGW32__)
+    int pid;
+#else
+    pid_t pid;
+#endif
     struct gaia_topology *topo = (struct gaia_topology *) accessor;
 
 /* preparing the input SQL statement */
+#if defined(_WIN32) && !defined(__MINGW32__)
+    pid = _getpid ();
+#else
+    pid = getpid ();
+#endif
     table = sqlite3_mprintf ("%s_face", topo->topology_name);
     xtable = gaiaDoubleQuotedSql (table);
     sqlite3_free (table);
@@ -4568,7 +4592,7 @@ do_topo_check_build_aux_faces (GaiaTopologyAccessorPtr accessor,
       }
 
 /* preparing the output SQL statement */
-    table = sqlite3_mprintf ("%s_aux_face_%d", topo->topology_name, getpid ());
+    table = sqlite3_mprintf ("%s_aux_face_%d", topo->topology_name, pid);
     xtable = gaiaDoubleQuotedSql (table);
     sqlite3_free (table);
     sql =
@@ -4590,9 +4614,7 @@ do_topo_check_build_aux_faces (GaiaTopologyAccessorPtr accessor,
       }
 
 /* preparing the RTree SQL statement */
-    table =
-	sqlite3_mprintf ("%s_aux_face_%d_rtree", topo->topology_name,
-			 getpid ());
+    table = sqlite3_mprintf ("%s_aux_face_%d_rtree", topo->topology_name, pid);
     xtable = gaiaDoubleQuotedSql (table);
     sqlite3_free (table);
     sql = sqlite3_mprintf ("INSERT INTO TEMP.\"%s\" "
@@ -4744,15 +4766,24 @@ do_topo_check_overlapping_faces (GaiaTopologyAccessorPtr accessor,
     char *xtable;
     char *rtree;
     int ret;
+#if defined(_WIN32) && !defined(__MINGW32__)
+    int pid;
+#else
+    pid_t pid;
+#endif
     sqlite3_stmt *stmt_in = NULL;
     struct gaia_topology *topo = (struct gaia_topology *) accessor;
 
 
-    table = sqlite3_mprintf ("%s_aux_face_%d", topo->topology_name, getpid ());
+#if defined(_WIN32) && !defined(__MINGW32__)
+    pid = _getpid ();
+#else
+    pid = getpid ();
+#endif
+    table = sqlite3_mprintf ("%s_aux_face_%d", topo->topology_name, pid);
     xtable = gaiaDoubleQuotedSql (table);
     sqlite3_free (table);
-    table = sqlite3_mprintf ("%s_aux_face_%d_rtree", topo->topology_name,
-			     getpid ());
+    table = sqlite3_mprintf ("%s_aux_face_%d_rtree", topo->topology_name, pid);
     rtree = gaiaDoubleQuotedSql (table);
     sqlite3_free (table);
     sql =
@@ -4843,15 +4874,24 @@ do_topo_check_face_within_face (GaiaTopologyAccessorPtr accessor,
     char *xtable;
     char *rtree;
     int ret;
+#if defined(_WIN32) && !defined(__MINGW32__)
+    int pid;
+#else
+    pid_t pid;
+#endif
     sqlite3_stmt *stmt_in = NULL;
     struct gaia_topology *topo = (struct gaia_topology *) accessor;
 
 
-    table = sqlite3_mprintf ("%s_aux_face_%d", topo->topology_name, getpid ());
+#if defined(_WIN32) && !defined(__MINGW32__)
+    pid = _getpid ();
+#else
+    pid = getpid ();
+#endif
+    table = sqlite3_mprintf ("%s_aux_face_%d", topo->topology_name, pid);
     xtable = gaiaDoubleQuotedSql (table);
     sqlite3_free (table);
-    table = sqlite3_mprintf ("%s_aux_face_%d_rtree", topo->topology_name,
-			     getpid ());
+    table = sqlite3_mprintf ("%s_aux_face_%d_rtree", topo->topology_name, pid);
     rtree = gaiaDoubleQuotedSql (table);
     sqlite3_free (table);
     sql =
@@ -4941,13 +4981,23 @@ do_topo_check_drop_aux_faces (GaiaTopologyAccessorPtr accessor)
     char *sql;
     char *errMsg;
     int ret;
+#if defined(_WIN32) && !defined(__MINGW32__)
+    int pid;
+#else
+    pid_t pid;
+#endif
     struct gaia_topology *topo = (struct gaia_topology *) accessor;
 
 /* finalizing all prepared Statements */
     finalize_all_topo_prepared_stmts (topo->cache);
 
 /* dropping the aux-face Temp Table */
-    table = sqlite3_mprintf ("%s_aux_face_%d", topo->topology_name, getpid ());
+#if defined(_WIN32) && !defined(__MINGW32__)
+    pid = _getpid ();
+#else
+    pid = getpid ();
+#endif
+    table = sqlite3_mprintf ("%s_aux_face_%d", topo->topology_name, pid);
     xtable = gaiaDoubleQuotedSql (table);
     sqlite3_free (table);
     sql = sqlite3_mprintf ("DROP TABLE TEMP.\"%s\"", xtable);
@@ -4966,9 +5016,7 @@ do_topo_check_drop_aux_faces (GaiaTopologyAccessorPtr accessor)
       }
 
 /* dropping the aux-face Temp RTree */
-    table =
-	sqlite3_mprintf ("%s_aux_face_%d_rtree", topo->topology_name,
-			 getpid ());
+    table = sqlite3_mprintf ("%s_aux_face_%d_rtree", topo->topology_name, pid);
     xtable = gaiaDoubleQuotedSql (table);
     sqlite3_free (table);
     sql = sqlite3_mprintf ("DROP TABLE TEMP.\"%s\"", xtable);
