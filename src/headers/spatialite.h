@@ -1783,6 +1783,25 @@ extern "C"
 						const char *oneway_to,
 						int overwrite);
 
+/**
+  Will attempt to retrieve the Full Extent from an R*Tree
+   
+ \param db_handle handle to the current SQLite connection
+ \param prefix schema prefix identifying the DB containing the R*Tree\n
+ "main" always identifies the main DB (primary, not Attached).
+ \param name the name of the R*Tree table
+ \param srid the intended SRID for the R*Tree
+ 
+ \return a Rectangle Geometry corresponding to the Full Extent,\n
+ NULL on failure.
+ */
+    SPATIALITE_DECLARE gaiaGeomCollPtr gaiaGetRTreeFullExtent (sqlite3 *
+							       db_handle,
+							       const char
+							       *db_prefix,
+							       const char *name,
+							       int srid);
+
     SPATIALITE_DECLARE const char *gaia_create_routing_get_last_error (const
 								       void
 								       *cache);

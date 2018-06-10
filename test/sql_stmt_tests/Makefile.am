@@ -2196,6 +2196,21 @@ EXTRA_DIST = addpoint10.testcase \
 	shiftlongitude8.testcase \
 	shiftlongitude9.testcase \
 	spatialindex.testcase \
+	spatialindexextent1.testcase \
+	spatialindexextent2.testcase \
+	spatialindexextent3.testcase \
+	spatialindexextent4.testcase \
+	spatialindexextent5.testcase \
+	spatialindexextent6.testcase \
+	spatialindexextent7.testcase \
+	spatialindexextent8.testcase \
+	spatialindexextent9.testcase \
+	spatialindexextent10.testcase \
+	spatialindexextent11.testcase \
+	spatialindexextent12.testcase \
+	spatialindexextent13.testcase \
+	spatialindexextent14.testcase \
+	spatialindexextent15.testcase \
 	srid10.testcase \
 	srid11.testcase \
 	srid1.testcase \
