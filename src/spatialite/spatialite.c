@@ -7013,10 +7013,68 @@ fnct_CheckSpatialIndex (sqlite3_context * context, int argc,
 }
 
 static gaiaGeomCollPtr
+get_gpkg_spatial_index_extent (sqlite3 * sqlite, const char *db_prefix,
+			       const char *table, const char *geom)
+{
+/* attempting to get the Spatial Index Full Extent   GeoPackage */
+    char *xprefix = NULL;
+    char *idx_name;
+    char *sql_statement;
+    int ret;
+    int srid = -1234567890;
+    sqlite3_stmt *stmt;
+    gaiaGeomCollPtr envelope;
+
+/* checking if the R*Tree Spatial Index is defined - Spatial Table */
+    xprefix = gaiaDoubleQuotedSql (db_prefix);
+    sql_statement =
+	sqlite3_mprintf ("SELECT srs_id FROM \"%s\".gpkg_geometry_columns "
+			 "WHERE Upper(table_name) = Upper(%Q) "
+			 "AND Upper(column_name) = Upper(%Q)", xprefix, table,
+			 geom);
+    free (xprefix);
+    ret = sqlite3_prepare_v2 (sqlite, sql_statement, strlen (sql_statement),
+			      &stmt, NULL);
+    sqlite3_free (sql_statement);
+    if (ret != SQLITE_OK)
+      {
+	  spatialite_e ("GetSpatialIndexExtent SQL error: %s\n",
+			sqlite3_errmsg (sqlite));
+	  goto err;
+      }
+    while (1)
+      {
+	  ret = sqlite3_step (stmt);
+	  if (ret == SQLITE_DONE)
+	      break;
+	  if (ret == SQLITE_ROW)
+	      srid = sqlite3_column_int (stmt, 0);
+	  else
+	    {
+		spatialite_e ("sqlite3_step() error: %s\n",
+			      sqlite3_errmsg (sqlite));
+		sqlite3_finalize (stmt);
+		goto err;
+	    }
+      }
+    sqlite3_finalize (stmt);
+    if (srid == -1234567890)
+	goto err;
+
+    idx_name = sqlite3_mprintf ("rtree_%s_%s", table, geom);
+    envelope = gaiaGetGpkgRTreeFullExtent (sqlite, db_prefix, idx_name, srid);
+    sqlite3_free (idx_name);
+    return envelope;
+
+  err:
+    return NULL;
+}
+
+static gaiaGeomCollPtr
 get_spatial_index_extent (sqlite3 * sqlite, const char *db_prefix,
 			  const char *table, const char *geom)
 {
-/* attempting to get the Spatial Index Full Extent */
+/* attempting to get the Spatial Index Full Extent - SpatiaLite */
     char *xprefix = NULL;
     char *idx_name;
     char *sql_statement;
@@ -7135,6 +7193,7 @@ fnct_GetSpatialIndexExtent (sqlite3_context * context, int argc,
     sqlite3 *sqlite = sqlite3_context_db_handle (context);
     int gpkg_mode = 0;
     int tiny_point = 0;
+    int gpkg_layout = 0;
     struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (cache != NULL)
@@ -7168,8 +7227,15 @@ fnct_GetSpatialIndexExtent (sqlite3_context * context, int argc,
 	  sqlite3_result_null (context);
 	  return;
       }
+    if (checkSpatialMetaData_ex (sqlite, db_prefix) == 4)
+	gpkg_layout = 1;
     column = (const char *) sqlite3_value_text (argv[2]);
-    envelope = get_spatial_index_extent (sqlite, db_prefix, table, column);
+
+    if (gpkg_layout)
+	envelope =
+	    get_gpkg_spatial_index_extent (sqlite, db_prefix, table, column);
+    else
+	envelope = get_spatial_index_extent (sqlite, db_prefix, table, column);
     if (envelope != NULL)
       {
 	  /* builds the BLOB geometry to be returned */

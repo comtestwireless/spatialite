@@ -6542,7 +6542,7 @@ SPATIALITE_DECLARE gaiaGeomCollPtr
 gaiaGetRTreeFullExtent (sqlite3 * db_handle, const char *db_prefix,
 			const char *name, int srid)
 {
-/* Will attempt to retrieve the Full Extent from an R*Tree */
+/* Will attempt to retrieve the Full Extent from an R*Tree - SpatiaLite */
     char *sql;
     int ret;
     char *xprefix;
@@ -6564,6 +6564,55 @@ gaiaGetRTreeFullExtent (sqlite3 * db_handle, const char *db_prefix,
     sql =
 	sqlite3_mprintf
 	("SELECT pkid FROM \"%s\".\"%s\" WHERE pkid MATCH rtree_bbox(1)",
+	 xprefix, xname);
+    free (xprefix);
+    free (xname);
+    ret = sqlite3_exec (db_handle, sql, NULL, NULL, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+	return NULL;
+    if (data.valid == 0)
+	return NULL;
+
+/* building the Envelope of the R*Tree */
+    envelope = gaiaAllocGeomColl ();
+    envelope->Srid = srid;
+    polyg = gaiaAddPolygonToGeomColl (envelope, 5, 0);
+    rect = polyg->Exterior;
+    gaiaSetPoint (rect->Coords, 0, data.minx, data.miny);	/* vertex # 1 */
+    gaiaSetPoint (rect->Coords, 1, data.maxx, data.miny);	/* vertex # 2 */
+    gaiaSetPoint (rect->Coords, 2, data.maxx, data.maxy);	/* vertex # 3 */
+    gaiaSetPoint (rect->Coords, 3, data.minx, data.maxy);	/* vertex # 4 */
+    gaiaSetPoint (rect->Coords, 4, data.minx, data.miny);	/* vertex # 5 [same as vertex # 1 to close the polygon] */
+    return envelope;
+}
+
+SPATIALITE_DECLARE gaiaGeomCollPtr
+gaiaGetGpkgRTreeFullExtent (sqlite3 * db_handle, const char *db_prefix,
+			    const char *name, int srid)
+{
+/* Will attempt to retrieve the Full Extent from an R*Tree - GeoPacage */
+    char *sql;
+    int ret;
+    char *xprefix;
+    char *xname;
+    gaiaGeomCollPtr envelope;
+    gaiaPolygonPtr polyg;
+    gaiaRingPtr rect;
+    struct rtree_envelope data;
+
+    data.valid = 0;
+
+/* registering the Geometry Query Callback SQL function */
+    sqlite3_rtree_query_callback (db_handle, "rtree_bbox",
+				  rtree_bbox_callback, &data, NULL);
+
+/* executing the SQL Query statement */
+    xprefix = gaiaDoubleQuotedSql (db_prefix);
+    xname = gaiaDoubleQuotedSql (name);
+    sql =
+	sqlite3_mprintf
+	("SELECT id FROM \"%s\".\"%s\" WHERE id MATCH rtree_bbox(1)",
 	 xprefix, xname);
     free (xprefix);
     free (xname);

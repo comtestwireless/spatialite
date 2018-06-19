@@ -533,7 +533,7 @@
 			<tr><td><b>DMS to DD</b></td>
 				<td>LongitudeFromDMS( dms_expression <i>String</i> ) : <i>Double precision</i><hr>
                                     LatitudeFromDMS( dms_expression <i>String</i> ) : <i>Double precision</i></td>
-				<td colspan="3">will return the DD coordinates from the given DMS expression<hr>
+				<td colspan="3">will return the DD coordinates from within a DMS expression, which must contain both the Latitude and Longitude (in that order)<hr>
                                 <b>NULL</b> will be returned on invalid input.</tr>
 			<tr><td colspan="5" align="center" bgcolor="#f0e0c0">
 				<h3><a name="blob">SQL utility functions for BLOB objects</a></h3></td></tr>
@@ -778,7 +778,7 @@
 				<td>return a grid of square cells (having the edge length of <i>size</i>) precisely covering the input Geometry.<br>
                                 The specific Type of returned Geometry is controlled by the <b>mode</b> attribute value:
                                 <ul>
-									<li>any <i>positive</i> value will cause a <b>MultiLinesting</b> to be returned.</li>
+									<li>any <i>positive</i> value will cause a <b>MultiLinestring</b> to be returned.</li>
 									<li><i>zero</i> (default value) will cause a <b>MultiPolygon</b> to be returned.</li>
 									<li>any <i>negative</i> value will cause a <b>MultiPoint</b> to be returned.</li>
                                 </ul>
@@ -792,7 +792,7 @@
 				<td>return a grid of triangular cells (having the edge length of <i>size</i>) precisely covering the input Geometry.<br>
                                 The specific Type of returned Geometry is controlled by the <b>mode</b> attribute value:
                                 <ul>
-									<li>any <i>positive</i> value will cause a <b>MultiLinesting</b> to be returned.</li>
+									<li>any <i>positive</i> value will cause a <b>MultiLinestring</b> to be returned.</li>
 									<li><i>zero</i> (default value) will cause a <b>MultiPolygon</b> to be returned.</li>
 									<li>any <i>negative</i> value will cause a <b>MultiPoint</b> to be returned.</li>
                                 </ul>
@@ -806,7 +806,7 @@
 				<td>return a grid of hexagonal cells (having the edge length of <i>size</i>) precisely covering the input Geometry.<br>
                                 The specific Type of returned Geometry is controlled by the <b>mode</b> attribute value:
                                 <ul>
-									<li>any <i>positive</i> value will cause a <b>MultiLinesting</b> to be returned.</li>
+									<li>any <i>positive</i> value will cause a <b>MultiLinestring</b> to be returned.</li>
 									<li><i>zero</i> (default value) will cause a <b>MultiPolygon</b> to be returned.</li>
 									<li>any <i>negative</i> value will cause a <b>MultiPoint</b> to be returned.</li>
                                 </ul>
