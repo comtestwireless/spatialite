@@ -1137,6 +1137,7 @@ a Geometry will be returned representing the MBR for the corresponding GARS area
 				<td></td>
 				<td align="center" bgcolor="#d0f0d0">base</td>
 				<td>returns the GeoJSON [<i>Geographic JavaScript Object Notation</i>] representation<hr>
+				if not explicitly specified <i>precision</i> is <b>15</b> decimal digits (default value).<br><br>
 				<i>options</i> can assume the following values:
 				<ul>
 					<li><b>0</b> no options [<i>default</i>]</li>
@@ -3162,15 +3163,16 @@ NULL will be returned if the requested RTree doesn't exist<hr>
 				<td>GetSpatialIndexExtent( db_prefix <i>String</i> , table <i>String</i> , column <i>String</i> ) : <i>Geometry</i></td>
 				<td></td>
 				<td align="center" bgcolor="#d0f0d0">base</td>
-				<td>Retrieves the Full Extent from an RTree <b>Spatial Index</b> supporting a <b>Spatial Table</b> or <b>Spatial View</b>.
+				<td>Retrieves the Full Extent from an RTree <b>Spatial Index</b> supporting a <b>SpatialTable</b>/<b>SpatialView</b> or a <b>GeoPackage-Geometry</b>.
 				<ul>
 					<li>The <b>db_prefix</b> argument specifies which one of the ATTACHED databases is expected to contain the RTree; if <b>NULL</b> then the <b>MAIN</b> database will be assumed by default.</li>
-					<li>The <b>table</b> and <b>column</b> arguments specify wich Spatial Table or Spatial View is intended.</li>
+					<li>The <b>table</b> and <b>column</b> arguments specifying which Table and Geometry is intended.</li>
 				</ul>
 				<hr>
 				returns a Rectangle (Polygon Geometry). The Polygon is defined by the corner points of the RTree's Full Extent [(MINX, MINY),(MAXX, MINY), (MAXX, MAXY), (MINX, MAXY), (MINX, MINY)].<br>
-				<b>NULL</b> will be returned on invalid arguments, or on a not existing Spatial Table or View, or if no coresponding Spatial Index exists.<hr>
-				<u>Plase note</u>: retrieving the Full Extenxt from an RTree is a very quick operation even when performed on behalf of some Table or View containing many million rows.</td></tr>
+				<b>NULL</b> will be returned on invalid arguments, or on a not existing Table/Geometry, or if no coresponding Spatial Index exists.<hr>
+				<u>Plase note</u>: retrieving the Full Extenxt from an RTree is a very quick operation even when performed on a Table/Geometry containing many million rows.<br>
+				<u>Also</u>: The returned Geometry will be a Spatialite-Binary, even when a GeoPackage-Table/Geometry has been requested.</td></tr>
 		<tr><td><b>InvalidateLayerStatistics</b></td>
 				<td>InvalidateLayerStatistics( [ void ) : <i>Integer</i><hr>
 					InvalidateLayerStatistics( table <i>String</i> [ , column <i>String</i> ] ) : <i>Integer</i></td>

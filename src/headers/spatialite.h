@@ -261,7 +261,7 @@ extern "C"
  \param column the name of the geometry column
  \param shp_path pathname of the Shapefile to be exported (no suffix) 
  \param charset a valid GNU ICONV charset to be used for DBF text strings
- \param geom_type "POINT", "LINESTRING", "POLYGON", "MULTIPOLYGON" or NULL
+ \param geom_type "POINT", "LINESTRING", "POLYGON", "MULTIPOINT" or NULL
  \param verbose if TRUE a short report is shown on stderr
  \param rows on completion will contain the total number of exported rows
  \param err_msg on completion will contain an error message (if any)
@@ -284,7 +284,7 @@ extern "C"
  \param column the name of the geometry column
  \param shp_path pathname of the Shapefile to be exported (no suffix) 
  \param charset a valid GNU ICONV charset to be used for DBF text strings
- \param geom_type "POINT", "LINESTRING", "POLYGON", "MULTIPOLYGON" or NULL
+ \param geom_type "POINT", "LINESTRING", "POLYGON", "MULTIPOINT" or NULL
  \param verbose if TRUE a short report is shown on stderr
  \param rows on completion will contain the total number of exported rows
  \param colname_case one between GAIA_DBF_COLNAME_LOWERCASE, 

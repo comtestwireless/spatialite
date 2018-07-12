@@ -2924,7 +2924,7 @@ dump_shapefile_ex (sqlite3 * sqlite, char *table, char *column, char *shp_path,
 	  if (strcasecmp ((char *) geom_type, "POLYGON") == 0)
 	      shape = GAIA_POLYGON;
 	  if (strcasecmp ((char *) geom_type, "MULTIPOINT") == 0)
-	      shape = GAIA_POINT;
+	      shape = GAIA_MULTIPOINT;
       }
 /* is the datasource a genuine registered Geometry ?? */
     list = gaiaGetVectorLayersList (sqlite, table, column,
