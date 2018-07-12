@@ -19965,7 +19965,7 @@ mbrs_eval (sqlite3_context * context, int argc, sqlite3_value ** argv,
 / returns:
 / 1 if the required spatial relationship between the two MBRs is TRUE
 / 0 otherwise
-/ or NULL if any error is encountered
+/ or -1 if any error is encountered
 */
     unsigned char *p_blob;
     int n_bytes;
@@ -19975,12 +19975,12 @@ mbrs_eval (sqlite3_context * context, int argc, sqlite3_value ** argv,
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
       {
-	  sqlite3_result_null (context);
+	  sqlite3_result_int (context, -1);
 	  return;
       }
     if (sqlite3_value_type (argv[1]) != SQLITE_BLOB)
       {
-	  sqlite3_result_null (context);
+	  sqlite3_result_int (context, -1);
 	  return;
       }
     p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
@@ -19990,7 +19990,7 @@ mbrs_eval (sqlite3_context * context, int argc, sqlite3_value ** argv,
     n_bytes = sqlite3_value_bytes (argv[1]);
     geo2 = gaiaFromSpatiaLiteBlobMbr (p_blob, n_bytes);
     if (!geo1 || !geo2)
-	sqlite3_result_null (context);
+	sqlite3_result_int (context, -1);
     else
       {
 	  ret = 0;
@@ -20021,7 +20021,7 @@ mbrs_eval (sqlite3_context * context, int argc, sqlite3_value ** argv,
 		break;
 	    }
 	  if (ret < 0)
-	      sqlite3_result_null (context);
+	      sqlite3_result_int (context, -1);
 	  else
 	      sqlite3_result_int (context, ret);
       }
@@ -20066,7 +20066,11 @@ fnct_EnvIntersects (sqlite3_context * context, int argc, sqlite3_value ** argv)
 / ST_EnvelopesIntersects(Geometry geom, double X1, double Y1, double X2, double Y2)
 /
 / the second MBR is defined by two points (identifying a rectangle's diagonal) 
-/ or NULL if any error is encountered
+/
+/ returns:
+/ 1 if the required spatial intersection is TRUE
+/ 0 otherwise
+/ or -1 if any error is encountered
 */
     double x1;
     double y1;
@@ -20090,7 +20094,7 @@ fnct_EnvIntersects (sqlite3_context * context, int argc, sqlite3_value ** argv)
       }
     if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
       {
-	  sqlite3_result_null (context);
+	  sqlite3_result_int (context, -1);
 	  return;
       }
     if (sqlite3_value_type (argv[1]) == SQLITE_FLOAT)
@@ -20102,7 +20106,7 @@ fnct_EnvIntersects (sqlite3_context * context, int argc, sqlite3_value ** argv)
       }
     else
       {
-	  sqlite3_result_null (context);
+	  sqlite3_result_int (context, -1);
 	  return;
       }
     if (sqlite3_value_type (argv[2]) == SQLITE_FLOAT)
@@ -20114,7 +20118,7 @@ fnct_EnvIntersects (sqlite3_context * context, int argc, sqlite3_value ** argv)
       }
     else
       {
-	  sqlite3_result_null (context);
+	  sqlite3_result_int (context, -1);
 	  return;
       }
     if (sqlite3_value_type (argv[3]) == SQLITE_FLOAT)
@@ -20126,7 +20130,7 @@ fnct_EnvIntersects (sqlite3_context * context, int argc, sqlite3_value ** argv)
       }
     else
       {
-	  sqlite3_result_null (context);
+	  sqlite3_result_int (context, -1);
 	  return;
       }
     if (sqlite3_value_type (argv[4]) == SQLITE_FLOAT)
@@ -20138,7 +20142,7 @@ fnct_EnvIntersects (sqlite3_context * context, int argc, sqlite3_value ** argv)
       }
     else
       {
-	  sqlite3_result_null (context);
+	  sqlite3_result_int (context, -1);
 	  return;
       }
     p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
@@ -20147,7 +20151,7 @@ fnct_EnvIntersects (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
 				     gpkg_amphibious);
     if (!geo1)
-	sqlite3_result_null (context);
+	sqlite3_result_int (context, -1);
     else
       {
 	  gaiaMbrGeometry (geo1);
@@ -31257,7 +31261,7 @@ fnct_math_atan2 (sqlite3_context * context, int argc, sqlite3_value ** argv)
     double t;
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (sqlite3_value_type (argv[0]) == SQLITE_FLOAT)
-	x = sqlite3_value_double (argv[0]);
+	y = sqlite3_value_double (argv[0]);
     else if (sqlite3_value_type (argv[0]) == SQLITE_INTEGER)
       {
 	  int_value = sqlite3_value_int (argv[0]);
@@ -31269,7 +31273,7 @@ fnct_math_atan2 (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  return;
       }
     if (sqlite3_value_type (argv[1]) == SQLITE_FLOAT)
-	y = sqlite3_value_double (argv[1]);
+	x = sqlite3_value_double (argv[1]);
     else if (sqlite3_value_type (argv[1]) == SQLITE_INTEGER)
       {
 	  int_value = sqlite3_value_int (argv[1]);

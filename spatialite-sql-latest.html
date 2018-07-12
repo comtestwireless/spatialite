@@ -1887,35 +1887,35 @@ This function only supports Long/Lat coordinates, and will return NULL for any p
 				<td></td>
 				<td align="center" bgcolor="#d0f0d0">base</td>
 				<td>The return type is Integer, with a return value of 1 for TRUE, 0 for FALSE, 
-					and &#8211;1 for UNKNOWN when called with NULL arguments.<hr>
+					and &#8211;1 for UNKNOWN when called with NULL or invalid arguments.<hr>
 					TRUE if g1 and g2 have equal MBRs</td></tr>
 			<tr><td><b>MbrDisjoint</b></td>
 				<td>MbrDisjoint( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> ) : <i>Integer</i></td>
 				<td></td>
 				<td align="center" bgcolor="#d0f0d0">base</td>
 				<td>The return type is Integer, with a return value of 1 for TRUE, 0 for FALSE, 
-					and &#8211;1 for UNKNOWN when called with NULL arguments.<hr>
+					and &#8211;1 for UNKNOWN when called with NULL or invalid arguments.<hr>
 					TRUE if the intersection of g1 and g2 MBRs is the empty set</td></tr>
 			<tr><td><b>MbrTouches</b></td>
 				<td>MbrTouches( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> ) : <i>Integer</i></td>
 				<td></td>
 				<td align="center" bgcolor="#d0f0d0">base</td>
 				<td>The return type is Integer, with a return value of 1 for TRUE, 0 for FALSE, 
-					and &#8211;1 for UNKNOWN when called with NULL arguments.<hr>
+					and &#8211;1 for UNKNOWN when called with NULL or invalid arguments.<hr>
 					TRUE if the only Points in common between g1 and g2 MBRs lie in the union of the boundaries of g1 and g2</td></tr>
 			<tr><td><b>MbrWithin</b></td>
 				<td>MbrWithin( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> ) : <i>Integer</i></td>
 				<td></td>
 				<td align="center" bgcolor="#d0f0d0">base</td>
 				<td>The return type is Integer, with a return value of 1 for TRUE, 0 for FALSE, 
-					and &#8211;1 for UNKNOWN when called with NULL arguments.<hr>
+					and &#8211;1 for UNKNOWN when called with NULL or invalid arguments.<hr>
 					TRUE if g1 MBR is completely contained in g2 MBR</td></tr>
 			<tr><td><b>MbrOverlaps</b></td>
 				<td>MbrOverlaps( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> ) : <i>Integer</i></td>
 				<td></td>
 				<td align="center" bgcolor="#d0f0d0">base</td>
 				<td>The return type is Integer, with a return value of 1 for TRUE, 0 for FALSE, 
-					and &#8211;1 for UNKNOWN when called with NULL arguments.<hr>
+					and &#8211;1 for UNKNOWN when called with NULL or invalid arguments.<hr>
 					TRUE if the intersection of g1 and g2 MBRs results in a value of the same
 					dimension as g1 and g2 that is different from both g1 and g2</td></tr>
 			<tr><td><b>MbrIntersects</b></td>
@@ -1923,7 +1923,7 @@ This function only supports Long/Lat coordinates, and will return NULL for any p
 				<td></td>
 				<td align="center" bgcolor="#d0f0d0">base</td>
 				<td>The return type is Integer, with a return value of 1 for TRUE, 0 for FALSE, 
-					and &#8211;1 for UNKNOWN when called with NULL arguments;<br>
+					and &#8211;1 for UNKNOWN when called with NULL or invalid arguments;<hr>
 					convenience predicate: TRUE if the intersection of g1 and g2 MBRs is not empty</td></tr>
 			<tr><td><b>EnvelopesIntersects</b></td>
 				<td>ST_EnvIntersects( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> ) : <i>Integer</i><hr>
@@ -1934,7 +1934,7 @@ This function only supports Long/Lat coordinates, and will return NULL for any p
 				<td align="center" bgcolor="#d0f0d0">base</td>
 				<td>The first form simply is an <u>alias name</u> for <b>MbrIntersects</b>; the other form allows to define the second MBR by two extreme points [<b>x1, y1</b>] and [<b>x2, y2</b>].<br>
                                         The return type is Integer, with a return value of 1 for TRUE, 0 for FALSE, 
-					and &#8211;1 for UNKNOWN when called with invalid arguments;<br>
+					and &#8211;1 for UNKNOWN when called with NULL or invalid arguments;<hr>
 					convenience predicate: TRUE if the intersection of both MBRs is not empty</td></tr>
 			<tr><td><b>MbrContains</b></td>
 				<td>MbrContains( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> ) : <i>Integer</i></td>
@@ -5004,10 +5004,16 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				    Edges and Nodes will be handled by implicitly calling <b>ST_ModEdgeSplit()</b><hr>
 					Will return <b>1</b> on full success; an exception will be raised on failure.</td></tr>
 			<tr><td><b>TopoGeo_Clone</b></td>
-				<td>TopoGeo_Clone( toponame <i>Text</i> , new-toponame <i>Text</i> ) : <i>Integer</i></td>
+				<td>TopoGeo_Clone( db-prefix <i>Text</i> , toponame <i>Text</i> , new-toponame <i>Text</i> ) : <i>Integer</i></td>
 				<td align="center" bgcolor="#d0f0d0"></td>
 				<td align="center" bgcolor="#f0d0f0">RTTOPO</td>
-				<td colspan="3">Will clone an existing Topology into another; the destionation Topology shall not exist and will be automatically created.<hr>
+				<td colspan="3">Will clone an existing Topology into another; the destionation Topology shall not exist and will be automatically created.
+					<ul>
+						<li><i>db-prefix</i> may be <b>NULL</b>, and in this case the input Topology will be searched within the "<b>MAIN</b>" database.
+						The input Topology can be freely located within anyone of the currently <i>attached</i> databases.</li>
+						<li>the output Topology will be always created within the "<b>MAIN</b>" database.</li>
+					</ul>
+					<hr>
 					Will return <b>1</b> on success; an exception will be raised on failure.</td></tr>
 			<tr><td><b>TopoGeo_GetEdgeSeed</b></td>
 				<td>TopoGeo_GetEdgeSeed( toponame <i>Text</i> , edge-id <i>Integer</i> ) : <i>Geometry</i></td>
