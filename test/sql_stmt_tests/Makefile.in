@@ -1728,7 +1728,6 @@ EXTRA_DIST = addpoint10.testcase \
 	isnumber3.testcase \
 	isnumber4.testcase \
 	isnumber5.testcase \
-	isnumber6.testcase \
 	isnumber7.testcase \
 	isnumber8.testcase \
 	ismeasured1.testcase \
