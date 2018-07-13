@@ -30204,6 +30204,189 @@ text2double (const unsigned char *str, double *val)
     return 1;
 }
 
+static int
+is_integer (const unsigned char *value)
+{
+/* checking if a text string is an Integer Number */
+    const unsigned char *p = value;
+    while (*p != '\0')
+      {
+	  /* skipping any leading whitespace */
+	  if (*p == ' ')
+	    {
+		p++;
+		continue;
+	    }
+	  break;
+      }
+    if (*p == '\0')
+	return 0;
+    if (*p == '-' || *p == '+')
+	p++;			/* skipping an eventual sign */
+    if (*p == '\0')
+	return 0;
+    while (*p != '\0')
+      {
+	  if (*p >= '0' && *p <= '9')
+	    {
+		p++;
+		continue;
+	    }
+	  return 0;
+      }
+    return 1;
+}
+
+static int
+is_decimal_number (const unsigned char *value)
+{
+/* checking if a text string is a Decimal Number */
+    const unsigned char *p = value;
+    while (*p != '\0')
+      {
+	  /* skipping any leading whitespace */
+	  if (*p == ' ')
+	    {
+		p++;
+		continue;
+	    }
+	  break;
+      }
+    if (*p == '\0')
+	return 0;
+    if (*p == '-' || *p == '+')
+	p++;			/* skipping an eventual sign */
+    if (*p == '\0')
+	return 0;
+    while (*p != '\0')
+      {
+	  /* integer part */
+	  if (*p == '.')
+	    {
+		p++;
+		break;
+	    }
+	  if (*p >= '0' && *p <= '9')
+	    {
+		p++;
+		continue;
+	    }
+	  return 0;
+      }
+    if (*p == '\0')
+	return 0;
+    while (*p != '\0')
+      {
+	  /* fractional part */
+	  if (*p == 'e' || *p == 'E')
+		break;
+	  if (*p >= '0' && *p <= '9')
+	    {
+		p++;
+		continue;
+	    }
+	  return 0;
+      }
+    if (*p == '\0')
+	return 1;	/* valid decimal number without exponent */
+	
+/* checking the exponent */
+    if (*p == 'e' || *p == 'E')
+	p++;			/* skipping an eventual exponent marker */
+	else
+	return 0;
+    if (*p == '\0')
+	return 0;
+    if (*p == '-' || *p == '+')
+	p++;			/* skipping an eventual exponent sign */
+    if (*p == '\0')
+	return 0;
+    while (*p != '\0')
+      {
+	  /* exponent */
+	  if (*p >= '0' && *p <= '9')
+	    {
+		p++;
+		continue;
+	    }
+	  return 0;
+      }
+    return 1;
+}
+
+static void
+fnct_IsInteger (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ IsInteger(TEXT value)
+/
+/ returns 1 if yes, 0 if  not and -1 on any non-text value
+*/
+    int ret;
+    const unsigned char *value;
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
+	value = sqlite3_value_text (argv[0]);
+    else
+      {
+	  sqlite3_result_int (context, -1);
+	  return;
+      }
+    ret = is_integer (value);
+    sqlite3_result_int (context, ret);
+}
+
+static void
+fnct_IsDecimalNumber (sqlite3_context * context, int argc,
+		      sqlite3_value ** argv)
+{
+/* SQL function:
+/ IsDecimalNumber(TEXT value)
+/
+/ returns 1 if yes, 0 if  not and -1 on any non-text value
+*/
+    int ret;
+    const unsigned char *value;
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
+	value = sqlite3_value_text (argv[0]);
+    else
+      {
+	  sqlite3_result_int (context, -1);
+	  return;
+      }
+    ret = is_decimal_number (value);
+    sqlite3_result_int (context, ret);
+}
+
+static void
+fnct_IsNumber (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ IsNumber(TEXT value)
+/
+/ returns 1 if yes, 0 if  not and -1 on any non-text value
+*/
+    int ret;
+    const unsigned char *value;
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
+	value = sqlite3_value_text (argv[0]);
+    else
+      {
+	  sqlite3_result_int (context, -1);
+	  return;
+      }
+    ret = is_integer (value);
+    if (ret)
+      {
+	  sqlite3_result_int (context, 1);
+	  return;
+      }
+    ret = is_decimal_number (value);
+    sqlite3_result_int (context, ret);
+}
+
 static void
 fnct_CastToInteger (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
@@ -42514,6 +42697,85 @@ fnct_isTinyPointEnabled (sqlite3_context * context, int argc,
 }
 
 static void
+fnct_postgres_reset_error (sqlite3_context * context, int argc,
+			   sqlite3_value ** argv)
+{
+/* SQL function:
+/ PostgreSql_ResetLastError ( void )
+/
+/ returns: 1 on success, 0 on failure
+*/
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache == NULL)
+      {
+	  sqlite3_result_int (context, 0);
+	  return;
+      }
+    if (cache->lastPostgreSqlError != NULL)
+	sqlite3_free (cache->lastPostgreSqlError);
+    cache->lastPostgreSqlError = NULL;
+    sqlite3_result_int (context, 1);
+}
+
+static void
+fnct_postgres_set_error (sqlite3_context * context, int argc,
+			 sqlite3_value ** argv)
+{
+/* SQL function:
+/ PostgreSql_SetLastError ( err-msg TEXT )
+/
+/ returns: 1 on success, 0 on failure; -1 on invalid argument
+*/
+    char *msg;
+    const char *err_msg;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
+	err_msg = (const char *) sqlite3_value_blob (argv[0]);
+    else
+    {
+	sqlite3_result_int (context, -1);
+	return;
+}
+    if (cache == NULL)
+      {
+	  sqlite3_result_int (context, 0);
+	  return;
+      }
+    msg = sqlite3_mprintf ("%s", err_msg);
+    if (cache->lastPostgreSqlError != NULL)
+	sqlite3_free (cache->lastPostgreSqlError);
+    cache->lastPostgreSqlError = msg;
+    sqlite3_result_int (context, 1);
+}
+
+static void
+fnct_postgres_get_error (sqlite3_context * context, int argc,
+			 sqlite3_value ** argv)
+{
+/* SQL function:
+/ PostgreSql_GetLastError ( void )
+/
+/ returns: the last message registered by PostgreSql_SetLastError
+/ or NULL if no such message exists
+*/
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache == NULL)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (cache->lastPostgreSqlError == NULL)
+	sqlite3_result_null (context);
+    else
+	sqlite3_result_text (context, cache->lastPostgreSqlError,
+			     strlen (cache->lastPostgreSqlError),
+			     SQLITE_STATIC);
+}
+
+static void
 fnct_addShapefileExtent (sqlite3_context * context, int argc,
 			 sqlite3_value ** argv)
 {
@@ -44302,6 +44564,15 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "RemoveRepeatedPoints", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_RemoveRepeatedPoints, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "IsInteger", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_IsInteger, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "IsDecimalNumber", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_IsDecimalNumber, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "IsNumber", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_IsNumber, 0, 0, 0);
     sqlite3_create_function_v2 (db, "CastToInteger", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_CastToInteger, 0, 0, 0);
@@ -45945,6 +46216,16 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0, 0,
 				fnct_make_string_list_step,
 				fnct_make_string_list_final, 0);
+
+    sqlite3_create_function_v2 (db, "PostgreSql_ResetLastError", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_postgres_reset_error, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "PostgreSql_SetLastError", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_postgres_set_error, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "PostgreSql_GetLastError", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_postgres_get_error, 0, 0, 0);
 
 /* some Geodesic functions */
     sqlite3_create_function_v2 (db, "GreatCircleLength", 1,

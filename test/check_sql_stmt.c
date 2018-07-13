@@ -616,6 +616,22 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
       }
   skip_routing:
 
+    if (legacy)
+      {
+	  /* skipping PostgresL tests in legacy mode */
+	  fprintf (stderr,
+		   "WARNING: skipping Postgres testcases in legacy mode !!!\n");
+	  goto skip_postgres;
+      }
+
+    result =
+	run_subdir_test ("sql_stmt_postgres_tests", conn, load_extension, 0);
+    if (result != 0)
+      {
+	  return result;
+      }
+  skip_postgres:
+
 #ifndef OMIT_MATHSQL		/* only if MATHSQL is supported */
     result =
 	run_subdir_test ("sql_stmt_mathsql_tests", conn, load_extension, 0);

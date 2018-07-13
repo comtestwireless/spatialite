@@ -1696,10 +1696,41 @@ EXTRA_DIST = addpoint10.testcase \
 	is3d4.testcase \
 	is3d5.testcase \
 	is3d6.testcase \
+	isdecimalnumber1.testcase \
+	isdecimalnumber2.testcase \
+	isdecimalnumber3.testcase \
+	isdecimalnumber4.testcase \
+	isdecimalnumber5.testcase \
+	isdecimalnumber6.testcase \
+	isdecimalnumber7.testcase \
+	isdecimalnumber8.testcase \
+	isdecimalnumber9.testcase \
+	isdecimalnumber10.testcase \
+	isdecimalnumber11.testcase \
+	isdecimalnumber12.testcase \
 	isempty2.testcase \
 	isempty3.testcase \
 	isempty4.testcase \
 	isempty.testcase \
+	isinteger1.testcase \
+	isinteger2.testcase \
+	isinteger3.testcase \
+	isinteger4.testcase \
+	isinteger5.testcase \
+	isinteger6.testcase \
+	isinteger7.testcase \
+	isinteger8.testcase \
+	isinteger9.testcase \
+	isinteger10.testcase \
+	isinteger11.testcase \
+	isnumber1.testcase \
+	isnumber2.testcase \
+	isnumber3.testcase \
+	isnumber4.testcase \
+	isnumber5.testcase \
+	isnumber6.testcase \
+	isnumber7.testcase \
+	isnumber8.testcase \
 	ismeasured1.testcase \
 	ismeasured2.testcase \
 	ismeasured3.testcase \
@@ -2448,6 +2479,21 @@ EXTRA_DIST = addpoint10.testcase \
 	shiftlongitude8.testcase \
 	shiftlongitude9.testcase \
 	spatialindex.testcase \
+	spatialindexextent1.testcase \
+	spatialindexextent2.testcase \
+	spatialindexextent3.testcase \
+	spatialindexextent4.testcase \
+	spatialindexextent5.testcase \
+	spatialindexextent6.testcase \
+	spatialindexextent7.testcase \
+	spatialindexextent8.testcase \
+	spatialindexextent9.testcase \
+	spatialindexextent10.testcase \
+	spatialindexextent11.testcase \
+	spatialindexextent12.testcase \
+	spatialindexextent13.testcase \
+	spatialindexextent14.testcase \
+	spatialindexextent15.testcase \
 	srid10.testcase \
 	srid11.testcase \
 	srid1.testcase \

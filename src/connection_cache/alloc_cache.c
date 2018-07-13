@@ -384,6 +384,7 @@ init_splite_internal_cache (struct splite_internal_cache *cache)
 	;
     else if (atoi (tinyPoint) != 0)
 	cache->tinyPointEnabled = 1;
+    cache->lastPostgreSqlError = NULL;
 /* initializing an empty linked list of Topologies */
     cache->firstTopology = NULL;
     cache->lastTopology = NULL;
@@ -767,6 +768,9 @@ free_internal_cache (struct splite_internal_cache *cache)
 	  splite_free_xml_schema_cache_item (p_xmlSchema);
       }
 #endif
+
+    if (cache->lastPostgreSqlError != NULL)
+	sqlite3_free (cache->lastPostgreSqlError);
 
     if (cache->cutterMessage != NULL)
 	sqlite3_free (cache->cutterMessage);

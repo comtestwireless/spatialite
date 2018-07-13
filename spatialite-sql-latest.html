@@ -156,7 +156,36 @@
 				<h3><a name="generic">Generic SQL functions</a></h3></td></tr>
 			<tr><th bgcolor="#d0d0d0">Function</th>
 				<th bgcolor="#d0d0d0">Syntax</th>
-				<th colspan="3" bgcolor="#d0d0d0">Summary</th></tr>
+				<th colspan="3" bgcolor="#d0d0d0">Summary</th></tr>	
+			<tr><td><b>IsInteger</b></td>
+				<td>IsInteger( value <i>Text</i> ) : <i>Integer</i></td>
+				<td colspan="3">Checks a TEXT string testing if it corresponds to some Integer Number.<br>
+				The function returns <b>1</b> if <b>TRUE</b> and <b>0</b> if <b>FalSE</b>; <b>-1</b> is returned when the argument is not a Text string.<hr>
+				Examples of valid Integer strings:
+				<ul>
+					<li><b>'1234'</b></li>
+					<li><b>'+5678'</b></li>
+					<li><b>'-4321'</b></li>
+					<li><b>'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+12345678'</b></li>
+				</ul></td></tr>
+			<tr><td><b>IsDecimalNumber</b></td>
+				<td>IsDecimalNumber( value <i>Text</i> ) : <i>Integer</i></td>
+				<td colspan="3">Checks a TEXT string testing if it corresponds to some Decimal Number.<br>
+				The function returns <b>1</b> if <b>TRUE</b> and <b>0</b> if <b>FalSE</b>; <b>-1</b> is returned when the argument is not a Text string.<hr>
+				Examples of valid Decimal Number strings:
+				<ul>
+					<li><b>'1234.56'</b></li>
+					<li><b>'+5678.09'</b></li>
+					<li><b>'-4321.67'</b></li>
+					<li><b>'-4321.67e12'</b></li>
+					<li><b>'6789.123E+6'</b></li>
+					<li><b>'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+1234.56e-6'</b></li>
+				</ul></td></tr>
+			<tr><td><b>IsNumber</b></td>
+				<td>IsNumber( value <i>Text</i> ) : <i>Integer</i></td>
+				<td colspan="3">Checks a TEXT string testing if it corresponds to some Number.<br>
+				The function returns <b>1</b> if <b>TRUE</b> and <b>0</b> if <b>FalSE</b>; <b>-1</b> is returned when the argument is not a Text string.<hr>
+				convenience predicate: same as <b>IsInteger(value) OR IsDecimalNumber(value)</b>.</td></tr>
 			<tr><td><b>CastToInteger</b></td>
 				<td>CastToInteger( value <i>Generic</i> ) : <i>Integer</i></td>
 				<td colspan="3">returns the intput value possibly casted to the Integer data-type; NULL if no conversion is possible.</td></tr>
@@ -232,6 +261,20 @@
 				<td colspan="3">Evaluate the SQL text in <b>X</b>.  Return the results, using string <b>Y</b> as the separator.<br>
 				If <b>Y</b> is omitted, use a single space character.<hr>
                 Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to effectively enable this function.</td></tr>
+			<tr><td><b>PostgreSQL_GetLastError</b></td>
+				<td>PostgreSQL_GetLastError() : <i>Text</i></td>
+				<td colspan="3">returns the most recent error message raised by PostgreSQL.<br>
+				<b>NULL</b> if there is no pending error message available.</td></tr>
+			<tr><td><b>PostgreSQL_ResetLastError</b></td>
+				<td>PostgreSQL_ResetLastError() : <i>Integer</i></td>
+				<td colspan="3">Resets the most recent error message raised by PostgreSQL.<br>
+				Returns <b>1</b> on success and <b>0</b> on failure.<hr>
+				Only intended for internal usage by the <b>VirtualPostgres</b> extension module.</td></tr>
+			<tr><td><b>PostgreSQL_SetLastError</b></td>
+				<td>PostgreSQL_SetLastError( <i>TEXT</i> ) : <i>Integer</i></td>
+				<td colspan="3">Permanently sets the most recent error message raised by PostgreSQL.<br>
+				Returns <b>1</b> on success and <b>0</b> on failure; <b>-1</b> if the argument is not a Text string.<hr>
+				Only intended for internal usage by the <b>VirtualPostgres</b> extension module.</td></tr>
             <tr><td colspan="5" align="center" bgcolor="#f0e0c0">
 				<h3><a name="global">Global settings per connection</a></h3></td></tr>
 			<tr><th bgcolor="#d0d0d0">Function</th>

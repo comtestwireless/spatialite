@@ -196,6 +196,7 @@ extern "C"
 	int SqlProcContinue;
 	int tinyPointEnabled;
 	unsigned char magic2;
+	char *lastPostgreSqlError;
     };
 
     struct epsg_defs

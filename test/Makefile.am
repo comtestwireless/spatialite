@@ -220,4 +220,4 @@ SUBDIRS = sql_stmt_geosadvanced_tests sql_stmt_geos_tests \
 	sql_stmt_gpkgnocache_tests sql_stmt_sequence_tests \
 	sql_stmt_routing_tests sql_stmt_logfile_tests \
 	sql_stmt_iconv_tests sql_stmt_point_geom \
-	sql_stmt_tiny_point
+	sql_stmt_tiny_point sql_stmt_postgres_tests
