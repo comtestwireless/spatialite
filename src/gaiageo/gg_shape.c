@@ -442,7 +442,7 @@ gaiaOpenShpRead (gaiaShapefilePtr shp, const char *path, const char *charFrom,
     int ind;
     char field_name[2048];
     char *sys_err;
-    char errMsg[1024];
+    char errMsg[4192];
     iconv_t iconv_ret;
     char utf8buf[2048];
 #if !defined(__MINGW32__) && defined(_WIN32)
@@ -957,7 +957,7 @@ gaiaOpenShpWriteEx (gaiaShapefilePtr shp, const char *path, int shape,
     unsigned char *dbf_buf = NULL;
     gaiaDbfFieldPtr fld;
     char *sys_err;
-    char errMsg[1024];
+    char errMsg[4192];
     short dbf_reclen = 0;
     int shp_size = 0;
     int shx_size = 0;
