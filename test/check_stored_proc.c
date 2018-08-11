@@ -1044,7 +1044,7 @@ do_level4_tests (sqlite3 * handle, int *retcode)
 	  *retcode = -88;
 	  return 0;
       }
-    if (atoi (*(results + 1)) != 1)
+    if (*(results + 1) != NULL)
       {
 	  fprintf (stderr, "SqlProc_Execute() #1 unexpected failure\n");
 	  sqlite3_free_table (results);
@@ -1125,7 +1125,7 @@ do_level5_tests (sqlite3 * handle, int *retcode)
 	  *retcode = -95;
 	  return 0;
       }
-    if (atoi (*(results + 1)) != 1)
+    if (*(results + 1) != NULL)
       {
 	  fprintf (stderr, "SqlProc_Execute() #3 unexpected failure\n");
 	  sqlite3_free_table (results);
@@ -1209,7 +1209,7 @@ do_level5_tests (sqlite3 * handle, int *retcode)
 	  *retcode = -104;
 	  return 0;
       }
-    if (atoi (*(results + 1)) != 1)
+    if (*(results + 1) != NULL)
       {
 	  fprintf (stderr, "SqlProc_Execute() #4 unexpected failure\n");
 	  sqlite3_free_table (results);
@@ -1238,7 +1238,7 @@ do_level5_tests (sqlite3 * handle, int *retcode)
 	  *retcode = -107;
 	  return 0;
       }
-    if (atoi (*(results + 1)) != 1)
+    if (*(results + 1) != NULL)
       {
 	  fprintf (stderr, "SqlProc_Execute() #5 unexpected failure\n");
 	  sqlite3_free_table (results);
@@ -1247,12 +1247,27 @@ do_level5_tests (sqlite3 * handle, int *retcode)
       }
     sqlite3_free_table (results);
 
-/* testing SqlProc_Exit */
-    sql = "SELECT SqlProc_Exit();";
+    return 1;
+}
+
+static int
+do_level6_tests (sqlite3 * handle, int *retcode)
+{
+/* performing Level 6 tests - SqlProc_Return() */
+    const char *sql;
+    int ret;
+    char *err_msg = NULL;
+    char **results;
+    int rows;
+    int columns;
+
+/* testing SqlProc_Return(NULL) */
+    sql =
+	"SELECT SqlProc_Execute(SqlProc_FromText('SELECT SqlProc_Return(NULL)'));";
     ret = sqlite3_get_table (handle, sql, &results, &rows, &columns, &err_msg);
     if (ret != SQLITE_OK)
       {
-	  fprintf (stderr, "SqlProc_Exit() #1 error: %s\n", err_msg);
+	  fprintf (stderr, "SqlProc_Return() #1 error: %s\n", err_msg);
 	  sqlite3_free (err_msg);
 	  *retcode = -109;
 	  return 0;
@@ -1260,17 +1275,133 @@ do_level5_tests (sqlite3 * handle, int *retcode)
     if (rows != 1 || columns != 1)
       {
 	  fprintf (stderr,
-		   "SqlProc_Exit() #1 error: rows=%d columns=%d\n", rows,
+		   "SqlProc_Return() #1 error: rows=%d columns=%d\n", rows,
 		   columns);
 	  sqlite3_free_table (results);
 	  *retcode = -110;
 	  return 0;
       }
-    if (atoi (*(results + 1)) != 1)
+    if (*(results + 1) != NULL)
       {
 	  fprintf (stderr, "SqlProc_Exit() #1 unexpected failure\n");
 	  sqlite3_free_table (results);
 	  *retcode = -111;
+	  return 0;
+      }
+    sqlite3_free_table (results);
+
+/* testing SqlProc_Return(INTEGER) */
+    sql =
+	"SELECT SqlProc_Execute(SqlProc_FromText('SELECT SqlProc_Return(1234567890)'));";
+    ret = sqlite3_get_table (handle, sql, &results, &rows, &columns, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "SqlProc_Return() #2 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  *retcode = -112;
+	  return 0;
+      }
+    if (rows != 1 || columns != 1)
+      {
+	  fprintf (stderr,
+		   "SqlProc_Return() #2 error: rows=%d columns=%d\n", rows,
+		   columns);
+	  sqlite3_free_table (results);
+	  *retcode = -113;
+	  return 0;
+      }
+    if (atoi (*(results + 1)) != 1234567890)
+      {
+	  fprintf (stderr, "SqlProc_Exit() #2 unexpected failure\n");
+	  sqlite3_free_table (results);
+	  *retcode = -114;
+	  return 0;
+      }
+    sqlite3_free_table (results);
+
+/* testing SqlProc_Return(DOUBLE) */
+    sql =
+	"SELECT SqlProc_Execute(SqlProc_FromText('SELECT SqlProc_Return(1234.5)'));";
+    ret = sqlite3_get_table (handle, sql, &results, &rows, &columns, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "SqlProc_Return() #3 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  *retcode = -115;
+	  return 0;
+      }
+    if (rows != 1 || columns != 1)
+      {
+	  fprintf (stderr,
+		   "SqlProc_Return() #3 error: rows=%d columns=%d\n", rows,
+		   columns);
+	  sqlite3_free_table (results);
+	  *retcode = -116;
+	  return 0;
+      }
+    if (atof (*(results + 1)) != 1234.5)
+      {
+	  fprintf (stderr, "SqlProc_Exit() #3 unexpected failure\n");
+	  sqlite3_free_table (results);
+	  *retcode = -117;
+	  return 0;
+      }
+    sqlite3_free_table (results);
+
+/* testing SqlProc_Return(TEXT) */
+    sql =
+	"SELECT SqlProc_Execute(SqlProc_FromText('SELECT SqlProc_Return(''test me now'')'));";
+    ret = sqlite3_get_table (handle, sql, &results, &rows, &columns, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "SqlProc_Return() #4 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  *retcode = -118;
+	  return 0;
+      }
+    if (rows != 1 || columns != 1)
+      {
+	  fprintf (stderr,
+		   "SqlProc_Return() #4 error: rows=%d columns=%d\n", rows,
+		   columns);
+	  sqlite3_free_table (results);
+	  *retcode = -119;
+	  return 0;
+      }
+    if (strcmp (*(results + 1), "test me now") != 0)
+      {
+	  fprintf (stderr, "SqlProc_Exit() #4 unexpected failure\n");
+	  sqlite3_free_table (results);
+	  *retcode = -120;
+	  return 0;
+      }
+    sqlite3_free_table (results);
+
+/* testing SqlProc_Return(BLOB) */
+    sql =
+	"SELECT TypeOf(SqlProc_Execute(SqlProc_FromText('SELECT SqlProc_Return(x''0102030405060708090a0b0c0d0e0f'')')));";
+    ret = sqlite3_get_table (handle, sql, &results, &rows, &columns, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "SqlProc_Return() #5 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  *retcode = -121;
+	  return 0;
+      }
+    if (rows != 1 || columns != 1)
+      {
+	  fprintf (stderr,
+		   "SqlProc_Return() #5 error: rows=%d columns=%d\n", rows,
+		   columns);
+	  sqlite3_free_table (results);
+	  *retcode = -121;
+	  return 0;
+      }
+    if (strcmp (*(results + 1), "blob") != 0)
+      {
+	  fprintf (stderr, "SqlProc_Exit() #5 unexpected failure\n");
+	  sqlite3_free_table (results);
+	  *retcode = -122;
 	  return 0;
       }
     sqlite3_free_table (results);
@@ -1381,6 +1512,10 @@ main (int argc, char *argv[])
 
 /*tests: level 5 */
     if (!do_level5_tests (handle, &retcode))
+	goto end;
+
+/*tests: level 6 */
+    if (!do_level6_tests (handle, &retcode))
 	goto end;
 
   end:

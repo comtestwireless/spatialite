@@ -371,6 +371,7 @@ init_splite_internal_cache (struct splite_internal_cache *cache)
     cache->SqlProcLogfile = NULL;
     cache->SqlProcLog = NULL;
     cache->SqlProcContinue = 1;
+    cache->SqlProcRetValue = gaia_alloc_variant ();
     cache->pool_index = -1;
     cache->gaia_geos_error_msg = NULL;
     cache->gaia_geos_warning_msg = NULL;
@@ -714,6 +715,10 @@ free_internal_cache (struct splite_internal_cache *cache)
     if (cache->magic1 != SPATIALITE_CACHE_MAGIC1
 	|| cache->magic2 != SPATIALITE_CACHE_MAGIC2)
 	return;
+
+    if (cache->SqlProcRetValue != NULL)
+	gaia_free_variant (cache->SqlProcRetValue);
+    cache->SqlProcRetValue = NULL;
 
 #ifndef OMIT_GEOS
     handle = cache->GEOS_handle;
@@ -1230,4 +1235,129 @@ is_tiny_point_enabled (const void *p_cache)
 	|| cache->magic2 != SPATIALITE_CACHE_MAGIC2)
 	return 0;
     return cache->tinyPointEnabled;
+}
+
+SPATIALITE_PRIVATE struct gaia_variant_value *
+gaia_alloc_variant ()
+{
+/* allocating and initializing a NULL Variant Value */
+    struct gaia_variant_value *var = malloc (sizeof (struct gaia_variant_value));
+    if (var == NULL)
+	return NULL;
+    var->dataType = SQLITE_NULL;
+    var->textValue = NULL;
+    var->blobValue = NULL;
+    var->size = 0;
+    return var;
+}
+
+SPATIALITE_PRIVATE void
+gaia_free_variant (struct gaia_variant_value *variant)
+{
+/* destroying a Variant Value */
+    if (variant == NULL)
+	return;
+    if (variant->textValue != NULL)
+	free (variant->textValue);
+    if (variant->blobValue != NULL)
+	free (variant->blobValue);
+    free (variant);
+}
+
+SPATIALITE_PRIVATE void
+gaia_set_variant_null (struct gaia_variant_value *variant)
+{
+/* setting a Variant Value - NULL */
+    if (variant->textValue != NULL)
+	free (variant->textValue);
+    if (variant->blobValue != NULL)
+	free (variant->blobValue);
+    variant->dataType = SQLITE_NULL;
+    variant->textValue = NULL;
+    variant->blobValue = NULL;
+    variant->size = 0;
+}
+
+SPATIALITE_PRIVATE void
+gaia_set_variant_int64 (struct gaia_variant_value *variant, sqlite3_int64 value)
+{
+/* setting a Variant Value - INT64 */
+    if (variant->textValue != NULL)
+	free (variant->textValue);
+    if (variant->blobValue != NULL)
+	free (variant->blobValue);
+    variant->dataType = SQLITE_INTEGER;
+    variant->intValue = value;
+    variant->textValue = NULL;
+    variant->blobValue = NULL;
+    variant->size = 0;
+}
+
+SPATIALITE_PRIVATE void
+gaia_set_variant_double (struct gaia_variant_value *variant, double value)
+{
+/* setting a Variant Value - DOUBLE */
+    if (variant->textValue != NULL)
+	free (variant->textValue);
+    if (variant->blobValue != NULL)
+	free (variant->blobValue);
+    variant->dataType = SQLITE_FLOAT;
+    variant->dblValue = value;
+    variant->textValue = NULL;
+    variant->blobValue = NULL;
+    variant->size = 0;
+}
+
+SPATIALITE_PRIVATE int
+gaia_set_variant_text (struct gaia_variant_value *variant, const char *value,
+		       int size)
+{
+/* setting a Variant Value - TEXT */
+    char *text;
+    if (variant->textValue != NULL)
+	free (variant->textValue);
+    if (variant->blobValue != NULL)
+	free (variant->blobValue);
+    text = malloc (size + 1);
+    if (text == NULL)
+      {
+	  variant->dataType = SQLITE_NULL;
+	  variant->textValue = NULL;
+	  variant->blobValue = NULL;
+	  variant->size = 0;
+	  return 0;
+      }
+    variant->dataType = SQLITE_TEXT;
+    strcpy (text, value);
+    variant->textValue = text;
+    variant->blobValue = NULL;
+    variant->size = size;
+    return 1;
+}
+
+SPATIALITE_PRIVATE int
+gaia_set_variant_blob (struct gaia_variant_value *variant,
+		       const unsigned char *value, int size)
+{
+/* setting a Variant Value - BLOB */
+    unsigned char *blob;
+    if (variant->textValue != NULL)
+	free (variant->textValue);
+    if (variant->blobValue != NULL)
+	free (variant->blobValue);
+    blob = malloc (size + 1);
+    if (blob == NULL)
+      {
+	  variant->dataType = SQLITE_NULL;
+	  variant->textValue = NULL;
+	  variant->blobValue = NULL;
+	  variant->size = 0;
+	  return 0;
+      }
+    variant->dataType = SQLITE_BLOB;
+    memcpy (blob, value, size);
+    variant->textValue = NULL;
+    variant->blobValue = blob;
+    variant->size = size;
+    return 1;
 }

@@ -2315,7 +2315,7 @@ gaiaAuxClonerExecute (const void *handle)
 	  if (!upgrade_output_table (cloner))
 	    {
 		spatialite_e
-		    ("CloneTable: unable to updgrade the output table \"%s\"\n",
+		    ("CloneTable: unable to upgrade the output table \"%s\"\n",
 		     cloner->out_table);
 		return 0;
 	    }

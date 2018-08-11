@@ -30279,7 +30279,7 @@ is_decimal_number (const unsigned char *value)
       {
 	  /* fractional part */
 	  if (*p == 'e' || *p == 'E')
-		break;
+	      break;
 	  if (*p >= '0' && *p <= '9')
 	    {
 		p++;
@@ -30288,12 +30288,12 @@ is_decimal_number (const unsigned char *value)
 	  return 0;
       }
     if (*p == '\0')
-	return 1;	/* valid decimal number without exponent */
-	
+	return 1;		/* valid decimal number without exponent */
+
 /* checking the exponent */
     if (*p == 'e' || *p == 'E')
 	p++;			/* skipping an eventual exponent marker */
-	else
+    else
 	return 0;
     if (*p == '\0')
 	return 0;
@@ -34172,7 +34172,40 @@ fnct_sp_execute (sqlite3_context * context, int argc, sqlite3_value ** argv)
 /* executing the SQL Procedure */
     if (!gaia_sql_proc_execute (sqlite, cache, sql))
 	goto sql_error;
-    sqlite3_result_int (context, 1);
+    if (cache != NULL)
+      {
+	  if (cache->SqlProcRetValue == NULL)
+	      sqlite3_result_null (context);
+	  else
+	    {
+		/* setting the Return Value declared from SqlProc_Return() */
+		struct gaia_variant_value *retval = cache->SqlProcRetValue;
+		switch (retval->dataType)
+		  {
+		  case SQLITE_INTEGER:
+		      sqlite3_result_int64 (context, retval->intValue);
+		      break;
+		  case SQLITE_FLOAT:
+		      sqlite3_result_double (context, retval->dblValue);
+		      break;
+		  case SQLITE_TEXT:
+		      sqlite3_result_text (context, retval->textValue,
+					   retval->size, SQLITE_STATIC);
+		      break;
+		  case SQLITE_BLOB:
+		      sqlite3_result_blob (context, retval->blobValue,
+					   retval->size, SQLITE_STATIC);
+		      break;
+		  case SQLITE_NULL:
+		  default:
+		      sqlite3_result_null (context);
+		      break;
+
+		  };
+	    }
+      }
+    else
+	sqlite3_result_null (context);
     if (sql != NULL)
 	free (sql);
     gaia_sql_proc_destroy_variables (variables);
@@ -34219,16 +34252,27 @@ fnct_sp_execute (sqlite3_context * context, int argc, sqlite3_value ** argv)
 }
 
 static void
-fnct_sp_exit (sqlite3_context * context, int argc, sqlite3_value ** argv)
+fnct_sp_return (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
 /* SQL function:
-/ SqlProc_Exit( void )
-/ StoredProc_Exit( void )
+/ SqlProc_Return( NULL )
+/ SqlProc_Return( value INTEGER )
+/ SqlProc_Return( value DOUBLE )
+/ SqlProc_Return( value TEXT )
+/ SqlProc_Return( value BLOB )
+/ StoredProc_Return( NULL )
+/ StoredProc_Return( value INTEGER )
+/ StoredProc_Return( value DOUBLE )
+/ StoredProc_Return( value TEXT )
+/ StoredProc_Return( value BLOB )
 /
 / returns:
 / 1 on succes
 / raises an exception on invalid arguments or errors
 */
+    const char *txt;
+    const unsigned char *blob;
+    int size;
     const char *msg;
     struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
@@ -34237,11 +34281,45 @@ fnct_sp_exit (sqlite3_context * context, int argc, sqlite3_value ** argv)
 
 /* registrering an EXIT request */
     cache->SqlProcContinue = 0;
+
+/* registrering a Return Value */
+    switch (sqlite3_value_type (argv[0]))
+      {
+      case SQLITE_INTEGER:
+	  gaia_set_variant_int64 (cache->SqlProcRetValue,
+				  sqlite3_value_int64 (argv[0]));
+	  break;
+      case SQLITE_FLOAT:
+	  gaia_set_variant_double (cache->SqlProcRetValue,
+				   sqlite3_value_double (argv[0]));
+	  break;
+      case SQLITE_TEXT:
+	  txt = (const char *) sqlite3_value_text (argv[0]);
+	  size = sqlite3_value_bytes (argv[0]);
+	  if (!gaia_set_variant_text (cache->SqlProcRetValue, txt, size))
+	      goto insuff_memory;
+	  break;
+      case SQLITE_BLOB:
+	  blob = (const unsigned char *) sqlite3_value_blob (argv[0]);
+	  size = sqlite3_value_bytes (argv[0]);
+	  if (!gaia_set_variant_blob (cache->SqlProcRetValue, blob, size))
+	      goto insuff_memory;
+	  break;
+      case SQLITE_NULL:
+      default:
+	  gaia_set_variant_null (cache->SqlProcRetValue);
+	  break;
+      };
     sqlite3_result_int (context, 1);
     return;
 
   no_cache:
-    msg = "SqlProc_Exit exception - unable to find a Connection Cache.";
+    msg = "SqlProc_Return exception - unable to find a Connection Cache.";
+    sqlite3_result_error (context, msg, -1);
+    return;
+
+  insuff_memory:
+    msg = "SqlProc_Return exception - Insuficient Memory.";
     sqlite3_result_error (context, msg, -1);
     return;
 }
@@ -34541,7 +34619,7 @@ fnct_sp_stored_execute (sqlite3_context * context, int argc,
   invalid_stored_procedure:
     message =
 	sqlite3_mprintf
-	("StoredProc exception - unable to retrive a Stored Procedure named \"%s\".",
+	("StoredProc exception - unable to retrieve a Stored Procedure named \"%s\".",
 	 name);
     sqlite3_result_error (context, message, -1);
     sqlite3_free (message);
@@ -42734,10 +42812,10 @@ fnct_postgres_set_error (sqlite3_context * context, int argc,
     if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
 	err_msg = (const char *) sqlite3_value_blob (argv[0]);
     else
-    {
-	sqlite3_result_int (context, -1);
-	return;
-}
+      {
+	  sqlite3_result_int (context, -1);
+	  return;
+      }
     if (cache == NULL)
       {
 	  sqlite3_result_int (context, 0);
@@ -45772,10 +45850,10 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 				fnct_sp_execute, 0, 0, 0);
     sqlite3_create_function_v2 (db, "SqlProc_Execute", 65, SQLITE_UTF8, cache,
 				fnct_sp_execute, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "SqlProc_Exit", 0, SQLITE_UTF8, cache,
-				fnct_sp_exit, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "StoredProc_Exit", 0, SQLITE_UTF8, cache,
-				fnct_sp_exit, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_Return", 1, SQLITE_UTF8, cache,
+				fnct_sp_return, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_Return", 1, SQLITE_UTF8, cache,
+				fnct_sp_return, 0, 0, 0);
     sqlite3_create_function_v2 (db, "StoredProc_CreateTables", 0, SQLITE_UTF8,
 				cache, fnct_sp_create_tables, 0, 0, 0);
     sqlite3_create_function_v2 (db, "StoredProc_Register", 3, SQLITE_UTF8,

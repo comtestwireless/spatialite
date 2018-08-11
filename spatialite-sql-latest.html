@@ -9,7 +9,7 @@
 			i {color:navy;}
 		</style>
 	</head><body bgcolor="#fffff0">
-		<h2>SpatiaLite 5.0.0-devel&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SQL functions reference list</h2>
+		<h2>SpatiaLite 5.0.0-beta1l&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SQL functions reference list</h2>
 		<a href="https://www.gaia-gis.it/fossil/libspatialite">back</a>
 		<ul>
 			<li><a href="#version">SQL Version Info [and build options testing] functions</a></li>
@@ -6208,24 +6208,37 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 					SqlProc_CookedSQL( object <i>BLOB</i> , vararg <i>String</i> ) : <i>String</i><hr>
 					SqlProc_CookedSQL( object <i>BLOB</i> , vararg1 <i>String</i> [ , ... ] , varargN <i>String</i> ) : <i>String</i></td>
 				<td colspan="3">Returns the <b>cooked SQL Body</b> declared by the given <b>SQL Procedure</b> object after applying all <b>Variable Values</b>.<br>
-				<i>Note:</i> this function accepts from <b>0</b> to <b>16</b> well-formed <b>Variable with Value</b> arguments; declaring twice or more the same Variable is considered to be a fatal error.<hr>
+				<i>Note:</i> this function accepts from <b>0</b> to <b>64</b> well-formed <b>Variable with Value</b> arguments; declaring twice or more the same Variable is considered to be a fatal error.<hr>
 				An exception will be raised on failure or invalid arguments.</td></tr>
 			<tr><td><b>SqlProc_Execute</b></td>
 				<td>SqlProc_Execute( object <i>BLOB</i> ) : <i>Integer</i><hr>
 					SqlProc_Execute( object <i>BLOB</i> , vararg <i>String</i> ) : <i>Integer</i><hr>
 					SqlProc_Execute( object <i>BLOB</i> , vararg1 <i>String</i> [ , ... ] , varargN <i>String</i> ) : <i>Integer</i></td>
 				<td colspan="3">Executes the <b>cooked SQL Body</b> declared by the given <b>SQL Procedure</b> object after applying all <b>Variable Values</b>.<br>
-				<i>Note:</i> this function accepts from <b>0</b> to <b>16</b> well-formed <b>Variable with Value</b> arguments; declaring twice or more the same Variable is considered to be a fatal error.<hr>
-				Will return <b>1</b> on success, an exception will be raised on failure or invalid arguments.</td></tr>
-			<tr><td><b>SqlProc_Exit</b></td>
-				<td>SqlProc_Exit( <i>void</i> ) : <i>Integer</i><hr>
-					StoredProc_Exit( <i>void</i> ) : <i>Integer</i></td>
+				<i>Note:</i> this function accepts from <b>0</b> to <b>64</b> well-formed <b>Variable with Value</b> arguments; declaring twice or more the same Variable is considered to be a fatal error.<hr>
+				On success will return the <i>Return Value</i> defined (explicitly or implicitly) by <b>SqlProc_Return()</b>.<br>
+				An exception will be raised on failure or invalid arguments.</td></tr>
+			<tr><td><b>SqlProc_Return</b></td>
+				<td>SqlProc_Return( NULL ) : <i>Integer</i><br>
+					StoredProc_Return( NULL ) : <i>Integer</i><hr>
+					SqlProc_Return( value <i>Integer</i> ) : <i>Integer</i><br>
+					StoredProc_Return( value <i>Integer</i> : <i>Integer</i><hr>
+					SqlProc_Return( value <i>Double</i> ) : <i>Integer</i><br>
+					StoredProc_Return( value <i>Double</i> : <i>Integer</i><hr>
+					SqlProc_Return( value <i>Text</i> ) : <i>Integer</i><br>
+					StoredProc_Return( value <i>Text</i> : <i>Integer</i><hr>
+					SqlProc_Return( value <i>BLOB</i> ) : <i>Integer</i><br>
+					StoredProc_Return( value <i>BLOB</i> : <i>Integer</i></td>
 				<td colspan="3">
 					Will notify a pending <b>EXIT</b> request to <b>SqlProc_Execute()</b> or <b>StoredProc_Execute()</b>;
-					the internal execution loop will immediately stop and exit after completing the current SQL statement from the SQL Body.<br><br>
+					the internal execution loop will immediately stop and exit after completing the current SQL statement from the SQL Body.<br>
+					The current call to <b>SqlProc_Execute()</b> or <b>StoredProc_Execute()</b> will then return to its caller the <i>Return Value</i> 
+					specified by <b>SqlProc_Return()</b> or <b>StoredProc_Return()</b>.<br>
+					Any SQL Body terminating without explicitly calling <b>SqlProc_Return()</b> or <b>StoredProc_Return()</b> will always behave as
+					if <b>SqlProc_Return(NULL)</b> was implicitly called.<br><br>
 				<i>Notes:</i><ol>
 					<li>These functions are completely effectless outside the specific execution context of <b>SqlProc_Execute()</b> or <b>StoredProc_Execute()</b>.</li>
-					<li><b>SqlProc_Exit()</b> and <b>StoredProc_Exit()</b> are just <i>alias names</i>.
+					<li><b>SqlProc_Return()</b> and <b>StoredProc_Return()</b> are just <i>alias names</i>.
 				</ol>
 				Will return <b>1</b> on success, an exception will be raised on failure.</td></tr>
 			<tr><td><b>StoredProc_CreateTables</b></td>
@@ -6261,8 +6274,9 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 					StoredProc_Execute( name <i>String</i> , vararg <i>String</i> ) : <i>Integer</i><hr>
 					StoredProc_Execute( name <i>String</i> , vararg1 <i>String</i> [ , ... ] , varargN <i>String</i> ) : <i>Integer</i></td>
 				<td colspan="3">Executes the given <b>Stored Procedure</b> after applying all <b>Variable Values</b>.<br>
-				<i>Note:</i> this function accepts from <b>0</b> to <b>16</b> well-formed <b>Variable with Value</b> arguments; declaring twice or more the same Variable is considered to be a fatal error.<hr>
-				Will return <b>1</b> on success, an exception will be raised on failure or invalid arguments.</td></tr>
+				<i>Note:</i> this function accepts from <b>0</b> to <b>64</b> well-formed <b>Variable with Value</b> arguments; declaring twice or more the same Variable is considered to be a fatal error.<hr>
+				On success will return the <i>Return Value</i> defined (explicitly or implicitly) by <b>StoredProc_Return()</b>.<br>
+				An exception will be raised on failure or invalid arguments.</td></tr>
 			<tr><td><b>StoredVar_Register</b></td>
 				<td>StoredVar_Register( name <i>String</i> , title <i>String</i> , value <i>NULL</i> ) : <i>Boolean</i><hr>
 				    StoredVar_Register( name <i>String</i> , title <i>String</i> , value <i>Integer</i> ) : <i>Boolean</i><hr>

@@ -1978,6 +1978,7 @@ gaia_sql_proc_execute (sqlite3 * handle, const void *ctx, const char *sql)
     if (cache != NULL)
       {
 	  cache->SqlProcContinue = 1;
+	  gaia_set_variant_null(cache->SqlProcRetValue);
 	  log = cache->SqlProcLog;
       }
 

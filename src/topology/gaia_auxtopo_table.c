@@ -4721,7 +4721,7 @@ auxtopo_retrieve_geometry_type (sqlite3 * db_handle, const char *db_prefix,
 				const char *table, const char *column,
 				int *ref_type)
 {
-/* attempting to retrive the reference Geometry Type */
+/* attempting to retrieve the reference Geometry Type */
     int ret;
     int i;
     char **results;

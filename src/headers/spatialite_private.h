@@ -48,6 +48,7 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #include <zlib.h>
 
 #include "spatialite/gg_sequence.h"
+#include "spatialite/sqlite.h"
 
 /**
  \file spatialite_private.h
@@ -145,6 +146,17 @@ extern "C"
 	struct splite_shp_extent *prev;
 	struct splite_shp_extent *next;
     };
+    
+    struct gaia_variant_value
+    {
+		/* a struct/union intended to store a SQLite Variant Value */
+		int dataType;	/* one of SQLITE_NULL, SQLITE_INTEGER, SQLITE_FLOAT, SQLITE_TEXT or SQLITE_BLOB */
+		sqlite3_int64 intValue;
+		double dblValue;
+		char * textValue;
+		unsigned char *blobValue;
+		int size;
+	};
 
 #define MAX_XMLSCHEMA_CACHE	16
 
@@ -194,6 +206,7 @@ extern "C"
 	char *SqlProcLogfile;
 	FILE *SqlProcLog;
 	int SqlProcContinue;
+	struct gaia_variant_value *SqlProcRetValue;
 	int tinyPointEnabled;
 	unsigned char magic2;
 	char *lastPostgreSqlError;
@@ -1432,6 +1445,20 @@ extern "C"
 
     SPATIALITE_PRIVATE void gaia_sql_proc_set_error (const void *p_cache,
 						     const char *errmsg);
+						     
+	SPATIALITE_PRIVATE struct gaia_variant_value * gaia_alloc_variant();
+
+    SPATIALITE_PRIVATE void gaia_free_variant (struct gaia_variant_value *variant);
+
+    SPATIALITE_PRIVATE void gaia_set_variant_null (struct gaia_variant_value *variant);
+
+    SPATIALITE_PRIVATE void gaia_set_variant_int64 (struct gaia_variant_value *variant, sqlite3_int64 value);
+
+    SPATIALITE_PRIVATE void gaia_set_variant_double (struct gaia_variant_value *variant, double value);
+
+    SPATIALITE_PRIVATE int gaia_set_variant_text (struct gaia_variant_value *variant, const char *value, int size);
+
+    SPATIALITE_PRIVATE int gaia_set_variant_blob (struct gaia_variant_value *variant, const unsigned char *value, int size);
 
 #ifdef __cplusplus
 }

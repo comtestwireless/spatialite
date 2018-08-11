@@ -1739,7 +1739,7 @@ static void
 getProjParamsFromSpatialReferenceSystemTable (sqlite3 * sqlite, int srid,
 					      char **proj_params)
 {
-/* retrives the PROJ params from SPATIAL_SYS_REF table, if possible */
+/* retrieves the PROJ params from SPATIAL_SYS_REF table, if possible */
     char *sql;
     char **results;
     int rows;
@@ -1890,7 +1890,7 @@ getProjParamsFromGeopackageTable (sqlite3 * sqlite, int srid,
 SPATIALITE_PRIVATE void
 getProjParams (void *p_sqlite, int srid, char **proj_params)
 {
-/* retrives the PROJ params from SPATIAL_SYS_REF table */
+/* retrieves the PROJ params from SPATIAL_SYS_REF table */
     sqlite3 *sqlite = (sqlite3 *) p_sqlite;
     *proj_params = NULL;
 
