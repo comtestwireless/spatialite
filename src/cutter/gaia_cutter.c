@@ -4969,14 +4969,11 @@ do_cut_tmp_polygons (sqlite3 * handle, const void *cache,
 			    gaiaToSpatiaLiteBlobWkbEx2 (result, &blob, &blob_sz,
 							gpkg_mode, tiny_point);
 			    gaiaFreeGeomColl (result);
+			    if (!do_update_tmp_cut_polygon
+				(handle, stmt_upd, pk, blob, blob_sz, message))
+				goto error;
 			}
 		      gaiaFreeGeomColl (input_g);
-		  }
-		if (blob != NULL)
-		  {
-		      if (!do_update_tmp_cut_polygon
-			  (handle, stmt_upd, pk, blob, blob_sz, message))
-			  goto error;
 		  }
 	    }
 	  else

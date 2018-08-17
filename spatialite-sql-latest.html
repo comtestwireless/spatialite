@@ -5118,7 +5118,8 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 						<li>this function accepts input Geometries only of the <b>Polygon</b> or <b>MultiPolygon</b> types.</li>
 						<li>the output Table will be always located on the <b>"MAIN"</b> DB and must not exists; it will be automatically created.</li>
 					</ul><hr>
-					Will return <b>1</b> on success; an exception will be raised on failure.</td></tr>
+					Will return <b>1</b> on success; an exception will be raised on failure.<hr>
+					<b>Warning</b>: if the Geometry column identified by <i>ref-column-name</i> is not supported by a <b>Spatial Index</b> this function will run in a painfully slow mode.</td></tr>
 			<tr><td><b>TopoGeo_LineEdgesList</b></td>
 				<td>TopoGeo_LineEdgesList( toponame <i>Text</i> , db-prefix <i>Text</i> , ref-table-name <i>Text</i> , ref-column-name <i>Text</i>, out-table <i>Text</i> ) : <i>Integer</i></td>
 				<td align="center" bgcolor="#d0f0d0"></td>
@@ -5133,7 +5134,8 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 						<li>this function accepts input Geometries only of the <b>Linestring</b> or <b>MultiLinestring</b> types.</li>
 						<li>the output Table will be always located on the <b>"MAIN"</b> DB and must not exists; it will be automatically created.</li>
 					</ul><hr>
-					Will return <b>1</b> on success; an exception will be raised on failure.</td></tr>
+					Will return <b>1</b> on success; an exception will be raised on failure.<hr>
+					<b>Warning</b>: if the Geometry column identified by <i>ref-column-name</i> is not supported by a <b>Spatial Index</b> this function will run in a painfully slow mode.</td></tr>
 			<tr><td><b>TopoGeo_ToGeoTable</b></td>
 				<td>TopoGeo_ToGeoTable( toponame <i>Text</i> , db-prefix <i>Text</i> , ref-table-name <i>Text</i> , ref-column-name <i>Text</i>, out-table <i>Text</i> ) : <i>Integer</i><hr>
 				    TopoGeo_ToGeoTable( toponame <i>Text</i> , db-prefix <i>Text</i> , ref-table-name <i>Text</i> , ref-column-name <i>Text</i>, out-table <i>Text</i> , with-spatial-index <i>Boolenan</i> ) : <i>Integer</i></td>
@@ -5460,7 +5462,8 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 						<li>this function accepts input Geometries only of the <b>Linestring</b> or <b>MultiLinestring</b> types.</li>
 						<li>the output Table will be always located on the <b>"MAIN"</b> DB and must not exists; it will be automatically created.</li>
 					</ul><hr>
-					Will return <b>1</b> on success; an exception will be raised on failure.</td></tr>
+					Will return <b>1</b> on success; an exception will be raised on failure.<hr>
+					<b>Warning</b>: if the Geometry column identified by <i>ref-column-name</i> is not supported by a <b>Spatial Index</b> this function will run in a painfully slow mode.</td></tr>
 			<tr><td><b>TopoNet_ToGeoTable</b></td>
 				<td>TopoNet_ToGeoTable( toponame <i>Text</i> , db-prefix <i>Text</i> , ref-table-name <i>Text</i> , ref-column-name <i>Text</i>, out-table <i>Text</i> ) : <i>Integer</i><hr>
 				    TopoNet_ToGeoTable( toponame <i>Text</i> , db-prefix <i>Text</i> , ref-table-name <i>Text</i> , ref-column-name <i>Text</i>, out-table <i>Text</i> , with-spatial-index <i>Boolean</i> ) : <i>Integer</i></td>
