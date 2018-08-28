@@ -32271,7 +32271,8 @@ blob_guess (sqlite3_context * context, int argc, sqlite3_value ** argv,
 /* SQL function:
 / IsGifBlob(BLOB encoded image)
 / IsPngBlob, IsJpegBlob, IsExifBlob, IsExifGpsBlob, IsTiffBlob,
-/ IsZipBlob, IsPdfBlob, IsJP2Blob, IsGeometryBlob, IsTinyPointBlob
+/ IsZipBlob, IsPdfBlob, IsJP2Blob, IsGeometryBlob, 
+/ IsCompressedGeometryBlob, IsTinyPointBlob
 /
 / returns:
 / 1 if the required BLOB_TYPE is TRUE
@@ -32293,6 +32294,14 @@ blob_guess (sqlite3_context * context, int argc, sqlite3_value ** argv,
     if (request == GAIA_GEOMETRY_BLOB)
       {
 	  if (blob_type == GAIA_GEOMETRY_BLOB)
+	      sqlite3_result_int (context, 1);
+	  else
+	      sqlite3_result_int (context, 0);
+	  return;
+      }
+    if (request == GAIA_COMPRESSED_GEOMETRY_BLOB)
+      {
+	  if (blob_type == GAIA_COMPRESSED_GEOMETRY_BLOB)
 	      sqlite3_result_int (context, 1);
 	  else
 	      sqlite3_result_int (context, 0);
@@ -32403,6 +32412,13 @@ static void
 fnct_IsGeometryBlob (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
     blob_guess (context, argc, argv, GAIA_GEOMETRY_BLOB);
+}
+
+static void
+fnct_IsCompressedGeometryBlob (sqlite3_context * context, int argc,
+			       sqlite3_value ** argv)
+{
+    blob_guess (context, argc, argv, GAIA_COMPRESSED_GEOMETRY_BLOB);
 }
 
 static void
@@ -45471,6 +45487,9 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "IsGeometryBlob", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_IsGeometryBlob, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "IsCompressedGeometryBlob", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_IsCompressedGeometryBlob, 0, 0, 0);
     sqlite3_create_function_v2 (db, "IsTinyPointBlob", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_IsTinyPointBlob, 0, 0, 0);
