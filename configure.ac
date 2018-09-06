@@ -161,6 +161,7 @@ AC_CONFIG_FILES([Makefile \
 		test/sql_stmt_routing_tests/Makefile \
 		test/sql_stmt_logfile_tests/Makefile \
 		test/sql_stmt_iconv_tests/Makefile \
+		test/sql_stmt_proc_tests/Makefile \
 		test/sql_stmt_point_geom/Makefile \
 		test/sql_stmt_tiny_point/Makefile \
 		test/sql_stmt_postgres_tests/Makefile \

@@ -268,6 +268,15 @@ do_one_case (struct db_conn *conn, const struct test_data *data,
 	  sqlite3_free (err_msg);
 	  return -2;
       }
+    ret =
+	sqlite3_exec (db_handle, "SELECT StoredProc_CreateTables()", NULL, NULL,
+		      &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "StoredProc_CreateTables() error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  return -2;
+      }
   skip_init:
 
     if (gpkg_amphibious_mode)
@@ -782,7 +791,21 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
       {
 	  return result;
       }
+    if (legacy)
+      {
+	  /* skipping SqlProc tests in legacy mode */
+	  fprintf (stderr,
+		   "WARNING: skipping SqlProc testcases in legacy mode !!!\n");
+	  goto skip_sql_proc;
+      }
+    result = run_subdir_test ("sql_stmt_proc_tests", conn, load_extension, 0);
+    if (result != 0)
+      {
+	  return result;
+      }
 #endif /* end ICONV */
+
+skip_sql_proc:
 
 #ifdef ENABLE_LIBXML2		/* only if LIBXML2 is supported */
 #ifndef OMIT_ICONV		/* only if ICONV is supported */

@@ -34155,7 +34155,7 @@ fnct_sp_execute (sqlite3_context * context, int argc, sqlite3_value ** argv)
 / SqlProc_Execute(BLOB [, arg1 TEXT, arg2 TEXT, ... argN TEXT] )
 /
 / returns:
-/ 1 on succes
+/ the arbitrary valure set by SqlProc_Return() on succes
 / raises an exception on invalid arguments or errors
 */
     const unsigned char *blob;
@@ -34222,6 +34222,118 @@ fnct_sp_execute (sqlite3_context * context, int argc, sqlite3_value ** argv)
       }
     else
 	sqlite3_result_null (context);
+    if (sql != NULL)
+	free (sql);
+    gaia_sql_proc_destroy_variables (variables);
+    return;
+
+  invalid_blob_argument:
+    msg = "SqlProc exception - illegal SQL Procedure arg [not a BLOB].";
+    sqlite3_result_error (context, msg, -1);
+    return;
+
+  not_an_sql_proc:
+    msg = "SqlProc exception - invalid SQL Procedure BLOB.";
+    sqlite3_result_error (context, msg, -1);
+    return;
+
+  err_variables:
+    msg = "SqlProc exception - unable to get a List of Variables with Values.";
+    sqlite3_result_error (context, msg, -1);
+    return;
+
+  illegal_variables:
+    if (variables != NULL)
+	gaia_sql_proc_destroy_variables (variables);
+    msg =
+	"SqlProc exception - the List of Variables with Values contains illegal items.";
+    sqlite3_result_error (context, msg, -1);
+    return;
+
+  cooking_error:
+    if (variables != NULL)
+	gaia_sql_proc_destroy_variables (variables);
+    msg = "SqlProc exception - unable to create a Cooked SQL Body.";
+    sqlite3_result_error (context, msg, -1);
+    return;
+
+  sql_error:
+    if (variables != NULL)
+	gaia_sql_proc_destroy_variables (variables);
+    if (sql != NULL)
+	free (sql);
+    msg = "SqlProc exception - a fatal SQL error was encountered.";
+    sqlite3_result_error (context, msg, -1);
+    return;
+}
+
+static void
+fnct_sp_execute_loop (sqlite3_context * context, int argc,
+		      sqlite3_value ** argv)
+{
+/* SQL function:
+/ SqlProc_ExecuteLoop(BLOB [, arg1 TEXT, arg2 TEXT, ... argN TEXT] )
+/
+/ returns:
+/ 1 on succes
+/ raises an exception on invalid arguments or errors
+*/
+    const unsigned char *blob;
+    int blob_sz = 0;
+    char *sql;
+    const char *msg;
+    SqlProc_VarListPtr variables = NULL;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+
+    while (1)
+      {
+	  /* never ending loop */
+	  if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+	      goto invalid_blob_argument;
+	  blob = sqlite3_value_blob (argv[0]);
+	  blob_sz = sqlite3_value_bytes (argv[0]);
+	  if (!gaia_sql_proc_is_valid (blob, blob_sz))
+	      goto not_an_sql_proc;
+
+	  /* retrieving the List of Variables with Values */
+	  variables = get_sql_proc_variables (cache, argc, argv);
+	  if (variables == NULL)
+	      goto err_variables;
+	  if (variables->Error)
+	      goto illegal_variables;
+
+	  /* replacing Variables */
+	  if (!gaia_sql_proc_cooked_sql
+	      (sqlite, cache, blob, blob_sz, variables, &sql))
+	      goto cooking_error;
+
+	  /* executing the SQL Procedure */
+	  if (!gaia_sql_proc_execute (sqlite, cache, sql))
+	      goto sql_error;
+	  if (cache != NULL)
+	    {
+		if (cache->SqlProcRetValue == NULL)
+		    break;	/* stopping the loop */
+		else
+		  {
+		      /* retrieving the Return Value declared from SqlProc_Return() */
+		      struct gaia_variant_value *retval =
+			  cache->SqlProcRetValue;
+		      if (retval->dataType == SQLITE_INTEGER)
+			{
+			    if (retval->intValue <= 0)
+				break;	/* stopping the loop */
+			}
+		  }
+	    }
+	  if (sql != NULL)
+	      free (sql);
+	  gaia_sql_proc_destroy_variables (variables);
+      }
+
+    sqlite3_result_int (context, 1);
     if (sql != NULL)
 	free (sql);
     gaia_sql_proc_destroy_variables (variables);
@@ -34583,7 +34695,7 @@ fnct_sp_stored_execute (sqlite3_context * context, int argc,
 / StoredProc_Execute(TEXT [, arg1 TEXT, arg2 TEXT, ... argN TEXT] )
 /
 / returns:
-/ 1 on succes
+/ the arbitrary value set by StoredProcedue_Return() on succes
 / raises an exception on invalid arguments or errors
 */
     const char *name;
@@ -34620,6 +34732,166 @@ fnct_sp_stored_execute (sqlite3_context * context, int argc,
 /* executing the SQL Procedure */
     if (!gaia_sql_proc_execute (sqlite, cache, sql))
 	goto sql_error;
+    if (cache != NULL)
+      {
+	  if (cache->SqlProcRetValue == NULL)
+	      sqlite3_result_null (context);
+	  else
+	    {
+		/* setting the Return Value declared from StoredProc_Return() */
+		struct gaia_variant_value *retval = cache->SqlProcRetValue;
+		switch (retval->dataType)
+		  {
+		  case SQLITE_INTEGER:
+		      sqlite3_result_int64 (context, retval->intValue);
+		      break;
+		  case SQLITE_FLOAT:
+		      sqlite3_result_double (context, retval->dblValue);
+		      break;
+		  case SQLITE_TEXT:
+		      sqlite3_result_text (context, retval->textValue,
+					   retval->size, SQLITE_STATIC);
+		      break;
+		  case SQLITE_BLOB:
+		      sqlite3_result_blob (context, retval->blobValue,
+					   retval->size, SQLITE_STATIC);
+		      break;
+		  case SQLITE_NULL:
+		  default:
+		      sqlite3_result_null (context);
+		      break;
+
+		  };
+	    }
+      }
+    else
+	sqlite3_result_null (context);
+    if (sql != NULL)
+	free (sql);
+    gaia_sql_proc_destroy_variables (variables);
+    return;
+
+  invalid_name_argument:
+    msg =
+	"StoredProc exception - illegal Stored Procedure Name [not a TEXT string].";
+    sqlite3_result_error (context, msg, -1);
+    return;
+
+  invalid_stored_procedure:
+    message =
+	sqlite3_mprintf
+	("StoredProc exception - unable to retrieve a Stored Procedure named \"%s\".",
+	 name);
+    sqlite3_result_error (context, message, -1);
+    sqlite3_free (message);
+    return;
+
+  not_an_sql_proc:
+    free (blob);
+    msg = "SqlProc exception - invalid SQL Procedure BLOB.";
+    sqlite3_result_error (context, msg, -1);
+    return;
+
+  err_variables:
+    free (blob);
+    msg = "SqlProc exception - unable to get a List of Variables with Values.";
+    sqlite3_result_error (context, msg, -1);
+    return;
+
+  illegal_variables:
+    free (blob);
+    gaia_sql_proc_destroy_variables (variables);
+    msg =
+	"SqlProc exception - the List of Variables with Values contains illegal items.";
+    sqlite3_result_error (context, msg, -1);
+    return;
+
+  cooking_error:
+    gaia_sql_proc_destroy_variables (variables);
+    free (blob);
+    msg = "SqlProc exception - unable to create a Cooked SQL Body.";
+    sqlite3_result_error (context, msg, -1);
+    return;
+
+  sql_error:
+    if (sql != NULL)
+	free (sql);
+    gaia_sql_proc_destroy_variables (variables);
+    msg = "SqlProc exception - a fatal SQL error was encountered.";
+    sqlite3_result_error (context, msg, -1);
+    return;
+}
+
+static void
+fnct_sp_stored_execute_loop (sqlite3_context * context, int argc,
+			     sqlite3_value ** argv)
+{
+/* SQL function:
+/ StoredProc_ExecuteLoop(TEXT [, arg1 TEXT, arg2 TEXT, ... argN TEXT] )
+/
+/ returns:
+/ 1 on succes
+/ raises an exception on invalid arguments or errors
+*/
+    const char *name;
+    unsigned char *blob;
+    int blob_sz = 0;
+    char *sql;
+    const char *msg;
+    char *message;
+    SqlProc_VarListPtr variables = NULL;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+
+    while (1)
+      {
+	  /* never ending loop */
+	  if (sqlite3_value_type (argv[0]) != SQLITE_TEXT)
+	      goto invalid_name_argument;
+	  name = (const char *) sqlite3_value_text (argv[0]);
+	  if (!gaia_stored_proc_fetch (sqlite, cache, name, &blob, &blob_sz))
+	      goto invalid_stored_procedure;
+	  if (!gaia_sql_proc_is_valid (blob, blob_sz))
+	      goto not_an_sql_proc;
+
+	  /* retrieving the List of Variables with Values */
+	  variables = get_sql_proc_variables (cache, argc, argv);
+	  if (variables == NULL)
+	      goto err_variables;
+	  if (variables->Error)
+	      goto illegal_variables;
+
+	  /* replacing Variables */
+	  if (!gaia_sql_proc_cooked_sql
+	      (sqlite, cache, blob, blob_sz, variables, &sql))
+	      goto cooking_error;
+	  free (blob);
+
+	  /* executing the SQL Procedure */
+	  if (!gaia_sql_proc_execute (sqlite, cache, sql))
+	      goto sql_error;
+	  if (cache != NULL)
+	    {
+		if (cache->SqlProcRetValue == NULL)
+		    break;	/* stopping the loop */
+		else
+		  {
+		      /* retrieving the Return Value declared from SqlProc_Return() */
+		      struct gaia_variant_value *retval =
+			  cache->SqlProcRetValue;
+		      if (retval->dataType == SQLITE_INTEGER)
+			{
+			    if (retval->intValue <= 0)
+				break;	/* stopping the loop */
+			}
+		  }
+	    }
+	  if (sql != NULL)
+	      free (sql);
+	  gaia_sql_proc_destroy_variables (variables);
+      }
+
     sqlite3_result_int (context, 1);
     if (sql != NULL)
 	free (sql);
@@ -45869,6 +46141,136 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 				fnct_sp_execute, 0, 0, 0);
     sqlite3_create_function_v2 (db, "SqlProc_Execute", 65, SQLITE_UTF8, cache,
 				fnct_sp_execute, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 1, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 2, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 3, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 4, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 5, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 6, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 7, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 8, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 9, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 10, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 11, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 12, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 13, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 14, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 15, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 16, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 17, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 18, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 19, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 20, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 21, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 22, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 23, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 24, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 25, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 26, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 27, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 28, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 29, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 30, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 31, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 32, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 33, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 34, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 35, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 36, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 37, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 38, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 39, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 40, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 41, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 42, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 43, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 44, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 45, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 46, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 47, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 48, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 49, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 50, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 51, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 52, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 53, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 54, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 55, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 56, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 57, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 58, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 59, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 60, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 61, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 62, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 63, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 64, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SqlProc_ExecuteLoop", 65, SQLITE_UTF8,
+				cache, fnct_sp_execute_loop, 0, 0, 0);
     sqlite3_create_function_v2 (db, "SqlProc_Return", 1, SQLITE_UTF8, cache,
 				fnct_sp_return, 0, 0, 0);
     sqlite3_create_function_v2 (db, "StoredProc_Return", 1, SQLITE_UTF8, cache,
@@ -45879,43 +46281,42 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 				cache, fnct_sp_register, 0, 0, 0);
     sqlite3_create_function_v2 (db, "StoredProc_Get", 1, SQLITE_UTF8, cache,
 				fnct_sp_get, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "StoredProc_Delete", 1, SQLITE_UTF8,
-				cache, fnct_sp_delete, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_Delete", 1, SQLITE_UTF8, cache,
+				fnct_sp_delete, 0, 0, 0);
     sqlite3_create_function_v2 (db, "StoredProc_UpdateTitle", 2, SQLITE_UTF8,
 				cache, fnct_sp_update_title, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "StoredProc_UpdateSqlBody", 2,
-				SQLITE_UTF8, cache, fnct_sp_update_sql, 0, 0,
-				0);
-    sqlite3_create_function_v2 (db, "StoredVar_Register", 3, SQLITE_UTF8,
-				cache, fnct_sp_var_register, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_UpdateSqlBody", 2, SQLITE_UTF8,
+				cache, fnct_sp_update_sql, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredVar_Register", 3, SQLITE_UTF8, cache,
+				fnct_sp_var_register, 0, 0, 0);
     sqlite3_create_function_v2 (db, "StoredVar_Get", 1, SQLITE_UTF8, cache,
 				fnct_sp_var_get, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "StoredVar_GetValue", 1, SQLITE_UTF8,
-				cache, fnct_sp_var_get_value, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredVar_GetValue", 1, SQLITE_UTF8, cache,
+				fnct_sp_var_get_value, 0, 0, 0);
     sqlite3_create_function_v2 (db, "StoredVar_Delete", 1, SQLITE_UTF8, cache,
 				fnct_sp_var_delete, 0, 0, 0);
     sqlite3_create_function_v2 (db, "StoredVar_UpdateTitle", 2, SQLITE_UTF8,
 				cache, fnct_sp_var_update_title, 0, 0, 0);
     sqlite3_create_function_v2 (db, "StoredVar_UpdateValue", 2, SQLITE_UTF8,
 				cache, fnct_sp_var_update_value, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "StoredProc_Execute", 1, SQLITE_UTF8,
-				cache, fnct_sp_stored_execute, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "StoredProc_Execute", 2, SQLITE_UTF8,
-				cache, fnct_sp_stored_execute, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "StoredProc_Execute", 3, SQLITE_UTF8,
-				cache, fnct_sp_stored_execute, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "StoredProc_Execute", 4, SQLITE_UTF8,
-				cache, fnct_sp_stored_execute, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "StoredProc_Execute", 5, SQLITE_UTF8,
-				cache, fnct_sp_stored_execute, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "StoredProc_Execute", 6, SQLITE_UTF8,
-				cache, fnct_sp_stored_execute, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "StoredProc_Execute", 7, SQLITE_UTF8,
-				cache, fnct_sp_stored_execute, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "StoredProc_Execute", 8, SQLITE_UTF8,
-				cache, fnct_sp_stored_execute, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "StoredProc_Execute", 9, SQLITE_UTF8,
-				cache, fnct_sp_stored_execute, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_Execute", 1, SQLITE_UTF8, cache,
+				fnct_sp_stored_execute, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_Execute", 2, SQLITE_UTF8, cache,
+				fnct_sp_stored_execute, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_Execute", 3, SQLITE_UTF8, cache,
+				fnct_sp_stored_execute, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_Execute", 4, SQLITE_UTF8, cache,
+				fnct_sp_stored_execute, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_Execute", 5, SQLITE_UTF8, cache,
+				fnct_sp_stored_execute, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_Execute", 6, SQLITE_UTF8, cache,
+				fnct_sp_stored_execute, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_Execute", 7, SQLITE_UTF8, cache,
+				fnct_sp_stored_execute, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_Execute", 8, SQLITE_UTF8, cache,
+				fnct_sp_stored_execute, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_Execute", 9, SQLITE_UTF8, cache,
+				fnct_sp_stored_execute, 0, 0, 0);
     sqlite3_create_function_v2 (db, "StoredProc_Execute", 10, SQLITE_UTF8,
 				cache, fnct_sp_stored_execute, 0, 0, 0);
     sqlite3_create_function_v2 (db, "StoredProc_Execute", 11, SQLITE_UTF8,
@@ -46028,17 +46429,146 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 				cache, fnct_sp_stored_execute, 0, 0, 0);
     sqlite3_create_function_v2 (db, "StoredProc_Execute", 65, SQLITE_UTF8,
 				cache, fnct_sp_stored_execute, 0, 0, 0);
-
-    sqlite3_create_function_v2 (db, "CreateRoutingNodes", 5, SQLITE_UTF8,
-				cache, fnct_create_routing_nodes, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "CreateRouting", 7, SQLITE_UTF8,
-				cache, fnct_create_routing, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "CreateRouting", 10, SQLITE_UTF8,
-				cache, fnct_create_routing, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "CreateRouting", 12, SQLITE_UTF8,
-				cache, fnct_create_routing, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "CreateRouting", 13, SQLITE_UTF8,
-				cache, fnct_create_routing, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 1, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 2, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 3, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 4, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 5, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 6, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 7, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 8, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 9, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 10, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 11, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 12, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 13, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 14, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 15, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 16, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 17, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 18, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 19, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 20, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 21, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 22, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 23, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 24, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 25, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 26, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 27, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 28, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 29, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 30, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 31, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 32, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 33, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 34, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 35, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 36, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 37, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 38, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 39, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 40, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 41, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 42, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 43, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 44, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 45, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 46, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 47, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 48, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 49, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 50, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 51, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 52, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 53, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 54, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 55, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 56, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 57, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 58, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 59, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 60, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 61, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 62, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 63, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 64, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "StoredProc_ExecuteLoop", 65, SQLITE_UTF8,
+				cache, fnct_sp_stored_execute_loop, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "CreateRoutingNodes", 5, SQLITE_UTF8, cache,
+				fnct_create_routing_nodes, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "CreateRouting", 7, SQLITE_UTF8, cache,
+				fnct_create_routing, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "CreateRouting", 10, SQLITE_UTF8, cache,
+				fnct_create_routing, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "CreateRouting", 12, SQLITE_UTF8, cache,
+				fnct_create_routing, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "CreateRouting", 13, SQLITE_UTF8, cache,
+				fnct_create_routing, 0, 0, 0);
     sqlite3_create_function_v2 (db, "CreateRouting_GetLastError", 0,
 				SQLITE_UTF8, cache,
 				fnct_create_routing_get_last_error, 0, 0, 0);

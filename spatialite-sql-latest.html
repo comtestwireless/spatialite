@@ -9,7 +9,7 @@
 			i {color:navy;}
 		</style>
 	</head><body bgcolor="#fffff0">
-		<h2>SpatiaLite 5.0.0-beta1l&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SQL functions reference list</h2>
+		<h2>SpatiaLite 5.0.0-beta1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SQL functions reference list</h2>
 		<a href="https://www.gaia-gis.it/fossil/libspatialite">back</a>
 		<ul>
 			<li><a href="#version">SQL Version Info [and build options testing] functions</a></li>
@@ -6158,7 +6158,7 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 			<tr><td><b>SqlProc_SetLogfile</b></td>
 				<td>SqlProc_SetLogfile( filepath <i>String</i> ) : <i>Integer</i><hr>
 				    SqlProc_SetLogfile( filepath <i>String</i> , append <i>Boolean</i> ) : <i>Integer</i></td>
-				<td colspan="3">Will activate a SQL Logfile supporting all following calls to <b>SqlProc_Execute()</b> and <b>StoredProc_Execute()</b>.
+				<td colspan="3">Will activate a SQL Logfile supporting all following calls to <b>SqlProc_Execute()</b>, <b>SqlProc_ExecuteLoop()</b>, <b>StoredProc_Execute()</b> and <b>StoredProc_ExecuteLoop()</b>.
 				<ul>
 					<li>The <b>filepath</b> argument is expected to be a valid relative or absolute pathname; it could be set to <b>NULL</b> so to disable SQL Logging.</li>
 					<li>The optional argument <b>append</b> if set to <b>TRUE</b> requires to open the Logfile for appending; if set to <b>FALSE</b> (default setting) the Logfile will be truncated.</li>
@@ -6219,9 +6219,9 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				<i>Note:</i> this function accepts from <b>0</b> to <b>64</b> well-formed <b>Variable with Value</b> arguments; declaring twice or more the same Variable is considered to be a fatal error.<hr>
 				An exception will be raised on failure or invalid arguments.</td></tr>
 			<tr><td><b>SqlProc_Execute</b></td>
-				<td>SqlProc_Execute( object <i>BLOB</i> ) : <i>Integer</i><hr>
-					SqlProc_Execute( object <i>BLOB</i> , vararg <i>String</i> ) : <i>Integer</i><hr>
-					SqlProc_Execute( object <i>BLOB</i> , vararg1 <i>String</i> [ , ... ] , varargN <i>String</i> ) : <i>Integer</i></td>
+				<td>SqlProc_Execute( object <i>BLOB</i> ) : <i>variable Type</i><hr>
+					SqlProc_Execute( object <i>BLOB</i> , vararg <i>String</i> ) : <i>variable Type</i><hr>
+					SqlProc_Execute( object <i>BLOB</i> , vararg1 <i>String</i> [ , ... ] , varargN <i>String</i> ) : <i>variable Type</i></td>
 				<td colspan="3">Executes the <b>cooked SQL Body</b> declared by the given <b>SQL Procedure</b> object after applying all <b>Variable Values</b>.<br>
 				<i>Note:</i> this function accepts from <b>0</b> to <b>64</b> well-formed <b>Variable with Value</b> arguments; declaring twice or more the same Variable is considered to be a fatal error.<hr>
 				On success will return the <i>Return Value</i> defined (explicitly or implicitly) by <b>SqlProc_Return()</b>.<br>
@@ -6238,17 +6238,30 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 					SqlProc_Return( value <i>BLOB</i> ) : <i>Integer</i><br>
 					StoredProc_Return( value <i>BLOB</i> : <i>Integer</i></td>
 				<td colspan="3">
-					Will notify a pending <b>EXIT</b> request to <b>SqlProc_Execute()</b> or <b>StoredProc_Execute()</b>;
+					Will notify a pending <b>EXIT</b> request to <b>SqlProc_Execute()</b>, <b>SqlProc_ExecuteLoop()</b>, <b>StoredProc_Execute()</b> or <b>StoredProc_ExecuteLoop()</b>;
 					the internal execution loop will immediately stop and exit after completing the current SQL statement from the SQL Body.<br>
-					The current call to <b>SqlProc_Execute()</b> or <b>StoredProc_Execute()</b> will then return to its caller the <i>Return Value</i> 
+					The current call to <b>SqlProc_Execute()</b>, <b>SqlProc_ExecuteLoop()</b>, <b>StoredProc_Execute()</b> or <b>StoredProc_ExecuteLoop()</b> will then return to its caller the <i>Return Value</i> 
 					specified by <b>SqlProc_Return()</b> or <b>StoredProc_Return()</b>.<br>
 					Any SQL Body terminating without explicitly calling <b>SqlProc_Return()</b> or <b>StoredProc_Return()</b> will always behave as
 					if <b>SqlProc_Return(NULL)</b> was implicitly called.<br><br>
 				<i>Notes:</i><ol>
-					<li>These functions are completely effectless outside the specific execution context of <b>SqlProc_Execute()</b> or <b>StoredProc_Execute()</b>.</li>
+					<li>These functions are completely effectless outside the specific execution context of <b>SqlProc_Execute()</b>, <b>SqlProc_ExecuteLoop()</b>, <b>StoredProc_Execute()</b>
+					or <b>StoredProc_ExecuteLoop()</b>.</li>
 					<li><b>SqlProc_Return()</b> and <b>StoredProc_Return()</b> are just <i>alias names</i>.
 				</ol>
 				Will return <b>1</b> on success, an exception will be raised on failure.</td></tr>
+			<tr><td><b>SqlProc_ExecuteLoop</b></td>
+				<td>SqlProc_ExecuteLoop( object <i>BLOB</i> ) : <i>Integer</i><hr>
+					SqlProc_ExecuteLoop( object <i>BLOB</i> , vararg <i>String</i> ) : <i>Integer</i><hr>
+					SqlProc_ExecuteLoop( object <i>BLOB</i> , vararg1 <i>String</i> [ , ... ] , varargN <i>String</i> ) : <i>Integer</i></td>
+				<td colspan="3">This SQL function is almost exactly the same of <b>SqlProc_Execute()</b>, with just an outstanding differece:
+				<ul>
+					<li>the <b>cooked SQL Body</b> will be iteratively executed, as if it was declared within a <b>while (true) { ... }</b> never ending loop.</li>
+					<li>the execution loop will break only when <b>SqlProc_Return()</b> will set a <b>negative or zero</b> return value of the Integer type.</b></li>
+					<li><b><u>Warning</u></b>: a badly implemented call to <b>SqlProc_ExecuteLoop()</b> may easily cause a nastry <a href="https://en.wikipedia.org/wiki/Infinite_loop">endless loop</a></li>
+				</ul><hr>
+				Returns <b>TRUE</b> on success.<br>
+				An exception will be raised on failure or invalid arguments.</td></tr>
 			<tr><td><b>StoredProc_CreateTables</b></td>
 				<td>StoredProc_CreateTables( <i>void</i> ) : <i>Boolean</i></td>
 				<td colspan="3">Returns <b>TRUE</b> if the <b>Stored Procedures and Variables tables</b> have been succesfully created or if they already exist, otherwise <b>FALSE</b>.</td></tr>
@@ -6278,12 +6291,24 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				<td colspan="3">Will change the <b>SQL Body</b> on the given <b>Stored Procedure</b>.<hr>
 				Returns <b>TRUE</b> on success, otherwise <b>FALSE</b>. An exception will be raised on invalid arguments.</td></tr>	
 			<tr><td><b>StoredProc_Execute</b></td>
-				<td>StoredProc_Execute( name <i>String</i> ) : <i>Integer</i><hr>
-					StoredProc_Execute( name <i>String</i> , vararg <i>String</i> ) : <i>Integer</i><hr>
-					StoredProc_Execute( name <i>String</i> , vararg1 <i>String</i> [ , ... ] , varargN <i>String</i> ) : <i>Integer</i></td>
+				<td>StoredProc_Execute( name <i>String</i> ) : <i>variable Type</i><hr>
+					StoredProc_Execute( name <i>String</i> , vararg <i>String</i> ) : <i>variable Type</i><hr>
+					StoredProc_Execute( name <i>String</i> , vararg1 <i>String</i> [ , ... ] , varargN <i>String</i> ) : <i>variable Type</i></td>
 				<td colspan="3">Executes the given <b>Stored Procedure</b> after applying all <b>Variable Values</b>.<br>
 				<i>Note:</i> this function accepts from <b>0</b> to <b>64</b> well-formed <b>Variable with Value</b> arguments; declaring twice or more the same Variable is considered to be a fatal error.<hr>
 				On success will return the <i>Return Value</i> defined (explicitly or implicitly) by <b>StoredProc_Return()</b>.<br>
+				An exception will be raised on failure or invalid arguments.</td></tr>
+			<tr><td><b>StoredProc_ExecuteLoop</b></td>
+				<td>StoredProc_ExecuteLoop( name <i>String</i> ) : <i>Integer</i><hr>
+					StoredProc_ExecuteLoop( name <i>String</i> , vararg <i>String</i> ) : <i>Integer</i><hr>
+					StoredProc_ExecuteLoop( name <i>String</i> , vararg1 <i>String</i> [ , ... ] , varargN <i>String</i> ) : <i>Integer</i></td>
+				<td colspan="3">This SQL function is almost exactly the same of <b>StoredProc_Execute()</b>, with just an outstanding differece:
+				<ul>
+					<li>the <b>cooked SQL Body</b> will be iteratively executed, as if it was declared within a <b>while (true) { ... }</b> never ending loop.</li>
+					<li>the execution loop will break only when <b>StoredProc_Return()</b> will set a <b>negative or zero</b> return value of the Integer type.</b></li>
+					<li><b><u>Warning</u></b>: a badly implemented call to <b>StoredProc_ExecuteLoop()</b> may easily cause a nastry <a href="https://en.wikipedia.org/wiki/Infinite_loop">endless loop</a></li>
+				</ul><hr>
+				Returns <b>TRUE</b> on success.<br>
 				An exception will be raised on failure or invalid arguments.</td></tr>
 			<tr><td><b>StoredVar_Register</b></td>
 				<td>StoredVar_Register( name <i>String</i> , title <i>String</i> , value <i>NULL</i> ) : <i>Boolean</i><hr>

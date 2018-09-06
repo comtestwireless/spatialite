@@ -916,7 +916,7 @@ do_level3_tests (sqlite3 * handle, int *retcode)
 	  *retcode = -77;
 	  return 0;
       }
-    if (atoi (*(results + 1)) != 1)
+    if (*(results + 1) != NULL)
       {
 	  fprintf (stderr, "StoredProc_Execute() #1 unexpected failure\n");
 	  sqlite3_free_table (results);
@@ -945,7 +945,7 @@ do_level3_tests (sqlite3 * handle, int *retcode)
 	  *retcode = -80;
 	  return 0;
       }
-    if (atoi (*(results + 1)) != 1)
+    if (*(results + 1) != NULL)
       {
 	  fprintf (stderr, "StoredProc_Execute() #2 unexpected failure\n");
 	  sqlite3_free_table (results);
@@ -1409,6 +1409,371 @@ do_level6_tests (sqlite3 * handle, int *retcode)
     return 1;
 }
 
+static int
+do_level7_tests (sqlite3 * handle, int *retcode)
+{
+/* performing Level 7 tests - StoredProc_Return() */
+    const char *sql;
+    int ret;
+    char *err_msg = NULL;
+    char **results;
+    int rows;
+    int columns;
+
+/* registering several Stored Procedure */
+    sql = "SELECT StoredProc_Register('proc_ret1', 'this is a title', "
+	"SqlProc_FromText('SELECT StoredProc_Return(NULL)'))";
+    ret = sqlite3_exec (handle, sql, NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "StoredProc_Register() #4 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  *retcode = -123;
+	  return 0;
+      }
+    sql = "SELECT StoredProc_Register('proc_ret2', 'this is a title', "
+	"SqlProc_FromText('SELECT StoredProc_Return(1234567890)'))";
+    ret = sqlite3_exec (handle, sql, NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "StoredProc_Register() #5 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  *retcode = -124;
+	  return 0;
+      }
+    sql = "SELECT StoredProc_Register('proc_ret3', 'this is a title', "
+	"SqlProc_FromText('SELECT StoredProc_Return(1234.5)'))";
+    ret = sqlite3_exec (handle, sql, NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "StoredProc_Register() #6 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  *retcode = -125;
+	  return 0;
+      }
+    sql = "SELECT StoredProc_Register('proc_ret4', 'this is a title', "
+	"SqlProc_FromText('SELECT StoredProc_Return(''test me now'')'))";
+    ret = sqlite3_exec (handle, sql, NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "StoredProc_Register() #7 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  *retcode = -126;
+	  return 0;
+      }
+    sql = "SELECT StoredProc_Register('proc_ret5', 'this is a title', "
+	"SqlProc_FromText('SELECT StoredProc_Return(x''0102030405060708090a0b0c0d0e0f'')'))";
+    ret = sqlite3_exec (handle, sql, NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "StoredProc_Register() #8 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  *retcode = -127;
+	  return 0;
+      }
+
+/* testing StoredProc_Return(NULL) */
+    sql = "SELECT StoredProc_Execute('proc_ret1');";
+    ret = sqlite3_get_table (handle, sql, &results, &rows, &columns, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "StoredProc_Return() #1 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  *retcode = -128;
+	  return 0;
+      }
+    if (rows != 1 || columns != 1)
+      {
+	  fprintf (stderr,
+		   "StoredProc_Return() #1 error: rows=%d columns=%d\n", rows,
+		   columns);
+	  sqlite3_free_table (results);
+	  *retcode = -129;
+	  return 0;
+      }
+    if (*(results + 1) != NULL)
+      {
+	  fprintf (stderr, "StoredProc_Exit() #1 unexpected failure\n");
+	  sqlite3_free_table (results);
+	  *retcode = -130;
+	  return 0;
+      }
+    sqlite3_free_table (results);
+
+/* testing StoredProc_Return(INTEGER) */
+    sql = "SELECT StoredProc_Execute('proc_ret2');";
+    ret = sqlite3_get_table (handle, sql, &results, &rows, &columns, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "StoredProc_Return() #2 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  *retcode = -131;
+	  return 0;
+      }
+    if (rows != 1 || columns != 1)
+      {
+	  fprintf (stderr,
+		   "StoredProc_Return() #2 error: rows=%d columns=%d\n", rows,
+		   columns);
+	  sqlite3_free_table (results);
+	  *retcode = -132;
+	  return 0;
+      }
+    if (atoi (*(results + 1)) != 1234567890)
+      {
+	  fprintf (stderr, "StoredProc_Exit() #2 unexpected failure\n");
+	  sqlite3_free_table (results);
+	  *retcode = -133;
+	  return 0;
+      }
+    sqlite3_free_table (results);
+
+/* testing StoredProc_Return(DOUBLE) */
+    sql = "SELECT StoredProc_Execute('proc_ret3');";
+    ret = sqlite3_get_table (handle, sql, &results, &rows, &columns, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "StoredProc_Return() #3 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  *retcode = -134;
+	  return 0;
+      }
+    if (rows != 1 || columns != 1)
+      {
+	  fprintf (stderr,
+		   "StoredProc_Return() #3 error: rows=%d columns=%d\n", rows,
+		   columns);
+	  sqlite3_free_table (results);
+	  *retcode = -135;
+	  return 0;
+      }
+    if (atof (*(results + 1)) != 1234.5)
+      {
+	  fprintf (stderr, "StoredProc_Exit() #3 unexpected failure\n");
+	  sqlite3_free_table (results);
+	  *retcode = -136;
+	  return 0;
+      }
+    sqlite3_free_table (results);
+
+/* testing StoredProc_Return(TEXT) */
+    sql = "SELECT StoredProc_Execute('proc_ret4');";
+    ret = sqlite3_get_table (handle, sql, &results, &rows, &columns, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "StoredProc_Return() #4 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  *retcode = -137;
+	  return 0;
+      }
+    if (rows != 1 || columns != 1)
+      {
+	  fprintf (stderr,
+		   "StoredProc_Return() #4 error: rows=%d columns=%d\n", rows,
+		   columns);
+	  sqlite3_free_table (results);
+	  *retcode = -138;
+	  return 0;
+      }
+    if (strcmp (*(results + 1), "test me now") != 0)
+      {
+	  fprintf (stderr, "StoredProc_Exit() #4 unexpected failure\n");
+	  sqlite3_free_table (results);
+	  *retcode = -139;
+	  return 0;
+      }
+    sqlite3_free_table (results);
+
+/* testing StoredProc_Return(BLOB) */
+    sql = "SELECT TypeOf(StoredProc_Execute('proc_ret5'));";
+    ret = sqlite3_get_table (handle, sql, &results, &rows, &columns, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "StoredProc_Return() #5 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  *retcode = -140;
+	  return 0;
+      }
+    if (rows != 1 || columns != 1)
+      {
+	  fprintf (stderr,
+		   "StoredProc_Return() #5 error: rows=%d columns=%d\n", rows,
+		   columns);
+	  sqlite3_free_table (results);
+	  *retcode = -141;
+	  return 0;
+      }
+    if (strcmp (*(results + 1), "blob") != 0)
+      {
+	  fprintf (stderr, "StoredProc_Exit() #5 unexpected failure\n");
+	  sqlite3_free_table (results);
+	  *retcode = -142;
+	  return 0;
+      }
+    sqlite3_free_table (results);
+
+    return 1;
+}
+
+static int
+do_level8_tests (sqlite3 * handle, int *retcode)
+{
+/* performing Level 8 tests - SqlProc_ExecuteLoop() */
+    const char *sql;
+    int ret;
+    char *err_msg = NULL;
+    char **results;
+    int rows;
+    int columns;
+
+/* testing SqlProc_ExecuteLoop() */
+    sql =
+	"SELECT SqlProc_ExecuteLoop(SqlProc_FromText('CREATE TABLE IF NOT EXISTS @TABLE@ (value INTEGER NOT NULL); "
+	"INSERT INTO @TABLE@ VALUES (random()); "
+	"SELECT CASE count(*) >= @LIMIT@ WHEN 1 THEN SqlProc_Return(0) ELSE SqlProc_Return(1) END FROM @TABLE@;'), "
+	"'@TABLE@=tbl1', '@LIMIT@=125');";
+    ret = sqlite3_get_table (handle, sql, &results, &rows, &columns, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "SqlProc_ExecuteLoop() #1 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  *retcode = -143;
+	  return 0;
+      }
+    if (rows != 1 || columns != 1)
+      {
+	  fprintf (stderr,
+		   "SqlProc_ExecuteLoop() #1 error: rows=%d columns=%d\n", rows,
+		   columns);
+	  sqlite3_free_table (results);
+	  *retcode = -144;
+	  return 0;
+      }
+    if (atoi (*(results + 1)) != 1)
+      {
+	  fprintf (stderr, "SqlProc_ExecuteLoop() #1 unexpected failure\n");
+	  sqlite3_free_table (results);
+	  *retcode = -145;
+	  return 0;
+      }
+    sqlite3_free_table (results);
+
+/* checking the results of SqlProc_ExecuteLoop() */
+    sql = "SELECT Count(*) FROM tbl1";
+    ret = sqlite3_get_table (handle, sql, &results, &rows, &columns, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "SqlProc_ExecuteLoop() #2 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  *retcode = -146;
+	  return 0;
+      }
+    if (rows != 1 || columns != 1)
+      {
+	  fprintf (stderr,
+		   "SqlProc_ExecuteLoop() #2 error: rows=%d columns=%d\n", rows,
+		   columns);
+	  sqlite3_free_table (results);
+	  *retcode = -147;
+	  return 0;
+      }
+    if (atoi (*(results + 1)) != 125)
+      {
+	  fprintf (stderr, "SqlProc_ExecuteLoop() #2 unexpected failure\n");
+	  sqlite3_free_table (results);
+	  *retcode = -148;
+	  return 0;
+      }
+    sqlite3_free_table (results);
+
+    return 1;
+}
+
+static int
+do_level9_tests (sqlite3 * handle, int *retcode)
+{
+/* performing Level 9 tests - StoredProc_ExecuteLoop() */
+    const char *sql;
+    int ret;
+    char *err_msg = NULL;
+    char **results;
+    int rows;
+    int columns;
+
+/* registering several Stored Procedure */
+    sql = "SELECT StoredProc_Register('proc_loop', 'this is a title', "
+	"SqlProc_FromText('CREATE TABLE IF NOT EXISTS @TABLE@ (value INTEGER NOT NULL); "
+	"INSERT INTO @TABLE@ VALUES (random()); "
+	"SELECT CASE count(*) >= @LIMIT@ WHEN 1 THEN SqlProc_Return(0) ELSE SqlProc_Return(1) END FROM @TABLE@;'))";
+    ret = sqlite3_exec (handle, sql, NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "StoredProc_Register() #9 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  *retcode = -149;
+	  return 0;
+      }
+
+/* testing StoredProc_ExecuteLoop() */
+    sql =
+	"SELECT StoredProc_ExecuteLoop('proc_loop', '@TABLE@=tbl2', '@LIMIT@=250');";
+    ret = sqlite3_get_table (handle, sql, &results, &rows, &columns, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "StoredProc_ExecuteLoop() #1 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  *retcode = -150;
+	  return 0;
+      }
+    if (rows != 1 || columns != 1)
+      {
+	  fprintf (stderr,
+		   "StoredProc_ExecuteLoop() #1 error: rows=%d columns=%d\n",
+		   rows, columns);
+	  sqlite3_free_table (results);
+	  *retcode = -151;
+	  return 0;
+      }
+    if (atoi (*(results + 1)) != 1)
+      {
+	  fprintf (stderr, "StoredProc_ExecuteLoop() #1 unexpected failure\n");
+	  sqlite3_free_table (results);
+	  *retcode = -152;
+	  return 0;
+      }
+    sqlite3_free_table (results);
+
+/* checking the results of StoredProc_ExecuteLoop() */
+    sql = "SELECT Count(*) FROM tbl2";
+    ret = sqlite3_get_table (handle, sql, &results, &rows, &columns, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "StoredProc_ExecuteLoop() #2 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  *retcode = -153;
+	  return 0;
+      }
+    if (rows != 1 || columns != 1)
+      {
+	  fprintf (stderr,
+		   "StoredProc_ExecuteLoop() #2 error: rows=%d columns=%d\n",
+		   rows, columns);
+	  sqlite3_free_table (results);
+	  *retcode = -154;
+	  return 0;
+      }
+    if (atoi (*(results + 1)) != 250)
+      {
+	  fprintf (stderr, "StoredProc_ExecuteLoop() #2 unexpected failure\n");
+	  sqlite3_free_table (results);
+	  *retcode = -155;
+	  return 0;
+      }
+    sqlite3_free_table (results);
+
+    return 1;
+}
+
 #endif
 
 int
@@ -1516,6 +1881,18 @@ main (int argc, char *argv[])
 
 /*tests: level 6 */
     if (!do_level6_tests (handle, &retcode))
+	goto end;
+
+/*tests: level 7 */
+    if (!do_level7_tests (handle, &retcode))
+	goto end;
+
+/*tests: level 8 */
+    if (!do_level8_tests (handle, &retcode))
+	goto end;
+
+/*tests: level 9 */
+    if (!do_level9_tests (handle, &retcode))
 	goto end;
 
   end:
