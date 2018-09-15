@@ -26271,6 +26271,234 @@ fnct_HausdorffDistance (sqlite3_context * context, int argc,
     gaiaFreeGeomColl (geo2);
 }
 
+#ifdef GEOS_370			/* only if GEOS_370 support is available */
+
+static void
+fnct_HausdorffDistanceDensify (sqlite3_context * context, int argc,
+			       sqlite3_value ** argv)
+{
+/* SQL function:
+/ HausdorffDistance(BLOBencoded geom1, BLOBencoded geom2, double densify_fract)
+/
+/ returns the discrete Hausdorff distance between GEOM-1 and GEOM-2
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    gaiaGeomCollPtr geo1 = NULL;
+    gaiaGeomCollPtr geo2 = NULL;
+    double densify_fract;
+    double dist;
+    int ret;
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (sqlite3_value_type (argv[1]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (sqlite3_value_type (argv[2]) == SQLITE_FLOAT)
+      {
+	  densify_fract = sqlite3_value_double (argv[2]);
+	  if (densify_fract > 0.0 && densify_fract < 1.0)
+	      ;
+	  else
+	  {
+	      sqlite3_result_null (context);
+	      return;
+	  }
+      }
+    else
+    {
+	sqlite3_result_null (context);
+	return;
+}
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geo1 =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[1]);
+    n_bytes = sqlite3_value_bytes (argv[1]);
+    geo2 =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (!geo1 || !geo2)
+	sqlite3_result_null (context);
+    else
+      {
+	  void *data = sqlite3_user_data (context);
+	  if (data != NULL)
+	      ret =
+		  gaiaHausdorffDistanceDensify_r (data, geo1, geo2,
+						  densify_fract, &dist);
+	  else
+	      ret =
+		  gaiaHausdorffDistanceDensify (geo1, geo2, densify_fract,
+						&dist);
+	  if (!ret)
+	      sqlite3_result_null (context);
+	  sqlite3_result_double (context, dist);
+      }
+    gaiaFreeGeomColl (geo1);
+    gaiaFreeGeomColl (geo2);
+}
+
+static void
+fnct_FrechetDistance (sqlite3_context * context, int argc,
+		      sqlite3_value ** argv)
+{
+/* SQL function:
+/ FrechetDistance(BLOBencoded geom1, BLOBencoded geom2)
+/
+/ returns the discrete Frechet distance between GEOM-1 and GEOM-2
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    gaiaGeomCollPtr geo1 = NULL;
+    gaiaGeomCollPtr geo2 = NULL;
+    double dist;
+    int ret;
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (sqlite3_value_type (argv[1]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geo1 =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[1]);
+    n_bytes = sqlite3_value_bytes (argv[1]);
+    geo2 =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (!geo1 || !geo2)
+	sqlite3_result_null (context);
+    else
+      {
+	  void *data = sqlite3_user_data (context);
+	  if (data != NULL)
+	      ret = gaiaFrechetDistance_r (data, geo1, geo2, &dist);
+	  else
+	      ret = gaiaFrechetDistance (geo1, geo2, &dist);
+	  if (!ret)
+	      sqlite3_result_null (context);
+	  sqlite3_result_double (context, dist);
+      }
+    gaiaFreeGeomColl (geo1);
+    gaiaFreeGeomColl (geo2);
+}
+
+static void
+fnct_FrechetDistanceDensify (sqlite3_context * context, int argc,
+			     sqlite3_value ** argv)
+{
+/* SQL function:
+/ FrechetDistance(BLOBencoded geom1, BLOBencoded geom2, double densify_fract)
+/
+/ returns the discrete Frechet distance between GEOM-1 and GEOM-2
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    gaiaGeomCollPtr geo1 = NULL;
+    gaiaGeomCollPtr geo2 = NULL;
+    double densify_fract;
+    double dist;
+    int ret;
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (sqlite3_value_type (argv[1]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (sqlite3_value_type (argv[2]) == SQLITE_FLOAT)
+      {
+	  densify_fract = sqlite3_value_double (argv[2]);
+	  if (densify_fract > 0.0 && densify_fract < 1.0)
+	      ;
+	  else
+	  {
+	      sqlite3_result_null (context);
+	      return;
+	  }
+      }
+    else
+    {
+	sqlite3_result_null (context);
+	return;
+}
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geo1 =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[1]);
+    n_bytes = sqlite3_value_bytes (argv[1]);
+    geo2 =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (!geo1 || !geo2)
+	sqlite3_result_null (context);
+    else
+      {
+	  void *data = sqlite3_user_data (context);
+	  if (data != NULL)
+	      ret =
+		  gaiaFrechetDistanceDensify_r (data, geo1, geo2, densify_fract,
+						&dist);
+	  else
+	      ret =
+		  gaiaFrechetDistanceDensify (geo1, geo2, densify_fract, &dist);
+	  if (!ret)
+	      sqlite3_result_null (context);
+	  sqlite3_result_double (context, dist);
+      }
+    gaiaFreeGeomColl (geo1);
+    gaiaFreeGeomColl (geo2);
+}
+
+#endif /* end GEOS_370 conditional */
+
 static void
 fnct_SharedPaths (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
@@ -47477,6 +47705,28 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "ST_HausdorffDistance", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_HausdorffDistance, 0, 0, 0);
+
+#ifdef GEOS_370			/* only if GEOS_370 support is available */
+    sqlite3_create_function_v2 (db, "HausdorffDistance", 3,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_HausdorffDistanceDensify, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_HausdorffDistance", 3,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_HausdorffDistanceDensify, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "FrechetDistance", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_FrechetDistance, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_FrechetDistance", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_FrechetDistance, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "FrechetDistance", 3,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_FrechetDistanceDensify, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_FrechetDistance", 3,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_FrechetDistanceDensify, 0, 0, 0);
+#endif /* end GEOS_370 conditional */
+
     sqlite3_create_function_v2 (db, "SharedPaths", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_SharedPaths, 0, 0, 0);

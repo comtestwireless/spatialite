@@ -760,6 +760,18 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
   skip_geos_advanced:
 #endif /* end GEOS_ADVANCED conditional */
 
+#ifdef GEOS_370		/* only if GEOS_370 is supported */
+
+    result =
+	run_subdir_test ("sql_stmt_geos370_tests", conn, load_extension,
+			 0);
+    if (result != 0)
+      {
+	  return result;
+      }
+
+#endif /* end GEOS_370 conditional */
+
 #ifdef ENABLE_RTTOPO		/* only if RTTOPO is supported */
     if (legacy)
       {
@@ -798,6 +810,14 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
 		   "WARNING: skipping SqlProc testcases in legacy mode !!!\n");
 	  goto skip_sql_proc;
       }
+      
+    ret = system ("cp sql_stmt_proc_tests/storproc.sqlite sql_stmt_proc_tests/storproc_x.sqlite");
+    if (ret != 0)
+      {
+	  fprintf (stderr, "cannot copy sql_stmt_proc_tests/storproc database\n");
+	  return -1;
+      }
+      
     result = run_subdir_test ("sql_stmt_proc_tests", conn, load_extension, 0);
     if (result != 0)
       {

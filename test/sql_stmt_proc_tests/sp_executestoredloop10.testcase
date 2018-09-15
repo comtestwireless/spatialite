@@ -1,5 +1,5 @@
 StoredProc_ExecuteLoop - BLOB vararg
-sql_stmt_proc_tests/storproc.sqlite
+sql_stmt_proc_tests/storproc_x.sqlite
 SELECT StoredProc_ExecuteLoop('test_loop', zeroblob(10));
 1 # rows (not including the header row)
 1 # columns

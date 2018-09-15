@@ -2433,6 +2433,152 @@ extern "C"
 						 double *dist);
 
 /**
+ Calculates the Hausdorff distance intercurring between two Geometry objects
+
+ \param geom1 pointer to first Geometry object
+ \param geom2 pointer to second Geometry object
+ \param densify_fract fraction (in the range 0.0 / 1.0) by which to densify
+ each segment. Each segment will be split into a number of equal-lenght
+ subsegments, whose fraction of the total length is closest to the given
+ fraction
+ \param dist on completion this variable will contain the calculated Hausdorff
+ distance 
+
+ \return 0 on failure: any other value on success.
+
+ \sa gaiaHausdorffDistance_r
+
+ \note not reentrant and thread unsafe.
+
+ \remark \b GEOS-ADVANCED support required.
+ */
+    GAIAGEO_DECLARE int gaiaHausdorffDistanceDensify (gaiaGeomCollPtr geom1,
+						      gaiaGeomCollPtr geom2,
+						      double densify_fract,
+						      double *dist);
+
+/**
+ Calculates the Hausdorff distance intercurring between two Geometry objects
+
+ \param p_cache a memory pointer returned by spatialite_alloc_connection()
+ \param geom1 pointer to first Geometry object
+ \param geom2 pointer to second Geometry object
+ \param densify_fract fraction (in the range 0.0 / 1.0) by which to densify
+ each segment. Each segment will be split into a number of equal-lenght
+ subsegments, whose fraction of the total length is closest to the given
+ fraction
+ \param dist on completion this variable will contain the calculated Hausdorff
+ distance 
+
+ \return 0 on failure: any other value on success.
+
+ \sa gaiaHausdorffDistance
+
+ \note reentrant and thread-safe.
+
+ \remark \b GEOS-ADVANCED support required.
+ */
+    GAIAGEO_DECLARE int gaiaHausdorffDistanceDensify_r (const void *p_cache,
+							gaiaGeomCollPtr geom1,
+							gaiaGeomCollPtr geom2,
+							double densify_fract,
+							double *dist);
+
+/**
+ Calculates the Frechet distance intercurring between two Geometry objects
+
+ \param geom1 pointer to first Geometry object
+ \param geom2 pointer to second Geometry object
+ \param dist on completion this variable will contain the calculated Frechet
+ distance 
+
+ \return 0 on failure: any other value on success.
+
+ \sa gaiaFrechetDistance_r
+
+ \note not reentrant and thread unsafe.
+
+ \remark \b GEOS-ADVANCED support required.
+ */
+    GAIAGEO_DECLARE int gaiaFrechetDistance (gaiaGeomCollPtr geom1,
+					     gaiaGeomCollPtr geom2,
+					     double *dist);
+
+/**
+ Calculates the Frechet distance intercurring between two Geometry objects
+
+ \param p_cache a memory pointer returned by spatialite_alloc_connection()
+ \param geom1 pointer to first Geometry object
+ \param geom2 pointer to second Geometry object
+ \param dist on completion this variable will contain the calculated Frechet
+ distance 
+
+ \return 0 on failure: any other value on success.
+
+ \sa gaiaFrechetDistance
+
+ \note reentrant and thread-safe.
+
+ \remark \b GEOS-ADVANCED support required.
+ */
+    GAIAGEO_DECLARE int gaiaFrechetDistance_r (const void *p_cache,
+					       gaiaGeomCollPtr geom1,
+					       gaiaGeomCollPtr geom2,
+					       double *dist);
+
+/**
+ Calculates the Frechet distance intercurring between two Geometry objects
+
+ \param geom1 pointer to first Geometry object
+ \param geom2 pointer to second Geometry object
+ \param densify_fract fraction (in the range 0.0 / 1.0) by which to densify
+ each segment. Each segment will be split into a number of equal-lenght
+ subsegments, whose fraction of the total length is closest to the given
+ fraction
+ \param dist on completion this variable will contain the calculated Frechet
+ distance 
+
+ \return 0 on failure: any other value on success.
+
+ \sa gaiaFrechetDistance_r
+
+ \note not reentrant and thread unsafe.
+
+ \remark \b GEOS-ADVANCED support required.
+ */
+    GAIAGEO_DECLARE int gaiaFrechetDistanceDensify (gaiaGeomCollPtr geom1,
+						    gaiaGeomCollPtr geom2,
+						    double densify_fract,
+						    double *dist);
+
+/**
+ Calculates the Frechet distance intercurring between two Geometry objects
+
+ \param p_cache a memory pointer returned by spatialite_alloc_connection()
+ \param geom1 pointer to first Geometry object
+ \param geom2 pointer to second Geometry object
+ \param densify_fract fraction (in the range 0.0 / 1.0) by which to densify
+ each segment. Each segment will be split into a number of equal-lenght
+ subsegments, whose fraction of the total length is closest to the given
+ fraction
+ \param dist on completion this variable will contain the calculated Frechet
+ distance 
+
+ \return 0 on failure: any other value on success.
+
+ \sa gaiaFrechetDistance
+
+ \note reentrant and thread-safe.
+
+ \remark \b GEOS-ADVANCED support required.
+ */
+    GAIAGEO_DECLARE int gaiaFrechetDistanceDensify_r (const void *p_cache,
+						      gaiaGeomCollPtr geom1,
+						      gaiaGeomCollPtr geom2,
+						      double densify_fract,
+						      double *dist);
+
+/**
  Spatial operator: Offset Curve
 
  \param geom the input Geometry object

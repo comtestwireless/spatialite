@@ -35,6 +35,8 @@ AH_TEMPLATE([GEOS_REENTRANT],
             [Should be defined in order to enable GEOS_REENTRANT (fully thread-safe).])
 AH_TEMPLATE([GEOS_ONLY_REENTRANT],
             [Should be defined in order to fully disable GEOS non-thread-safe API.])
+AH_TEMPLATE([GEOS_370],
+            [Should be defined in order to enable GEOS_370 support.])
 AH_TEMPLATE([ENABLE_RTTOPO],
             [Should be defined in order to enable RTTOPO support.])
 AH_TEMPLATE([ENABLE_GCP],
@@ -165,6 +167,7 @@ AC_CONFIG_FILES([Makefile \
 		test/sql_stmt_point_geom/Makefile \
 		test/sql_stmt_tiny_point/Makefile \
 		test/sql_stmt_postgres_tests/Makefile \
+		test/sql_stmt_geos370_tests/Makefile \
 		examples/Makefile \
 		Doxyfile \
 		spatialite.pc])
@@ -358,6 +361,17 @@ if test x"$enable_geos" != "xno"; then
 	  [], [with_geosonlyreentrant=no])
   if test x"$with_geosonlyreentrant" != "xno"; then
 	  AC_DEFINE(GEOS_ONLY_REENTRANT)
+  fi
+
+  #-----------------------------------------------------------------------
+  #   --enable-geos370
+  #
+  AC_ARG_ENABLE(geos370, [AS_HELP_STRING(
+	  [--enable-geos370], [enables GEOS 3.7.0 features [default=yes]])],
+	  [], [enable_geos370=yes])
+  if test x"$enable_geos370" != "xno"; then
+	  AC_SEARCH_LIBS(GEOSFrechetDistance_r,geos_c,,AC_MSG_ERROR(['libgeos_c' (>= v.3.7.0) is required but it doesn't seem to be installed on this system. You may need to try re-running configure with a --disable-geos370 parameter.]))
+	  AC_DEFINE(GEOS_370)
   fi
 
   #-----------------------------------------------------------------------
