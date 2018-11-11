@@ -753,6 +753,19 @@ EXTRA_DIST = addpoint10.testcase \
 	dropgeo7.testcase \
 	dropgeo8.testcase \
 	dropgeo9.testcase \
+	droptable1.testcase \
+	droptable2.testcase \
+	droptable3.testcase \
+	droptable4.testcase \
+	droptable5.testcase \
+	droptable6.testcase \
+	droptable7.testcase \
+	droptable8.testcase \
+	droptable9.testcase \
+	droptable10.testcase \
+	droptable11.testcase \
+	droptable12.testcase \
+	droptable13.testcase \
 	elemgeo1.testcase \
 	elemgeo2.testcase \
 	elemgeo3.testcase \

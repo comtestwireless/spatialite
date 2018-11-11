@@ -26314,16 +26314,16 @@ fnct_HausdorffDistanceDensify (sqlite3_context * context, int argc,
 	  if (densify_fract > 0.0 && densify_fract < 1.0)
 	      ;
 	  else
-	  {
-	      sqlite3_result_null (context);
-	      return;
-	  }
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
       }
     else
-    {
-	sqlite3_result_null (context);
-	return;
-}
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
     p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
     n_bytes = sqlite3_value_bytes (argv[0]);
     geo1 =
@@ -26457,16 +26457,16 @@ fnct_FrechetDistanceDensify (sqlite3_context * context, int argc,
 	  if (densify_fract > 0.0 && densify_fract < 1.0)
 	      ;
 	  else
-	  {
-	      sqlite3_result_null (context);
-	      return;
-	  }
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
       }
     else
-    {
-	sqlite3_result_null (context);
-	return;
-}
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
     p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
     n_bytes = sqlite3_value_bytes (argv[0]);
     geo1 =
@@ -33561,7 +33561,11 @@ fnct_ElementaryGeometries (sqlite3_context * context, int argc,
 static void
 fnct_DropGeoTable (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
-/* SQL function:
+/* 
+/
+/ DEPRECATED !!!! please use DropTable() as a full replacement !!!!
+/ 
+/ SQL function:
 / DropGeoTable(TEXT table)
 / DropGeoTable(TEXT table, BOOL transaction)
 / DropGeoTable(TEXT db_prefix, TEXT table)
@@ -33575,7 +33579,6 @@ fnct_DropGeoTable (sqlite3_context * context, int argc, sqlite3_value ** argv)
     char *table = NULL;
     int transaction = 1;
     int ret;
-    int cnt;
     sqlite3 *db_handle = sqlite3_context_db_handle (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (argc == 1)
@@ -33617,15 +33620,217 @@ fnct_DropGeoTable (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  transaction = sqlite3_value_int (argv[2]);
       }
 
-    cnt = sqlite3_total_changes (db_handle);
     ret = gaiaDropTableEx3 (db_handle, db_prefix, table, transaction, NULL);
-    if (ret)
+    sqlite3_result_int (context, ret);
+}
+
+static void
+fnct_DropTable (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ DropTable(TEXT db_prefix, TEXT table)
+/ DropTable(TEXT db_prefix, TEXT table, BOOL permissive)
+/
+/ returns:
+/ 1 on success
+/ an Exception on failure.
+*/
+    char *db_prefix = NULL;
+    char *table = NULL;
+    int permissive = 0;
+    const char *arg_name;
+    char *err;
+    char *msg;
+    sqlite3 *db_handle = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) != SQLITE_TEXT
+	&& sqlite3_value_type (argv[0]) != SQLITE_NULL)
       {
-	  if (sqlite3_total_changes (db_handle) <= cnt)
-	      ret = 0;
+	  arg_name = "1st arg";
+	  goto invalid_args;
+      }
+    db_prefix = (char *) sqlite3_value_text (argv[0]);
+    if (sqlite3_value_type (argv[1]) != SQLITE_TEXT)
+      {
+	  arg_name = "2nd arg";
+	  goto invalid_args;
+      }
+    table = (char *) sqlite3_value_text (argv[1]);
+    if (argc >= 3)
+      {
+	  if (sqlite3_value_type (argv[2]) != SQLITE_INTEGER)
+	    {
+		arg_name = "3rd arg";
+		goto invalid_args;
+	    }
+	  permissive = sqlite3_value_int (argv[2]);
       }
 
-    sqlite3_result_int (context, ret);
+    if (!gaiaDropTable5 (db_handle, db_prefix, table, &err))
+      {
+	  if (permissive)
+	    {
+		sqlite3_result_int (context, 0);
+		return;
+	    }
+	  msg = sqlite3_mprintf ("DropTable exception - %s.", err);
+	  sqlite3_result_error (context, msg, -1);
+	  sqlite3_free (msg);
+	  sqlite3_free (err);
+	  return;
+      }
+    sqlite3_result_int (context, 1);
+    return;
+
+  invalid_args:
+    msg =
+	sqlite3_mprintf ("DropTable exception - invalid argument (%s).",
+			 arg_name);
+    sqlite3_result_error (context, msg, -1);
+    sqlite3_free (msg);
+    return;
+}
+
+static void
+fnct_RenameTable (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ RenameTable(TEXT db_prefix, TEXT old_name, TEXT new_name)
+/
+/ returns:
+/ 1 on success
+/ an Exception on failure.
+*/
+    const char *db_prefix = NULL;
+    const char *old_name = NULL;
+    const char *new_name = NULL;
+    const char *arg_name;
+    char *err;
+    char *msg;
+    sqlite3 *db_handle = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_libversion_number () < 3025000)
+	goto obsolete_sqlite;
+    if (sqlite3_value_type (argv[0]) != SQLITE_TEXT
+	&& sqlite3_value_type (argv[0]) != SQLITE_NULL)
+      {
+	  arg_name = "1st arg";
+	  goto invalid_args;
+      }
+    db_prefix = (char *) sqlite3_value_text (argv[0]);
+    if (sqlite3_value_type (argv[1]) != SQLITE_TEXT)
+      {
+	  arg_name = "2nd arg";
+	  goto invalid_args;
+      }
+    old_name = (char *) sqlite3_value_text (argv[1]);
+    if (sqlite3_value_type (argv[2]) != SQLITE_TEXT)
+      {
+	  arg_name = "3rd arg";
+	  goto invalid_args;
+      }
+    new_name = (char *) sqlite3_value_text (argv[2]);
+    if (!gaiaRenameTable (db_handle, db_prefix, old_name, new_name, &err))
+      {
+	  msg = sqlite3_mprintf ("RenameTable exception - %s.", err);
+	  sqlite3_result_error (context, msg, -1);
+	  sqlite3_free (msg);
+	  sqlite3_free (err);
+	  return;
+      }
+    sqlite3_result_int (context, 1);
+    return;
+
+  invalid_args:
+    msg =
+	sqlite3_mprintf ("RenameTable exception - invalid argument (%s).",
+			 arg_name);
+    sqlite3_result_error (context, msg, -1);
+    sqlite3_free (msg);
+    return;
+
+  obsolete_sqlite:
+    msg =
+	sqlite3_mprintf
+	("RenameTable exception - libsqlite 3.25 or later is strictly required.");
+    sqlite3_result_error (context, msg, -1);
+    sqlite3_free (msg);
+    return;
+}
+
+static void
+fnct_RenameColumn (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ RenameColumn(TEXT db_prefix, TEXT table, TEXT old_name, TEXT new_name)
+/
+/ returns:
+/ 1 on success
+/ an Exception on failure.
+*/
+    const char *db_prefix = NULL;
+    const char *table = NULL;
+    const char *old_name = NULL;
+    const char *new_name = NULL;
+    const char *arg_name;
+    char *err;
+    char *msg;
+    sqlite3 *db_handle = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_libversion_number () < 3025000)
+	goto obsolete_sqlite;
+    if (sqlite3_value_type (argv[0]) != SQLITE_TEXT
+	&& sqlite3_value_type (argv[0]) != SQLITE_NULL)
+      {
+	  arg_name = "1st arg";
+	  goto invalid_args;
+      }
+    db_prefix = (char *) sqlite3_value_text (argv[0]);
+    if (sqlite3_value_type (argv[1]) != SQLITE_TEXT)
+      {
+	  arg_name = "2nd arg";
+	  goto invalid_args;
+      }
+    table = (char *) sqlite3_value_text (argv[1]);
+    if (sqlite3_value_type (argv[2]) != SQLITE_TEXT)
+      {
+	  arg_name = "3rd arg";
+	  goto invalid_args;
+      }
+    old_name = (char *) sqlite3_value_text (argv[2]);
+    if (sqlite3_value_type (argv[3]) != SQLITE_TEXT)
+      {
+	  arg_name = "4th arg";
+	  goto invalid_args;
+      }
+    new_name = (char *) sqlite3_value_text (argv[3]);
+    if (!gaiaRenameColumn
+	(db_handle, db_prefix, table, old_name, new_name, &err))
+      {
+	  msg = sqlite3_mprintf ("RenameColumn exception - %s.", err);
+	  sqlite3_result_error (context, msg, -1);
+	  sqlite3_free (msg);
+	  sqlite3_free (err);
+	  return;
+      }
+    sqlite3_result_int (context, 1);
+    return;
+
+  invalid_args:
+    msg =
+	sqlite3_mprintf ("RenameColumn exception - invalid argument (%s).",
+			 arg_name);
+    sqlite3_result_error (context, msg, -1);
+    sqlite3_free (msg);
+    return;
+
+  obsolete_sqlite:
+    msg =
+	sqlite3_mprintf
+	("RenameColumn exception - libsqlite 3.25 or later is strictly required.");
+    sqlite3_result_error (context, msg, -1);
+    sqlite3_free (msg);
+    return;
 }
 
 static void
@@ -46086,6 +46291,18 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "DropGeoTable", 3,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_DropGeoTable, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "DropTable", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_DropTable, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "DropTable", 3,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_DropTable, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "RenameTable", 3,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_RenameTable, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "RenameColumn", 4,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_RenameColumn, 0, 0, 0);
 
     sqlite3_create_function_v2 (db, "SqlProc_GetLastError", 0, SQLITE_UTF8,
 				cache, fnct_sp_get_last_error, 0, 0, 0);

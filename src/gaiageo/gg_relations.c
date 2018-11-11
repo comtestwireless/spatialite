@@ -4129,7 +4129,7 @@ gaiaPolygonizeCommon (const void *cache, GEOSContextHandle_t handle,
       }
 
 /* identifying valid Polygons [excluding holes] */
-    valid_polygons = malloc (items);
+    valid_polygons = malloc (sizeof(char *) * items);
     for (ig = 0; ig < items; ig++)
 	valid_polygons[ig] = 'Y';
     for (ig = 0; ig < items; ig++)

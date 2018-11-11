@@ -1894,11 +1894,11 @@ print_elapsed_time (FILE * log, double seconds)
     int_time /= 60;
     int hh = int_time;
     if (hh == 0 && mins == 0)
-	fprintf (log, "Execution time: %d.%03d\n", secs, millis);
+	fprintf (log, "-- Execution time: %d.%03d\n", secs, millis);
     else if (hh == 0)
-	fprintf (log, "Execution time: %d:%02d.%03d\n", mins, secs, millis);
+	fprintf (log, "-- Execution time: %d:%02d.%03d\n", mins, secs, millis);
     else
-	fprintf (log, "Execution time: %d:%02d:%02d.%03d\n", hh, mins, secs,
+	fprintf (log, "-- Execution time: %d:%02d:%02d.%03d\n", hh, mins, secs,
 		 millis);
 }
 
@@ -1978,7 +1978,7 @@ gaia_sql_proc_execute (sqlite3 * handle, const void *ctx, const char *sql)
     if (cache != NULL)
       {
 	  cache->SqlProcContinue = 1;
-	  gaia_set_variant_null(cache->SqlProcRetValue);
+	  gaia_set_variant_null (cache->SqlProcRetValue);
 	  log = cache->SqlProcLog;
       }
 
@@ -1987,11 +1987,11 @@ gaia_sql_proc_execute (sqlite3 * handle, const void *ctx, const char *sql)
 	  /* printing a session header */
 	  char *now = get_timestamp (handle);
 	  fprintf (log,
-		   "=========================================================================================\n");
-	  fprintf (log, "==     SQL session start   =   %s\n", now);
+		   "--=========================================================================================\n");
+	  fprintf (log, "--==     SQL session start   =   %s\n", now);
 	  sqlite3_free (now);
 	  fprintf (log,
-		   "=========================================================================================\n");
+		   "--=========================================================================================\n");
       }
 
     while (1)
@@ -2012,7 +2012,7 @@ gaia_sql_proc_execute (sqlite3 * handle, const void *ctx, const char *sql)
 		      /* found a pending EXIT request */
 		      if (log != NULL)
 			  fprintf (log,
-				   "\n***** quitting ... found a pending EXIT request *************\n\n");
+				   "\n-- ***** quitting ... found a pending EXIT request *************\n\n");
 		      break;
 		  }
 	    }
@@ -2028,9 +2028,9 @@ gaia_sql_proc_execute (sqlite3 * handle, const void *ctx, const char *sql)
 		if (log != NULL)
 		  {
 		      char *failSql = do_clean_failing_sql (pSql);
-		      fprintf (log, "=== SQL error: %s\n",
+		      fprintf (log, "--=== SQL error: %s\n",
 			       sqlite3_errmsg (handle));
-		      fprintf (log, "failing SQL statement was:\n%s\n\n",
+		      fprintf (log, "-- failing SQL statement was:\n%s\n\n",
 			       failSql);
 		      free (failSql);
 		  }
@@ -2087,9 +2087,9 @@ gaia_sql_proc_execute (sqlite3 * handle, const void *ctx, const char *sql)
 					sqlite3_free (prev);
 				    }
 			      }
-			    fprintf (log, "%s\n", bar);
-			    fprintf (log, "%s\n", names);
-			    fprintf (log, "%s\n", bar);
+			    fprintf (log, "-- %s\n", bar);
+			    fprintf (log, "-- %s\n", names);
+			    fprintf (log, "-- %s\n", bar);
 			    sqlite3_free (names);
 			    sqlite3_free (bar);
 			}
@@ -2112,6 +2112,8 @@ gaia_sql_proc_execute (sqlite3 * handle, const void *ctx, const char *sql)
 			    /* printing column values */
 			    if (i > 0)
 				fprintf (log, "|");
+			    else
+				fprintf (log, "-- ");
 			    switch (sqlite3_column_type (stmt, i))
 			      {
 			      case SQLITE_INTEGER:
@@ -2152,7 +2154,7 @@ gaia_sql_proc_execute (sqlite3 * handle, const void *ctx, const char *sql)
 		      gaia_sql_proc_set_error (cache, errmsg);
 		      if (log != NULL)
 			{
-			    fprintf (log, "=== SQL error: %s\n",
+			    fprintf (log, "--=== SQL error: %s\n",
 				     sqlite3_errmsg (handle));
 			}
 		      sqlite3_free (errmsg);
@@ -2167,10 +2169,10 @@ gaia_sql_proc_execute (sqlite3 * handle, const void *ctx, const char *sql)
 	  if (log != NULL)
 	    {
 		if (rs)
-		    fprintf (log, "=== %d %s === ", n_rows,
+		    fprintf (log, "--=== %d %s === ", n_rows,
 			     (n_rows == 1) ? "row" : "rows");
 		else
-		    fprintf (log, "=== ");
+		    fprintf (log, "--=== ");
 		print_elapsed_time (log, seconds);
 		fprintf (log, "\n");
 		fflush (log);
@@ -2184,13 +2186,13 @@ gaia_sql_proc_execute (sqlite3 * handle, const void *ctx, const char *sql)
 	  /* printing a session footer */
 	  char *now = get_timestamp (handle);
 	  fprintf (log,
-		   "=========================================================================================\n");
+		   "--=========================================================================================\n");
 	  fprintf (log,
-		   "==     SQL session end   =   %s   =   %d statement%s executed\n",
+		   "--==     SQL session end   =   %s   =   %d statement%s executed\n",
 		   now, n_stmts, (n_stmts == 1) ? " was" : "s were");
 	  sqlite3_free (now);
 	  fprintf (log,
-		   "=========================================================================================\n\n\n");
+		   "--=========================================================================================\n\n\n");
 	  fflush (log);
       }
     return retval;

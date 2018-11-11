@@ -52,6 +52,7 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #include <math.h>
 #include <float.h>
 #include <locale.h>
+#include <ctype.h>
 
 #if defined(_WIN32) && !defined(__MINGW32__)
 #include "config-msvc.h"
@@ -1683,13 +1684,14 @@ update_layer_statistics (sqlite3 * sqlite, const char *table,
     return 1;
 }
 
-struct drop_params
+struct table_params
 {
-/* a struct supporting Drop Table */
+/* a struct supporting Drop Table / Rename Table / Rename Column */
     char **rtrees;
     int n_rtrees;
     int is_view;
     int ok_geometry_columns;
+    int ok_geometry_columns_time;
     int ok_views_geometry_columns;
     int ok_virts_geometry_columns;
     int ok_geometry_columns_auth;
@@ -1707,12 +1709,191 @@ struct drop_params
     int ok_layer_params;
     int ok_layer_sub_classes;
     int ok_layer_table_layout;
+    int ok_vector_coverages;
+    int ok_vector_coverages_keyword;
+    int ok_vector_coverages_srid;
+    int ok_se_vector_styled_layers;
     char *error_message;
 };
 
 static int
+do_check_existing (sqlite3 * sqlite, const char *prefix, const char *table,
+		   int table_only)
+{
+/* checking for an existing Table or View */
+    char *sql;
+    char *q_prefix;
+    int count = 0;
+    int ret;
+    int i;
+    char **results;
+    int rows;
+    int columns;
+
+    q_prefix = gaiaDoubleQuotedSql (prefix);
+    if (table_only)
+      {
+	  sql =
+	      sqlite3_mprintf ("SELECT Count(*) FROM \"%s\".sqlite_master "
+			       "WHERE Upper(name) = Upper(%Q) AND type = 'table'",
+			       q_prefix, table);
+      }
+    else
+      {
+	  sql =
+	      sqlite3_mprintf ("SELECT Count(*) FROM \"%s\".sqlite_master "
+			       "WHERE Upper(name) = Upper(%Q) AND type IN ('table', 'view')",
+			       q_prefix, table);
+      }
+    free (q_prefix);
+    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+	goto unknown;
+    if (rows < 1)
+	;
+    else
+      {
+	  for (i = 1; i <= rows; i++)
+	      count = atoi (results[(i * columns) + 0]);
+      }
+    sqlite3_free_table (results);
+  unknown:
+    return count;
+}
+
+static int
+do_check_view (sqlite3 * sqlite, const char *prefix, const char *view)
+{
+/* checking for an existing View */
+    char *sql;
+    char *q_prefix;
+    int count = 0;
+    int ret;
+    int i;
+    char **results;
+    int rows;
+    int columns;
+
+    q_prefix = gaiaDoubleQuotedSql (prefix);
+    sql =
+	sqlite3_mprintf ("SELECT Count(*) FROM \"%s\".sqlite_master "
+			 "WHERE Upper(name) = Upper(%Q) AND type = 'view'",
+			 q_prefix, view);
+    free (q_prefix);
+    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+	goto unknown;
+    if (rows < 1)
+	;
+    else
+      {
+	  for (i = 1; i <= rows; i++)
+	      count = atoi (results[(i * columns) + 0]);
+      }
+    sqlite3_free_table (results);
+  unknown:
+    return count;
+}
+
+static int
+do_check_existing_column (sqlite3 * sqlite, const char *prefix,
+			  const char *table, const char *column)
+{
+/* checking for an existing Table Column */
+    char *sql;
+    char *q_prefix;
+    int ret;
+    int i;
+    char **results;
+    int rows;
+    int columns;
+    int exists = 0;
+
+    q_prefix = gaiaDoubleQuotedSql (prefix);
+    sql = sqlite3_mprintf ("PRAGMA \"%s\".table_info(%Q)", q_prefix, table);
+    free (q_prefix);
+    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+	goto unknown;
+    if (rows < 1)
+	;
+    else
+      {
+	  for (i = 1; i <= rows; i++)
+	    {
+		const char *col = results[(i * columns) + 1];
+		if (strcasecmp (column, col) == 0)
+		    exists = 1;
+	    }
+      }
+    sqlite3_free_table (results);
+  unknown:
+    return exists;
+}
+
+static char *
+do_retrieve_coverage_name (sqlite3 * sqlite, const char *prefix,
+			   const char *table, int table_only)
+{
+/* checking for a registered Vector Coverage */
+    char *sql;
+    char *q_prefix;
+    char *coverage_name = NULL;
+    int ret;
+    int i;
+    char **results;
+    int rows;
+    int columns;
+
+    q_prefix = gaiaDoubleQuotedSql (prefix);
+    if (table_only)
+      {
+	  sql =
+	      sqlite3_mprintf
+	      ("SELECT coverage_name FROM \"%s\".vector_coverages "
+	       "WHERE f_table_name = %Q", q_prefix, table);
+      }
+    else
+      {
+	  sql =
+	      sqlite3_mprintf
+	      ("SELECT coverage_name FROM \"%s\".vector_coverages "
+	       "WHERE f_table_name = %Q OR view_name = %Q OR virt_name = %Q",
+	       q_prefix, table, table, table);
+      }
+    free (q_prefix);
+    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+	goto unknown;
+    if (rows < 1)
+	;
+    else
+      {
+	  for (i = 1; i <= rows; i++)
+	    {
+		const char *cvg = results[(i * columns) + 0];
+		if (cvg != NULL)
+		  {
+		      int len = strlen (cvg);
+		      if (coverage_name != NULL)
+			  free (coverage_name);
+		      coverage_name = malloc (len + 1);
+		      strcpy (coverage_name, cvg);
+		  }
+	    }
+      }
+    sqlite3_free_table (results);
+  unknown:
+    return coverage_name;
+}
+
+static int
 do_drop_table (sqlite3 * sqlite, const char *prefix, const char *table,
-	       struct drop_params *aux)
+	       struct table_params *aux)
 {
 /* performing the actual work */
     char *sql;
@@ -1721,6 +1902,80 @@ do_drop_table (sqlite3 * sqlite, const char *prefix, const char *table,
     int i;
     int ret;
     char *errMsg = NULL;
+
+    if (!do_check_existing (sqlite, prefix, table, 0))
+	return 0;
+
+    if (aux->ok_vector_coverages)
+      {
+	  /* deleting from VECTOR_COVERAGES */
+	  char *coverage = do_retrieve_coverage_name (sqlite, prefix, table, 0);
+	  if (coverage != NULL)
+	    {
+		q_prefix = gaiaDoubleQuotedSql (prefix);
+		if (aux->ok_vector_coverages_srid)
+		  {
+		      /* deleting from VECTOR_COVERAGES_SRID  */
+		      sql =
+			  sqlite3_mprintf
+			  ("DELETE FROM \"%s\".vector_coverages_srid "
+			   "WHERE lower(coverage_name) = lower(%Q)", q_prefix,
+			   coverage);
+		      ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+		      sqlite3_free (sql);
+		      if (ret != SQLITE_OK)
+			{
+			    aux->error_message = errMsg;
+			    return 0;
+			}
+		  }
+		if (aux->ok_vector_coverages_keyword)
+		  {
+		      /* deleting from VECTOR_COVERAGES_KEYWORD  */
+		      sql =
+			  sqlite3_mprintf
+			  ("DELETE FROM \"%s\".vector_coverages_keyword "
+			   "WHERE lower(coverage_name) = lower(%Q)", q_prefix,
+			   coverage);
+		      ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+		      sqlite3_free (sql);
+		      if (ret != SQLITE_OK)
+			{
+			    aux->error_message = errMsg;
+			    return 0;
+			}
+		  }
+		if (aux->ok_se_vector_styled_layers)
+		  {
+		      /* deleting from SE_VECTOR_STYLED_LAYERS  */
+		      sql =
+			  sqlite3_mprintf
+			  ("DELETE FROM \"%s\".SE_vector_styled_layers "
+			   "WHERE lower(coverage_name) = lower(%Q)", q_prefix,
+			   coverage);
+		      ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+		      sqlite3_free (sql);
+		      if (ret != SQLITE_OK)
+			{
+			    aux->error_message = errMsg;
+			    return 0;
+			}
+		  }
+		/* and finally deleting from VECTOR COVERAGES */
+		sql = sqlite3_mprintf ("DELETE FROM \"%s\".vector_coverages "
+				       "WHERE lower(coverage_name) = lower(%Q)",
+				       q_prefix, coverage);
+		ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+		sqlite3_free (sql);
+		if (ret != SQLITE_OK)
+		  {
+		      aux->error_message = errMsg;
+		      return 0;
+		  }
+		free (q_prefix);
+		free (coverage);
+	    }
+      }
 
     if (aux->is_view)
       {
@@ -1831,6 +2086,22 @@ do_drop_table (sqlite3 * sqlite, const char *prefix, const char *table,
 	  /* deleting from GEOMETRY_COLUMNS_AUTH */
 	  q_prefix = gaiaDoubleQuotedSql (prefix);
 	  sql = sqlite3_mprintf ("DELETE FROM \"%s\".geometry_columns_auth "
+				 "WHERE lower(f_table_name) = lower(%Q)",
+				 q_prefix, table);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		aux->error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_geometry_columns_time)
+      {
+	  /* deleting from GEOMETRY_COLUMNS_TIME */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql = sqlite3_mprintf ("DELETE FROM \"%s\".geometry_columns_time "
 				 "WHERE lower(f_table_name) = lower(%Q)",
 				 q_prefix, table);
 	  free (q_prefix);
@@ -2079,8 +2350,1023 @@ do_drop_table (sqlite3 * sqlite, const char *prefix, const char *table,
 }
 
 static int
+doDropGeometryTriggers (sqlite3 * sqlite, const char *table, const char *geom,
+			char **error_message)
+{
+/* dropping Geometry Triggers */
+    int ret;
+    int i;
+    char **results;
+    int rows;
+    int columns;
+    char *sql;
+    char *string;
+    char *errMsg = NULL;
+
+/* searching all Geometry Triggers to be dropped */
+    string = sqlite3_mprintf ("%%_%s_%s", table, geom);
+    sql =
+	sqlite3_mprintf
+	("SELECT name FROM MAIN.sqlite_master WHERE name LIKE %Q "
+	 "AND type = 'trigger'", string);
+    sqlite3_free (string);
+    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+	return 0;
+    if (rows < 1)
+	;
+    else
+      {
+	  for (i = 1; i <= rows; i++)
+	    {
+		/* found a Geometry Trigger */
+		const char *trigger = results[(i * columns) + 0];
+		char *q_trigger = gaiaDoubleQuotedSql (trigger);
+		sql = sqlite3_mprintf ("DROP TRIGGER main.\"%s\"", q_trigger);
+		free (q_trigger);
+		ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+		sqlite3_free (sql);
+		if (ret != SQLITE_OK)
+		  {
+		      if (error_message != NULL)
+			  *error_message = errMsg;
+		      return 0;
+		  }
+	    }
+      }
+    sqlite3_free_table (results);
+    return 1;
+}
+
+static int
+do_drop_geotriggers (sqlite3 * sqlite, const char *table, char **error_message)
+{
+/* dropping any previous Geometry Trigger */
+    int ret;
+    int i;
+    char **results;
+    int rows;
+    int columns;
+    char *sql;
+
+/* searching all Geometry Triggers defined by the old Table */
+    sql =
+	sqlite3_mprintf
+	("SELECT f_geometry_column FROM MAIN.geometry_columns "
+	 "WHERE Lower(f_table_name) = Lower(%Q)", table);
+    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+	return 0;
+    if (rows < 1)
+	;
+    else
+      {
+	  for (i = 1; i <= rows; i++)
+	    {
+		/* dropping Triggers for some Geometry Column */
+		const char *geom = results[(i * columns) + 0];
+		if (!doDropGeometryTriggers
+		    (sqlite, table, geom, error_message))
+		  {
+		      sqlite3_free_table (results);
+		      return 0;
+		  }
+	    }
+      }
+    sqlite3_free_table (results);
+    return 1;
+}
+
+static int
+do_rebuild_geotriggers (sqlite3 * sqlite, const char *table)
+{
+/* re-installing all Geometry Triggers */
+    int ret;
+    int i;
+    char **results;
+    int rows;
+    int columns;
+    char *sql;
+
+/* searching all Geometry Triggers defined by the Table */
+    sql =
+	sqlite3_mprintf
+	("SELECT f_geometry_column FROM MAIN.geometry_columns "
+	 "WHERE Lower(f_table_name) = Lower(%Q)", table);
+    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+	return 0;
+    if (rows < 1)
+	;
+    else
+      {
+	  for (i = 1; i <= rows; i++)
+	    {
+		/* found a Geometry Column */
+		const char *geom = results[(i * columns) + 0];
+		updateGeometryTriggers (sqlite, table, geom);
+	    }
+      }
+    sqlite3_free_table (results);
+    return 1;
+}
+
+static int
+do_rename_column_pre (sqlite3 * sqlite, const char *prefix, const char *table,
+		      const char *old_name, const char *new_name,
+		      struct table_params *aux, char **error_message)
+{
+/* renaming a Column - preparatory steps */
+    char *sql;
+    char *q_prefix;
+    int ret;
+    char *errMsg = NULL;
+
+/* dropping any previous Geometry Trigger */
+    if (!do_drop_geotriggers (sqlite, table, error_message))
+	return 0;
+
+/* updating fist all metadata tables */
+    if (aux->ok_geometry_columns)
+      {
+	  /* updating GEOMETRY_COLUMNS */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("UPDATE \"%s\".geometry_columns SET f_geometry_column = lower(%Q) "
+	       "WHERE lower(f_table_name) = lower(%Q) AND lower(f_geometry_column) = lower(%Q)",
+	       q_prefix, new_name, table, old_name);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+
+    if (aux->ok_layer_params)
+      {
+	  /* updating LAYER_PARAMS */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("UPDATE \"%s\".layer_params SET geometry_column = lower(%Q) "
+	       "WHERE lower(table_name) = lower(%Q) AND lower(geometry_column) = lower(%Q)",
+	       q_prefix, new_name, table, old_name);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_layer_sub_classes)
+      {
+	  /* updating LAYER_SUB_CLASSES */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("UPDATE \"%s\".layer_sub_classes SET geometry_column = lower(%Q) "
+	       "WHERE lower(table_name) = lower(%Q) AND lower(geometry_column) = lower(%Q)",
+	       q_prefix, new_name, table, old_name);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_layer_table_layout)
+      {
+	  /* updating LAYER_TABLE_LAYOUT */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("UPDATE \"%s\".layer_table_layout SET geometry_column = lower(%Q) "
+	       "WHERE lower(table_name) = lower(%Q) AND lower(geometry_column) = lower(%Q)",
+	       q_prefix, new_name, table, old_name);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_geometry_columns_auth)
+      {
+	  /* updating GEOMETRY_COLUMNS_AUTH */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("UPDATE \"%s\".geometry_columns_auth SET f_geometry_column = lower(%Q) "
+	       "WHERE lower(f_table_name) = lower(%Q) AND lower(f_geometry_column) = lower(%Q)",
+	       q_prefix, new_name, table, old_name);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_geometry_columns_time)
+      {
+	  /* updating GEOMETRY_COLUMNS_TIME */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("UPDATE \"%s\".geometry_columns_time SET f_geometry_column = lower(%Q) "
+	       "WHERE lower(f_table_name) = lower(%Q) AND lower(f_geometry_column) = lower(%Q)",
+	       q_prefix, new_name, table, old_name);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_geometry_columns_field_infos)
+      {
+	  /* updating GEOMETRY_COLUMNS_FIELD_INFOS */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("UPDATE \"%s\".geometry_columns_field_infos SET f_geometry_column = lower(%Q) "
+	       "WHERE lower(f_table_name) = lower(%Q) AND lower(f_geometry_column) = lower(%Q)",
+	       q_prefix, new_name, table, old_name);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_geometry_columns_statistics)
+      {
+	  /* updating GEOMETRY_COLUMNS_STATISTICS */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("UPDATE \"%s\".geometry_columns_statistics SET f_geometry_column = lower(%Q) "
+	       "WHERE lower(f_table_name) = lower(%Q) AND lower(f_geometry_column) = lower(%Q)",
+	       q_prefix, new_name, table, old_name);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_layer_statistics)
+      {
+	  /* updating LAYER_STATISTICS */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("UPDATE \"%s\".layer_statistics SET geometry_column = lower(%Q) "
+	       "WHERE lower(table_name) = lower(%Q) AND lower(geometry_column) = lower(%Q)",
+	       q_prefix, new_name, old_name);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_vector_coverages)
+      {
+	  /* updating VECTOR_COVERAGES */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("UPDATE \"%s\".vector_coverages SET f_geometry_column = %Q "
+	       "WHERE lower(f_table_name) = lower(%Q) AND lower(f_geometry_column) = lower(%Q)",
+	       q_prefix, new_name, table, old_name);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    return 1;
+}
+
+static int
+do_rename_column_post (sqlite3 * sqlite, const char *prefix, const char *table,
+		       const char *old_name, const char *new_name,
+		       char **error_message)
+{
+/* renaming a Column - final steps */
+    char *sql;
+    char *q_prefix;
+    char *q_table;
+    char *q_old;
+    char *q_new;
+    int ret;
+    char *errMsg = NULL;
+
+/* renaming the Column itself */
+    q_prefix = gaiaDoubleQuotedSql (prefix);
+    q_table = gaiaDoubleQuotedSql (table);
+    q_old = gaiaDoubleQuotedSql (old_name);
+    q_new = gaiaDoubleQuotedSql (new_name);
+    sql =
+	sqlite3_mprintf
+	("ALTER TABLE \"%s\".\"%s\" RENAME COLUMN \"%s\" TO \"%s\"", q_prefix,
+	 q_table, q_old, q_new);
+    free (q_prefix);
+    free (q_table);
+    free (q_old);
+    free (q_new);
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+      {
+	  if (error_message != NULL)
+	      *error_message = errMsg;
+	  return 0;
+      }
+
+/* re-installing all Geometry Triggers */
+    if (!do_rebuild_geotriggers (sqlite, table))
+      {
+	  if (error_message != NULL)
+	      *error_message =
+		  sqlite3_mprintf ("unable to rebuild Geometry Triggers");
+	  return 0;
+      }
+    return 1;
+}
+
+static int
+do_drop_table5 (sqlite3 * sqlite, const char *prefix, const char *table,
+		struct table_params *aux, char **error_message)
+{
+/* dropping a Table */
+    char *sql;
+    char *q_prefix;
+    char *q_table;
+    int ret;
+    char *errMsg = NULL;
+
+/* updating fist all metadata tables */
+    if (aux->ok_geometry_columns)
+      {
+	  /* deleting from GEOMETRY_COLUMNS */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("DELETE FROM \"%s\".geometry_columns WHERE lower(f_table_name) = lower(%Q)",
+	       q_prefix, table);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_views_geometry_columns)
+      {
+	  /* deleting from VIEWS_GEOMETRY_COLUMNS */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("DELETE FROM \"%s\".views_geometry_columns WHERE lower(view_name) = lower(%Q)",
+	       q_prefix, table);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+
+    if (aux->ok_layer_params)
+      {
+	  /* deleting from LAYER_PARAMS */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("DELETE FROM \"%s\".layer_params WHERE lower(table_name) = lower(%Q)",
+	       q_prefix, table);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_layer_sub_classes)
+      {
+	  /* deleting from LAYER_SUB_CLASSES */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("DELETE FROM \"%s\".layer_sub_classes WHERE lower(table_name) = lower(%Q)",
+	       q_prefix, table);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_layer_table_layout)
+      {
+	  /* deleting from LAYER_TABLE_LAYOUT */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("DELETE FROM \"%s\".layer_table_layout WHERE lower(table_name) = lower(%Q)",
+	       q_prefix, table);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_geometry_columns_auth)
+      {
+	  /* deleting from GEOMETRY_COLUMNS_AUTH */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("DELETE FROM \"%s\".geometry_columns_auth WHERE lower(f_table_name) = lower(%Q)",
+	       q_prefix, table);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_geometry_columns_time)
+      {
+	  /* deleting from GEOMETRY_COLUMNS_TIME */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("DELETE FROM \"%s\".geometry_columns_time WHERE lower(f_table_name) = lower(%Q)",
+	       q_prefix, table);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_geometry_columns_field_infos)
+      {
+	  /* deleting from GEOMETRY_COLUMNS_FIELD_INFOS */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("DELETE FROM \"%s\".geometry_columns_field_infos WHERE lower(f_table_name) = lower(%Q)",
+	       q_prefix, table);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_geometry_columns_statistics)
+      {
+	  /* deleting from GEOMETRY_COLUMNS_STATISTICS */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("DELETE FROM \"%s\".geometry_columns_statistics WHERE lower(f_table_name) = lower(%Q)",
+	       q_prefix, table);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_layer_statistics)
+      {
+	  /* deleting from LAYER_STATISTICS */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("DELETE FROM \"%s\".layer_statistics WHERE lower(table_name) = lower(%Q)",
+	       q_prefix, table);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_vector_coverages)
+      {
+	  /* deleting from VECTOR_COVERAGES */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("DELETE FROM \"%s\".vector_coverages WHERE lower(f_table_name) = lower(%Q)",
+	       q_prefix, table);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_views_geometry_columns_auth)
+      {
+	  /* deleting from VIEWS_GEOMETRY_COLUMNS_AUTH */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf ("DELETE FROM \"%s\".views_geometry_columns_auth "
+			       "WHERE lower(view_name) = lower(%Q)", q_prefix,
+			       table);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		aux->error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_views_geometry_columns_field_infos)
+      {
+	  /* deleting from VIEWS_GEOMETRY_COLUMNS_FIELD_INFOS */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("DELETE FROM \"%s\".views_geometry_columns_field_infos "
+	       "WHERE view_name = %Q", q_prefix, table);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		aux->error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_views_geometry_columns_statistics)
+      {
+	  /* deleting from VIEWS_GEOMETRY_COLUMNS_STATISTICS */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("DELETE FROM \"%s\".views_geometry_columns_statistics "
+	       "WHERE lower(view_name) = lower(%Q)", q_prefix, table);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		aux->error_message = errMsg;
+		return 0;
+	    }
+      }
+
+/* dropping the Table itself */
+    q_prefix = gaiaDoubleQuotedSql (prefix);
+    q_table = gaiaDoubleQuotedSql (table);
+    if (aux->is_view)
+	sql = sqlite3_mprintf ("DROP VIEW \"%s\".\"%s\"", q_prefix, table);
+    else
+	sql = sqlite3_mprintf ("DROP TABLE \"%s\".\"%s\"", q_prefix, table);
+    free (q_prefix);
+    free (q_table);
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+      {
+	  if (error_message != NULL)
+	      *error_message = errMsg;
+	  return 0;
+      }
+
+    if (aux->ok_virts_geometry_columns)
+      {
+	  /* deleting from VIRTS_GEOMETRY_COLUMNS */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("DELETE FROM \"%s\".virts_geometry_columns WHERE lower(virt_name) = lower(%Q)",
+	       q_prefix, table);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_virts_geometry_columns_auth)
+      {
+	  /* deleting from VIRTS_GEOMETRY_COLUMNS_AUTH */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf ("DELETE FROM \"%s\".virts_geometry_columns_auth "
+			       "WHERE lower(virt_name) = lower(%Q)", q_prefix,
+			       table);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		aux->error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_virts_geometry_columns_field_infos)
+      {
+	  /* deleting from VIRTS_GEOMETRY_COLUMNS_FIELD_INFOS */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("DELETE FROM \"%s\".virts_geometry_columns_field_infos "
+	       "WHERE lower(virt_name) = lower(%Q)", q_prefix, table);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		aux->error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_virts_geometry_columns_statistics)
+      {
+	  /* deleting from VIRTS_GEOMETRY_COLUMNS_STATISTICS */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("DELETE FROM \"%s\".virts_geometry_columns_statistics "
+	       "WHERE lower(virt_name) = lower(%Q)", q_prefix, table);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		aux->error_message = errMsg;
+		return 0;
+	    }
+      }
+    return 1;
+}
+
+static int
+do_rename_table_pre (sqlite3 * sqlite, const char *prefix, const char *old_name,
+		     const char *new_name, struct table_params *aux,
+		     char **error_message)
+{
+/* renaming a Table - preparatory steps */
+    char *sql;
+    char *q_prefix;
+    int ret;
+    char *errMsg = NULL;
+
+/* dropping any previous Geometry Trigger */
+    if (!do_drop_geotriggers (sqlite, old_name, error_message))
+	return 0;
+
+/* updating fist all metadata tables */
+    if (aux->ok_geometry_columns)
+      {
+	  /* updating GEOMETRY_COLUMNS */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("UPDATE \"%s\".geometry_columns SET f_table_name = lower(%Q) "
+	       "WHERE lower(f_table_name) = lower(%Q)", q_prefix, new_name,
+	       old_name);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+
+    if (aux->ok_layer_params)
+      {
+	  /* updating LAYER_PARAMS */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("UPDATE \"%s\".layer_params SET table_name = lower(%Q) "
+	       "WHERE lower(table_name) = lower(%Q)", q_prefix, new_name,
+	       old_name);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_layer_sub_classes)
+      {
+	  /* updating LAYER_SUB_CLASSES */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("UPDATE \"%s\".layer_sub_classes SET table_name = lower(%Q) "
+	       "WHERE lower(table_name) = lower(%Q)", q_prefix, new_name,
+	       old_name);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_layer_table_layout)
+      {
+	  /* updating LAYER_TABLE_LAYOUT */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("UPDATE \"%s\".layer_table_layout SET table_name = lower(%Q) "
+	       "WHERE lower(table_name) = lower(%Q)", q_prefix, new_name,
+	       old_name);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_geometry_columns_auth)
+      {
+	  /* updating GEOMETRY_COLUMNS_AUTH */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("UPDATE \"%s\".geometry_columns_auth SET f_table_name = lower(%Q) "
+	       "WHERE lower(f_table_name) = lower(%Q)", q_prefix, new_name,
+	       old_name);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_geometry_columns_time)
+      {
+	  /* updating GEOMETRY_COLUMNS_TIME */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("UPDATE \"%s\".geometry_columns_time SET f_table_name = lower(%Q) "
+	       "WHERE lower(f_table_name) = lower(%Q)", q_prefix, new_name,
+	       old_name);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_geometry_columns_field_infos)
+      {
+	  /* updating GEOMETRY_COLUMNS_FIELD_INFOS */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("UPDATE \"%s\".geometry_columns_field_infos SET f_table_name = lower(%Q) "
+	       "WHERE lower(f_table_name) = lower(%Q)", q_prefix, new_name,
+	       old_name);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_geometry_columns_statistics)
+      {
+	  /* updating GEOMETRY_COLUMNS_STATISTICS */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("UPDATE \"%s\".geometry_columns_statistics SET f_table_name = lower(%Q) "
+	       "WHERE lower(f_table_name) = lower(%Q)", q_prefix, new_name,
+	       old_name);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_layer_statistics)
+      {
+	  /* updating LAYER_STATISTICS */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("UPDATE \"%s\".layer_statistics SET table_name = lower(%Q) "
+	       "WHERE lower(table_name) = lower(%Q)", q_prefix, new_name,
+	       old_name);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    if (aux->ok_vector_coverages)
+      {
+	  /* updating VECTOR_COVERAGES */
+	  q_prefix = gaiaDoubleQuotedSql (prefix);
+	  sql =
+	      sqlite3_mprintf
+	      ("UPDATE \"%s\".vector_coverages SET f_table_name = %Q "
+	       "WHERE lower(f_table_name) = lower(%Q)", q_prefix, new_name,
+	       old_name);
+	  free (q_prefix);
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message != NULL)
+		    *error_message = errMsg;
+		return 0;
+	    }
+      }
+    return 1;
+}
+
+static int
+do_rename_table_post (sqlite3 * sqlite, const char *prefix,
+		      const char *old_name, const char *new_name,
+		      char **error_message)
+{
+/* renaming a Table - final steps */
+    char *sql;
+    char *q_prefix;
+    char *q_old;
+    char *q_new;
+    int ret;
+    char *errMsg = NULL;
+
+/* renaming the Table itself */
+    q_prefix = gaiaDoubleQuotedSql (prefix);
+    q_old = gaiaDoubleQuotedSql (old_name);
+    q_new = gaiaDoubleQuotedSql (new_name);
+    sql =
+	sqlite3_mprintf ("ALTER TABLE \"%s\".\"%s\" RENAME TO \"%s\"", q_prefix,
+			 q_old, q_new);
+    free (q_prefix);
+    free (q_old);
+    free (q_new);
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+      {
+	  if (error_message != NULL)
+	      *error_message = errMsg;
+	  return 0;
+      }
+
+/* re-installing all Geometry Triggers */
+    if (!do_rebuild_geotriggers (sqlite, new_name))
+      {
+	  if (error_message != NULL)
+	      *error_message =
+		  sqlite3_mprintf ("unable to rebuild Geometry Triggers");
+	  return 0;
+      }
+    return 1;
+}
+
+static int
+do_drop_rtree (sqlite3 * sqlite, const char *prefix, const char *rtree,
+	       char **error_message)
+{
+/* dropping some R*Tree */
+    char *sql;
+    char *q_prefix;
+    char *q_rtree;
+    int ret;
+    char *errMsg = NULL;
+
+    q_prefix = gaiaDoubleQuotedSql (prefix);
+    q_rtree = gaiaDoubleQuotedSql (rtree);
+    sql = sqlite3_mprintf ("DROP TABLE \"%s\".\"%s\"", q_prefix, q_rtree);
+    free (q_prefix);
+    free (q_rtree);
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+      {
+	  if (error_message != NULL)
+	      *error_message = errMsg;
+	  return 0;
+      }
+    return 1;
+}
+
+static int
 do_drop_sub_view (sqlite3 * sqlite, const char *prefix, const char *table,
-		  struct drop_params *aux)
+		  struct table_params *aux)
 {
 /* dropping any depending View */
     int ret;
@@ -2090,13 +3376,14 @@ do_drop_sub_view (sqlite3 * sqlite, const char *prefix, const char *table,
     int columns;
     char *sql;
     char *q_prefix;
-    struct drop_params aux2;
+    struct table_params aux2;
 
 /* initializing the aux params */
     aux2.rtrees = NULL;
     aux2.n_rtrees = 0;
     aux2.is_view = 1;
     aux2.ok_geometry_columns = 0;
+    aux2.ok_geometry_columns_time = aux->ok_geometry_columns_time;
     aux2.ok_views_geometry_columns = aux->ok_views_geometry_columns;
     aux2.ok_virts_geometry_columns = aux->ok_virts_geometry_columns;
     aux2.ok_geometry_columns_auth = aux->ok_geometry_columns_auth;
@@ -2118,7 +3405,10 @@ do_drop_sub_view (sqlite3 * sqlite, const char *prefix, const char *table,
     aux2.ok_layer_params = aux->ok_layer_params;
     aux2.ok_layer_sub_classes = aux->ok_layer_sub_classes;
     aux2.ok_layer_table_layout = aux->ok_layer_table_layout;
-
+    aux2.ok_vector_coverages = aux->ok_vector_coverages;
+    aux2.ok_vector_coverages_keyword = aux->ok_vector_coverages_keyword;
+    aux2.ok_vector_coverages_srid = aux->ok_vector_coverages_srid;
+    aux2.ok_se_vector_styled_layers = aux->ok_se_vector_styled_layers;
 
     if (aux->ok_views_geometry_columns == 0)
 	return 1;
@@ -2151,8 +3441,8 @@ do_drop_sub_view (sqlite3 * sqlite, const char *prefix, const char *table,
 }
 
 static int
-check_drop_layout (sqlite3 * sqlite, const char *prefix, const char *table,
-		   struct drop_params *aux)
+check_table_layout (sqlite3 * sqlite, const char *prefix, const char *table,
+		    struct table_params *aux)
 {
 /* checking the actual DB configuration */
     int i;
@@ -2192,6 +3482,8 @@ check_drop_layout (sqlite3 * sqlite, const char *prefix, const char *table,
 		      /* checking which tables are actually defined */
 		      if (strcasecmp (name, "geometry_columns") == 0)
 			  aux->ok_geometry_columns = 1;
+		      if (strcasecmp (name, "geometry_columns_time") == 0)
+			  aux->ok_geometry_columns_time = 1;
 		      if (strcasecmp (name, "views_geometry_columns") == 0)
 			  aux->ok_views_geometry_columns = 1;
 		      if (strcasecmp (name, "virts_geometry_columns") == 0)
@@ -2231,8 +3523,14 @@ check_drop_layout (sqlite3 * sqlite, const char *prefix, const char *table,
 			  aux->ok_views_geometry_columns = 1;
 		      if (strcasecmp (name, "virts_geometry_columns") == 0)
 			  aux->ok_virts_geometry_columns = 1;
-		      if (strcasecmp (name, "virts_geometry_columns") == 0)
-			  aux->ok_virts_geometry_columns = 1;
+		      if (strcasecmp (name, "vector_coverages") == 0)
+			  aux->ok_vector_coverages = 1;
+		      if (strcasecmp (name, "vector_coverages_keyword") == 0)
+			  aux->ok_vector_coverages_keyword = 1;
+		      if (strcasecmp (name, "vector_coverages_srid") == 0)
+			  aux->ok_vector_coverages_srid = 1;
+		      if (strcasecmp (name, "se_vector_styled_layers") == 0)
+			  aux->ok_se_vector_styled_layers = 1;
 		      if (strcasecmp (name, table) == 0)
 			{
 			    /* checking if the target is a view */
@@ -2253,9 +3551,9 @@ check_drop_layout (sqlite3 * sqlite, const char *prefix, const char *table,
 	("SELECT name FROM \"%s\".sqlite_master WHERE type = 'table' AND "
 	 "Lower(name) IN (SELECT "
 	 "Lower('idx_' || f_table_name || '_' || f_geometry_column) "
-	 "FROM geometry_columns WHERE Lower(f_table_name) = Lower(%Q)) "
+	 "FROM \"%s\".geometry_columns WHERE Lower(f_table_name) = Lower(%Q)) "
 	 "AND sql LIKE('%cvirtual%c') AND sql LIKE('%crtree%c')",
-	 q_prefix, table, jolly, jolly, jolly, jolly);
+	 q_prefix, q_prefix, table, jolly, jolly, jolly, jolly);
     free (q_prefix);
     ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, NULL);
     sqlite3_free (sql);
@@ -2283,7 +3581,7 @@ check_drop_layout (sqlite3 * sqlite, const char *prefix, const char *table,
 static int
 check_topology_table (sqlite3 * sqlite, const char *prefix, const char *table)
 {
-/* avoiding to Drop GeoTables belonging to some TopoGeo or TopoNet */
+/* checking for GeoTables belonging to some TopoGeo or TopoNet */
     char *xprefix;
     char *sql;
     char *table_name;
@@ -2322,6 +3620,22 @@ check_topology_table (sqlite3 * sqlite, const char *prefix, const char *table)
 		if (strcasecmp (table, table_name) == 0)
 		    found = 1;
 		sqlite3_free (table_name);
+		table_name = sqlite3_mprintf ("%s_face", name);
+		if (strcasecmp (table, table_name) == 0)
+		    found = 1;
+		sqlite3_free (table_name);
+		table_name = sqlite3_mprintf ("%s_seeds", name);
+		if (strcasecmp (table, table_name) == 0)
+		    found = 1;
+		sqlite3_free (table_name);
+		table_name = sqlite3_mprintf ("%s_topofeatures", name);
+		if (strcasecmp (table, table_name) == 0)
+		    found = 1;
+		sqlite3_free (table_name);
+		table_name = sqlite3_mprintf ("%s_topolayers", name);
+		if (strcasecmp (table, table_name) == 0)
+		    found = 1;
+		sqlite3_free (table_name);
 	    }
       }
     sqlite3_free_table (results);
@@ -2356,16 +3670,421 @@ check_topology_table (sqlite3 * sqlite, const char *prefix, const char *table)
 		if (strcasecmp (table, table_name) == 0)
 		    found = 1;
 		sqlite3_free (table_name);
+		table_name = sqlite3_mprintf ("%s_seeds", name);
+		if (strcasecmp (table, table_name) == 0)
+		    found = 1;
+		sqlite3_free (table_name);
 	    }
       }
     sqlite3_free_table (results);
     if (found)
-      {
-	  spatialite_e ("DropTable: can't drop TopoNet table \"%s\".\"%s\"",
-			prefix, table);
-	  return 1;
-      }
+	return 1;
 
+  end:
+    return 0;
+}
+
+static int
+check_raster_table (sqlite3 * sqlite, const char *prefix, const char *table)
+{
+/* checking for Raster Coverage tables */
+    char *xprefix;
+    char *sql;
+    char *table_name;
+    int ret;
+    int i;
+    char **results;
+    int rows;
+    int columns;
+    int found = 0;
+
+    if (prefix == NULL)
+	prefix = "main";
+
+/* testing within Raster Coverages */
+    xprefix = gaiaDoubleQuotedSql (prefix);
+    sql =
+	sqlite3_mprintf ("SELECT coverage_name FROM \"%s\".raster_coverages",
+			 xprefix);
+    free (xprefix);
+    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+	goto end;
+    if (rows < 1)
+	;
+    else
+      {
+	  for (i = 1; i <= rows; i++)
+	    {
+		const char *name = results[(i * columns) + 0];
+		table_name = sqlite3_mprintf ("%s_node", name);
+		if (strcasecmp (table, table_name) == 0)
+		    found = 1;
+		sqlite3_free (table_name);
+		table_name = sqlite3_mprintf ("%s_levels", name);
+		if (strcasecmp (table, table_name) == 0)
+		    found = 1;
+		sqlite3_free (table_name);
+		table_name = sqlite3_mprintf ("%s_sections", name);
+		if (strcasecmp (table, table_name) == 0)
+		    found = 1;
+		sqlite3_free (table_name);
+		table_name = sqlite3_mprintf ("%s_tiles", name);
+		if (strcasecmp (table, table_name) == 0)
+		    found = 1;
+		sqlite3_free (table_name);
+		table_name = sqlite3_mprintf ("%s_tile_data", name);
+		if (strcasecmp (table, table_name) == 0)
+		    found = 1;
+		sqlite3_free (table_name);
+	    }
+      }
+    sqlite3_free_table (results);
+    if (found)
+	return 1;
+  end:
+    return 0;
+}
+
+static int
+check_rtree_internal_table (sqlite3 * sqlite, const char *prefix,
+			    const char *table)
+{
+/* checking for R*Tree internal tables */
+    char *xprefix;
+    char *sql;
+    char *table_name;
+    int ret;
+    int i;
+    char **results;
+    int rows;
+    int columns;
+    int found = 0;
+
+    if (prefix == NULL)
+	prefix = "main";
+
+/* testing within Raster Coverages */
+    xprefix = gaiaDoubleQuotedSql (prefix);
+    sql =
+	sqlite3_mprintf
+	("SELECT f_table_name, f_geometry_column FROM \"%s\".geometry_columns "
+	 "WHERE spatial_index_enabled = 1", xprefix);
+    free (xprefix);
+    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+	goto end;
+    if (rows < 1)
+	;
+    else
+      {
+	  for (i = 1; i <= rows; i++)
+	    {
+		const char *tbl = results[(i * columns) + 0];
+		const char *geom = results[(i * columns) + 1];
+		table_name = sqlite3_mprintf ("idx_%s_%s_node", tbl, geom);
+		if (strcasecmp (table, table_name) == 0)
+		    found = 1;
+		sqlite3_free (table_name);
+		table_name = sqlite3_mprintf ("idx_%s_%s_parent", tbl, geom);
+		if (strcasecmp (table, table_name) == 0)
+		    found = 1;
+		sqlite3_free (table_name);
+		table_name = sqlite3_mprintf ("idx_%s_%s_rowid", tbl, geom);
+		if (strcasecmp (table, table_name) == 0)
+		    found = 1;
+		sqlite3_free (table_name);
+	    }
+      }
+    sqlite3_free_table (results);
+    if (found)
+	return 1;
+  end:
+    return 0;
+}
+
+static int
+check_spatialite_table (const char *table)
+{
+/* checking for SpatiaLite / RasterLite2 internal tables */
+    if (strcasecmp (table, "data_licences") == 0)
+	return 1;
+    if (strcasecmp (table, "geometry_columns") == 0)
+	return 1;
+    if (strcasecmp (table, "geometry_columns_time") == 0)
+	return 1;
+    if (strcasecmp (table, "networks") == 0)
+	return 1;
+    if (strcasecmp (table, "postgres_geometry_columns") == 0)
+	return 1;
+    if (strcasecmp (table, "raster_coverages") == 0)
+	return 1;
+    if (strcasecmp (table, "raster_coverages_keyword") == 0)
+	return 1;
+    if (strcasecmp (table, "raster_coverages_srid") == 0)
+	return 1;
+    if (strcasecmp (table, "spatial_ref_sys") == 0)
+	return 1;
+    if (strcasecmp (table, "spatial_ref_sys_aux") == 0)
+	return 1;
+    if (strcasecmp (table, "spatialite_history") == 0)
+	return 1;
+    if (strcasecmp (table, "stored_procedures") == 0)
+	return 1;
+    if (strcasecmp (table, "stored_variables") == 0)
+	return 1;
+    if (strcasecmp (table, "tmp_vector_coverages") == 0)
+	return 1;
+    if (strcasecmp (table, "topologies") == 0)
+	return 1;
+    if (strcasecmp (table, "vector_coverages") == 0)
+	return 1;
+    if (strcasecmp (table, "vector_coverages_keyword") == 0)
+	return 1;
+    if (strcasecmp (table, "vector_coverages_ref_sys") == 0)
+	return 1;
+    if (strcasecmp (table, "vector_coverages_srid") == 0)
+	return 1;
+    if (strcasecmp (table, "views_geometry_columns") == 0)
+	return 1;
+    if (strcasecmp (table, "virts_geometry_columns") == 0)
+	return 1;
+    if (strcasecmp (table, "geometry_columns_auth") == 0)
+	return 1;
+    if (strcasecmp (table, "geometry_columns_field_infos") == 0)
+	return 1;
+    if (strcasecmp (table, "geometry_columns_statistics") == 0)
+	return 1;
+    if (strcasecmp (table, "sql_statement_log") == 0)
+	return 1;
+    if (strcasecmp (table, "vector_layers_auth") == 0)
+	return 1;
+    if (strcasecmp (table, "vector_layers_field_infos") == 0)
+	return 1;
+    if (strcasecmp (table, "vector_layers_statistics") == 0)
+	return 1;
+    if (strcasecmp (table, "views_geometry_columns_auth") == 0)
+	return 1;
+    if (strcasecmp (table, "views_geometry_columns_field_infos") == 0)
+	return 1;
+    if (strcasecmp (table, "views_geometry_columns_statistics") == 0)
+	return 1;
+    if (strcasecmp (table, "virts_geometry_columns_auth") == 0)
+	return 1;
+    if (strcasecmp (table, "virts_geometry_columns_field_infos") == 0)
+	return 1;
+    if (strcasecmp (table, "virts_geometry_columns_statistics") == 0)
+	return 1;
+    if (strcasecmp (table, "SE_external_graphics") == 0)
+	return 1;
+    if (strcasecmp (table, "SE_fonts") == 0)
+	return 1;
+    if (strcasecmp (table, "SE_group_styles") == 0)
+	return 1;
+    if (strcasecmp (table, "SE_raster_styled_layers") == 0)
+	return 1;
+    if (strcasecmp (table, "SE_styled_group_refs") == 0)
+	return 1;
+    if (strcasecmp (table, "SE_vector_styled_layers") == 0)
+	return 1;
+    if (strcasecmp (table, "SE_vector_styles") == 0)
+	return 1;
+    if (strcasecmp (table, "iso_metadata") == 0)
+	return 1;
+    if (strcasecmp (table, "iso_metadata_reference") == 0)
+	return 1;
+    if (strcasecmp (table, "KNN") == 0)
+	return 1;
+    if (strcasecmp (table, "SpatialIndex") == 0)
+	return 1;
+    return 0;
+}
+
+static int
+do_check_geotable (sqlite3 * sqlite, const char *prefix, const char *table)
+{
+/* checking for a registered GeoTable */
+    char *xprefix;
+    char *sql;
+    int ret;
+    int i;
+    char **results;
+    int rows;
+    int columns;
+    int is_geotable = 0;
+
+    if (prefix == NULL)
+	prefix = "main";
+
+/* parsing the SQL CREATE statement */
+    xprefix = gaiaDoubleQuotedSql (prefix);
+    sql =
+	sqlite3_mprintf
+	("SELECT Count(*) FROM \"%s\".geometry_columns WHERE Upper(f_table_name) = Upper(%Q)",
+	 xprefix, table);
+    free (xprefix);
+    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+	goto end;
+    if (rows < 1)
+	;
+    else
+      {
+	  for (i = 1; i <= rows; i++)
+	    {
+		const char *count = results[(i * columns) + 0];
+		if (atoi (count) > 0)
+		    is_geotable = 1;
+	    }
+      }
+    sqlite3_free_table (results);
+    if (is_geotable)
+	return 1;
+  end:
+    return 0;
+}
+
+static int
+check_virtual_table (sqlite3 * sqlite, const char *prefix, const char *table)
+{
+/* checking for Virtual Tables */
+    char *xprefix;
+    char *sql;
+    int ret;
+    int i;
+    char **results;
+    int rows;
+    int columns;
+    int is_virtual = 0;
+
+    if (prefix == NULL)
+	prefix = "main";
+
+/* parsing the SQL CREATE statement */
+    xprefix = gaiaDoubleQuotedSql (prefix);
+    sql =
+	sqlite3_mprintf ("SELECT sql FROM \"%s\".sqlite_master "
+			 "WHERE type = 'table' AND Upper(name) = Upper(%Q)",
+			 xprefix, table);
+    free (xprefix);
+    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+	goto end;
+    if (rows < 1)
+	;
+    else
+      {
+	  for (i = 1; i <= rows; i++)
+	    {
+		int step = 0;
+		char *token1 = NULL;
+		char *token2 = NULL;
+		char *token3 = NULL;
+		char *token4 = NULL;
+		char *token5 = NULL;
+		const char *sql = results[(i * columns) + 0];
+		const char *ps = sql;
+		const char *pe;
+
+		while (*ps != '\0')
+		  {
+		      while (1)
+			{
+			    /* consuming leading blanks */
+			    if (*ps == '\0')
+				goto mismatch;
+			    if (*ps == ' ' || *ps == '\t' || *ps == '\n'
+				|| *ps == '\r')
+			      {
+				  ps++;
+				  continue;
+			      }
+			    break;
+			}
+		      pe = ps;
+		      while (1)
+			{
+			    /* searching the next name delimiter */
+			    if (*pe == ' ' || *pe == '\t' || *pe == '\n'
+				|| *pe == '\r' || *pe == '\0')
+				break;
+			    pe++;
+			}
+		      switch (step)
+			{
+			case 0:
+			    token1 = malloc ((pe - ps) + 1);
+			    memcpy (token1, ps, (pe - ps));
+			    *(token1 + (pe - ps)) = '\0';
+			    step++;
+			    ps = pe + 1;
+			    break;
+			case 1:
+			    token2 = malloc ((pe - ps) + 1);
+			    memcpy (token2, ps, (pe - ps));
+			    *(token2 + (pe - ps)) = '\0';
+			    step++;
+			    ps = pe + 1;
+			    break;
+			case 2:
+			    token3 = malloc ((pe - ps) + 1);
+			    memcpy (token3, ps, (pe - ps));
+			    *(token3 + (pe - ps)) = '\0';
+			    step++;
+			    ps = pe + 1;
+			    break;
+			case 3:
+			    token4 = malloc ((pe - ps) + 1);
+			    memcpy (token4, ps, (pe - ps));
+			    *(token4 + (pe - ps)) = '\0';
+			    step++;
+			    ps = pe + 1;
+			    break;
+			case 4:
+			    token5 = malloc ((pe - ps) + 1);
+			    memcpy (token5, ps, (pe - ps));
+			    *(token5 + (pe - ps)) = '\0';
+			    step++;
+			    ps = pe + 1;
+			    break;
+			};
+		      if (step >= 5)
+			  break;
+		  }
+		if (token1 == NULL || token2 == NULL || token3 == NULL
+		    || token4 == NULL || token5 == NULL)
+		    ;
+		else
+		  {
+		      char *xtable = gaiaDoubleQuotedSql (table);
+		      char *qtable = sqlite3_mprintf ("\"%s\"", xtable);
+		      free (xtable);
+		      if (strcasecmp (token1, "CREATE") == 0 &&
+			  strcasecmp (token2, "VIRTUAL") == 0 &&
+			  strcasecmp (token3, "TABLE") == 0 &&
+			  (strcasecmp (token4, table) == 0
+			   || strcasecmp (token4, qtable) == 0)
+			  && strcasecmp (token5, "USING") == 0)
+			  is_virtual = 1;
+		      sqlite3_free (qtable);
+		      free (token1);
+		      free (token2);
+		      free (token3);
+		      free (token4);
+		      free (token5);
+		  }
+	    }
+      }
+    sqlite3_free_table (results);
+    if (is_virtual)
+	return 1;
+    goto end;
+  mismatch:
+    sqlite3_free_table (results);
   end:
     return 0;
 }
@@ -2393,15 +4112,21 @@ SPATIALITE_DECLARE int
 gaiaDropTableEx3 (sqlite3 * sqlite, const char *prefix, const char *table,
 		  int transaction, char **error_message)
 {
-/* dropping a Spatial Table and any other related stuff */
+/*
+/ DEPRECATED !!!!
+/ use gaiaDropTable5() as a full replacement
+/
+/ dropping a Spatial Table and any other related stuff 
+*/
     int ret;
-    struct drop_params aux;
+    struct table_params aux;
 
 /* initializing the aux params */
     aux.rtrees = NULL;
     aux.n_rtrees = 0;
     aux.is_view = 0;
     aux.ok_geometry_columns = 0;
+    aux.ok_geometry_columns_time = 0;
     aux.ok_views_geometry_columns = 0;
     aux.ok_virts_geometry_columns = 0;
     aux.ok_geometry_columns_auth = 0;
@@ -2419,6 +4144,10 @@ gaiaDropTableEx3 (sqlite3 * sqlite, const char *prefix, const char *table,
     aux.ok_layer_params = 0;
     aux.ok_layer_sub_classes = 0;
     aux.ok_layer_table_layout = 0;
+    aux.ok_vector_coverages = 0;
+    aux.ok_vector_coverages_keyword = 0;
+    aux.ok_vector_coverages_srid = 0;
+    aux.ok_se_vector_styled_layers = 0;
     aux.error_message = NULL;
 
     if (error_message != NULL)
@@ -2437,10 +4166,19 @@ gaiaDropTableEx3 (sqlite3 * sqlite, const char *prefix, const char *table,
       }
 
 /* checking the actual DB configuration */
-    if (!check_drop_layout (sqlite, prefix, table, &aux))
+    if (!check_table_layout (sqlite, prefix, table, &aux))
 	goto rollback;
-/* avoiding to drop TopoGeo and TopoNet tables */
+/* avoiding to drop TopoGeo or TopoNet tables */
     if (check_topology_table (sqlite, prefix, table))
+	goto rollback;
+/* avoiding to drop Raster Coverage tables */
+    if (check_raster_table (sqlite, prefix, table))
+	goto rollback;
+/* avoiding to drop R*Tree internal tables */
+    if (check_rtree_internal_table (sqlite, prefix, table))
+	goto rollback;
+/* avoiding to drop SpatiaLite own tables */
+    if (check_spatialite_table (table))
 	goto rollback;
 /* recursively dropping any depending View */
     if (!do_drop_sub_view (sqlite, prefix, table, &aux))
@@ -2470,7 +4208,6 @@ gaiaDropTableEx3 (sqlite3 * sqlite, const char *prefix, const char *table,
     return 1;
 
   rollback:
-
     if (transaction)
       {
 	  /* invalidating the still pending transaction */
@@ -2494,9 +4231,815 @@ gaiaDropTableEx3 (sqlite3 * sqlite, const char *prefix, const char *table,
 	      *error_message = aux.error_message;
 	  else
 	    {
-		spatialite_e ("DropTable error: %s\r", aux.error_message);
+		spatialite_e ("DropGeoTable error: %s\r", aux.error_message);
 		sqlite3_free (aux.error_message);
 	    }
       }
+    return 0;
+}
+
+SPATIALITE_DECLARE int
+gaiaDropTable5 (sqlite3 * sqlite,
+		const char *prefix, const char *table, char **error_message)
+{
+/* dropping a Spatial Table and any other related stuff */
+    int ret;
+    struct table_params aux;
+
+/* initializing the aux params */
+    aux.rtrees = NULL;
+    aux.n_rtrees = 0;
+    aux.is_view = 0;
+    aux.ok_geometry_columns = 0;
+    aux.ok_geometry_columns_time = 0;
+    aux.ok_views_geometry_columns = 0;
+    aux.ok_virts_geometry_columns = 0;
+    aux.ok_geometry_columns_auth = 0;
+    aux.ok_geometry_columns_field_infos = 0;
+    aux.ok_geometry_columns_statistics = 0;
+    aux.ok_views_geometry_columns_auth = 0;
+    aux.ok_views_geometry_columns_field_infos = 0;
+    aux.ok_views_geometry_columns_statistics = 0;
+    aux.ok_virts_geometry_columns_auth = 0;
+    aux.ok_virts_geometry_columns_field_infos = 0;
+    aux.ok_virts_geometry_columns_statistics = 0;
+    aux.ok_layer_statistics = 0;
+    aux.ok_views_layer_statistics = 0;
+    aux.ok_virts_layer_statistics = 0;
+    aux.ok_layer_params = 0;
+    aux.ok_layer_sub_classes = 0;
+    aux.ok_layer_table_layout = 0;
+    aux.ok_vector_coverages = 0;
+    aux.ok_vector_coverages_keyword = 0;
+    aux.ok_vector_coverages_srid = 0;
+    aux.ok_se_vector_styled_layers = 0;
+    aux.error_message = NULL;
+
+    if (error_message != NULL)
+	*error_message = NULL;
+
+    if (prefix == NULL)
+	prefix = "main";
+    if (table == NULL)
+	goto invalid_arg;
+
+/* checking for an existing table */
+    if (!do_check_existing (sqlite, prefix, table, 0))
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf ("not existing table [%s.%s]", prefix, table);
+	  return 0;
+      }
+/* avoiding to drop TopoGeo or TopoNet tables */
+    if (check_topology_table (sqlite, prefix, table))
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf ("forbidden: Topology internal Table [%s.%s]",
+				   prefix, table);
+	  return 0;
+      }
+/* avoiding to drop Raster Coverage tables */
+    if (check_raster_table (sqlite, prefix, table))
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf
+		  ("forbidden: Raster Coverage internal Table [%s.%s]", prefix,
+		   table);
+	  return 0;
+      }
+/* avoiding to drop R*Tree internal tables */
+    if (check_rtree_internal_table (sqlite, prefix, table))
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf
+		  ("forbidden: R*Tree (Spatial Index) internal Table [%s.%s]",
+		   prefix, table);
+	  return 0;
+      }
+/* avoiding to drop SpatiaLite own tables */
+    if (check_spatialite_table (table))
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf
+		  ("forbidden: SpatiaLite internal Table [%s.%s]", prefix,
+		   table);
+	  return 0;
+      }
+
+/* checking the actual DB configuration */
+    if (!check_table_layout (sqlite, prefix, table, &aux))
+      {
+	  if (error_message)
+	      *error_message = sqlite3_mprintf ("unable to get the DB layout");
+	  return 0;
+      }
+
+/* the whole operation is a single transaction */
+    ret = sqlite3_exec (sqlite, "SAVEPOINT drop_table", NULL, NULL, NULL);
+    if (ret != SQLITE_OK)
+      {
+	  if (error_message)
+	      *error_message = sqlite3_mprintf ("unable to set a SAVEPOINT");
+	  return 0;
+      }
+    if (!do_drop_table5 (sqlite, prefix, table, &aux, error_message))
+	goto rollback;
+
+    if (aux.rtrees)
+      {
+	  /* dropping old R*Trees */
+	  int i;
+	  for (i = 0; i < aux.n_rtrees; i++)
+	    {
+		if (*(aux.rtrees + i) != NULL)
+		  {
+		      if (!do_drop_rtree
+			  (sqlite, prefix, *(aux.rtrees + i), error_message))
+			  goto rollback;
+		  }
+	    }
+      }
+    if (aux.rtrees)
+      {
+	  /* memory cleanup - rtrees */
+	  int i;
+	  for (i = 0; i < aux.n_rtrees; i++)
+	    {
+		if (*(aux.rtrees + i) != NULL)
+		    free (*(aux.rtrees + i));
+	    }
+	  free (aux.rtrees);
+      }
+
+/* confirming the transaction */
+    ret =
+	sqlite3_exec (sqlite, "RELEASE SAVEPOINT drop_table", NULL, NULL, NULL);
+    if (ret != SQLITE_OK)
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf ("unable to RELEASE the SAVEPOINT");
+	  return 0;
+      }
+    return 1;
+
+  invalid_arg:
+    if (error_message)
+	*error_message = sqlite3_mprintf ("invalid argument.");
+    return 0;
+
+  rollback:
+    if (aux.rtrees)
+      {
+	  /* memory cleanup - rtrees */
+	  int i;
+	  for (i = 0; i < aux.n_rtrees; i++)
+	    {
+		if (*(aux.rtrees + i) != NULL)
+		    free (*(aux.rtrees + i));
+	    }
+	  free (aux.rtrees);
+      }
+    sqlite3_exec (sqlite, "ROLLBACK TO SAVEPOINT drop_table", NULL, NULL, NULL);
+    sqlite3_exec (sqlite, "RELEASE SAVEPOINT drop_table", NULL, NULL, NULL);
+    return 0;
+}
+
+SPATIALITE_DECLARE int
+gaiaRenameTable (sqlite3 * sqlite,
+		 const char *prefix,
+		 const char *old_name,
+		 const char *new_name, char **error_message)
+{
+/* renaming a Spatial Table and any other related stuff */
+    int ret;
+    struct table_params aux;
+    int fk_on = 1;
+    char **results;
+    int rows;
+    int columns;
+    int i;
+
+/* initializing the aux params */
+    aux.rtrees = NULL;
+    aux.n_rtrees = 0;
+    aux.is_view = 0;
+    aux.ok_geometry_columns = 0;
+    aux.ok_geometry_columns_time = 0;
+    aux.ok_views_geometry_columns = 0;
+    aux.ok_virts_geometry_columns = 0;
+    aux.ok_geometry_columns_auth = 0;
+    aux.ok_geometry_columns_field_infos = 0;
+    aux.ok_geometry_columns_statistics = 0;
+    aux.ok_views_geometry_columns_auth = 0;
+    aux.ok_views_geometry_columns_field_infos = 0;
+    aux.ok_views_geometry_columns_statistics = 0;
+    aux.ok_virts_geometry_columns_auth = 0;
+    aux.ok_virts_geometry_columns_field_infos = 0;
+    aux.ok_virts_geometry_columns_statistics = 0;
+    aux.ok_layer_statistics = 0;
+    aux.ok_views_layer_statistics = 0;
+    aux.ok_virts_layer_statistics = 0;
+    aux.ok_layer_params = 0;
+    aux.ok_layer_sub_classes = 0;
+    aux.ok_layer_table_layout = 0;
+    aux.ok_vector_coverages = 0;
+    aux.ok_vector_coverages_keyword = 0;
+    aux.ok_vector_coverages_srid = 0;
+    aux.ok_se_vector_styled_layers = 0;
+    aux.error_message = NULL;
+
+    if (error_message != NULL)
+	*error_message = NULL;
+
+/* checking the version of SQLite */
+    if (sqlite3_libversion_number () < 3025000)
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf
+		  ("libsqlite 3.25 or later is strictly required");
+	  return 0;
+      }
+    if (prefix == NULL)
+	prefix = "main";
+    if (old_name == NULL)
+	goto invalid_arg;
+    if (new_name == NULL)
+	goto invalid_arg;
+
+/* checking for Views */
+    if (do_check_view (sqlite, prefix, old_name))
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf
+		  ("forbidden: can't rename a View, only Tables are supported [%s.%s]",
+		   prefix, old_name);
+	  return 0;
+      }
+/* checking for an existing table */
+    if (!do_check_existing (sqlite, prefix, old_name, 1))
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf ("not existing table [%s.%s]", prefix,
+				   old_name);
+	  return 0;
+      }
+    if (strcasecmp (prefix, "main") != 0)
+      {
+	  /* checking for a GeoTable not in the MAIN DB */
+	  if (do_check_geotable (sqlite, prefix, old_name))
+	    {
+		if (error_message)
+		    *error_message =
+			sqlite3_mprintf
+			("forbidden: Spatial Table not in the MAIN DB [%s.%s]",
+			 prefix, old_name);
+		return 0;
+	    }
+      }
+/* checking if a table with the new-name already exists */
+    if (do_check_existing (sqlite, prefix, new_name, 0))
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf ("already existing table [%s.%s]", prefix,
+				   new_name);
+	  return 0;
+      }
+/* avoiding to rename TopoGeo or TopoNet tables */
+    if (check_topology_table (sqlite, prefix, old_name))
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf ("forbidden: Topology internal Table [%s.%s]",
+				   prefix, old_name);
+	  return 0;
+      }
+/* avoiding to rename Raster Coverage tables */
+    if (check_raster_table (sqlite, prefix, old_name))
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf
+		  ("forbidden: Raster Coverage internal Table [%s.%s]", prefix,
+		   old_name);
+	  return 0;
+      }
+/* avoiding to rename R*Tree internal tables */
+    if (check_rtree_internal_table (sqlite, prefix, old_name))
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf
+		  ("forbidden: R*Tree (Spatial Index) internal Table [%s.%s]",
+		   prefix, old_name);
+	  return 0;
+      }
+/* avoiding to rename Virtual Tables */
+    if (check_virtual_table (sqlite, prefix, old_name))
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf
+		  ("forbidden: can't rename a Virtual Table [%s.%s]", prefix,
+		   old_name);
+	  return 0;
+      }
+/* avoiding to rename SpatiaLite own tables */
+    if (check_spatialite_table (old_name))
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf
+		  ("forbidden: SpatiaLite internal Table [%s.%s]", prefix,
+		   old_name);
+	  return 0;
+      }
+
+/* checking the actual DB configuration */
+    if (!check_table_layout (sqlite, prefix, old_name, &aux))
+      {
+	  if (error_message)
+	      *error_message = sqlite3_mprintf ("unable to get the DB layout");
+	  return 0;
+      }
+
+/* saving the current FKs mode */
+    ret =
+	sqlite3_get_table (sqlite, "PRAGMA foreign_keys", &results, &rows,
+			   &columns, NULL);
+    if (ret == SQLITE_OK)
+      {
+	  if (rows < 1)
+	      ;
+	  else
+	    {
+		for (i = 1; i <= rows; i++)
+		    fk_on = atoi (results[(i * columns) + 0]);
+	    }
+	  sqlite3_free_table (results);
+      }
+    if (fk_on)
+      {
+	  /* disabling FKs constraints */
+	  ret =
+	      sqlite3_exec (sqlite, "PRAGMA foreign_keys = 0", NULL, NULL,
+			    NULL);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message)
+		    *error_message =
+			sqlite3_mprintf ("unable to disable FKs constraints");
+		return 0;
+	    }
+      }
+
+/* starting a transaction */
+    ret = sqlite3_exec (sqlite, "SAVEPOINT rename_table_pre", NULL, NULL, NULL);
+    if (ret != SQLITE_OK)
+      {
+	  if (error_message)
+	      *error_message = sqlite3_mprintf ("unable to set a SAVEPOINT");
+	  return 0;
+      }
+    if (!do_rename_table_pre
+	(sqlite, prefix, old_name, new_name, &aux, error_message))
+	goto rollback;
+
+    if (aux.rtrees)
+      {
+	  /* dropping old R*Trees */
+	  int i;
+	  for (i = 0; i < aux.n_rtrees; i++)
+	    {
+		if (*(aux.rtrees + i) != NULL)
+		  {
+		      if (!do_drop_rtree
+			  (sqlite, prefix, *(aux.rtrees + i), error_message))
+			  goto rollback;
+		  }
+	    }
+      }
+    if (aux.rtrees)
+      {
+	  /* memory cleanup - rtrees */
+	  int i;
+	  for (i = 0; i < aux.n_rtrees; i++)
+	    {
+		if (*(aux.rtrees + i) != NULL)
+		    free (*(aux.rtrees + i));
+	    }
+	  free (aux.rtrees);
+      }
+
+/* confirming the transaction */
+    ret =
+	sqlite3_exec (sqlite, "RELEASE SAVEPOINT rename_table_pre", NULL, NULL,
+		      NULL);
+    if (ret != SQLITE_OK)
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf ("unable to RELEASE the SAVEPOINT");
+	  return 0;
+      }
+
+    if (fk_on)
+      {
+	  /* re-enabling FKs constraints */
+	  ret =
+	      sqlite3_exec (sqlite, "PRAGMA foreign_keys = 1", NULL, NULL,
+			    NULL);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message)
+		    *error_message =
+			sqlite3_mprintf ("unable to re-enable FKs constraints");
+		return 0;
+	    }
+      }
+
+/* and finally renaming the table itself */
+    ret =
+	sqlite3_exec (sqlite, "SAVEPOINT rename_table_post", NULL, NULL, NULL);
+    if (ret != SQLITE_OK)
+      {
+	  if (error_message)
+	      *error_message = sqlite3_mprintf ("unable to set a SAVEPOINT");
+	  return 0;
+      }
+    if (!do_rename_table_post
+	(sqlite, prefix, old_name, new_name, error_message))
+	goto rollback_post;
+    ret =
+	sqlite3_exec (sqlite, "RELEASE SAVEPOINT rename_table_post", NULL, NULL,
+		      NULL);
+    if (ret != SQLITE_OK)
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf ("unable to RELEASE the SAVEPOINT");
+	  return 0;
+      }
+    return 1;
+
+  invalid_arg:
+    if (error_message)
+	*error_message = sqlite3_mprintf ("invalid argument.");
+    return 0;
+
+  rollback:
+    if (aux.rtrees)
+      {
+	  /* memory cleanup - rtrees */
+	  int i;
+	  for (i = 0; i < aux.n_rtrees; i++)
+	    {
+		if (*(aux.rtrees + i) != NULL)
+		    free (*(aux.rtrees + i));
+	    }
+	  free (aux.rtrees);
+      }
+    sqlite3_exec (sqlite, "ROLLBACK TO SAVEPOINT rename_table_pre", NULL,
+		  NULL, NULL);
+    sqlite3_exec (sqlite, "RELEASE SAVEPOINT rename_table_pre", NULL, NULL,
+		  NULL);
+    return 0;
+
+  rollback_post:
+    sqlite3_exec (sqlite, "ROLLBACK TO SAVEPOINT rename_table_post", NULL,
+		  NULL, NULL);
+    sqlite3_exec (sqlite, "RELEASE SAVEPOINT rename_table_post", NULL, NULL,
+		  NULL);
+    return 0;
+}
+
+SPATIALITE_DECLARE int
+gaiaRenameColumn (sqlite3 * sqlite,
+		  const char *prefix,
+		  const char *table,
+		  const char *old_name,
+		  const char *new_name, char **error_message)
+{
+/* renaming a Spatial Table's Column and any other related stuff */
+    int ret;
+    struct table_params aux;
+    int fk_on = 1;
+    char **results;
+    int rows;
+    int columns;
+    int i;
+
+/* initializing the aux params */
+    aux.rtrees = NULL;
+    aux.n_rtrees = 0;
+    aux.is_view = 0;
+    aux.ok_geometry_columns = 0;
+    aux.ok_geometry_columns_time = 0;
+    aux.ok_views_geometry_columns = 0;
+    aux.ok_virts_geometry_columns = 0;
+    aux.ok_geometry_columns_auth = 0;
+    aux.ok_geometry_columns_field_infos = 0;
+    aux.ok_geometry_columns_statistics = 0;
+    aux.ok_views_geometry_columns_auth = 0;
+    aux.ok_views_geometry_columns_field_infos = 0;
+    aux.ok_views_geometry_columns_statistics = 0;
+    aux.ok_virts_geometry_columns_auth = 0;
+    aux.ok_virts_geometry_columns_field_infos = 0;
+    aux.ok_virts_geometry_columns_statistics = 0;
+    aux.ok_layer_statistics = 0;
+    aux.ok_views_layer_statistics = 0;
+    aux.ok_virts_layer_statistics = 0;
+    aux.ok_layer_params = 0;
+    aux.ok_layer_sub_classes = 0;
+    aux.ok_layer_table_layout = 0;
+    aux.ok_vector_coverages = 0;
+    aux.ok_vector_coverages_keyword = 0;
+    aux.ok_vector_coverages_srid = 0;
+    aux.ok_se_vector_styled_layers = 0;
+    aux.error_message = NULL;
+
+    if (error_message != NULL)
+	*error_message = NULL;
+
+/* checking the version of SQLite */
+    if (sqlite3_libversion_number () < 3025000)
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf
+		  ("libsqlite 3.25 or later is strictly required");
+	  return 0;
+      }
+    if (prefix == NULL)
+	prefix = "main";
+    if (old_name == NULL)
+	goto invalid_arg;
+    if (new_name == NULL)
+	goto invalid_arg;
+
+/* checking for Views */
+    if (do_check_view (sqlite, prefix, table))
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf
+		  ("forbidden: can't rename a View Column, only Table Columns are supported [%s.%s]",
+		   prefix, table);
+	  return 0;
+      }
+/* checking for an existing table */
+    if (!do_check_existing (sqlite, prefix, table, 1))
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf ("not existing table [%s.%s]", prefix, table);
+	  return 0;
+      }
+/* checking for an existing column */
+    if (!do_check_existing_column (sqlite, prefix, table, old_name))
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf ("not existing column [%s.%s] %s", prefix,
+				   table, old_name);
+	  return 0;
+      }
+    if (strcasecmp (prefix, "main") != 0)
+      {
+	  /* checking for a GeoTable not in the MAIN DB */
+	  if (do_check_geotable (sqlite, prefix, table))
+	    {
+		if (error_message)
+		    *error_message =
+			sqlite3_mprintf
+			("forbidden: Spatial Table not in the MAIN DB [%s.%s]",
+			 prefix, table);
+		return 0;
+	    }
+      }
+/* checking if a column with the new-name is already defined */
+    if (do_check_existing_column (sqlite, prefix, table, new_name))
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf ("column already defined [%s.%s] %s", prefix,
+				   table, new_name);
+	  return 0;
+      }
+/* avoiding to rename columns in TopoGeo or TopoNet tables */
+    if (check_topology_table (sqlite, prefix, table))
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf ("forbidden: Topology internal Table [%s.%s]",
+				   prefix, old_name);
+	  return 0;
+      }
+/* avoiding to rename columns in Raster Coverage tables */
+    if (check_raster_table (sqlite, prefix, table))
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf
+		  ("forbidden: Raster Coverage internal Table [%s.%s]", prefix,
+		   old_name);
+	  return 0;
+      }
+/* avoiding to rename columns in R*Tree internal tables */
+    if (check_rtree_internal_table (sqlite, prefix, table))
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf
+		  ("forbidden: R*Tree (Spatial Index) internal Table - %s.%s",
+		   prefix, old_name);
+	  return 0;
+      }
+/* avoiding to rename Virtual Table Columns */
+    if (check_virtual_table (sqlite, prefix, table))
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf
+		  ("forbidden: can't rename a Virtual Table Column [%s.%s]",
+		   prefix, old_name);
+	  return 0;
+      }
+
+/* checking the actual DB configuration */
+    if (!check_table_layout (sqlite, prefix, table, &aux))
+      {
+	  if (error_message)
+	      *error_message = sqlite3_mprintf ("unable to get the DB layout");
+	  return 0;
+      }
+/* avoiding to rename columns in SpatiaLite own tables */
+    if (check_spatialite_table (table))
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf
+		  ("forbidden: SpatiaLite internal Table [%s.%s]", prefix,
+		   old_name);
+	  return 0;
+      }
+
+/* saving the current FKs mode */
+    ret =
+	sqlite3_get_table (sqlite, "PRAGMA foreign_keys", &results, &rows,
+			   &columns, NULL);
+    if (ret == SQLITE_OK)
+      {
+	  if (rows < 1)
+	      ;
+	  else
+	    {
+		for (i = 1; i <= rows; i++)
+		    fk_on = atoi (results[(i * columns) + 0]);
+	    }
+	  sqlite3_free_table (results);
+      }
+    if (fk_on)
+      {
+	  /* disabling FKs constraints */
+	  ret =
+	      sqlite3_exec (sqlite, "PRAGMA foreign_keys = 0", NULL, NULL,
+			    NULL);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message)
+		    *error_message =
+			sqlite3_mprintf ("unable to disable FKs constraints");
+		return 0;
+	    }
+      }
+
+/* the whole operation is a single transaction */
+    ret =
+	sqlite3_exec (sqlite, "SAVEPOINT rename_column_pre", NULL, NULL, NULL);
+    if (ret != SQLITE_OK)
+      {
+	  if (error_message)
+	      *error_message = sqlite3_mprintf ("unable to set a SAVEPOINT");
+	  return 0;
+      }
+    if (!do_rename_column_pre
+	(sqlite, prefix, table, old_name, new_name, &aux, error_message))
+	goto rollback;
+
+    if (aux.rtrees)
+      {
+	  /* dropping old R*Trees */
+	  int i;
+	  for (i = 0; i < aux.n_rtrees; i++)
+	    {
+		if (*(aux.rtrees + i) != NULL)
+		  {
+		      if (!do_drop_rtree
+			  (sqlite, prefix, *(aux.rtrees + i), error_message))
+			  goto rollback;
+		  }
+	    }
+      }
+    if (aux.rtrees)
+      {
+	  /* memory cleanup - rtrees */
+	  int i;
+	  for (i = 0; i < aux.n_rtrees; i++)
+	    {
+		if (*(aux.rtrees + i) != NULL)
+		    free (*(aux.rtrees + i));
+	    }
+	  free (aux.rtrees);
+      }
+
+/* confirming the transaction */
+    ret =
+	sqlite3_exec (sqlite, "RELEASE SAVEPOINT rename_column_pre", NULL, NULL,
+		      NULL);
+    if (ret != SQLITE_OK)
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf ("unable to RELEASE the SAVEPOINT");
+	  return 0;
+      }
+
+    if (fk_on)
+      {
+	  /* re-enabling FKs constraints */
+	  ret =
+	      sqlite3_exec (sqlite, "PRAGMA foreign_keys = 1", NULL, NULL,
+			    NULL);
+	  if (ret != SQLITE_OK)
+	    {
+		if (error_message)
+		    *error_message =
+			sqlite3_mprintf ("unable to re-enable FKs constraints");
+		return 0;
+	    }
+      }
+
+/* renaming the column itself */
+    ret =
+	sqlite3_exec (sqlite, "SAVEPOINT rename_column_post", NULL, NULL, NULL);
+    if (ret != SQLITE_OK)
+      {
+	  if (error_message)
+	      *error_message = sqlite3_mprintf ("unable to set a SAVEPOINT");
+	  return 0;
+      }
+    if (!do_rename_column_post
+	(sqlite, prefix, table, old_name, new_name, error_message))
+	goto rollback_post;
+    ret =
+	sqlite3_exec (sqlite, "RELEASE SAVEPOINT rename_column_post", NULL,
+		      NULL, NULL);
+    if (ret != SQLITE_OK)
+      {
+	  if (error_message)
+	      *error_message =
+		  sqlite3_mprintf ("unable to RELEASE the SAVEPOINT");
+	  return 0;
+      }
+    return 1;
+
+  invalid_arg:
+    if (error_message)
+	*error_message = sqlite3_mprintf ("invalid argument.");
+    return 0;
+
+  rollback:
+    if (aux.rtrees)
+      {
+	  /* memory cleanup - rtrees */
+	  int i;
+	  for (i = 0; i < aux.n_rtrees; i++)
+	    {
+		if (*(aux.rtrees + i) != NULL)
+		    free (*(aux.rtrees + i));
+	    }
+	  free (aux.rtrees);
+      }
+    sqlite3_exec (sqlite, "ROLLBACK TO SAVEPOINT rename_column_pre", NULL,
+		  NULL, NULL);
+    sqlite3_exec (sqlite, "RELEASE SAVEPOINT rename_column_pre", NULL, NULL,
+		  NULL);
+    return 0;
+
+  rollback_post:
+    sqlite3_exec (sqlite, "ROLLBACK TO SAVEPOINT rename_column_post", NULL,
+		  NULL, NULL);
+    sqlite3_exec (sqlite, "RELEASE SAVEPOINT rename_column_post", NULL, NULL,
+		  NULL);
     return 0;
 }

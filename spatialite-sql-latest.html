@@ -1303,8 +1303,8 @@ a Geometry will be returned representing the MBR for the corresponding GARS area
 				<td>ST_NDims( geom <i>Geometry</i> ) : <i>Integer</i></td>
 				<td></td>
 				<td align="center" bgcolor="#d0f0d0">base</td>
-				<td>returns the number of dimensions used by the geometric object as:<br>
-					<b>2</b>, <b>3</b> or <b>4</b></td></tr>
+				<td>returns the dimension number used by the geometric object as:<br>
+					<b>2</b>, <b>3</b> or <b>4</b> respectively for <b>XY</b>, <b>XYZ</b> and <b>XYZM</b> (<b>3</b> for <b>XYM</b>)</td></tr>
 			<tr><td><b>Is3D</b></td>
 				<td>ST_Is3D( geom <i>Geometry</i> ) : <i>Integer</i></td>
 				<td></td>
@@ -2252,7 +2252,7 @@ This function only supports Long/Lat coordinates, and will return NULL for any p
 					ST_Buffer( geom <i>Geometry</i> , dist <i>Double precision</i> [ , quadrantsegments <i>Integer</i> ] ) : <i>Geometry</i></td>
 				<td align="center" bgcolor="#d0f0d0">X</td>
 				<td align="center" bgcolor="#f0d0d0">GEOS</td>
-				<td>return a geometric object defined by buffering a distance d around geom, 
+				<td>return a geometric object defined by buffering a distance around the geom, 
 					where dist is in the distance units for the Spatial Reference of geom.<hr>
 					the optional <b>quadrantsegments</b> argument specifies the number of segments used to approximate a quarter circle (default is 30).</td></tr>
 			<tr><td><b>ConvexHull</b></td>
@@ -3077,7 +3077,7 @@ Negative angle = counterclockwise rotation.</td></tr>
 the return type is Integer, with a return value of 1 for TRUE or 0 for FALSE
 <ul>
 	<li>if the <i>optional</i> argument <b>transaction</b> is set to <b>TRUE</b> the whole operation will be handled as a single <i>Transaction</i> (faster): the default setting is <b>transaction=FALSE</b> (slower, but safer).</li>
-	<li>if the <i>optional</i> argument <b>mode</b> is not specified then any possible ESPG SRID definition will be inserted into the <b>spatial_ref_sys</b> table.</li>
+	<li>if the <i>optional</i> argument <b>mode</b> is not specified then all possible ESPG SRID definitions will be inserted into the <b>spatial_ref_sys</b> table.</li>
 	<li>if the <b>mode</b> arg <b>'WGS84'</b> (alias <b>'WGS84_ONLY'</b>) is specified, then only WGS84-related EPSG SRIDs will be inserted</li>
 	<li>if the <b>mode</b> arg <b>'NONE'</b> (alias <b>'EMPTY'</b>) is specified, no EPSG SRID will be inserted at all</li>
 </ul></td></tr>
@@ -3129,7 +3129,7 @@ required <u>trigger</u> in order to enforce constraints<hr>
 				<li><b>'XYZM'</b> or <b>4</b>: 3D points, identified by <b>X</b>, <b>Y</b> and <b>Z</b> coordinates. 
 				Each point stores an <b>M</b>-value (<i>measure</i>) as well</li>
 				</ul>
-                                Please note: the <b>dimension</b> argument is optional; anyway, if specified, iy's expected to be consistent with the declared <b>geom_type</b><hr>
+                                Please note: the <b>dimension</b> argument is optional; when specified, if specified, iy's expected to be consistent with the declared <b>geom_type</b><hr>
 the return type is Integer, with a return value of 1 for TRUE or 0 for FALSE<hr>
 the optional 6th arg [<b>not_null</b>] is a non-standard extension required by the peculiar SQLite arch:<ul>
 				<li>if set to <b>0</b> [<i>false</i>], then the Geometry column will accept NULL values as well.
@@ -4920,17 +4920,20 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				    line_max_length <i>Double precision</i> , tolerance <i>Double precision</i> ) : <i>Integer</i></td>
 				<td align="center" bgcolor="#d0f0d0"></td>
 				<td align="center" bgcolor="#f0d0f0">RTTOPO</td>
-				<td colspan="3">Will attempt to import all Geometries from an input GeoTable identified by <i>db-prefix</i>, <i>table-name</i> and <i>column-name</i> into an already existing Topology-Geometry.
+				<td colspan="3">Will attempt to import all Geometries from an input GeoTable identified by <i>db-prefix</i>, <i>table-name</i> and <i>column-name</i> 
+								into an existing Topology-Geometry created with <b>CreateTopology()</b>.
 					<ul>
-						<li><i>db-prefix</i> can be <b>NULL</b>, and in this case the input GeoTable is expected to be located within the <b>"MAIN"</b> database.</li>
-						<li><i>column-name</i> too can be <b>NULL</b>, and in this case the name of the column containing Geometries will be automatically retrieved;
-						if <b>"db"."table"</b> does not contains any Geometry column, or if it contains two or more Geometries an exception will be raised.</li>
-						<li>the input GeoTable must be properly registered and must match both <b>SRID</b> and <b>dimensions</b> declared by the target Topology.</li>
+						<li><i>db-prefix</i> can be <b>NULL</b>. In such a case the input GeoTable is expected to be located within the <b>"MAIN"</b> database, otherwise in the given <b>db-prefix</b> database.</li>
+						<li><i>column-name</i> too can be <b>NULL</b>. In such a case the name of the column containing Geometries will be automatically retrieved;
+						if <b>"db"."table"</b> does not contains any Geometry column, or contains more than one, an exception will be raised.<br>
+						Otherwise the given column name in <b>"db-prefix"."column-name"</b> will be used if it exists.</li>
+						<li>the input GeoTable must be properly registered and must match both the <b>SRID</b> and <b>dimensions</b> declared in the target Topology.</li>
 						<li>this function accepts input Geometries of any class: <b>Point</b>, <b>MultiPoint</b>, <b>Linestring</b>, <b>MultiLinestring</b>,
 						<b>Polygon</b>, <b>MultiPolygon</b>, <b>GeometryCollection</b> and <b>Geometry</b>.</li>
-						<li>The optional arguments <i>line_max_points</i> and <i>line_max_length</i> will be interpreted in the same way adopted by <b>TopoGeo_SubdivideLines()</b> 
-						(default for both: <b>NULL</b>, this meaning <u>ignore</u>).</li>
-				        <li>The optional argument <i>tolerance</i> if omitted will assume the corresponding value declared when creating the target Topology.</li>
+						<li>The optional arguments <i>line_max_points</i> and <i>line_max_length</i> will be interpreted in the same way as used in <b>TopoGeo_SubdivideLines()</b> 
+						(default for both: <b>NULL</b> [<u>ignore</u>]).</li>
+				        <li>The optional argument <i>tolerance</i>, when omitted, will assume the corresponding value used with <b>Create>Topology()</b>.</li>
+				        <li>This function will end after the <b>first</b> encountered Topology exception.</li>
 					</ul><hr>
 					Will return <b>1</b> on success; an exception will be raised on failure.</td></tr>
 			<tr><td><b>TopoGeo_FromGeoTableNoFace</b></td>
@@ -4943,9 +4946,9 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				<td align="center" bgcolor="#d0f0d0"></td>
 				<td align="center" bgcolor="#f0d0f0">RTTOPO</td>
 				<td colspan="3">Very similar to <b>TopoGeo_FromGeoTable</b> except for a very critical difference.
-				This function is strongly optimized for maximum speed, and will just update Nodes and Edges purposely ignoring Faces.<br>
-				Consequently it will always leave the target Topology in an <i>inconsistent state</i>; only after executing <b>TopoGeo_Polygonize()</b> all Faces will be
-				properly restored and the target Topology will finally resume a consistent state.<hr>
+				This function is strongly optimized for maximum speed, and will only update/create Nodes and Edges, without update/creation of Faces.<br>
+				Consequently it will always leave the target Topology in an <i>inconsistent state</i>. All Faces will be properly updated/created using <b>TopoGeo_Polygonize()</b>,
+				afterwich the target Topology will return to a consistent state.<hr>
 					Will return <b>1</b> on success; an exception will be raised on failure.</td></tr>
 			<tr><td><b>TopoGeo_FromGeoTableExt</b></td>
 				<td>TopoGeo_FromGeoTableExt( toponame <i>Text</i> , db-prefix <i>Text</i> , table-name <i>Text</i> , column-name <i>Text</i> , dustbin-table <i>Text</i> , 
@@ -4958,28 +4961,36 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				    dustbin-view <i>Text</i> , line_max_points <i>Integer</i> , line_max_length <i>Double precision</i> , tolerance <i>Double precision</i> ) : <i>Integer</i></td>
 				<td align="center" bgcolor="#d0f0d0"></td>
 				<td align="center" bgcolor="#f0d0f0">RTTOPO</td>
-				<td colspan="3">Will attempt to import all Geometries from an input GeoTable identified by <i>db-prefix</i>, <i>table-name</i> and <i>column-name</i> into an already existing Topology-Geometry.
-				    When some Topology expection is encounterd this function will never stop: the Primary Key corresponding to the failing feature will be saved into the <i>dustbin-table</i>,
-				    and the loading process will restart from the next feature until all input features will be consumed. 
+				<td colspan="3">Will attempt to import all Geometries from an input GeoTable identified by <i>db-prefix</i>, <i>table-name</i> and <i>column-name</i> 
+					into an already existing Topology-Geometry, in the same way as <b>TopoGeo_FromGeoTable()</b>.
+				    The main difference is how Topology exceptions are handled. For each encountered exception the corresponding <b>Primary Key</b>b> will be stored into the <i>dustbin-table</i>. 
 					<ul>
-						<li><i>db-prefix</i> can be <b>NULL</b>, and in this case the input GeoTable is expected to be located within the <b>"MAIN"</b> database.</li>
-						<li><i>column-name</i> too can be <b>NULL</b>, and in this case the name of the column containing Geometries will be automatically retrieved;
-						if <b>"db"."table"</b> does not contains any Geometry column, or if it contains two or more Geometries an exception will be raised.</li>
-						<li>the input GeoTable must be properly registered and must match both <b>SRID</b> and <b>dimensions</b> declared by the target Topology.</li>
-						<li>the input GeoTable is absolutely required to declare a <b>Primary Key</b>.</li>
-						<li>this function accepts input Geometries of any class: <b>Point</b>, <b>MultiPoint</b>, <b>Linestring</b>, <b>MultiLinestring</b>,
-						<b>Polygon</b>, <b>MultiPolygon</b>, <b>GeometryCollection</b> and <b>Geometry</b>.</li>
 						<li><i>dustbin-table</i> is the name of the table intended to store PK values corresponding to features failing to be imported; this table should not already exist
 						and will be automatically created by the function itself.</li>
 						<li><i>dustbin-view</i> is the name of the Spatial View supporting the above table; this view should not already exist
 						and will be automatically created by the function itself.<br>
 						<u>Note</u>: both the <i>dustbin-table</i> and the <i>dustbin-view</i> will be always created on the same DB containing the input GeoTable.</li>
-						<li>The optional arguments <i>line_max_points</i> and <i>line_max_length</i> will be interpreted in the same way adopted by <b>TopoGeo_SubdivideLines()</b> 
-						(default for both: <b>NULL</b>, this meaning <u>ignore</u>).</li>
-				        <li>The optional argument <i>tolerance</i> if omitted will assume the corresponding value declared when creating the target Topology.</li>
+				        <li><i>db-prefix</i> can be <b>NULL</b>. In such a case the input GeoTable is expected to be located within the <b>"MAIN"</b> database, otherwise in the given <b>db-prefix</b> database.</li>
+						<li><i>column-name</i> too can be <b>NULL</b>. In such a case the name of the column containing Geometries will be automatically retrieved;
+						if <b>"db"."table"</b> does not contains any Geometry column, or contains more than one, an exception will be raised.<br>
+						Otherwise the given column name in <b>"db-prefix"."column-name"</b> will be used if it exists.</li>
+						<li>the input GeoTable must be properly registered and must match both the <b>SRID</b> and <b>dimensions</b> declared in the target Topology.</li>
+						<li>A <b>Primary Key</b> for the input GeoTable</i> is mandatory.</li>
+						<li><i>dustbin-table</i> is the name of the table intended to store the PK values corresponding to each feature that failed to be imported; this table must not exist,
+						since it will be created by this function.</li>
+						<li><i>dustbin-view</i> is the name of the Spatial View supporting the above table; this view should not already exist
+						and will be automatically created by the function itself.<br>
+						<u>Note</u>: both the <i>dustbin-table</i> and the <i>dustbin-view</i> will be created on the same DB containing the input GeoTable.
+						Use <b>DropGetoTable()</b> for both <i>dustbin-table</i> and <i>dustbin-view</i> before recalling, or even better use different names for each call.</li>
+						<li>this function accepts input Geometries of any class: <b>Point</b>, <b>MultiPoint</b>, <b>Linestring</b>, <b>MultiLinestring</b>,
+						<b>Polygon</b>, <b>MultiPolygon</b>, <b>GeometryCollection</b> and <b>Geometry</b>.</li>
+						<li>The optional arguments <i>line_max_points</i> and <i>line_max_length</i> will be interpreted in the same way as used in <b>TopoGeo_SubdivideLines()</b> 
+						(default for both: <b>NULL</b> [<u>ignore</u>]).</li>
+				        <li>The optional argument <i>tolerance</i>, when omitted, will assume the corresponding value used with <b>Create>Topology()</b>.</li>
+				        <li>This function will end after the <b>first</b> encountered Topology exception.</li>
 					</ul><hr>
 					Will return <b>0</b> on full success or a <b>positive</b> integer corresponding to the total count of failing features referenced by the <i>dustbin</i> table.<br>
-					An exception will be raised only on wrong arguments.</td></tr>
+					An exception will be raised for any invalid argument.</td></tr>
 			<tr><td><b>TopoGeo_FromGeoTableNoFaceExt</b></td>
 				<td>TopoGeo_FromGeoTableNoFaceExt( toponame <i>Text</i> , db-prefix <i>Text</i> , table-name <i>Text</i> , column-name <i>Text</i> , dustbin-table <i>Text</i> , 
 				    dustbin-view <i>Text</i> ) : <i>Integer</i><hr>
@@ -4992,21 +5003,21 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				<td align="center" bgcolor="#d0f0d0"></td>
 				<td align="center" bgcolor="#f0d0f0">RTTOPO</td>
 				<td colspan="3">Very similar to <b>TopoGeo_FromGeoTableExt</b> except for a very critical difference.
-				This function is strongly optimized for maximum speed, and will just update Nodes and Edges purposely ignoring Faces.<br>
-				Consequently it will always leave the target Topology in an <i>inconsistent state</i>; only after executing <b>TopoGeo_Polygonize()</b> all Faces will be
-				properly restored and the target Topology will finally resume a consistent state.<hr>
+				This function is strongly optimized for maximum speed, and will only update/create Nodes and Edges, without update/creation of Faces.<br>
+				Consequently it will always leave the target Topology in an <i>inconsistent state</i>. All Faces will be properly updated/created using <b>TopoGeo_Polygonize()</b>,
+				afterwich the target Topology will return to a consistent state.<hr>
 					Will return <b>0</b> on full success or a <b>positive</b> integer corresponding to the total count of failing features referenced by the <i>dustbin</i> table.<br>
-					An exception will be raised only on wrong arguments.</td></tr>
+					An exception will be raised for any invalid argument.</td></tr>
 			<tr><td><b>TopoGeo_Polygonize</b></td>
 				<td>TopoGeo_Polygonize( toponame <i>Text</i> )<hr>
 				    TopoGeo_Polygonize( toponame <i>Text</i> , force_rebuild <i>Boolean</i> )</td>
 				<td align="center" bgcolor="#d0f0d0"></td>
 				<td align="center" bgcolor="#f0d0f0">RTTOPO</td>
-				<td colspan="3">Will remove all existing Faces from a Topology then rebuilding all them by scratch.
+				<td colspan="3">Will remove all existing Faces from a Topology and then rebuild them from scratch.
 				<ul>
 					<li>If the Topology already is in a fully consistent state (i.e. all Edges are found to be assigned to their corresponding Faces) the function will immediately return 
-					whithout taking any action.</li>
-					<li>If the Topology is in an inconsistent state (i.e. some Edges are found lacking their corresponding Faces (preasumably due to previous calls to <b>TopoGeo_AddLinesStringNoFace</b>,
+					whithout any further action.</li>
+					<li>If the Topology is in an inconsistent state (i.e. some Edges are found missing their corresponding Faces (preasumably due to previous calls of <b>TopoGeo_AddLinesStringNoFace</b>,
 					<b>TopoGeo_FromGeoTableNoFace</b> and/or <b>TopoGeo_FromGeoTableNoFaceExt</b>) the function will effectively rebuild all Faces from scratch.</li>
 					<li>If the optional argument <i>force_rebuild</i> is set to <b>TRUE</b> (not <b>0</b>) all Faces will be unconditionally rebuilt.</li>
 				</ul>
@@ -5806,22 +5817,59 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 					<u>Note</u>: the <b>geom-column</b> will never be ignored, even if explicitly requested to be.</li>
 					<li><b>::cast2multi::</b><br>
 					Will automatically apply a <b>CastToMulti ( geom_column )</b> directive.</li>
-					<li>All references to mismatching options or not existinting columns will be silently discarded.</li>
+					<li>All references to mismatching options or not existing columns will be silently discarded.</li>
 				</ul>
 				<hr>
 				Will return the total number of rows inserted into the output table.<br> <b>NULL</b> will be returned on invalid arguments.</td></tr>
-			<tr><td><b>DropGeoTable</b></td>
-				<td>DropGeoTable( table <i>Text</i> ) : <i>Integer</i><hr>
+			<tr><td bgcolor="#ffd080"><b>DropGeoTable</b><br><br><br><b><i>Deprecated !!!</i></b><br>Please, use <b><i>DropTable()</i></b> instead.</td>
+				<td bgcolor="#ffd080">DropGeoTable( table <i>Text</i> ) : <i>Integer</i><hr>
 				DropGeoTable( table <i>Text</i> , transaction <i>Boolean</i> ) : <i>Integer</i><hr>
 				DropGeoTable( db-prefix <i>Text</i> , table <i>Text</i> ) : <i>Integer</i><hr>
 				DropGeoTable( db-prefix <i>Text</i> , table <i>Text</i> , transaction <i>Boolean</i> ) : <i>Integer</i></td>
-				<td colspan="3">Will completely remove a Geometry Table (or Spatial View) this including any eventual SpatialIndex,
+				<td colspan="3" bgcolor="#ffd080">Will completely remove a Geometry Table (or Spatial View) this including any eventual SpatialIndex,
 				metadata and statistics definitions an alike.<br>
 				The <i>optional</i> argument <b>transaction</b> determines if an internal SQL Transaction should be automatically
 				started or not (the default setting if not explicitly overridden is <b>TRUE</b>).
 				<hr>
 				Will return <b>0</b> (i.e. <b>FALSE</b>) on failure, any other value (i.e. <b>TRUE</b>) on success..<br> 
 				<b>NULL</b> will be returned on invalid arguments.</td></tr>
+			<tr><td><b>DropTable</td>
+				<td>DropTable( db-prefix <i>Text</i> , table <i>Text</i> ) : <i>Integer</i><hr>
+				DropTable( db-prefix <i>Text</i> , table <i>Text</i> , permissive <i>Boolean</i> ) : <i>Integer</i></td>
+				<td colspan="3">Will safely remove a Geometry Table (or Spatial View) this including any eventual SpatialIndex,
+				triggers, metadata, statistics definitions an alike. Will also work on ordinary (non-Spatial) Tables and Views.<br>
+				<ul>
+					<li><i>db-prefix</i> can be <b>NULL</b>, and in this case the Table or View to be dropped is expected to be located within the <b>"MAIN"</b> database.</li>
+					<li>The <i>optional</i> argument <b>permissive</b> determines if  a <b>retcode</b> will be returned in the case of failure.<br>
+						The default setting if not explicitly overridden is <b>FALSE</b>, and in this case an exception will be raised.</li>
+				</ul>
+				<hr>
+				Will return <b>1</b> (i.e. <b>TRUE</b>) on success, <b>0</b> (i.e. <b>FALSE</b>) on failure depending on the <b>permissive</b> setting.<br> 
+				An <b><i>exception</i></b> will be always raised on invalid arguments and on failure if <b>permissive</b> has not been set.</td></tr>
+			<tr><td><b>RenameTable</td>
+				<td>RenameTable( db-prefix <i>Text</i> , old_name <i>Text</i> , new_name <i>Text</i> ) : <i>Integer</i></td>
+				<td colspan="3">Will safely rename a Geometry Table this including any eventual SpatialIndex,
+				triggers, metadata, statistics definitions an alike. Will also work on ordinary (non-Spatial) Tables.<br>
+				<ul>
+					<li><i>db-prefix</i> can be <b>NULL</b>, and in this case the Table to be renamed is expected to be located within the <b>"MAIN"</b> database.</li>
+					<li>Will non work on <b><i>Virtual Tables</i></b> or <b><i>Views</i></b>; <b><i>Spatial Tables</i></b> can be renamed only if they are located in the <b>MAIN</b> database.</li>
+				</ul>
+				<hr>
+				Will return <b>1</b> (i.e. <b>TRUE</b>) on success.<br> 
+				An <b><i>exception</i></b> will be raised on invalid arguments or on failure.<hr>
+				<table bgcolor="#ffd080"><tr><td>If not supported by <b><i>SQLite 3.25</i></b> (or any later version) this function will simply raise an exception.</td></tr></table></td></tr>
+			<tr><td><b>RenameColumn</td>
+				<td>RenameColumn( db-prefix <i>Text</i> , table <i>Text</i> , old_colname <i>Text</i> , new_colname <i>Text</i> ) : <i>Integer</i></td>
+				<td colspan="3">Will safely rename a Column belonging to a Geometry Table, this including any eventual SpatialIndex,
+				triggers, metadata, statistics definitions an alike. Will also work on Columns of ordinary (non-Spatial) Tables.<br>
+				<ul>
+					<li><i>db-prefix</i> can be <b>NULL</b>, and in this case the Table containing the Column to be renamed is expected to be located within the <b>"MAIN"</b> database.</li>
+					<li>Will non work on <b><i>Virtual Tables</i></b> or <b><i>Views</i></b>; <b><i>Spatial Tables</i></b> can rename their Column only if they are located in the <b>MAIN</b> database.</li>
+				</ul>
+				<hr>
+				Will return <b>1</b> (i.e. <b>TRUE</b>) on success.<br> 
+				An <b><i>exception</i></b> will be raised on invalid arguments or on failure.<hr>
+				<table bgcolor="#ffd080"><tr><td>If not supported by <b><i>SQLite 3.25</i></b> (or any later version) this function will simply raise an exception.</td></tr></table></td></tr>
 			<tr><td><b>ImportSHP</b></td>
 				<td>ImportSHP( filename <i>Text</i> , table <i>Text</i> , charset <i>Text</i> ) : <i>Integer</i><hr>
 				ImportSHP( filename <i>Text</i> , table <i>Text</i> , charset <i>Text</i> [ , srid <i>Integer</i>  [ ,

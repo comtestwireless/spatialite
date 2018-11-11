@@ -1539,6 +1539,8 @@ vknn_filter (sqlite3_vtab_cursor * pCursor, int idxNum, const char *idxStr,
 			       quoted_db, idx_nameQ);
 	  free (quoted_db);
       }
+    sqlite3_free (idx_name);
+    free (idx_nameQ);
     ret =
 	sqlite3_prepare_v2 (knn->db, sql_statement, strlen (sql_statement),
 			    &stmt_rtree_count, NULL);

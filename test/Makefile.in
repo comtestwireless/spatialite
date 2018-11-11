@@ -122,7 +122,8 @@ check_PROGRAMS = check_endian$(EXEEXT) check_version$(EXEEXT) \
 	check_network3d$(EXEEXT) check_network_log$(EXEEXT) \
 	check_virtualknn$(EXEEXT) check_sequence$(EXEEXT) \
 	check_stored_proc$(EXEEXT) check_wms$(EXEEXT) \
-	routing_test$(EXEEXT) $(am__EXEEXT_1)
+	check_drop_rename$(EXEEXT) routing_test$(EXEEXT) \
+	$(am__EXEEXT_1)
 @ENABLE_GEOPACKAGE_TRUE@am__append_1 = \
 @ENABLE_GEOPACKAGE_TRUE@		check_createBaseTables \
 @ENABLE_GEOPACKAGE_TRUE@		check_gpkgCreateTilesTable \
@@ -229,6 +230,9 @@ check_cutter_LDADD = $(LDADD)
 check_dbf_load_SOURCES = check_dbf_load.c
 check_dbf_load_OBJECTS = check_dbf_load.$(OBJEXT)
 check_dbf_load_LDADD = $(LDADD)
+check_drop_rename_SOURCES = check_drop_rename.c
+check_drop_rename_OBJECTS = check_drop_rename.$(OBJEXT)
+check_drop_rename_LDADD = $(LDADD)
 check_dxf_SOURCES = check_dxf.c
 check_dxf_OBJECTS = check_dxf.$(OBJEXT)
 check_dxf_LDADD = $(LDADD)
@@ -572,9 +576,9 @@ SOURCES = check_add_tile_triggers.c \
 	check_add_tile_triggers_bad_table_name.c check_bufovflw.c \
 	check_clone_table.c check_control_points.c check_create.c \
 	check_createBaseTables.c check_cutter.c check_dbf_load.c \
-	check_dxf.c check_endian.c check_exif.c check_exif2.c \
-	check_extension.c check_extra_relations_fncts.c check_fdo1.c \
-	check_fdo2.c check_fdo3.c check_fdo_bufovflw.c \
+	check_drop_rename.c check_dxf.c check_endian.c check_exif.c \
+	check_exif2.c check_extension.c check_extra_relations_fncts.c \
+	check_fdo1.c check_fdo2.c check_fdo3.c check_fdo_bufovflw.c \
 	check_gaia_utf8.c check_gaia_util.c check_geom_aux.c \
 	check_geometry_cols.c check_geoscvt_fncts.c \
 	check_get_normal_row.c check_get_normal_row_bad_geopackage.c \
@@ -616,9 +620,9 @@ DIST_SOURCES = check_add_tile_triggers.c \
 	check_add_tile_triggers_bad_table_name.c check_bufovflw.c \
 	check_clone_table.c check_control_points.c check_create.c \
 	check_createBaseTables.c check_cutter.c check_dbf_load.c \
-	check_dxf.c check_endian.c check_exif.c check_exif2.c \
-	check_extension.c check_extra_relations_fncts.c check_fdo1.c \
-	check_fdo2.c check_fdo3.c check_fdo_bufovflw.c \
+	check_drop_rename.c check_dxf.c check_endian.c check_exif.c \
+	check_exif2.c check_extension.c check_extra_relations_fncts.c \
+	check_fdo1.c check_fdo2.c check_fdo3.c check_fdo_bufovflw.c \
 	check_gaia_utf8.c check_gaia_util.c check_geom_aux.c \
 	check_geometry_cols.c check_geoscvt_fncts.c \
 	check_get_normal_row.c check_get_normal_row_bad_geopackage.c \
@@ -1169,7 +1173,8 @@ SUBDIRS = sql_stmt_geosadvanced_tests sql_stmt_geos_tests \
 	sql_stmt_routing_tests sql_stmt_logfile_tests \
 	sql_stmt_iconv_tests sql_stmt_point_geom \
 	sql_stmt_tiny_point sql_stmt_postgres_tests \
-	sql_stmt_proc_tests sql_stmt_geos370_tests
+	sql_stmt_proc_tests sql_stmt_geos370_tests \
+	sql_stmt_renamenew_tests sql_stmt_renameold_tests
 
 all: all-recursive
 
@@ -1249,6 +1254,10 @@ check_cutter$(EXEEXT): $(check_cutter_OBJECTS) $(check_cutter_DEPENDENCIES) $(EX
 check_dbf_load$(EXEEXT): $(check_dbf_load_OBJECTS) $(check_dbf_load_DEPENDENCIES) $(EXTRA_check_dbf_load_DEPENDENCIES) 
 	@rm -f check_dbf_load$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(check_dbf_load_OBJECTS) $(check_dbf_load_LDADD) $(LIBS)
+
+check_drop_rename$(EXEEXT): $(check_drop_rename_OBJECTS) $(check_drop_rename_DEPENDENCIES) $(EXTRA_check_drop_rename_DEPENDENCIES) 
+	@rm -f check_drop_rename$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(check_drop_rename_OBJECTS) $(check_drop_rename_LDADD) $(LIBS)
 
 check_dxf$(EXEEXT): $(check_dxf_OBJECTS) $(check_dxf_DEPENDENCIES) $(EXTRA_check_dxf_DEPENDENCIES) 
 	@rm -f check_dxf$(EXEEXT)
@@ -1625,6 +1634,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_createBaseTables.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_cutter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_dbf_load.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_drop_rename.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_dxf.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_endian.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_exif.Po@am__quote@
@@ -2462,6 +2472,13 @@ check_stored_proc.log: check_stored_proc$(EXEEXT)
 check_wms.log: check_wms$(EXEEXT)
 	@p='check_wms$(EXEEXT)'; \
 	b='check_wms'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+check_drop_rename.log: check_drop_rename$(EXEEXT)
+	@p='check_drop_rename$(EXEEXT)'; \
+	b='check_drop_rename'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

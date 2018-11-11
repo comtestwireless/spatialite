@@ -168,6 +168,8 @@ AC_CONFIG_FILES([Makefile \
 		test/sql_stmt_tiny_point/Makefile \
 		test/sql_stmt_postgres_tests/Makefile \
 		test/sql_stmt_geos370_tests/Makefile \
+		test/sql_stmt_renamenew_tests/Makefile \
+		test/sql_stmt_renameold_tests/Makefile \
 		examples/Makefile \
 		Doxyfile \
 		spatialite.pc])

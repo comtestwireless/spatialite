@@ -941,6 +941,28 @@ skip_sql_proc:
       }
 #endif /* end GEOPACKAGE conditional */
 
+/* Rename Table/Column */
+    if (sqlite3_libversion_number () < 3025000)
+    {
+	  result =
+	      run_subdir_test ("sql_stmt_renameold_tests", conn, 0,
+			       0);
+	  if (result != 0)
+	    {
+		return result;
+	    }
+	}
+	else
+	{
+	  result =
+	      run_subdir_test ("sql_stmt_renamenew_tests", conn, 0,
+			       0);
+	  if (result != 0)
+	    {
+		return result;
+	    }
+	}
+
     return result;
 }
 

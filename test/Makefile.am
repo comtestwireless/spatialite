@@ -69,6 +69,7 @@ check_PROGRAMS = check_endian \
 		check_sequence \
 		check_stored_proc \
 		check_wms \
+		check_drop_rename \
 		routing_test
 		
 if ENABLE_GEOPACKAGE
@@ -221,4 +222,5 @@ SUBDIRS = sql_stmt_geosadvanced_tests sql_stmt_geos_tests \
 	sql_stmt_routing_tests sql_stmt_logfile_tests \
 	sql_stmt_iconv_tests sql_stmt_point_geom \
 	sql_stmt_tiny_point sql_stmt_postgres_tests \
-	sql_stmt_proc_tests sql_stmt_geos370_tests
+	sql_stmt_proc_tests sql_stmt_geos370_tests \
+	sql_stmt_renamenew_tests sql_stmt_renameold_tests

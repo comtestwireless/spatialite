@@ -1293,7 +1293,7 @@ extern "C"
 
  \return 0 on failure, any other value on success
 
- \sa gaiaDropTableEx
+ \sa gaiaDropTableEx, gaiaRenameTable, gaiaRenameColumn
 
  \note this one simply is a convenience method alway defaulting to
  gaiaDropTableEx(sqlite, "main", table);
@@ -1315,7 +1315,7 @@ extern "C"
 
  \return 0 on failure, any other value on success
 
- \sa gaiaDropTableEx2
+ \sa gaiaDropTableEx2, gaiaRenameTable, gaiaRenameColumn
  */
     SPATIALITE_DECLARE int gaiaDropTableEx (sqlite3 * sqlite,
 					    const char *prefix,
@@ -1338,7 +1338,7 @@ extern "C"
 
  \return 0 on failure, any other value on success
 
- \sa gaiaDropTable
+ \sa gaiaDropTable, gaiaRenameTable, gaiaRenameColumn
  */
     SPATIALITE_DECLARE int gaiaDropTableEx2 (sqlite3 * sqlite,
 					     const char *prefix,
@@ -1366,12 +1366,102 @@ extern "C"
 
  \return 0 on failure, any other value on success
 
- \sa gaiaDropTable
+ \sa gaiaDropTable5, gaiaRenameTable, gaiaRenameColumn
+ 
+ \deprecated use gaiaDropTable5() as a full replacement
  */
     SPATIALITE_DECLARE int gaiaDropTableEx3 (sqlite3 * sqlite,
 					     const char *prefix,
 					     const char *table,
 					     int transaction,
+					     char **error_message);
+
+/**
+ Drops a layer-table, removing any related dependency
+
+ \param sqlite handle to current DB connection
+ \param prefix schema prefix identifying the target DB\n
+ "main" always identifies the main DB (primary, not Attached).
+ \param table name of the table or view to be dropped
+ \param error_message: will point to a diagnostic error message
+  in case of failute
+
+ \note this function will drop a SpatialTable, SpatialView or VirtualShape being
+ properly registered within the Metadata tables.
+ \n an eventual Spatial Index will be dropped as well, and any row referring the
+ selected table will be removed from the Metadata tables.
+ \n an eventual diagnostic message pointed by error_message must be
+ freed by calling sqlite3_free()
+
+ \return 0 on failure, any other value on success
+
+ \sa gaiaDropTableEx3, gaiaRenameTable, gaiaRenameColumn
+ */
+    SPATIALITE_DECLARE int gaiaDropTable5 (sqlite3 * sqlite,
+					   const char *prefix,
+					   const char *table,
+					   char **error_message);
+
+/**
+ Renames a Table
+
+ \param sqlite handle to current DB connection
+ \param prefix schema prefix identifying the target DB\n
+ "main" always identifies the main DB (primary, not Attached).
+ \param old_name current name of the table to be renamed
+ (always expected to be in the MAIN database).
+ \param new_name new table name to be set
+ \param error_message: will point to a diagnostic error message
+  in case of failute
+
+ \note this function will corretly rename a SpatialTable being properly 
+ registered within the Metadata tables.
+ \n all triggers, Spatial Index and alike will be correctly recovered.
+ \n an eventual diagnostic message pointed by error_message must be
+ freed by calling sqlite3_free()
+
+ \return 0 on failure, any other value on success
+
+ \sa gaiaDropTable, gaiaRenameColumn
+ 
+ \note SQLite 3.25 (or later) is stricly required.
+ */
+    SPATIALITE_DECLARE int gaiaRenameTable (sqlite3 * sqlite,
+					    const char *prefix,
+					    const char *old_name,
+					    const char *new_name,
+					    char **error_message);
+
+/**
+ Renames a Table's Column
+
+ \param sqlite handle to current DB connection
+ \param prefix schema prefix identifying the target DB\n
+ "main" always identifies the main DB (primary, not Attached).
+ \param table name of the table containing the column to be renamed
+ (always expected to be in the MAIN database).
+ \param old_name current name of the column to be renamed
+ \param new_name new column name to be set
+ \param error_message: will point to a diagnostic error message
+  in case of failute
+
+ \note this function will corretly rename a Geometry Column being properly 
+ registered within the Metadata tables.
+ \n all triggers, Spatial Index and alike will be correctly recovered.
+ \n an eventual diagnostic message pointed by error_message must be
+ freed by calling sqlite3_free()
+
+ \return 0 on failure, any other value on success
+
+ \sa gaiaDropTable, gaiaRenameTable
+ 
+ \note SQLite 3.25 (or later) is stricly required.
+ */
+    SPATIALITE_DECLARE int gaiaRenameColumn (sqlite3 * sqlite,
+					     const char *prefix,
+					     const char *table,
+					     const char *old_name,
+					     const char *new_name,
 					     char **error_message);
 
 /**
