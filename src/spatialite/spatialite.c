@@ -24011,7 +24011,7 @@ fnct_Buffer (sqlite3_context * context, int argc, sqlite3_value ** argv)
     gaiaGeomCollPtr result;
     double radius;
     int int_value;
-    int quadrantsegments = 30;
+    int quadrantsegments = -1;
     int gpkg_amphibious = 0;
     int gpkg_mode = 0;
     int tiny_point = 0;
@@ -24065,7 +24065,11 @@ fnct_Buffer (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	      result =
 		  gaiaGeomCollBuffer_r (data, geo, radius, quadrantsegments);
 	  else
-	      result = gaiaGeomCollBuffer (geo, radius, quadrantsegments);
+	    {
+		if (quadrantsegments <= 0)
+		    quadrantsegments = 30;
+		result = gaiaGeomCollBuffer (geo, radius, quadrantsegments);
+	    }
 	  if (!result)
 	      sqlite3_result_null (context);
 	  else
@@ -26190,7 +26194,7 @@ fnct_SingleSidedBuffer (sqlite3_context * context, int argc,
 	  void *data = sqlite3_user_data (context);
 	  if (data != NULL)
 	      result =
-		  gaiaSingleSidedBuffer_r (data, geo, radius, 16, left_right);
+		  gaiaSingleSidedBuffer_r (data, geo, radius, -1, left_right);
 	  else
 	      result = gaiaSingleSidedBuffer (geo, radius, 16, left_right);
 	  if (!result)
@@ -43575,6 +43579,282 @@ fnct_postgres_get_error (sqlite3_context * context, int argc,
 }
 
 static void
+fnct_bufferoptions_reset (sqlite3_context * context, int argc,
+			  sqlite3_value ** argv)
+{
+/* SQL function:
+/ BufferOptions_Reset ( void )
+/
+/ returns: 1 on success, 0 on failure
+*/
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache == NULL)
+      {
+	  sqlite3_result_int (context, 0);
+	  return;
+      }
+    cache->buffer_end_cap_style = GEOSBUF_CAP_ROUND;
+    cache->buffer_join_style = GEOSBUF_JOIN_ROUND;
+    cache->buffer_mitre_limit = 5.0;
+    cache->buffer_quadrant_segments = 30;
+    sqlite3_result_int (context, 1);
+}
+
+static void
+fnct_bufferoptions_set_endcap (sqlite3_context * context, int argc,
+			       sqlite3_value ** argv)
+{
+/* SQL function:
+/ BufferOptions_SetEndCapStyle ( text style )
+/
+/ returns: 1 on success, 0 on failure
+*/
+    const char *value;
+    int val = -1;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache == NULL)
+      {
+	  sqlite3_result_int (context, 0);
+	  return;
+      }
+    if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
+	value = (const char *) sqlite3_value_text (argv[0]);
+    else
+      {
+	  sqlite3_result_int (context, 0);
+	  return;
+      }
+    if (strcasecmp (value, "ROUND") == 0)
+	val = GEOSBUF_CAP_ROUND;
+    if (strcasecmp (value, "FLAT") == 0)
+	val = GEOSBUF_CAP_FLAT;
+    if (strcasecmp (value, "SQUARE") == 0)
+	val = GEOSBUF_CAP_SQUARE;
+    if (val >= 1)
+      {
+	  cache->buffer_end_cap_style = val;
+	  sqlite3_result_int (context, 1);
+      }
+      else
+    sqlite3_result_int (context, 0);
+}
+
+static void
+fnct_bufferoptions_set_join (sqlite3_context * context, int argc,
+			     sqlite3_value ** argv)
+{
+/* SQL function:
+/ BufferOptions_SetJoinStyle ( text style )
+/
+/ returns: 1 on success, 0 on failure
+*/
+    const char *value;
+    int val = -1;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache == NULL)
+      {
+	  sqlite3_result_int (context, 0);
+	  return;
+      }
+    if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
+	value = (const char *) sqlite3_value_text (argv[0]);
+    else
+      {
+	  sqlite3_result_int (context, 0);
+	  return;
+      }
+    if (strcasecmp (value, "ROUND") == 0)
+	val = GEOSBUF_JOIN_ROUND;
+    if (strcasecmp (value, "MITRE") == 0)
+	val = GEOSBUF_JOIN_MITRE;
+    if (strcasecmp (value, "MITER") == 0)
+	val = GEOSBUF_JOIN_MITRE;
+    if (strcasecmp (value, "BEVEL") == 0)
+	val = GEOSBUF_JOIN_BEVEL;
+    if (val >= 1)
+      {
+	  cache->buffer_join_style = val;
+	  sqlite3_result_int (context, 1);
+      }
+      else
+    sqlite3_result_int (context, 0);
+}
+
+static void
+fnct_bufferoptions_set_mitrelimit (sqlite3_context * context, int argc,
+				   sqlite3_value ** argv)
+{
+/* SQL function:
+/ BufferOptions_SetMitreLimit ( double limit )
+/
+/ returns: 1 on success, 0 on failure
+*/
+    double value;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache == NULL)
+      {
+	  sqlite3_result_int (context, 0);
+	  return;
+      }
+    if (sqlite3_value_type (argv[0]) == SQLITE_FLOAT)
+	value = sqlite3_value_double (argv[0]);
+    else if (sqlite3_value_type (argv[0]) == SQLITE_INTEGER)
+      {
+	  int val = sqlite3_value_int (argv[0]);
+	  value = val;
+      }
+    else
+      {
+	  sqlite3_result_int (context, 0);
+	  return;
+      }
+    cache->buffer_mitre_limit = value;
+    sqlite3_result_int (context, 1);
+}
+
+static void
+fnct_bufferoptions_set_quadsegs (sqlite3_context * context, int argc,
+				 sqlite3_value ** argv)
+{
+/* SQL function:
+/ BufferOptions_SetQuadrantSegments ( int points )
+/
+/ returns: 1 on success, 0 on failure
+*/
+    int value;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache == NULL)
+      {
+	  sqlite3_result_int (context, 0);
+	  return;
+      }
+    if (sqlite3_value_type (argv[0]) == SQLITE_INTEGER)
+	value = sqlite3_value_int (argv[0]);
+    else
+      {
+	  sqlite3_result_int (context, 0);
+	  return;
+      }
+    if (value <= 0)
+	value = 1;
+    cache->buffer_quadrant_segments = value;
+    sqlite3_result_int (context, 1);
+}
+
+static void
+fnct_bufferoptions_get_endcap (sqlite3_context * context, int argc,
+			       sqlite3_value ** argv)
+{
+/* SQL function:
+/ BufferOptions_GetEndCapStyle ( void )
+/
+/ returns: a Text string on success, NULL on failure
+*/
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache == NULL)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    switch (cache->buffer_end_cap_style)
+      {
+      case GEOSBUF_CAP_ROUND:
+	  sqlite3_result_text (context, "ROUND", strlen ("ROUND"),
+			       SQLITE_TRANSIENT);
+	  break;
+      case GEOSBUF_CAP_FLAT:
+	  sqlite3_result_text (context, "FLAT", strlen ("FLAT"),
+			       SQLITE_TRANSIENT);
+	  break;
+      case GEOSBUF_CAP_SQUARE:
+	  sqlite3_result_text (context, "SQUARE", strlen ("SQUARE"),
+			       SQLITE_TRANSIENT);
+	  break;
+      default:
+	  sqlite3_result_null (context);
+      };
+}
+
+static void
+fnct_bufferoptions_get_join (sqlite3_context * context, int argc,
+			     sqlite3_value ** argv)
+{
+/* SQL function:
+/ BufferOptions_GetJoinStyle ( void )
+/
+/ returns: a Text string on success, NULL on failure
+*/
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache == NULL)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    switch (cache->buffer_join_style)
+      {
+      case GEOSBUF_JOIN_ROUND:
+	  sqlite3_result_text (context, "ROUND", strlen ("ROUND"),
+			       SQLITE_TRANSIENT);
+	  break;
+      case GEOSBUF_JOIN_MITRE:
+	  sqlite3_result_text (context, "MITRE", strlen ("MITRE"),
+			       SQLITE_TRANSIENT);
+	  break;
+      case GEOSBUF_JOIN_BEVEL:
+	  sqlite3_result_text (context, "BEVEL", strlen ("BEVEL"),
+			       SQLITE_TRANSIENT);
+	  break;
+      default:
+	  sqlite3_result_null (context);
+      };
+}
+
+static void
+fnct_bufferoptions_get_mitrelimit (sqlite3_context * context, int argc,
+				   sqlite3_value ** argv)
+{
+/* SQL function:
+/ BufferOptions_GetMitreLimit ( void )
+/
+/ returns: a Double on success, NULL on failure
+*/
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache == NULL)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    sqlite3_result_double (context, cache->buffer_mitre_limit);
+}
+
+static void
+fnct_bufferoptions_get_quadsegs (sqlite3_context * context, int argc,
+				 sqlite3_value ** argv)
+{
+/* SQL function:
+/ BufferOptions_GetQuadrantSegments ( void )
+/
+/ returns: an Integer on success, NULL on failure
+*/
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache == NULL)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    sqlite3_result_int (context, cache->buffer_quadrant_segments);
+}
+
+static void
 fnct_addShapefileExtent (sqlite3_context * context, int argc,
 			 sqlite3_value ** argv)
 {
@@ -47298,6 +47578,34 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "PostgreSql_GetLastError", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_postgres_get_error, 0, 0, 0);
+
+    sqlite3_create_function_v2 (db, "BufferOptions_Reset", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_bufferoptions_reset, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "BufferOptions_SetEndCapStyle", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_bufferoptions_set_endcap, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "BufferOptions_SetJoinStyle", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_bufferoptions_set_join, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "BufferOptions_SetMitreLimit", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_bufferoptions_set_mitrelimit, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "BufferOptions_SetQuadrantSegments", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_bufferoptions_set_quadsegs, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "BufferOptions_GetEndCapStyle", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_bufferoptions_get_endcap, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "BufferOptions_GetJoinStyle", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_bufferoptions_get_join, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "BufferOptions_GetMitreLimit", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_bufferoptions_get_mitrelimit, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "BufferOptions_GetQuadrantSegments", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_bufferoptions_get_quadsegs, 0, 0, 0);
 
 /* some Geodesic functions */
     sqlite3_create_function_v2 (db, "GreatCircleLength", 1,

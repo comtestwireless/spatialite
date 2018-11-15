@@ -298,6 +298,7 @@ gaiaSingleSidedBuffer (gaiaGeomCollPtr geom, double radius, int points,
     g1 = gaiaToGeos (geom);
 /* setting up Buffer params */
     params = GEOSBufferParams_create ();
+    GEOSBufferParams_setEndCapStyle (params, GEOSBUF_CAP_ROUND);
     GEOSBufferParams_setJoinStyle (params, GEOSBUF_JOIN_ROUND);
     GEOSBufferParams_setMitreLimit (params, 5.0);
     GEOSBufferParams_setQuadrantSegments (params, points);
@@ -346,6 +347,7 @@ gaiaSingleSidedBuffer_r (const void *p_cache, gaiaGeomCollPtr geom,
     GEOSGeometry *g1;
     GEOSGeometry *g2;
     GEOSBufferParams *params = NULL;
+    int quadsegs = 30;
     gaiaPointPtr pt;
     gaiaLinestringPtr ln;
     gaiaPolygonPtr pg;
@@ -401,9 +403,16 @@ gaiaSingleSidedBuffer_r (const void *p_cache, gaiaGeomCollPtr geom,
     g1 = gaiaToGeos_r (cache, geom);
 /* setting up Buffer params */
     params = GEOSBufferParams_create_r (handle);
-    GEOSBufferParams_setJoinStyle_r (handle, params, GEOSBUF_JOIN_ROUND);
-    GEOSBufferParams_setMitreLimit_r (handle, params, 5.0);
-    GEOSBufferParams_setQuadrantSegments_r (handle, params, points);
+    GEOSBufferParams_setEndCapStyle_r (handle, params,
+				       cache->buffer_end_cap_style);
+    GEOSBufferParams_setJoinStyle_r (handle, params, cache->buffer_join_style);
+    GEOSBufferParams_setMitreLimit_r (handle, params,
+				      cache->buffer_mitre_limit);
+    if (points > 0)
+	quadsegs = points;
+    else if (cache->buffer_quadrant_segments > 0)
+	quadsegs = cache->buffer_quadrant_segments;
+    GEOSBufferParams_setQuadrantSegments_r (handle, params, quadsegs);
     GEOSBufferParams_setSingleSided_r (handle, params, 1);
 
 /* creating the SingleSided Buffer */
@@ -498,11 +507,11 @@ gaiaHausdorffDistance_r (const void *p_cache, gaiaGeomCollPtr geom1,
     return ret;
 }
 
-#ifdef GEOS_370		/* only if GEOS_370 support is available */
+#ifdef GEOS_370			/* only if GEOS_370 support is available */
 
 GAIAGEO_DECLARE int
-gaiaHausdorffDistanceDensify (gaiaGeomCollPtr geom1, gaiaGeomCollPtr geom2, double densify_fract,
-		       double *xdist)
+gaiaHausdorffDistanceDensify (gaiaGeomCollPtr geom1, gaiaGeomCollPtr geom2,
+			      double densify_fract, double *xdist)
 {
 /* 
 / computes the (discrete) Hausdorff distance intercurring 
@@ -532,7 +541,8 @@ gaiaHausdorffDistanceDensify (gaiaGeomCollPtr geom1, gaiaGeomCollPtr geom2, doub
 
 GAIAGEO_DECLARE int
 gaiaHausdorffDistanceDensify_r (const void *p_cache, gaiaGeomCollPtr geom1,
-			 gaiaGeomCollPtr geom2, double densify_fract, double *xdist)
+				gaiaGeomCollPtr geom2, double densify_fract,
+				double *xdist)
 {
 /* 
 / computes the (discrete) Hausdorff distance intercurring 
@@ -568,7 +578,7 @@ gaiaHausdorffDistanceDensify_r (const void *p_cache, gaiaGeomCollPtr geom1,
 
 GAIAGEO_DECLARE int
 gaiaFrechetDistance (gaiaGeomCollPtr geom1, gaiaGeomCollPtr geom2,
-		       double *xdist)
+		     double *xdist)
 {
 /* 
 / computes the (discrete) Frechet distance intercurring 
@@ -598,7 +608,7 @@ gaiaFrechetDistance (gaiaGeomCollPtr geom1, gaiaGeomCollPtr geom2,
 
 GAIAGEO_DECLARE int
 gaiaFrechetDistance_r (const void *p_cache, gaiaGeomCollPtr geom1,
-			 gaiaGeomCollPtr geom2, double *xdist)
+		       gaiaGeomCollPtr geom2, double *xdist)
 {
 /* 
 / computes the (discrete) Frechet distance intercurring 
@@ -633,8 +643,8 @@ gaiaFrechetDistance_r (const void *p_cache, gaiaGeomCollPtr geom1,
 }
 
 GAIAGEO_DECLARE int
-gaiaFrechetDistanceDensify (gaiaGeomCollPtr geom1, gaiaGeomCollPtr geom2, double densify_fract,
-		       double *xdist)
+gaiaFrechetDistanceDensify (gaiaGeomCollPtr geom1, gaiaGeomCollPtr geom2,
+			    double densify_fract, double *xdist)
 {
 /* 
 / computes the (discrete) Frechet distance intercurring 
@@ -664,7 +674,8 @@ gaiaFrechetDistanceDensify (gaiaGeomCollPtr geom1, gaiaGeomCollPtr geom2, double
 
 GAIAGEO_DECLARE int
 gaiaFrechetDistanceDensify_r (const void *p_cache, gaiaGeomCollPtr geom1,
-			 gaiaGeomCollPtr geom2, double densify_fract, double *xdist)
+			      gaiaGeomCollPtr geom2, double densify_fract,
+			      double *xdist)
 {
 /* 
 / computes the (discrete) Frechet distance intercurring 
@@ -698,7 +709,7 @@ gaiaFrechetDistanceDensify_r (const void *p_cache, gaiaGeomCollPtr geom1,
     return ret;
 }
 
-#endif				/* end GEOS_370 conditional */
+#endif /* end GEOS_370 conditional */
 
 static gaiaGeomCollPtr
 geom_as_lines (gaiaGeomCollPtr geom)

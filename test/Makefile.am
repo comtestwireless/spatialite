@@ -223,4 +223,5 @@ SUBDIRS = sql_stmt_geosadvanced_tests sql_stmt_geos_tests \
 	sql_stmt_iconv_tests sql_stmt_point_geom \
 	sql_stmt_tiny_point sql_stmt_postgres_tests \
 	sql_stmt_proc_tests sql_stmt_geos370_tests \
-	sql_stmt_renamenew_tests sql_stmt_renameold_tests
+	sql_stmt_renamenew_tests sql_stmt_renameold_tests \
+	sql_stmt_bufoptsnew_tests sql_stmt_bufoptsold_tests

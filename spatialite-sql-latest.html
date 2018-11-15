@@ -322,6 +322,42 @@
 			<tr><td><b>IsTinyPointEnabled</b></td>
 				<td>IsTinyPointEnabled( <i>void</i> ) : <i>boolean</i></td>
 				<td colspan="3">Returns <b>TRUE</b> if the <b>TinyPoint</b> BLOB encoding is currently enabled, otherwise <b>FALSE</b></td></tr>
+			<tr><td><b>BufferOptions_Reset()</b></td>
+				<td>BufferOptions_Reset( <i>void</i> ) : <i>boolean</i></td>
+				<td colspan="3">Will reset all BufferOptions to their initial default settings.<br>
+					Returns <b>TRUE</b> on success, <b>FALSE</b> on failure.</td></tr>
+			<tr><td><b>BufferOptions_SetEndCapStyle()</b></td>
+				<td>BufferOptions_SetEndCapStyle( style <i>Text</i> ) : <i>boolean</i></td>
+				<td colspan="3">Will set the current EndCap Style. Accepted styles (<i>case insensitive</i>) are: <b>ROUND</b>, <b>FLAT</b>, <b>SQUARE</b><br>
+					Returns <b>TRUE</b> on success, <b>FALSE</b> on failure.</td></tr>
+			<tr><td><b>BufferOptions_GetEndCapStyle()</b></td>
+				<td>BufferOptions_GetEndCapStyle( <i>void</i> ) : <i>string</i></td>
+				<td colspan="3">Will return the name of the currently set EndCap Style.<br>
+					<b>NULL</b> on failure.</td></tr>
+			<tr><td><b>BufferOptions_SetJoinStyle()</b></td>
+				<td>BufferOptions_SetJoinStyle( style <i>Text</i> ) : <i>boolean</i></td>
+				<td colspan="3">Will set the current Join Style. Accepted styles (<i>case insensitive</i>) are: <b>ROUND</b>, <b>MITRE</b> or <b>MITER</b>, <b>BEVEL</b><br>
+					Returns <b>TRUE</b> on success, <b>FALSE</b> on failure.</td></tr>
+			<tr><td><b>BufferOptions_GetJoinStyle()</b></td>
+				<td>BufferOptions_GetJoinStyle( <i>void</i> ) : <i>string</i></td>
+				<td colspan="3">Will return the name of the currently set Join Style.<br>
+					<b>NULL</b> on failure.</td></tr>
+			<tr><td><b>BufferOptions_SetMitreLimit()</b></td>
+				<td>BufferOptions_SetMitreLimit( limit <i>Double</i> ) : <i>boolean</i></td>
+				<td colspan="3">Will set the current Mitre Limit value.<br>
+					Returns <b>TRUE</b> on success, <b>FALSE</b> on failure.</td></tr>
+			<tr><td><b>BufferOptions_GetMitreLimit()</b></td>
+				<td>BufferOptions_GetMitreLimit( <i>void</i> ) : <i>double</i></td>
+				<td colspan="3">Will return the value of the currently set Mitre Limit.<br>
+					<b>NULL</b> on failure.</td></tr>
+			<tr><td><b>BufferOptions_SetQuadrantSegments()</b></td>
+				<td>BufferOptions_SetQuadrantSegments( points <i>Integer</i> ) : <i>boolean</i></td>
+				<td colspan="3">Will set the current Quadrant Segments value.<br>
+					Returns <b>TRUE</b> on success, <b>FALSE</b> on failure.</td></tr>
+			<tr><td><b>BufferOptions_GetQuadrantSegments()</b></td>
+				<td>BufferOptions_GetQuadrantSegments( <i>void</i> ) : <i>integer</i></td>
+				<td colspan="3">Will return the value of the currently set Quadrant Segments.<br>
+					<b>NULL</b> on failure.</td></tr>
 			<tr><td colspan="5" align="center" bgcolor="#f0e0c0">
 				<h3><a name="sequence">SQL functions manipulating Sequences</a></h3></td></tr>
 			<tr><th bgcolor="#d0d0d0">Function</th>
@@ -1813,7 +1849,7 @@ algorithm with given <i>tolerance</i> and respecting topology</td></tr>
                                 <b>NULL</b> will be returned if any error is encountered.</td></tr>
 			<tr><td><b>SetEndPoint</b></td>
 				<td>SetEndPoint( line <i>LineString</i> , point <i>Point</i> ) : <i>Linestring</i><hr>
-					ST_SetEndtPoint( line <i>LineString</i> , point <i>Point</i> ) : <i>Linestring</i></td>
+					ST_SetEndPoint( line <i>LineString</i> , point <i>Point</i> ) : <i>Linestring</i></td>
 				<td></td>
 				<td align="center" bgcolor="#d0f0d0">base</td>
 				<td>returns a new Linestring by replacing its EndPoint.<br>

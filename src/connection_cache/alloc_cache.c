@@ -386,6 +386,10 @@ init_splite_internal_cache (struct splite_internal_cache *cache)
     else if (atoi (tinyPoint) != 0)
 	cache->tinyPointEnabled = 1;
     cache->lastPostgreSqlError = NULL;
+    cache->buffer_end_cap_style = GEOSBUF_CAP_ROUND;
+    cache->buffer_join_style = GEOSBUF_JOIN_ROUND;
+    cache->buffer_mitre_limit = 5.0;
+    cache->buffer_quadrant_segments = 30;
 /* initializing an empty linked list of Topologies */
     cache->firstTopology = NULL;
     cache->lastTopology = NULL;
@@ -1241,7 +1245,8 @@ SPATIALITE_PRIVATE struct gaia_variant_value *
 gaia_alloc_variant ()
 {
 /* allocating and initializing a NULL Variant Value */
-    struct gaia_variant_value *var = malloc (sizeof (struct gaia_variant_value));
+    struct gaia_variant_value *var =
+	malloc (sizeof (struct gaia_variant_value));
     if (var == NULL)
 	return NULL;
     var->dataType = SQLITE_NULL;
