@@ -356,14 +356,14 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = generator
-AM_CPPFLAGS = @CFLAGS@ @CPPFLAGS@ @LIBXML2_CFLAGS@ \
-	-I$(top_srcdir)/src/headers
+AM_CPPFLAGS = -I$(top_srcdir)/src/headers @CFLAGS@ @CPPFLAGS@ \
+	@LIBXML2_CFLAGS@ $(am__empty)
 noinst_HEADERS = cache_aux_1.h cache_aux_2.h cache_aux_3.h
 noinst_LTLIBRARIES = libconnection_cache.la connection_cache.la
 libconnection_cache_la_SOURCES = alloc_cache.c gg_sequence.c
 connection_cache_la_SOURCES = alloc_cache.c gg_sequence.c 
-connection_cache_la_CPPFLAGS = @CFLAGS@ @CPPFLAGS@ @LIBXML2_CFLAGS@ \
-	-I$(top_srcdir)/src/headers -I. -DLOADABLE_EXTENSION
+connection_cache_la_CPPFLAGS = -I$(top_srcdir)/src/headers -I. \
+	@CFLAGS@ @CPPFLAGS@ @LIBXML2_CFLAGS@ -DLOADABLE_EXTENSION
 connection_cache_la_LDFLAGS = -module
 connection_cache_la_LIBTOOLFLAGS = --tag=disable-static
 MOSTLYCLEANFILES = *.gcna *.gcno *.gcda

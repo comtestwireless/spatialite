@@ -67,6 +67,7 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #include <spatialite/gaiageo.h>
 #include <spatialite.h>
 #include <spatialite_private.h>
+#include <spatialite/geojson.h>
 
 #ifndef OMIT_FREEXL
 #include <freexl.h>
@@ -5931,7 +5932,7 @@ elementary_geometries_ex3 (sqlite3 * sqlite,
 			      {
 			      case SQLITE_INTEGER:
 				  sqlite3_bind_int64 (stmt_out, i + 2,
-						      sqlite3_column_int
+						      sqlite3_column_int64
 						      (stmt_in, i));
 				  break;
 			      case SQLITE_FLOAT:
@@ -6011,7 +6012,7 @@ elementary_geometries_ex3 (sqlite3 * sqlite,
 				    {
 				    case SQLITE_INTEGER:
 					sqlite3_bind_int64 (stmt_out, i + 2,
-							    sqlite3_column_int
+							    sqlite3_column_int64
 							    (stmt_in, i));
 					break;
 				    case SQLITE_FLOAT:
@@ -6085,7 +6086,7 @@ elementary_geometries_ex3 (sqlite3 * sqlite,
 				    {
 				    case SQLITE_INTEGER:
 					sqlite3_bind_int64 (stmt_out, i + 2,
-							    sqlite3_column_int
+							    sqlite3_column_int64
 							    (stmt_in, i));
 					break;
 				    case SQLITE_FLOAT:
@@ -6159,7 +6160,7 @@ elementary_geometries_ex3 (sqlite3 * sqlite,
 				    {
 				    case SQLITE_INTEGER:
 					sqlite3_bind_int64 (stmt_out, i + 2,
-							    sqlite3_column_int
+							    sqlite3_column_int64
 							    (stmt_in, i));
 					break;
 				    case SQLITE_FLOAT:
@@ -6723,6 +6724,771 @@ dump_geojson_ex (sqlite3 * sqlite, char *table, char *geom_col,
 	  fclose (out);
       }
     spatialite_e ("The SQL SELECT returned no data to export...\n");
+    return 0;
+}
+
+static int
+do_check_geometry (sqlite3 * sqlite, const char *table, const char *geom_col,
+		   char **geoname, int *srid, int *dims)
+{
+/* checking Geometry Column, SRID and Dimensions */
+    char *sql;
+    int ret;
+    char **results;
+    int rows;
+    int columns;
+    int i;
+    char *errMsg = NULL;
+
+    if (geom_col == NULL)
+	sql = sqlite3_mprintf ("SELECT f_geometry_column, srid, geometry_type "
+			       "FROM geometry_columns WHERE Lower(f_table_name) = Lower(%Q)",
+			       table);
+    else
+	sql = sqlite3_mprintf ("SELECT f_geometry_column, srid, geometry_type "
+			       "FROM geometry_columns WHERE Lower(f_table_name) = Lower(%Q) AND "
+			       "Lower(f_geometry_column) = Lower(%Q)",
+			       table, geom_col);
+    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, &errMsg);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+      {
+	  spatialite_e ("dump GeoJSON2 MetaData error: <%s>\n", errMsg);
+	  sqlite3_free (errMsg);
+	  return 0;
+      }
+    if (rows != 1)
+	goto error;
+    for (i = 1; i <= rows; i++)
+      {
+	  int gtype;
+	  const char *x = results[(i * columns) + 0];
+	  int len = strlen (x);
+	  *geoname = malloc (len + 1);
+	  strcpy (*geoname, x);
+	  *srid = atoi (results[(i * columns) + 1]);
+	  gtype = atoi (results[(i * columns) + 2]);
+	  switch (gtype)
+	    {
+	    case GAIA_POINT:
+	    case GAIA_LINESTRING:
+	    case GAIA_POLYGON:
+	    case GAIA_MULTIPOINT:
+	    case GAIA_MULTILINESTRING:
+	    case GAIA_MULTIPOLYGON:
+	    case GAIA_GEOMETRYCOLLECTION:
+		*dims = GAIA_XY;
+		break;
+	    case GAIA_POINTZ:
+	    case GAIA_LINESTRINGZ:
+	    case GAIA_POLYGONZ:
+	    case GAIA_MULTIPOINTZ:
+	    case GAIA_MULTILINESTRINGZ:
+	    case GAIA_MULTIPOLYGONZ:
+	    case GAIA_GEOMETRYCOLLECTIONZ:
+		*dims = GAIA_XY_Z;
+		break;
+	    case GAIA_POINTM:
+	    case GAIA_LINESTRINGM:
+	    case GAIA_POLYGONM:
+	    case GAIA_MULTIPOINTM:
+	    case GAIA_MULTILINESTRINGM:
+	    case GAIA_MULTIPOLYGONM:
+	    case GAIA_GEOMETRYCOLLECTIONM:
+		*dims = GAIA_XY_M;
+		break;
+	    case GAIA_POINTZM:
+	    case GAIA_LINESTRINGZM:
+	    case GAIA_POLYGONZM:
+	    case GAIA_MULTIPOINTZM:
+	    case GAIA_MULTILINESTRINGZM:
+	    case GAIA_MULTIPOLYGONZM:
+	    case GAIA_GEOMETRYCOLLECTIONZM:
+		*dims = GAIA_XY_Z_M;
+		break;
+	    default:
+		goto error;
+	    };
+      }
+    sqlite3_free_table (results);
+    return 1;
+
+  error:
+    sqlite3_free_table (results);
+    return 0;
+}
+
+static char *
+do_prepare_sql (sqlite3 * sqlite, const char *table, const char *geom_col,
+		int srid, int dims, int precision, int lon_lat, int m_coords)
+{
+/* preparing the SQL statement */
+    char *sql;
+    char *prev;
+    char *xtable;
+    char *x_col;
+    int ret;
+    char **results;
+    int rows;
+    int columns;
+    int i;
+    char *errMsg = NULL;
+
+    xtable = gaiaDoubleQuotedSql (table);
+    sql = sqlite3_mprintf ("PRAGMA table_info(\"%s\")", table);
+    free (xtable);
+    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, &errMsg);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+      {
+	  spatialite_e ("dump GeoJSON2 PRAGMA error: <%s>\n", errMsg);
+	  sqlite3_free (errMsg);
+	  return 0;
+      }
+
+/* defining the Geometry first */
+    x_col = gaiaDoubleQuotedSql (geom_col);
+    if (lon_lat)
+      {
+	  /* exporting Geographic coordinates (lon-lat) */
+	  if (srid == 0 || srid == 4326)
+	    {
+		/* already lon-lan, no transformation is required */
+		if (m_coords)
+		  {
+		      /* exporting eventual M-Values */
+		      sql =
+			  sqlite3_mprintf ("SELECT AsGeoJSON(\"%s\", %d)",
+					   x_col, precision);
+		  }
+		else
+		  {
+		      if (dims == GAIA_XY_M)
+			{
+			    /* exporting XYM as XY */
+			    sql =
+				sqlite3_mprintf
+				("SELECT AsGeoJSON(CastToXY(\"%s\"), %d)",
+				 x_col, precision);
+			}
+		      else if (dims == GAIA_XY_Z_M)
+			{
+			    /* exporting XYZM as XYZ */
+			    sql =
+				sqlite3_mprintf
+				("SELECT AsGeoJSON(CastToXYZ(\"%s\"), %d)",
+				 x_col, precision);
+			}
+		      else
+			{
+			    /* unchanged dimensions */
+			    sql =
+				sqlite3_mprintf ("SELECT AsGeoJSON(\"%s\", %d)",
+						 x_col, precision);
+			}
+		  }
+	    }
+	  else
+	    {
+		/* converting to lon-lat WGS84 */
+		if (m_coords)
+		  {
+		      /* exporting eventual M-Values */
+		      sql =
+			  sqlite3_mprintf
+			  ("SELECT AsGeoJSON(ST_Transform(\"%s\", 4326), %d)",
+			   x_col, precision);
+		  }
+		else
+		  {
+		      if (dims == GAIA_XY_M)
+			{
+			    /* exporting XYM as XY */
+			    sql =
+				sqlite3_mprintf
+				("SELECT AsGeoJSON(ST_Transform(CastToXY(\"%s\"), 4326), %d)",
+				 x_col, precision);
+			}
+		      else if (dims == GAIA_XY_Z_M)
+			{
+			    /* exporting XYZM as XYZ */
+			    sql =
+				sqlite3_mprintf
+				("SELECT AsGeoJSON(ST_TransformCastToXYZ(\"%s\"), 4326), %d)",
+				 x_col, precision);
+			}
+		      else
+			{
+			    /* unchanged dimensions */
+			    sql =
+				sqlite3_mprintf
+				("SELECT AsGeoJSON(ST_Transform(\"%s\", 4326), %d)",
+				 x_col, precision);
+			}
+		  }
+	    }
+      }
+    else
+      {
+	  /* exporting coordinates as they are without any transformation */
+	  if (m_coords)
+	    {
+		/* exporting eventual M-Values */
+		sql =
+		    sqlite3_mprintf ("SELECT AsGeoJSON(\"%s\", %d)", x_col,
+				     precision);
+	    }
+	  else
+	    {
+		if (dims == GAIA_XY_M)
+		  {
+		      /* exporting XYM as XY */
+		      sql =
+			  sqlite3_mprintf
+			  ("SELECT AsGeoJSON(CastToXY(\"%s\"), %d)", x_col,
+			   precision);
+		  }
+		else if (dims == GAIA_XY_Z_M)
+		  {
+		      /* exporting XYZM as XYZ */
+		      sql =
+			  sqlite3_mprintf
+			  ("SELECT AsGeoJSON(CastToXYZ(\"%s\"), %d)", x_col,
+			   precision);
+		  }
+		else
+		  {
+		      /* unchanged dimensions */
+		      sql =
+			  sqlite3_mprintf ("SELECT AsGeoJSON(\"%s\", %d)",
+					   x_col, precision);
+		  }
+	    }
+      }
+    free (x_col);
+
+    for (i = 1; i <= rows; i++)
+      {
+	  /* then adding all Properties */
+	  const char *col = results[(i * columns) + 1];
+	  if (strcasecmp (col, geom_col) == 0)
+	      continue;		/* skipping the Geometry itself */
+	  x_col = gaiaDoubleQuotedSql (col);
+	  prev = sql;
+	  sql = sqlite3_mprintf ("%s, \"%s\"", prev, x_col);
+	  free (x_col);
+	  sqlite3_free (prev);
+      }
+    sqlite3_free_table (results);
+    prev = sql;
+    xtable = gaiaDoubleQuotedSql (table);
+    sql = sqlite3_mprintf ("%s FROM \"%s\"", prev, xtable);
+    free (xtable);
+    sqlite3_free (prev);
+    return sql;
+}
+
+static char *
+do_normalize_case (const char *name, int colname_case)
+{
+/* transforming a name in full lower- or upper-case */
+    int len = strlen (name);
+    char *clean = malloc (len + 1);
+    char *p = clean;
+    strcpy (clean, name);
+    while (*p != '\0')
+      {
+	  if (colname_case == GAIA_DBF_COLNAME_LOWERCASE)
+	    {
+		if (*p >= 'A' && *p <= 'Z')
+		    *p = *p - 'A' + 'a';
+	    }
+	  if (colname_case == GAIA_DBF_COLNAME_UPPERCASE)
+	    {
+		if (*p >= 'a' && *p <= 'z')
+		    *p = *p - 'a' + 'A';
+	    }
+	  p++;
+      }
+    return clean;
+}
+
+SPATIALITE_DECLARE int
+dump_geojson2 (sqlite3 * sqlite, char *table, char *geom_col,
+	       char *outfile_path, int precision, int lon_lat,
+	       int m_coords, int indented, int colname_case, int *xrows,
+	       char **error_message)
+{
+/* dumping a  geometry table as GeoJSON FeatureCollection (RFC 7946) */
+/* sandro furieri 2018-11-25 */
+    char *sql;
+    sqlite3_stmt *stmt = NULL;
+    FILE *out = NULL;
+    int ret;
+    int rows = 0;
+    char *geoname = NULL;
+    int srid;
+    int dims;
+    int first_feature = 1;
+    sqlite3_int64 ival;
+    double dval;
+    const char *tval;
+    char *xtval;
+    *error_message = NULL;
+
+/* checking Geometry Column, SRID and Dimensions */
+    if (!do_check_geometry (sqlite, table, geom_col, &geoname, &srid, &dims))
+	goto no_geom;
+
+    *xrows = -1;
+/* opening/creating the GeoJSON output file */
+    out = fopen (outfile_path, "wb");
+    if (!out)
+	goto no_file;
+
+/* preparing SQL statement */
+    sql =
+	do_prepare_sql (sqlite, table, geoname, srid, dims, precision, lon_lat,
+			m_coords);
+    if (sql == NULL)
+	goto no_sql;
+    free (geoname);
+
+    ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+	goto sql_error;
+
+    while (1)
+      {
+	  /* scrolling the result set */
+	  ret = sqlite3_step (stmt);
+	  if (ret == SQLITE_DONE)
+	    {
+		break;		/* end of result set */
+	    }
+	  if (ret == SQLITE_ROW)
+	    {
+		int c;
+		int cols = sqlite3_column_count (stmt);
+		if (first_feature)
+		  {
+		      /* FeatureCollection */
+		      if (indented)
+			  fprintf (out,
+				   "{\r\n\t\"type\" : \"FeatureCollection\",\r\n\t\"features\" : [{\r\n");
+		      else
+			  fprintf (out,
+				   "{\"type\":\"FeatureCollection\",\"features\":[{");
+		      first_feature = 0;
+		  }
+		/* Feature */
+		if (rows == 0)
+		  {
+		      /* first Feature */
+		      if (indented)
+			  fprintf (out,
+				   "\t\t\"type\" : \"Feature\",\r\n\t\t\"properties\" : ");
+		      else
+			  fprintf (out, "\"type\":\"Feature\",\"properties\":");
+		  }
+		else
+		  {
+		      /* any other Feature except the first one */
+		      if (indented)
+			  fprintf (out,
+				   ", {\r\n\t\t\"type\" : \"Feature\",\r\n\t\t\"properties\" : ");
+		      else
+			  fprintf (out,
+				   ",{\"type\":\"Feature\",\"properties\":");
+		  }
+		for (c = 1; c < cols; c++)
+		  {
+		      /* Properties */
+		      const char *col_name = sqlite3_column_name (stmt, c);
+		      char *norm_name =
+			  do_normalize_case (col_name, colname_case);
+		      char *xcol_name = gaiaDoubleQuotedSql (norm_name);
+		      free (norm_name);
+		      if (c == 1)
+			{
+			    if (indented)
+				fprintf (out, "{\r\n\t\t\t\"%s\" : ",
+					 xcol_name);
+			    else
+				fprintf (out, "{\"%s\":", xcol_name);
+			}
+		      else
+			{
+			    if (indented)
+				fprintf (out, ",\r\n\t\t\t\"%s\" : ",
+					 xcol_name);
+			    else
+				fprintf (out, ",\"%s\":", xcol_name);
+			}
+		      free (xcol_name);
+		      switch (sqlite3_column_type (stmt, c))
+			{
+			case SQLITE_INTEGER:
+			    ival = sqlite3_column_int64 (stmt, c);
+			    fprintf (out, "%lld", ival);
+			    break;
+			case SQLITE_FLOAT:
+			    dval = sqlite3_column_double (stmt, c);
+			    fprintf (out, "%f", dval);
+			    break;
+			case SQLITE_TEXT:
+			    tval = (const char *) sqlite3_column_text (stmt, c);
+			    xtval = gaiaDoubleQuotedSql (tval);
+			    fprintf (out, "\"%s\"", xtval);
+			    free (xtval);
+			    break;
+			case SQLITE_BLOB:
+			    fprintf (out, "\"BLOB value\"");
+			    break;
+			case SQLITE_NULL:
+			default:
+			    fprintf (out, "null");
+			    break;
+			};
+		  }
+		/* geometry */
+		if (indented)
+		    fprintf (out, "\r\n\t\t},\r\n\t\t\"geometry\" : ");
+		else
+		    fprintf (out, "},\"geomety\":");
+		switch (sqlite3_column_type (stmt, 0))
+		  {
+		  case SQLITE_NULL:
+		      fprintf (out, "null");
+		      break;
+		  default:
+		      tval = (const char *) sqlite3_column_text (stmt, 0);
+		      fprintf (out, "%s", tval);
+		      break;
+		  };
+		/* end Feature */
+		if (indented)
+		    fprintf (out, "\r\n\t}");
+		else
+		    fprintf (out, "}");
+		rows++;
+	    }
+	  else
+	    {
+		goto sql_error;
+	    }
+      }
+    if (rows == 0)
+      {
+	  goto empty_result_set;
+      }
+    if (indented)
+	fprintf (out, "]\r\n}\r\n");
+    else
+	fprintf (out, "]}");
+
+    sqlite3_finalize (stmt);
+    fclose (out);
+    *xrows = rows;
+    return 1;
+
+  sql_error:
+/* an SQL error occurred */
+    if (stmt)
+      {
+	  sqlite3_finalize (stmt);
+      }
+    if (out)
+      {
+	  fclose (out);
+      }
+    *error_message =
+	sqlite3_mprintf ("Dump GeoJSON2 error: %s\n", sqlite3_errmsg (sqlite));
+    return 0;
+
+  no_file:
+/* Output file could not be created / opened */
+    if (stmt)
+      {
+	  sqlite3_finalize (stmt);
+      }
+    if (out)
+      {
+	  fclose (out);
+      }
+    if (geoname != NULL)
+	free (geoname);
+    *error_message =
+	sqlite3_mprintf ("ERROR: unable to open '%s' for writing\n",
+			 outfile_path);
+    return 0;
+
+  empty_result_set:
+/* the result set is empty - nothing to do */
+    if (stmt)
+      {
+	  sqlite3_finalize (stmt);
+      }
+    if (out)
+      {
+	  fclose (out);
+      }
+    *error_message =
+	sqlite3_mprintf ("The SQL SELECT returned no data to export...\n");
+    return 0;
+
+  no_geom:
+/* not a valid Geometry Column */
+    if (out)
+      {
+	  fclose (out);
+      }
+    *error_message = sqlite3_mprintf ("Not a valid Geometry Column.\n");
+    return 0;
+
+  no_sql:
+/* unable to create a valid SQL query */
+    if (out)
+      {
+	  fclose (out);
+      }
+    *error_message = sqlite3_mprintf ("Unable to create a valid SQL query.\n");
+    return 0;
+}
+
+SPATIALITE_DECLARE int
+load_geojson (sqlite3 * sqlite, char *path, char *table, char *geom_col,
+	      int spatial_index, int srid, int colname_case, int *rows,
+	      char **error_message)
+{
+/* Loads an external GeoJSON file into a newly created table */
+    FILE *in = NULL;
+    sqlite3_stmt *stmt = NULL;
+    geojson_parser_ptr parser = NULL;
+    geojson_feature_ptr ft;
+    int i;
+    int ret;
+    int pending = 0;
+    char *sql;
+    int ins_rows = 0;
+    *error_message = NULL;
+
+/* attempting to open the GeoJSON file for reading */
+    in = fopen (path, "rb");
+    if (in == NULL)
+      {
+	  *error_message =
+	      sqlite3_mprintf
+	      ("GeoJSON parser: unable to open %s for reading\n", path);
+	  return 0;
+      }
+
+/* creating the GeoJSON parser */
+    parser = geojson_create_parser (in);
+    if (!geojson_parser_init (parser, error_message))
+	goto err;
+    if (!geojson_create_features_index (parser, error_message))
+	goto err;
+    if (!geojson_check_features (parser, error_message))
+	goto err;
+
+/* creating the output table */
+    sql = geojson_sql_create_table (parser, table, colname_case);
+    if (sql == NULL)
+	goto err;
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+      {
+	  *error_message =
+	      sqlite3_mprintf
+	      ("GeoJSON import: unable to create the output table (%s)\n",
+	       sqlite3_errmsg (sqlite));
+	  goto err;
+      }
+
+/* adding the Geometry Column */
+    sql =
+	geojson_sql_add_geometry (parser, table, geom_col, colname_case, srid);
+    if (sql == NULL)
+	goto err;
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+      {
+	  *error_message =
+	      sqlite3_mprintf
+	      ("GeoJSON import: unable to create the Geometry column (%s)\n",
+	       sqlite3_errmsg (sqlite));
+	  goto err;
+      }
+
+    if (spatial_index)
+      {
+	  /* creating the Spatial Index */
+	  sql = geojson_sql_create_rtree (table, geom_col, colname_case);
+	  if (sql == NULL)
+	      goto err;
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		*error_message =
+		    sqlite3_mprintf
+		    ("GeoJSON import: unable to create the SpatialIndex (%s)\n",
+		     sqlite3_errmsg (sqlite));
+		goto err;
+	    }
+      }
+
+/* the whole import will be enclosed in a single Transaction */
+    ret = sqlite3_exec (sqlite, "SAVEPOINT import_geo_json", NULL, NULL, NULL);
+    if (ret != SQLITE_OK)
+      {
+	  *error_message =
+	      sqlite3_mprintf ("GeoJSON import: SAVEPOINT error (%s)\n",
+			       sqlite3_errmsg (sqlite));
+	  goto err;
+      }
+    pending = 1;
+
+    sql = geojson_sql_insert_into (parser, table);
+    ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+      {
+	  *error_message =
+	      sqlite3_mprintf ("GeoJSON import: INSERT INTO error (%s)\n",
+			       sqlite3_errmsg (sqlite));
+	  goto err;
+      }
+
+    for (i = 0; i < parser->count; i++)
+      {
+	  /* inserting all features into the output table */
+	  ft = parser->features + i;
+	  if (geojson_init_feature (parser, ft, error_message))
+	    {
+		/* inserting a single Feature */
+		geojson_column_ptr col;
+		int cnt = 1;
+		sqlite3_reset (stmt);
+		sqlite3_clear_bindings (stmt);
+		col = parser->first_col;
+		while (col != NULL)
+		  {
+		      /* binding column values */
+		      geojson_property_ptr prop =
+			  geojson_get_property_by_name (ft, col->name);
+		      if (prop == NULL)
+			  sqlite3_bind_null (stmt, cnt++);
+		      else
+			{
+			    switch (prop->type)
+			      {
+			      case GEOJSON_TEXT:
+				  sqlite3_bind_text (stmt, cnt++,
+						     prop->txt_value,
+						     strlen (prop->txt_value),
+						     SQLITE_STATIC);
+				  break;
+			      case GEOJSON_INTEGER:
+				  sqlite3_bind_int64 (stmt, cnt++,
+						      prop->int_value);
+				  break;
+			      case GEOJSON_DOUBLE:
+				  sqlite3_bind_double (stmt, cnt++,
+						       prop->dbl_value);
+				  break;
+			      case GEOJSON_FALSE:
+				  sqlite3_bind_int (stmt, cnt++, 0);
+				  break;
+			      case GEOJSON_TRUE:
+				  sqlite3_bind_int (stmt, cnt++, 0);
+				  break;
+			      case GEOJSON_NULL:
+			      default:
+				  sqlite3_bind_null (stmt, cnt++);
+				  break;
+			      };
+			}
+		      col = col->next;
+		  }
+		if (ft->geometry == NULL)
+		    sqlite3_bind_null (stmt, cnt++);
+		else
+		  {
+		      gaiaGeomCollPtr geo =
+			  gaiaParseGeoJSON ((const unsigned char
+					     *) (ft->geometry));
+		      if (geo != NULL)
+			{
+			    /* binding the Geometry BLOB */
+			    unsigned char *blob;
+			    int blob_size;
+			    geo->Srid = srid;
+			    gaiaToSpatiaLiteBlobWkb (geo, &blob, &blob_size);
+			    sqlite3_bind_blob (stmt, cnt, blob, blob_size,
+					       free);
+			    gaiaFreeGeomColl (geo);
+			}
+		      else
+			{
+			    *error_message = sqlite3_mprintf("GeoJSON import: invalid Geometry (fid=%d)\n",
+				     ft->fid);
+			    goto err;
+			}
+		  }
+		/* inserting the Feature into the DB Table */
+		ret = sqlite3_step (stmt);
+		if (ret == SQLITE_DONE || ret == SQLITE_ROW)
+		    ins_rows++;
+		else
+		  {
+		      *error_message =
+			  sqlite3_mprintf
+			  ("GeoJSON import: INSERT INTO failure (fid=%d) %s\n",
+			   ft->fid, sqlite3_errmsg (sqlite));
+		      goto err;
+		  }
+		geojson_reset_feature (ft);
+	    }
+	  else
+	      goto err;
+      }
+    sqlite3_finalize (stmt);
+    stmt = NULL;
+
+/* Committing the still pending Transaction */
+    ret =
+	sqlite3_exec (sqlite, "RELEASE SAVEPOINT import_geo_json", NULL, NULL,
+		      NULL);
+    if (ret != SQLITE_OK)
+      {
+	  *error_message =
+	      sqlite3_mprintf ("GeoJSON import: RELEASE SAVEPOINT error (%s)\n",
+			       sqlite3_errmsg (sqlite));
+	  goto err;
+      }
+
+    geojson_destroy_parser (parser);
+    *rows = ins_rows;
+    return 1;
+
+  err:
+    if (stmt != NULL)
+	sqlite3_finalize (stmt);
+    if (pending)
+      {
+	  /* Rolling back the Transaction */
+	  sqlite3_exec (sqlite, "ROLLBAKC TO SAVEPOINT import_geo_json", NULL,
+			NULL, NULL);
+	  sqlite3_exec (sqlite, "RELEASE SAVEPOINT import_geo_json", NULL, NULL,
+			NULL);
+      }
+    geojson_destroy_parser (parser);
+    *rows = 0;
     return 0;
 }
 

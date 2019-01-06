@@ -1416,11 +1416,11 @@ EXTRA_DIST = addpoint10.testcase \
 	getmimetype3.testcase \
 	getmimetype4.testcase \
 	getmimetype5.testcase \
-	getshapefileextent1.testcase \
-	getshapefileextent2.testcase \
-	getshapefileextent3.testcase \
-	getshapefileextent4.testcase \
-	getshapefileextent5.testcase \
+	getvtableextent1.testcase \
+	getvtableextent2.testcase \
+	getvtableextent3.testcase \
+	getvtableextent4.testcase \
+	getvtableextent5.testcase \
 	gml10.testcase \
 	gml11.testcase \
 	gml12.testcase \

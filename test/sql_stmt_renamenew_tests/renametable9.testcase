@@ -3,5 +3,5 @@ RenameTable - TEXT, TEXT
 SELECT RenameTable('main', 'old_table', 'new_table');
 1 # rows (not including the header row)
 1 # columns
-RenameTable(NULL, 'old_table', 'new_table');
+RenameTable('main', 'old_table', 'new_table');
 RenameTable exception - not existing table [main.old_table].

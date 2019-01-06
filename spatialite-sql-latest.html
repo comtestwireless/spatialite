@@ -3191,14 +3191,18 @@ the return type is Integer, with a return value of 1 for TRUE or 0 for FALSE</td
 				<td>RegisterVirtualGeometry( table <i>String</i> ) : <i>Integer</i></td>
 				<td></td>
 				<td align="center" bgcolor="#d0f0d0">base</td>
-				<td>Registers a <u>VirtualShape</u> table into Spatial MetaData tables; the VirtualShape table should be previously created by invoking <b>CREATE VIRTUAL TABLE ... USING VirtualShape(...)</b><hr>
-the return type is Integer, with a return value of 1 for TRUE or 0 for FALSE</td></tr>
+				<td>Registers a <u>VirtualShape</u> or <u>VirtualGeoJSON</u> table into the Spatial MetaData tables; 
+				the VirtualShape table should be previously created by invoking <b>CREATE VIRTUAL TABLE ... USING VirtualShape(...)</b>
+				<hr>
+				the return type is Integer, with a return value of 1 for TRUE or 0 for FALSE</td></tr>
 			<tr><td><b>DropVirtualGeometry</b></td>
 				<td>DropVirtualGeometry( table <i>String</i> ) : <i>Integer</i></td>
 				<td></td>
 				<td align="center" bgcolor="#d0f0d0">base</td>
-				<td>Removes a <u>VirtualShape</u> table from Spatial MetaData tables, dropping the VirtualShape table as well.<hr>
-the return type is Integer, with a return value of 1 for TRUE or 0 for FALSE</td></tr>
+				<td>Removes a <u>VirtualShape</u> or <u>VirtualGeoJSON</u>table from the Spatial MetaData tables, 
+				dropping the VirtualTable table as well.
+				<hr>
+				the return type is Integer, with a return value of 1 for TRUE or 0 for FALSE</td></tr>
 			<tr><td><b>CreateSpatialIndex</b></td>
 				<td>CreateSpatialIndex( table <i>String</i> , column <i>String</i> ) : <i>Integer</i></td>
 				<td></td>
@@ -3433,21 +3437,23 @@ the return type is Integer, with a return value of 1 for TRUE (success) or 0 for
 				</ul><hr>
 the return type is Integer, with a return value of 1 for TRUE (success) or 0 for FALSE (failure): -1 will be
 				returned on invalid arguments.</td></tr>
-		<tr><td><b>SE_RegisterVirtualShapeCoverage</b></td>
-				<td>SE_RegisterVirtualShapeCoverage( coverage_name <i>String</i> , virt_name <i>String</i> , virt_geometry <i>String</i> ) : <i>Integer</i><hr>
-					SE_RegisterVirtualShapeCoverage( coverage_name <i>String</i> , virt_name <i>String</i> , virt_geometry <i>String</i> , title <i>String</i> , abstract <i>String </i> ) : <i>Integer</i><hr>
-					SE_RegisterVirtualShapeCoverage( coverage_name <i>String</i> , virt_name <i>String</i> , virt_geometry <i>String</i> , title <i>String</i> , abstract <i>String </i> ,
+		<tr><td><b>SE_RegisterVirtualTableCoverage</b></td>
+				<td>SE_RegisterVirtualTableCoverage( coverage_name <i>String</i> , virt_name <i>String</i> , virt_geometry <i>String</i> ) : <i>Integer</i><hr>
+					SE_RegisterVirtualTableCoverage( coverage_name <i>String</i> , virt_name <i>String</i> , virt_geometry <i>String</i> , title <i>String</i> , abstract <i>String </i> ) : <i>Integer</i><hr>
+					SE_RegisterVirtualTableeCoverage( coverage_name <i>String</i> , virt_name <i>String</i> , virt_geometry <i>String</i> , title <i>String</i> , abstract <i>String </i> ,
 					is_queryable <i>Boolen</i> ) : <i>Integer</i></td>
 				<td></td>
 				<td align="center" bgcolor="#99d099">libxml2</td>
-				<td>Creates a <b>Vector Coverage</b> based on an already existing VirtualShape Table.
+				<td>Creates a <b>Vector Coverage</b> based on an already existing Virtual Table of the VirtualShape or VirtualGeoJSON type.
 				<ul>
 					<li><b>coverage_name</b> is the symbolic name uniquely identifying each Vector Coverage (<i>Primary Key</i>).</li>
 					<li><b>virt_name</b> and <b>virt_geometry</b> are expected to match the corresponding entries in the <i>virts_geometry_columns</i> table.</li>
 					<li>the optional arguments <b>title</b> and <b>abstract</b> could be eventually be specified for better human readability.</li>
 					<li>if the optional argument <b>is_queryable</b> is left unspecified tjem the Vector Coverage will not be queryable.</li>
-					<li><b>Note</b>: VirtualShape Coverages are always not editable.</li>
+					<li><b>Note</b>: VirtualTable Coverages are always not editable.</li>
 				</ul><hr>
+					Both <b>SE_RegisterVirtualShapeCoverage()</b> and <b>SE_RegisterVirtualGeoJsonCoverage()</b> are accepted <i>alias names</i> for this SQL function.
+				<hr>
 the return type is Integer, with a return value of 1 for TRUE (success) or 0 for FALSE (failure): -1 will be
 				returned on invalid arguments.</td></tr>
 		<tr><td><b>SE_RegisterTopoGeoCoverage</b></td>
@@ -5872,40 +5878,55 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 			<tr><td><b>DropTable</td>
 				<td>DropTable( db-prefix <i>Text</i> , table <i>Text</i> ) : <i>Integer</i><hr>
 				DropTable( db-prefix <i>Text</i> , table <i>Text</i> , permissive <i>Boolean</i> ) : <i>Integer</i></td>
-				<td colspan="3">Will safely remove a Geometry Table (or Spatial View) this including any eventual SpatialIndex,
-				triggers, metadata, statistics definitions an alike. Will also work on ordinary (non-Spatial) Tables and Views.<br>
+				<td colspan="3">Will safely remove a Geometry Table (or Spatial View), including any SpatialIndex,
+				triggers, metadata, statistics tables. Will also work on ordinary (non-Spatial) Tables and Views.<br>
 				<ul>
-					<li><i>db-prefix</i> can be <b>NULL</b>, and in this case the Table or View to be dropped is expected to be located within the <b>"MAIN"</b> database.</li>
+					<li><i>db-prefix</i> can be <b>NULL</b>, where the Table or View to be dropped is expected to be located within the <b>"MAIN"</b> database.</li>
 					<li>The <i>optional</i> argument <b>permissive</b> determines if  a <b>retcode</b> will be returned in the case of failure.<br>
-						The default setting if not explicitly overridden is <b>FALSE</b>, and in this case an exception will be raised.</li>
+						The default setting, when not explicitly overridden, is <b>FALSE</b>, where an exception will then be raised.</li>
 				</ul>
 				<hr>
-				Will return <b>1</b> (i.e. <b>TRUE</b>) on success, <b>0</b> (i.e. <b>FALSE</b>) on failure depending on the <b>permissive</b> setting.<br> 
-				An <b><i>exception</i></b> will be always raised on invalid arguments and on failure if <b>permissive</b> has not been set.</td></tr>
+				Will return <b>1</b> (i.e. <b>TRUE</b>) on success, <b>0</b> (i.e. <b>FALSE</b>) on failure based on the <b>permissive</b> setting.<br> 
+				An <b><i>exception</i></b> will be always raised on invalid arguments and on failure, except when <b>permissive</b> has been  explicitly set.<br>
+				In this case any generic failure (as e.g. attempting to drop a non existing table) will simply return an error code without raising any exception;
+				said in other words, enabling <b><i>permissive</i></b> is more or less equivalent to declare an <b><i>IF EXISTS</i></b> SQL clause and allows
+				for a relaxed (non blocking) failure handling.</td></tr>
 			<tr><td><b>RenameTable</td>
-				<td>RenameTable( db-prefix <i>Text</i> , old_name <i>Text</i> , new_name <i>Text</i> ) : <i>Integer</i></td>
-				<td colspan="3">Will safely rename a Geometry Table this including any eventual SpatialIndex,
-				triggers, metadata, statistics definitions an alike. Will also work on ordinary (non-Spatial) Tables.<br>
+				<td>RenameTable( db-prefix <i>Text</i> , old_name <i>Text</i> , new_name <i>Text</i> ) : <i>Integer</i><hr>
+				    RenameTable( db-prefix <i>Text</i> , old_name <i>Text</i> , new_name <i>Text</i> , permissive <i>Boolean</i> ) : <i>Integer</i></td>
+				<td colspan="3">Will safely rename a Geometry Table, including any SpatialIndex,
+				triggers, metadata, statistics tables. Will also work on ordinary (non-Spatial) Tables.<br>
 				<ul>
-					<li><i>db-prefix</i> can be <b>NULL</b>, and in this case the Table to be renamed is expected to be located within the <b>"MAIN"</b> database.</li>
-					<li>Will non work on <b><i>Virtual Tables</i></b> or <b><i>Views</i></b>; <b><i>Spatial Tables</i></b> can be renamed only if they are located in the <b>MAIN</b> database.</li>
+					<li><i>db-prefix</i> can be <b>NULL</b>, where the Table to be renamed is expected to be located within the <b>"MAIN"</b> database.</li>
+					<li>The <i>optional</i> argument <b>permissive</b> determines if  a <b>retcode</b> will be returned in the case of failure.<br>
+						The default setting, when not explicitly overridden, is <b>FALSE</b>, where an exception will then be raised.</li>
+					<li>Will not work on <b><i>Virtual Tables</i></b> or <b><i>Views</i></b>; <b><i>Spatial Tables</i></b> can be renamed only if they are located in the <b>MAIN</b> database.</li>
 				</ul>
 				<hr>
 				Will return <b>1</b> (i.e. <b>TRUE</b>) on success.<br> 
-				An <b><i>exception</i></b> will be raised on invalid arguments or on failure.<hr>
-				<table bgcolor="#ffd080"><tr><td>If not supported by <b><i>SQLite 3.25</i></b> (or any later version) this function will simply raise an exception.</td></tr></table></td></tr>
+				An <b><i>exception</i></b> will be raised on invalid arguments or on failure, except when <b>permissive</b> has been  explicitly set.<br>
+				In this case any generic failure (as e.g. attempting to rename a non existing table) will simply return an error code without raising any exception;
+				said in other words, enabling <b><i>permissive</i></b> is more or less equivalent to declare an <b><i>IF EXISTS</i></b> SQL clause and allows
+				for a relaxed (non blocking) failure handling.<hr>
+				<table bgcolor="#ffd080"><tr><td>When used with a <b><i>SQLite</i></b> version < than <b><i>3.25</i></b> this function will raise an exception.</td></tr></table></td></tr>
 			<tr><td><b>RenameColumn</td>
-				<td>RenameColumn( db-prefix <i>Text</i> , table <i>Text</i> , old_colname <i>Text</i> , new_colname <i>Text</i> ) : <i>Integer</i></td>
-				<td colspan="3">Will safely rename a Column belonging to a Geometry Table, this including any eventual SpatialIndex,
-				triggers, metadata, statistics definitions an alike. Will also work on Columns of ordinary (non-Spatial) Tables.<br>
+				<td>RenameColumn( db-prefix <i>Text</i> , table <i>Text</i> , old_colname <i>Text</i> , new_colname <i>Text</i> ) : <i>Integer</i><hr>
+				    RenameColumn( db-prefix <i>Text</i> , table <i>Text</i> , old_colname <i>Text</i> , new_colname <i>Text</i> , permissive <i>Boolean</i> ) : <i>Integer</i></td>
+				<td colspan="3">Will safely rename a Column belonging to a Geometry Table, including any SpatialIndex,
+				triggers, metadata, statistics tables. Will also work on Columns of ordinary (non-Spatial) Tables.<br>
 				<ul>
-					<li><i>db-prefix</i> can be <b>NULL</b>, and in this case the Table containing the Column to be renamed is expected to be located within the <b>"MAIN"</b> database.</li>
-					<li>Will non work on <b><i>Virtual Tables</i></b> or <b><i>Views</i></b>; <b><i>Spatial Tables</i></b> can rename their Column only if they are located in the <b>MAIN</b> database.</li>
+					<li><i>db-prefix</i> can be <b>NULL</b>, where the Table containing the Column to be renamed is expected to be located within the <b>"MAIN"</b> database.</li>
+					<li>The <i>optional</i> argument <b>permissive</b> determines if  a <b>retcode</b> will be returned in the case of failure.<br>
+						The default setting, when not explicitly overridden, is <b>FALSE</b>, where an exception will then be raised.</li>
+					<li>Will not work on <b><i>Virtual Tables</i></b> or <b><i>Views</i></b>; <b><i>Spatial Tables</i></b> can rename their Column only if they are located in the <b>MAIN</b> database.</li>
 				</ul>
 				<hr>
 				Will return <b>1</b> (i.e. <b>TRUE</b>) on success.<br> 
-				An <b><i>exception</i></b> will be raised on invalid arguments or on failure.<hr>
-				<table bgcolor="#ffd080"><tr><td>If not supported by <b><i>SQLite 3.25</i></b> (or any later version) this function will simply raise an exception.</td></tr></table></td></tr>
+				An <b><i>exception</i></b> will be raised on invalid arguments or on failure, except when <b>permissive</b> has been  explicitly set.<br>
+				In this case any generic failure (as e.g. attempting to rename a non existing column) will simply return an error code without raising any exception;
+				said in other words, enabling <b><i>permissive</i></b> is more or less equivalent to declare an <b><i>IF EXISTS</i></b> SQL clause and allows
+				for a relaxed (non blocking) failure handling.<hr>
+				<table bgcolor="#ffd080"><tr><td>When used with a <b><i>SQLite</i></b> version < than <b><i>3.25</i></b> this function will raise an exception.</td></tr></table></td></tr>
 			<tr><td><b>ImportSHP</b></td>
 				<td>ImportSHP( filename <i>Text</i> , table <i>Text</i> , charset <i>Text</i> ) : <i>Integer</i><hr>
 				ImportSHP( filename <i>Text</i> , table <i>Text</i> , charset <i>Text</i> [ , srid <i>Integer</i>  [ ,
@@ -5940,7 +5961,7 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 						<li><i>UPPER</i> or <i>UPPERCASE</i>: all column names will be converted to uppercase.</li>
 						<li><i>SAME</i> or <i>SAMECASE</i>: all column names will be left as they are.</li>
 					</ul></li>
-					<li><b>update_statistics</b> boolean flag: immediately updating Layer Statustics or not; <i>1</i> by default.</li>
+					<li><b>update_statistics</b> boolean flag: immediately updating Layer Statistics or not; <i>1</i> by default.</li>
 					<li><b>verbose</b> boolean flag: verbose console output: <i>1</i> by default, you can explicitly pass <i>0</i>
 					if you better whish a silent output.
 				</ul></li>
@@ -6040,7 +6061,7 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				Will return the total number of exported rows.<br> <b>NULL</b> will be returned on invalid arguments.<hr>
                 <u>Please note well</u>: this SQL function open the doors to many potential security issues, and thus is always <i>disabled by default</i>.<br>
                 Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to effectively enable this function.</td></tr>
-			<tr><td><b>ExportGeoJSON</b></td>
+			<tr><td><b>ExportGeoJSON</b><br><br><br><b><i>Obsolete and deprecated !!!</i></b><br>Please, use <b><i>ExportGeoJSON2()</i></b> instead.</td>
 				<td>ExportGeoJSON( table <i>Text</i> , geo_column <i>Text</i> , filename <i>Text</i> ) : <i>Integer</i><hr>
 				ExportGeoJSON( table <i>Text</i> , geo_column <i>Text</i> , filename <i>Text</i> [ , format <i>Text</i>
 				[ , precision <i>Integer</i> ] ] ) : <i>Integer</i></td>
@@ -6062,6 +6083,64 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				</ul>
 				<hr>
 				Will return the total number of exported rows.<br> <b>NULL</b> will be returned on invalid arguments.<hr>
+                <u>Please note well</u>: this SQL function open the doors to many potential security issues, and thus is always <i>disabled by default</i>.<br>
+                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to effectively enable this function.</td></tr>
+			<tr><td><b>ExportGeoJSON2</b></td>
+				<td>ExportGeoJSON2( table <i>Text</i> , geo_column <i>Text</i> , filename <i>Text</i> ) : <i>Integer</i><hr>
+				ExportGeoJSON2( table <i>Text</i> , geo_column <i>Text</i> , filename <i>Text</i> [ , format <i>Text</i>
+				[ , precision <i>Integer</i> [ , lon_lat <i>Boolen</i> [ , M_coords <i>Boolean</i> [ , indented <i>Boolean</i> [ , colname_case <i>Text</i> ] ] ] ] ] ] ) : <i>Integer</i></td>
+				<td colspan="3">Will export an internal Table as an external GeoJSON file conformat to the <b>RFC 4796</b> specifications:
+				<ul>
+					<li>Mandatory aguments:
+					<ul>
+						<li><b>table</b> name of the table to be exported.</li>
+						<li><b>geom_column</b> name of the Geometry column.</li>
+						<li><b>filename</b> absolute or relative path leading to the GeoJSON file.</li>
+					</ul></li>
+					<li>Optional aguments:
+					<ul>
+						<li><b>format</b> specifies one of the several alternative GeoJSON formats; allowed values are
+						<i>none</i>, <i>MBR</i>, <i>withShortCRS</i>, <i>MBRwithShortCRS</i>, <i>withLongCRS</i>
+						or <i>MBRwithLongCRS</i>.</li>
+						<li><b>precision</b> number of decimal digits to be exported; <i>8</i> by default.</li>
+						<li><b>lon_lat</b> if <i>TRUE</i> all coordinates are assumed to be expressed as WGS84 longitudes
+							and latitudes (as required by RFC 7946), and <b>ST_Transform</b> will be automatically called if and when required.<br>
+								If <i>FALSE</i> all coordinates are assumed to be expressed in any other (undefined) CRS.</li>
+						<li><b>M_coords</b> if <i>TRUE</i> eventual M-values will be exported as extra coordinates.<br>
+						       If <i>FALSE</i> strict RFC 4796 conformance will be applied (no M-Values will be exported)</li>
+						<li><b>indented</b> if <i>TRUE</i> the GeoJSON file will be properly indented for enhanced human readibility<br>
+						    If <i>FALSE</i> the whole GeoJSON file will be in a single monolithic line without blank spaces.</li>
+						<li><b>colcase_name</b> one between <i>LOWER | LOWERCASE</i>, <i>UPPER | UPPERCASE</i> or <i>SAME | SAMECASE</i>
+						(same meaning as in <b>ExportSHP</b>).</li>
+					</ul></li>
+				</ul>
+				<hr>
+				Will return the total number of exported rows.<br> <b>NULL</b> will be returned on invalid arguments.<hr>
+                <u>Please note well</u>: this SQL function open the doors to many potential security issues, and thus is always <i>disabled by default</i>.<br>
+                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to effectively enable this function.</td></tr>
+			<tr><td><b>ImportGeoJSON</b></td>
+				<td>ImportGeoJSON( filename <i>Text</i> , table <i>Text</i> ) : <i>Integer</i><hr>
+				ImportGeoJSON( filename <i>Text</i> , table <i>Text</i> [ , geo_column <i>Text</i> [ , spatial_index <i>Boolean</i> [ , srid <i>Interger</i> [ , colname_case <i>Text</i> ]]]] ) : <i>Integer</i></td>
+				<td colspan="3">Will create a Spatial Table by importing an external GeoJSON file conformat to the <b>RFC 4796</b> specifications:
+				<ul>
+					<li>Mandatory aguments:
+					<ul>
+						<li><b>table</b> name of the table to be created.</li>
+						<li><b>filename</b> absolute or relative path leading to the GeoJSON file.</li>
+					</ul></li>
+					<li>Optional aguments:
+					<ul>
+						<li><b>geo_column</b> name of the Geometry column in theSpatial Table (if not specified it will be <i>'geometry'</i>).</li>
+						<li><b>spatial_index</b> if <i>TRUE</i> a <i>SpatialIndex</i> supporting the Geometry Column will be immediately created.<br>
+								If <i>FALSE</i> all coordinates are assumed to be expressed in any other (undefined) CRS</li>
+						<li><b>srid</b> when positive, the SRID value to be assigned to all Geometries.<br>
+						    If 0 or negative <i>SRID=4326</i> (lon-lat WGS84) will be always assumed accordingly to RFC 7946.</li>
+						<li><b>colcase_name</b> one between <i>LOWER | LOWERCASE</i>, <i>UPPER | UPPERCASE</i> or <i>SAME | SAMECASE</i>
+						(same meaning as in <b>ImportSHP</b>).</li>
+					</ul></li>
+				</ul>
+				<hr>
+				Will return the total number of imported rows.<br> <b>NULL</b> will be returned on invalid arguments.<hr>
                 <u>Please note well</u>: this SQL function open the doors to many potential security issues, and thus is always <i>disabled by default</i>.<br>
                 Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to effectively enable this function.</td></tr>
 			<tr><td><b>ImportXLS</b></td>
@@ -6197,11 +6276,14 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				<td>GetCutterMessage( <i>void</i> ) : <i>String</i></td>
 				<td colspan="3">Will return the most <i>recent diagnostic message</i> emitted by <b>ST_Cutter()</b>.<br>
 				<b>NULL</b> will be returned if no such message currently exists.</td></tr>			
-			<tr><td><b>GetShapefileExtent()</b></td>
-				<td>GetShapefileExtent( virtual_table_name <i>String</i> ) : <i>Geometry</i></td>
-				<td colspan="3"><b>virtual_table_name</b> is expected to identify some Table of the <b>VirtualSHP</b> type.<br>
-					An Envelope Geometry will be returned corresponding to the <b>Shapefile's Full Extent</b>;
-				<b>NULL</b> will be returned if any error occurs (invalid argument type or not existing VirtualTable).</td></tr>	
+			<tr><td><b>GetVirtualTableExtent()</b></td>
+				<td>GetVirtualTableExtent( virtual_table_name <i>String</i> ) : <i>Geometry</i></td>
+				<td colspan="3"><b>virtual_table_name</b> is expected to identify some Table of the <b>VirtualShape</b> or <b>VirtualGeoJSON</b>type.<br>
+					An Envelope Geometry will be returned corresponding to the <b>Full Extent</b>;
+				<b>NULL</b> will be returned if any error occurs (invalid argument type or not existing VirtualTable).
+				<hr>
+					Both <b>GetVirtualShapeExtent()</b> and <b>GetVirtualGeoJsonExtent()</b> are accepted <i>alias names</i> for this SQL function.
+				</td></tr>	
 			<tr><td><b>CreateRouting()</b></td>
 				<td>CreateRouting( routing_data_table <i>String</i> , virtual_routing_table <i>String</i> , input_table <i>String</i> , from_column <i>String</i> , to_column <i>String</i> ,
 				geom_column <i>String</i> , cost_column <i>String</i> ) : <i>Boolean</i><hr>

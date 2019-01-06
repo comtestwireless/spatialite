@@ -6621,6 +6621,7 @@ do_eval_topo_geometry (struct gaia_topology *topo, sqlite3_stmt * stmt_rels,
 	  auxtopo_select_valid_face_edges (list);
 	  rearranged = auxtopo_polygonize_face_edges (list, topo->cache);
 	  auxtopo_free_face_edges (list);
+	  list = NULL;
 	  if (rearranged != NULL)
 	    {
 		gaiaPolygonPtr pg = rearranged->FirstPolygon;
@@ -6639,12 +6640,15 @@ do_eval_topo_geometry (struct gaia_topology *topo, sqlite3_stmt * stmt_rels,
     if (geom->FirstPoint == NULL && geom->FirstLinestring == NULL
 	&& geom->FirstPolygon == NULL)
 	goto error;
+    auxtopo_free_face_edges (list);
     return geom;
 
   error:
     gaiaFreeGeomColl (geom);
     if (sparse_lines != NULL)
 	gaiaFreeGeomColl (sparse_lines);
+    if (list != NULL)
+	auxtopo_free_face_edges (list);
     return NULL;
 }
 

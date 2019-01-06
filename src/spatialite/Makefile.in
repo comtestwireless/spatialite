@@ -114,7 +114,7 @@ am__objects_1 = libsplite_la-mbrcache.lo libsplite_la-spatialite.lo \
 	libsplite_la-virtualnetwork.lo libsplite_la-virtualrouting.lo \
 	libsplite_la-virtualshape.lo libsplite_la-virtualxpath.lo \
 	libsplite_la-virtualelementary.lo libsplite_la-virtualknn.lo \
-	libsplite_la-create_routing.lo
+	libsplite_la-create_routing.lo libsplite_la-virtualgeojson.lo
 am_libsplite_la_OBJECTS = $(am__objects_1)
 libsplite_la_OBJECTS = $(am_libsplite_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -135,7 +135,8 @@ am__objects_2 = splite_la-mbrcache.lo splite_la-spatialite.lo \
 	splite_la-virtualspatialindex.lo splite_la-virtualnetwork.lo \
 	splite_la-virtualrouting.lo splite_la-virtualshape.lo \
 	splite_la-virtualxpath.lo splite_la-virtualelementary.lo \
-	splite_la-virtualknn.lo splite_la-create_routing.lo
+	splite_la-virtualknn.lo splite_la-create_routing.lo \
+	splite_la-virtualgeojson.lo
 am_splite_la_OBJECTS = $(am__objects_2)
 splite_la_OBJECTS = $(am_splite_la_OBJECTS)
 splite_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
@@ -332,8 +333,8 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CPPFLAGS = @CFLAGS@ @CPPFLAGS@ @GEOS_CFLAGS@ @LIBXML2_CFLAGS@ \
-	-I$(top_srcdir)/src/headers
+AM_CPPFLAGS = -I$(top_srcdir)/src/headers @CFLAGS@ @CPPFLAGS@ \
+	@GEOS_CFLAGS@ @LIBXML2_CFLAGS@ $(am__empty)
 noinst_LTLIBRARIES = libsplite.la splite.la
 SPATIALITE_COMMON_SOURCES = mbrcache.c \
 	spatialite.c \
@@ -356,14 +357,15 @@ SPATIALITE_COMMON_SOURCES = mbrcache.c \
 	virtualxpath.c \
 	virtualelementary.c \
 	virtualknn.c \
-	create_routing.c
+	create_routing.c \
+	virtualgeojson.c
 
 libsplite_la_SOURCES = $(SPATIALITE_COMMON_SOURCES)
 libsplite_la_CFLAGS = -fvisibility=hidden
 splite_la_SOURCES = $(SPATIALITE_COMMON_SOURCES)
-splite_la_CPPFLAGS = @CFLAGS@ @CPPFLAGS@ @GEOS_CFLAGS@ \
-	@LIBXML2_CFLAGS@ -I$(top_srcdir)/src/headers -I. \
-	-DLOADABLE_EXTENSION -fvisibility=hidden
+splite_la_CPPFLAGS = -I$(top_srcdir)/src/headers -I. @CFLAGS@ \
+	@CPPFLAGS@ @GEOS_CFLAGS@ @LIBXML2_CFLAGS@ -DLOADABLE_EXTENSION \
+	-fvisibility=hidden
 splite_la_LDFLAGS = -module
 splite_la_LIBTOOLFLAGS = --tag=disable-static
 MOSTLYCLEANFILES = *.gcna *.gcno *.gcda
@@ -439,6 +441,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsplite_la-virtualdbf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsplite_la-virtualelementary.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsplite_la-virtualfdo.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsplite_la-virtualgeojson.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsplite_la-virtualgpkg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsplite_la-virtualknn.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsplite_la-virtualnetwork.Plo@am__quote@
@@ -461,6 +464,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/splite_la-virtualdbf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/splite_la-virtualelementary.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/splite_la-virtualfdo.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/splite_la-virtualgeojson.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/splite_la-virtualgpkg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/splite_la-virtualknn.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/splite_la-virtualnetwork.Plo@am__quote@
@@ -644,6 +648,13 @@ libsplite_la-create_routing.lo: create_routing.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsplite_la_CFLAGS) $(CFLAGS) -c -o libsplite_la-create_routing.lo `test -f 'create_routing.c' || echo '$(srcdir)/'`create_routing.c
 
+libsplite_la-virtualgeojson.lo: virtualgeojson.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsplite_la_CFLAGS) $(CFLAGS) -MT libsplite_la-virtualgeojson.lo -MD -MP -MF $(DEPDIR)/libsplite_la-virtualgeojson.Tpo -c -o libsplite_la-virtualgeojson.lo `test -f 'virtualgeojson.c' || echo '$(srcdir)/'`virtualgeojson.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libsplite_la-virtualgeojson.Tpo $(DEPDIR)/libsplite_la-virtualgeojson.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='virtualgeojson.c' object='libsplite_la-virtualgeojson.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsplite_la_CFLAGS) $(CFLAGS) -c -o libsplite_la-virtualgeojson.lo `test -f 'virtualgeojson.c' || echo '$(srcdir)/'`virtualgeojson.c
+
 splite_la-mbrcache.lo: mbrcache.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(splite_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(splite_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT splite_la-mbrcache.lo -MD -MP -MF $(DEPDIR)/splite_la-mbrcache.Tpo -c -o splite_la-mbrcache.lo `test -f 'mbrcache.c' || echo '$(srcdir)/'`mbrcache.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/splite_la-mbrcache.Tpo $(DEPDIR)/splite_la-mbrcache.Plo
@@ -797,6 +808,13 @@ splite_la-create_routing.lo: create_routing.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='create_routing.c' object='splite_la-create_routing.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(splite_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(splite_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o splite_la-create_routing.lo `test -f 'create_routing.c' || echo '$(srcdir)/'`create_routing.c
+
+splite_la-virtualgeojson.lo: virtualgeojson.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(splite_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(splite_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT splite_la-virtualgeojson.lo -MD -MP -MF $(DEPDIR)/splite_la-virtualgeojson.Tpo -c -o splite_la-virtualgeojson.lo `test -f 'virtualgeojson.c' || echo '$(srcdir)/'`virtualgeojson.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/splite_la-virtualgeojson.Tpo $(DEPDIR)/splite_la-virtualgeojson.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='virtualgeojson.c' object='splite_la-virtualgeojson.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(splite_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(splite_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o splite_la-virtualgeojson.lo `test -f 'virtualgeojson.c' || echo '$(srcdir)/'`virtualgeojson.c
 
 mostlyclean-libtool:
 	-rm -f *.lo

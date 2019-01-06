@@ -135,7 +135,7 @@ extern "C"
 	struct splite_savepoint *next;
     };
 
-    struct splite_shp_extent
+    struct splite_vtable_extent
     {
 	char *table;
 	double minx;
@@ -143,8 +143,8 @@ extern "C"
 	double miny;
 	double maxy;
 	int srid;
-	struct splite_shp_extent *prev;
-	struct splite_shp_extent *next;
+	struct splite_vtable_extent *prev;
+	struct splite_vtable_extent *next;
     };
 
     struct gaia_variant_value
@@ -199,8 +199,8 @@ extern "C"
 	struct splite_savepoint *last_net_svpt;
 	gaiaSequencePtr first_seq;
 	gaiaSequencePtr last_seq;
-	struct splite_shp_extent *first_shp_extent;
-	struct splite_shp_extent *last_shp_extent;
+	struct splite_vtable_extent *first_vtable_extent;
+	struct splite_vtable_extent *last_vtable_extent;
 	int ok_last_used_sequence;
 	int last_used_sequence_val;
 	char *SqlProcLogfile;
@@ -685,15 +685,17 @@ extern "C"
 							   int is_queryable,
 							   int is_editable);
 
-    SPATIALITE_PRIVATE int register_virtual_shp_coverage (void *p_sqlite,
-							  const char
-							  *coverage_name,
-							  const char *virt_name,
-							  const char
-							  *virt_geometry,
-							  const char *title,
-							  const char *abstract,
-							  int is_queryable);
+    SPATIALITE_PRIVATE int register_virtual_table_coverage (void *p_sqlite,
+							    const char
+							    *coverage_name,
+							    const char
+							    *virt_name,
+							    const char
+							    *virt_geometry,
+							    const char *title,
+							    const char
+							    *abstract,
+							    int is_queryable);
 
     SPATIALITE_PRIVATE int register_topogeo_coverage (void *p_sqlite,
 						      const char
@@ -1256,18 +1258,18 @@ extern "C"
     SPATIALITE_PRIVATE void rollback_topo_savepoint (const void *handle,
 						     const void *cache);
 
-    SPATIALITE_PRIVATE void add_shp_extent (const char *table, double minx,
-					    double miny, double maxx,
-					    double maxy, int srid,
-					    const void *cache);
-
-    SPATIALITE_PRIVATE void remove_shp_extent (const char *table,
+    SPATIALITE_PRIVATE void add_vtable_extent (const char *table, double minx,
+					       double miny, double maxx,
+					       double maxy, int srid,
 					       const void *cache);
 
-    SPATIALITE_PRIVATE int get_shp_extent (const char *table, double *minx,
-					   double *miny, double *maxx,
-					   double *maxy, int *srid,
-					   const void *cache);
+    SPATIALITE_PRIVATE void remove_vtable_extent (const char *table,
+						  const void *cache);
+
+    SPATIALITE_PRIVATE int get_vtable_extent (const char *table, double *minx,
+					      double *miny, double *maxx,
+					      double *maxy, int *srid,
+					      const void *cache);
 
 /* Topology-Network SQL functions */
     SPATIALITE_PRIVATE void fnctaux_GetLastNetworkException (const void

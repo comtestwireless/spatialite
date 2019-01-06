@@ -33700,6 +33700,7 @@ fnct_RenameTable (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
 /* SQL function:
 / RenameTable(TEXT db_prefix, TEXT old_name, TEXT new_name)
+/ RenameTable(TEXT db_prefix, TEXT old_name, TEXT new_name, BOOL permissive)
 /
 / returns:
 / 1 on success
@@ -33709,6 +33710,7 @@ fnct_RenameTable (sqlite3_context * context, int argc, sqlite3_value ** argv)
     const char *old_name = NULL;
     const char *new_name = NULL;
     const char *arg_name;
+    int permissive = 0;
     char *err;
     char *msg;
     sqlite3 *db_handle = sqlite3_context_db_handle (context);
@@ -33734,8 +33736,22 @@ fnct_RenameTable (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  goto invalid_args;
       }
     new_name = (char *) sqlite3_value_text (argv[2]);
+    if (argc >= 4)
+      {
+	  if (sqlite3_value_type (argv[3]) != SQLITE_INTEGER)
+	    {
+		arg_name = "4th arg";
+		goto invalid_args;
+	    }
+	  permissive = sqlite3_value_int (argv[3]);
+      }
     if (!gaiaRenameTable (db_handle, db_prefix, old_name, new_name, &err))
       {
+	  if (permissive)
+	    {
+		sqlite3_result_int (context, 0);
+		return;
+	    }
 	  msg = sqlite3_mprintf ("RenameTable exception - %s.", err);
 	  sqlite3_result_error (context, msg, -1);
 	  sqlite3_free (msg);
@@ -33767,6 +33783,7 @@ fnct_RenameColumn (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
 /* SQL function:
 / RenameColumn(TEXT db_prefix, TEXT table, TEXT old_name, TEXT new_name)
+/ RenameColumn(TEXT db_prefix, TEXT table, TEXT old_name, TEXT new_name, BOOL permissive)
 /
 / returns:
 / 1 on success
@@ -33777,6 +33794,7 @@ fnct_RenameColumn (sqlite3_context * context, int argc, sqlite3_value ** argv)
     const char *old_name = NULL;
     const char *new_name = NULL;
     const char *arg_name;
+    int permissive = 0;
     char *err;
     char *msg;
     sqlite3 *db_handle = sqlite3_context_db_handle (context);
@@ -33808,9 +33826,23 @@ fnct_RenameColumn (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  goto invalid_args;
       }
     new_name = (char *) sqlite3_value_text (argv[3]);
+    if (argc >= 5)
+      {
+	  if (sqlite3_value_type (argv[4]) != SQLITE_INTEGER)
+	    {
+		arg_name = "5th arg";
+		goto invalid_args;
+	    }
+	  permissive = sqlite3_value_int (argv[4]);
+      }
     if (!gaiaRenameColumn
 	(db_handle, db_prefix, table, old_name, new_name, &err))
       {
+	  if (permissive)
+	    {
+		sqlite3_result_int (context, 0);
+		return;
+	    }
 	  msg = sqlite3_mprintf ("RenameColumn exception - %s.", err);
 	  sqlite3_result_error (context, msg, -1);
 	  sqlite3_free (msg);
@@ -36707,6 +36739,239 @@ fnct_ExportGeoJSON (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	sqlite3_result_int (context, rows);
 }
 
+static void
+fnct_ExportGeoJSON2 (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ ExportGeoJSON2(TEXT table, TEXT geom_column, TEXT filename)
+/ ExportGeoJSON2(TEXT table, TEXT geom_column, TEXT filename, 
+/                INT precision)
+/ ExportGeoJSON2(TEXT table, TEXT geom_column, TEXT filename, 
+/                INT precision, INT lon_lat)
+/ ExportGeoJSON2(TEXT table, TEXT geom_column, TEXT filename, 
+/                INT precision, INT lon_lat, INT M_coords)
+/ ExportGeoJSON2(TEXT table, TEXT geom_column, TEXT filename, 
+/                INT precision, INT lon_lat, INT M_coords,
+/                INT indented)
+/ ExportGeoJSON2(TEXT table, TEXT geom_column, TEXT filename, 
+/                INT precision, INT lon_lat, INT M_coords,
+/                INT indented, TEXT colname_case)
+/
+/ returns:
+/ the number of exported rows
+/ NULL on invalid arguments
+*/
+    int ret;
+    char *table;
+    char *geom_col;
+    char *path;
+    int precision = 8;
+    int lon_lat = 1;
+    int m_coords = 0;
+    int indented = 1;
+    int colname_case = GAIA_DBF_COLNAME_LOWERCASE;
+    int rows;
+    char *errmsg = NULL;
+    sqlite3 *db_handle = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) != SQLITE_TEXT)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    table = (char *) sqlite3_value_text (argv[0]);
+    if (sqlite3_value_type (argv[1]) == SQLITE_NULL)
+	geom_col = NULL;
+    else
+      {
+	  if (sqlite3_value_type (argv[1]) != SQLITE_TEXT)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  geom_col = (char *) sqlite3_value_text (argv[1]);
+      }
+    if (sqlite3_value_type (argv[2]) != SQLITE_TEXT)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    path = (char *) sqlite3_value_text (argv[2]);
+    if (argc > 3)
+      {
+	  if (sqlite3_value_type (argv[3]) != SQLITE_INTEGER)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  precision = sqlite3_value_int (argv[3]);
+      }
+    if (argc > 4)
+      {
+	  if (sqlite3_value_type (argv[4]) != SQLITE_INTEGER)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  lon_lat = sqlite3_value_int (argv[4]);
+      }
+    if (argc > 5)
+      {
+	  if (sqlite3_value_type (argv[5]) != SQLITE_INTEGER)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  m_coords = sqlite3_value_int (argv[5]);
+      }
+    if (argc > 6)
+      {
+	  if (sqlite3_value_type (argv[6]) != SQLITE_INTEGER)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  indented = sqlite3_value_int (argv[6]);
+      }
+    if (argc > 7)
+      {
+	  if (sqlite3_value_type (argv[7]) != SQLITE_TEXT)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  else
+	    {
+		const char *val = (char *) sqlite3_value_text (argv[7]);
+		if (strcasecmp (val, "UPPER") == 0
+		    || strcasecmp (val, "UPPERCASE") == 0)
+		    colname_case = GAIA_DBF_COLNAME_UPPERCASE;
+		else if (strcasecmp (val, "SAME") == 0
+			 || strcasecmp (val, "SAMECASE") == 0)
+		    colname_case = GAIA_DBF_COLNAME_CASE_IGNORE;
+		else
+		    colname_case = GAIA_DBF_COLNAME_LOWERCASE;
+	    }
+      }
+
+    ret =
+	dump_geojson2 (db_handle, table, geom_col, path, precision, lon_lat,
+		       m_coords, indented, colname_case, &rows, &errmsg);
+    if (errmsg != NULL)
+      {
+	  spatialite_e ("%s", errmsg);
+	  sqlite3_free (errmsg);
+      }
+
+    if (rows < 0 || !ret)
+	sqlite3_result_null (context);
+    else
+	sqlite3_result_int (context, rows);
+}
+
+static void
+fnct_ImportGeoJSON (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ ImportGeoJSON(TEXT filename, TEXT table)
+/ ImportGeoJSON(TEXT filename, TEXT table, TEXT geom_column)
+/ ImportGeoJSON(TEXT filename, TEXT table, TEXT geom_column,
+/               INT spatial_index)
+/ ImportGeoJSON(TEXT filename, TEXT table, TEXT geom_column,
+/               INT spatial_index, INT srid)
+/ ImportGeoJSON(TEXT filename, TEXT table, TEXT geom_column,
+/               INT spatial_index, INT srid, TEXT colname_case)
+/
+/ returns:
+/ the number of imported rows
+/ NULL on invalid arguments
+*/
+    int ret;
+    char *table;
+    char *geom_col = "geometry";
+    char *path;
+    int spatial_index = 0;
+    int srid = 4326;
+    int colname_case = GAIA_DBF_COLNAME_LOWERCASE;
+    int rows;
+    char *errmsg = NULL;
+    sqlite3 *db_handle = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) != SQLITE_TEXT)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    path = (char *) sqlite3_value_text (argv[0]);
+    if (sqlite3_value_type (argv[1]) != SQLITE_TEXT)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    table = (char *) sqlite3_value_text (argv[1]);
+    if (argc > 2)
+      {
+	  if (sqlite3_value_type (argv[2]) != SQLITE_TEXT)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  geom_col = (char *) sqlite3_value_text (argv[2]);
+      }
+    if (argc > 3)
+      {
+	  if (sqlite3_value_type (argv[3]) != SQLITE_INTEGER)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  spatial_index = sqlite3_value_int (argv[3]);
+      }
+    if (argc > 4)
+      {
+	  if (sqlite3_value_type (argv[4]) != SQLITE_INTEGER)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  srid = sqlite3_value_int (argv[4]);
+      }
+    if (argc > 5)
+      {
+	  if (sqlite3_value_type (argv[5]) != SQLITE_TEXT)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  else
+	    {
+		const char *val = (char *) sqlite3_value_text (argv[5]);
+		if (strcasecmp (val, "UPPER") == 0
+		    || strcasecmp (val, "UPPERCASE") == 0)
+		    colname_case = GAIA_DBF_COLNAME_UPPERCASE;
+		else if (strcasecmp (val, "SAME") == 0
+			 || strcasecmp (val, "SAMECASE") == 0)
+		    colname_case = GAIA_DBF_COLNAME_CASE_IGNORE;
+		else
+		    colname_case = GAIA_DBF_COLNAME_LOWERCASE;
+	    }
+      }
+
+    ret =
+	load_geojson (db_handle, path, table, geom_col, spatial_index, srid,
+		      colname_case, &rows, &errmsg);
+    if (errmsg != NULL)
+      {
+	  spatialite_e ("%s", errmsg);
+	  sqlite3_free (errmsg);
+      }
+
+    if (rows < 0 || !ret)
+	sqlite3_result_null (context);
+    else
+	sqlite3_result_int (context, rows);
+}
+
 #ifdef ENABLE_LIBXML2		/* including LIBXML2 */
 static void
 wfs_page_done (int features, void *ptr)
@@ -37000,7 +37265,8 @@ do_check_impexp (const char *str, const char *ref)
 /* 
 / testing if a Trigger attempts calling one of the dangerous ExportDXF(), 
 / ImportDXF(), ExportDBF(), ImportDBF(),  ExportSHP(), ExportSHP(),
-/ ExportKML(), ImportWFS() or ImportXLS() functions */
+/ ExportGeoJSON(), ImportGeoJSON2(), ExportKML(), ImportWFS() or 
+/ ImportXLS() functions */
 
     int contains_impexp = 0;
     const char *start = str;
@@ -37054,6 +37320,7 @@ fnct_CountUnsafeTriggers (sqlite3_context * context, int argc,
 	"OR sql LIKE '%ExportDBF%' OR sql LIKE '%ImportSHP%' "
 	"OR sql LIKE '%ExportSHP%' OR sql LIKE '%ExportKML%' "
 	"OR sql LIKE '%ExportGeoJSON%' OR (sql LIKE '%eval%' AND sql LIKE '%(%') "
+	"OR sql LIKE '%ExportGeoJSON2%' OR sql LIKE '%ImportGeoJSON%' "
 	"OR sql LIKE '%ImportWFS%' OR sql LIKE '%ImportXLS%')";
     ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, NULL);
     if (ret != SQLITE_OK)
@@ -37086,6 +37353,12 @@ fnct_CountUnsafeTriggers (sqlite3_context * context, int argc,
 		if (do_check_impexp (results[(i * columns) + 0], "importshp"))
 		    dangerous = 1;
 		if (do_check_impexp (results[(i * columns) + 0], "exportshp"))
+		    dangerous = 1;
+		if (do_check_impexp
+		    (results[(i * columns) + 0], "importgeojson"))
+		    dangerous = 1;
+		if (do_check_impexp
+		    (results[(i * columns) + 0], "exportgeojson2"))
 		    dangerous = 1;
 		if (do_check_impexp (results[(i * columns) + 0], "exportkml"))
 		    dangerous = 1;
@@ -38458,22 +38731,26 @@ fnct_RegisterSpatialViewCoverage (sqlite3_context * context, int argc,
 }
 
 static void
-fnct_RegisterVirtualShapeCoverage (sqlite3_context * context, int argc,
+fnct_RegisterVirtualTableCoverage (sqlite3_context * context, int argc,
 				   sqlite3_value ** argv)
 {
 /* SQL function:
-/ RegisterVirtualShapeCoverage(Text coverage_name, Text virt_name,
+/ RegisterVirtualTableCoverage(Text coverage_name, Text virt_name,
 /                              Text virt_geometry)
 /   or
-/ RegisterVirtualShapeCoverage(Text coverage_name, Text virt_name,
+/ RegisterVirtualTableCoverage(Text coverage_name, Text virt_name,
 /                              Text virt_geometry, Text title,
 /                              Text abstract)
 /   or
-/ RegisterVirtualShapeCoverage(Text coverage_name, Text virt_name,
+/ RegisterVirtualTableCoverage(Text coverage_name, Text virt_name,
 /                              Text virt_geometry, Text title,
 /                              Text abstract, Bool is_queryable)
 /
-/ inserts a Vector Coverage based upon a VirtualShapefile
+/ note: both RegisterVirtualShapeCoverage() and
+/ RegisterVirtualGeoJsonCoverage() are accepted 
+/ as valid alias names
+/
+/ inserts a Vector Coverage based upon a VirtualTable
 / returns 1 on success
 / 0 on failure, -1 on invalid arguments
 */
@@ -38517,9 +38794,9 @@ fnct_RegisterVirtualShapeCoverage (sqlite3_context * context, int argc,
 	  is_queryable = sqlite3_value_int (argv[5]);
       }
     ret =
-	register_virtual_shp_coverage (sqlite, coverage_name, virt_name,
-				       virt_geometry, title, abstract,
-				       is_queryable);
+	register_virtual_table_coverage (sqlite, coverage_name, virt_name,
+					 virt_geometry, title, abstract,
+					 is_queryable);
     sqlite3_result_int (context, ret);
 }
 
@@ -43637,8 +43914,8 @@ fnct_bufferoptions_set_endcap (sqlite3_context * context, int argc,
 	  cache->buffer_end_cap_style = val;
 	  sqlite3_result_int (context, 1);
       }
-      else
-    sqlite3_result_int (context, 0);
+    else
+	sqlite3_result_int (context, 0);
 }
 
 static void
@@ -43679,8 +43956,8 @@ fnct_bufferoptions_set_join (sqlite3_context * context, int argc,
 	  cache->buffer_join_style = val;
 	  sqlite3_result_int (context, 1);
       }
-      else
-    sqlite3_result_int (context, 0);
+    else
+	sqlite3_result_int (context, 0);
 }
 
 static void
@@ -43855,11 +44132,11 @@ fnct_bufferoptions_get_quadsegs (sqlite3_context * context, int argc,
 }
 
 static void
-fnct_addShapefileExtent (sqlite3_context * context, int argc,
-			 sqlite3_value ** argv)
+fnct_addVirtualTableExtent (sqlite3_context * context, int argc,
+			    sqlite3_value ** argv)
 {
 /* SQL function:
-/ AddShapefileExtent ( table Text, minx Double miny Double, maxx Double,
+/ AddVirtualTableExtent ( table Text, minx Double miny Double, maxx Double,
 /                      maxy Double, srid Integer )
 /
 / returns: 1 on success, 0 on failure
@@ -43939,16 +44216,16 @@ fnct_addShapefileExtent (sqlite3_context * context, int argc,
 	  sqlite3_result_int (context, 0);
 	  return;
       }
-    add_shp_extent (table, minx, miny, maxx, maxy, srid, cache);
+    add_vtable_extent (table, minx, miny, maxx, maxy, srid, cache);
     sqlite3_result_int (context, 1);
 }
 
 static void
-fnct_removeShapefileExtent (sqlite3_context * context, int argc,
-			    sqlite3_value ** argv)
+fnct_removeVirtualTableExtent (sqlite3_context * context, int argc,
+			       sqlite3_value ** argv)
 {
 /* SQL function:
-/ RemoveShapefileExtent ( table Text )
+/ RemoveVirtualTableExtent ( table Text )
 /
 / returns: 1 on success, 0 on failure
 */
@@ -43967,18 +44244,21 @@ fnct_removeShapefileExtent (sqlite3_context * context, int argc,
 	  sqlite3_result_int (context, 0);
 	  return;
       }
-    remove_shp_extent (table, cache);
+    remove_vtable_extent (table, cache);
     sqlite3_result_int (context, 1);
 }
 
 static void
-fnct_getShapefileExtent (sqlite3_context * context, int argc,
-			 sqlite3_value ** argv)
+fnct_getVirtualTableExtent (sqlite3_context * context, int argc,
+			    sqlite3_value ** argv)
 {
 /* SQL function:
-/ GetShapefileExtent ( table Text )
+/ GetVirtualTableExtent ( table Text )
 /
-/ returns: the Shapefile's Full Extent (Envelope)
+/ note: both GetVirtualShapeExtent() and GetVirtualGeoJsonExtent()
+/ are accepted as valid alias names
+/
+/ returns: the Virtual Table Full Extent (Envelope)
 /          or NULL on error
 */
     const char *table;
@@ -44017,7 +44297,7 @@ fnct_getShapefileExtent (sqlite3_context * context, int argc,
     sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
     sqlite3_free (sql);
 
-    if (!get_shp_extent (table, &minx, &miny, &maxx, &maxy, &srid, cache))
+    if (!get_vtable_extent (table, &minx, &miny, &maxx, &maxy, &srid, cache))
       {
 	  sqlite3_result_null (context);
 	  return;
@@ -46580,7 +46860,13 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "RenameTable", 3,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_RenameTable, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "RenameTable", 4,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_RenameTable, 0, 0, 0);
     sqlite3_create_function_v2 (db, "RenameColumn", 4,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_RenameColumn, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "RenameColumn", 5,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_RenameColumn, 0, 0, 0);
 
@@ -47445,6 +47731,39 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 	  sqlite3_create_function_v2 (db, "ExportGeoJSON", 5,
 				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				      fnct_ExportGeoJSON, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ExportGeoJSON2", 3,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ExportGeoJSON2, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ExportGeoJSON2", 4,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ExportGeoJSON2, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ExportGeoJSON2", 5,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ExportGeoJSON2, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ExportGeoJSON2", 6,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ExportGeoJSON2, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ExportGeoJSON2", 7,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ExportGeoJSON2, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ExportGeoJSON2", 8,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ExportGeoJSON2, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ImportGeoJSON", 2,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ImportGeoJSON, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ImportGeoJSON", 3,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ImportGeoJSON, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ImportGeoJSON", 4,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ImportGeoJSON, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ImportGeoJSON", 5,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ImportGeoJSON, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ImportGeoJSON", 6,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ImportGeoJSON, 0, 0, 0);
 
 	  sqlite3_create_function_v2 (db, "eval", 1, SQLITE_UTF8, 0,
 				      fnct_EvalFunc, 0, 0, 0);
@@ -47536,15 +47855,21 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_getDecimalPrecision, 0, 0, 0);
 
-    sqlite3_create_function_v2 (db, "*Add-Shapefile+Extent", 6,
+    sqlite3_create_function_v2 (db, "*Add-VirtualTable+Extent", 6,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
-				fnct_addShapefileExtent, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "*Remove-Shapefile+Extent", 1,
+				fnct_addVirtualTableExtent, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "*Remove-VirtualTable+Extent", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
-				fnct_removeShapefileExtent, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "GetShapefileExtent", 1,
+				fnct_removeVirtualTableExtent, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "GetVirtualShapeExtent", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
-				fnct_getShapefileExtent, 0, 0, 0);
+				fnct_getVirtualTableExtent, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "GetVirtualGeoJsonExtent", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_getVirtualTableExtent, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "GetVirtualTableExtent", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_getVirtualTableExtent, 0, 0, 0);
 
     sqlite3_create_function_v2 (db, "IsLowASCII", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
@@ -48683,13 +49008,31 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 			     SQLITE_ANY, 0, fnct_RegisterSpatialViewCoverage,
 			     0, 0);
     sqlite3_create_function (db, "SE_RegisterVirtualShapeCoverage", 3,
-			     SQLITE_ANY, 0, fnct_RegisterVirtualShapeCoverage,
+			     SQLITE_ANY, 0, fnct_RegisterVirtualTableCoverage,
 			     0, 0);
     sqlite3_create_function (db, "SE_RegisterVirtualShapeCoverage", 5,
-			     SQLITE_ANY, 0, fnct_RegisterVirtualShapeCoverage,
+			     SQLITE_ANY, 0, fnct_RegisterVirtualTableCoverage,
 			     0, 0);
     sqlite3_create_function (db, "SE_RegisterVirtualShapeCoverage", 6,
-			     SQLITE_ANY, 0, fnct_RegisterVirtualShapeCoverage,
+			     SQLITE_ANY, 0, fnct_RegisterVirtualTableCoverage,
+			     0, 0);
+    sqlite3_create_function (db, "SE_RegisterVirtualGeoJsonCoverage", 3,
+			     SQLITE_ANY, 0, fnct_RegisterVirtualTableCoverage,
+			     0, 0);
+    sqlite3_create_function (db, "SE_RegisterVirtualGeoJsonCoverage", 5,
+			     SQLITE_ANY, 0, fnct_RegisterVirtualTableCoverage,
+			     0, 0);
+    sqlite3_create_function (db, "SE_RegisterVirtualGeoJsonCoverage", 6,
+			     SQLITE_ANY, 0, fnct_RegisterVirtualTableCoverage,
+			     0, 0);
+    sqlite3_create_function (db, "SE_RegisterVirtualTableCoverage", 3,
+			     SQLITE_ANY, 0, fnct_RegisterVirtualTableCoverage,
+			     0, 0);
+    sqlite3_create_function (db, "SE_RegisterVirtualTableCoverage", 5,
+			     SQLITE_ANY, 0, fnct_RegisterVirtualTableCoverage,
+			     0, 0);
+    sqlite3_create_function (db, "SE_RegisterVirtualTableCoverage", 6,
+			     SQLITE_ANY, 0, fnct_RegisterVirtualTableCoverage,
 			     0, 0);
     sqlite3_create_function (db, "SE_RegisterTopoGeoCoverage", 2, SQLITE_ANY,
 			     0, fnct_RegisterTopoGeoCoverage, 0, 0);
@@ -49555,6 +49898,8 @@ init_spatialite_virtualtables (void *p_db, const void *p_cache)
     virtualdbf_extension_init (db);
 /* initializing the VirtualText extension */
     virtualtext_extension_init (db);
+/* initializing the VirtualGeoJson  extension */
+    virtualgeojson_extension_init (db);
 
 #ifndef OMIT_FREEXL
 /* initializing the VirtualXL  extension */

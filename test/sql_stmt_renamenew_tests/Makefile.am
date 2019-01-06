@@ -15,6 +15,8 @@ EXTRA_DIST =  renamecolumn1.testcase \
 	renamecolumn14.testcase \
 	renamecolumn15.testcase \
 	renamecolumn16.testcase \
+	renamecolumn17.testcase \
+	renamecolumn18.testcase \
 	renametable1.testcase \
 	renametable2.testcase \
 	renametable3.testcase \
@@ -26,4 +28,6 @@ EXTRA_DIST =  renamecolumn1.testcase \
 	renametable9.testcase \
 	renametable10.testcase \
 	renametable11.testcase \
-	renametable12.testcase
+	renametable12.testcase \
+	renametable13.testcase \
+	renametable14.testcase

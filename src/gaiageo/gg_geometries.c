@@ -4709,6 +4709,8 @@ gaiaInterpolatePoint (const void *p_cache, gaiaGeomCollPtr line,
     double m0;
     double progressive_length;
     double pl0;
+    double length;
+    double normalized_len;
 
     if (!line)
 	return 0;
@@ -4742,9 +4744,18 @@ gaiaInterpolatePoint (const void *p_cache, gaiaGeomCollPtr line,
 
 /* locating the Point along the Line */
     if (p_cache != NULL)
+    {
+	if (!gaiaGeomCollLengthOrPerimeter_r(p_cache,line,0,&length))
+	return 0;
 	fraction = gaiaLineLocatePoint_r (p_cache, line, point);
+    }
     else
+    {
+	if (!gaiaGeomCollLengthOrPerimeter(line,0,&length))
+	return 0;
 	fraction = gaiaLineLocatePoint (line, point);
+	}
+	normalized_len = length * fraction;
 
     pL = line->FirstLinestring;
     if (fraction <= 0.0)
@@ -4797,13 +4808,13 @@ gaiaInterpolatePoint (const void *p_cache, gaiaGeomCollPtr line,
 	    {
 		progressive_length +=
 		    sqrt (((x0 - x) * (x0 - x)) + ((y0 - y) * (y0 - y)));
-		if (progressive_length == fraction)
+		if (progressive_length == normalized_len)
 		  {
 		      /* special case: exactly intercepting a vertex */
 		      *m_value = m;
 		      return 1;
 		  }
-		if (progressive_length > fraction)
+		if (progressive_length > normalized_len)
 		  {
 		      /* interpolating the M-Value */
 		      double interval = m - m0;

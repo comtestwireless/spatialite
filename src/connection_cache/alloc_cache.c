@@ -406,9 +406,9 @@ init_splite_internal_cache (struct splite_internal_cache *cache)
     cache->last_seq = NULL;
     cache->ok_last_used_sequence = 0;
     cache->last_used_sequence_val = 0;
-/* initializing SHP BBOXes */
-    cache->first_shp_extent = NULL;
-    cache->last_shp_extent = NULL;
+/* initializing Virtual BBOXes */
+    cache->first_vtable_extent = NULL;
+    cache->last_vtable_extent = NULL;
 /* initializing the XML error buffers */
     out = malloc (sizeof (gaiaOutBuffer));
     gaiaOutBufferInitialize (out);
@@ -604,13 +604,13 @@ free_sequences (struct splite_internal_cache *cache)
 }
 
 static void
-free_shp_extents (struct splite_internal_cache *cache)
+free_vtable_extents (struct splite_internal_cache *cache)
 {
-/* freeing all SHP BBOXes */
-    struct splite_shp_extent *pS;
-    struct splite_shp_extent *pSn;
+/* freeing all Virtual BBOXes */
+    struct splite_vtable_extent *pS;
+    struct splite_vtable_extent *pSn;
 
-    pS = cache->first_shp_extent;
+    pS = cache->first_vtable_extent;
     while (pS != NULL)
       {
 	  pSn = pS->next;
@@ -622,80 +622,80 @@ free_shp_extents (struct splite_internal_cache *cache)
 }
 
 SPATIALITE_PRIVATE void
-add_shp_extent (const char *table, double minx,
+add_vtable_extent (const char *table, double minx,
 		double miny, double maxx,
 		double maxy, int srid, const void *p_cache)
 {
-/* adding a Shapefile Full Extent */
+/* adding a Virtual Full Extent */
     struct splite_internal_cache *cache =
 	(struct splite_internal_cache *) p_cache;
-    struct splite_shp_extent *shp = malloc (sizeof (struct splite_shp_extent));
+    struct splite_vtable_extent *vtable = malloc (sizeof (struct splite_vtable_extent));
     int len = strlen (table);
-    shp->table = malloc (len + 1);
-    strcpy (shp->table, table);
-    shp->minx = minx;
-    shp->miny = miny;
-    shp->maxx = maxx;
-    shp->maxy = maxy;
-    shp->srid = srid;
-    shp->prev = cache->last_shp_extent;
-    shp->next = NULL;
-    if (cache->first_shp_extent == NULL)
-	cache->first_shp_extent = shp;
-    if (cache->last_shp_extent != NULL)
-	cache->last_shp_extent->next = shp;
-    cache->last_shp_extent = shp;
+    vtable->table = malloc (len + 1);
+    strcpy (vtable->table, table);
+    vtable->minx = minx;
+    vtable->miny = miny;
+    vtable->maxx = maxx;
+    vtable->maxy = maxy;
+    vtable->srid = srid;
+    vtable->prev = cache->last_vtable_extent;
+    vtable->next = NULL;
+    if (cache->first_vtable_extent == NULL)
+	cache->first_vtable_extent = vtable;
+    if (cache->last_vtable_extent != NULL)
+	cache->last_vtable_extent->next = vtable;
+    cache->last_vtable_extent = vtable;
 }
 
 SPATIALITE_PRIVATE void
-remove_shp_extent (const char *table, const void *p_cache)
+remove_vtable_extent (const char *table, const void *p_cache)
 {
-/* adding a Shapefile Full Extent */
+/* adding a Virtual Full Extent */
     struct splite_internal_cache *cache =
 	(struct splite_internal_cache *) p_cache;
-    struct splite_shp_extent *shp_n;
-    struct splite_shp_extent *shp = cache->first_shp_extent;
-    while (shp != NULL)
+    struct splite_vtable_extent *vtable_n;
+    struct splite_vtable_extent *vtable = cache->first_vtable_extent;
+    while (vtable != NULL)
       {
-	  shp_n = shp->next;
-	  if (strcasecmp (shp->table, table) == 0)
+	  vtable_n = vtable->next;
+	  if (strcasecmp (vtable->table, table) == 0)
 	    {
-		if (shp->table != NULL)
-		    free (shp->table);
-		if (shp->next != NULL)
-		    shp->next->prev = shp->prev;
-		if (shp->prev != NULL)
-		    shp->prev->next = shp->next;
-		if (cache->first_shp_extent == shp)
-		    cache->first_shp_extent = shp->next;
-		if (cache->last_shp_extent == shp)
-		    cache->last_shp_extent = shp->prev;
-		free (shp);
+		if (vtable->table != NULL)
+		    free (vtable->table);
+		if (vtable->next != NULL)
+		    vtable->next->prev = vtable->prev;
+		if (vtable->prev != NULL)
+		    vtable->prev->next = vtable->next;
+		if (cache->first_vtable_extent == vtable)
+		    cache->first_vtable_extent = vtable->next;
+		if (cache->last_vtable_extent == vtable)
+		    cache->last_vtable_extent = vtable->prev;
+		free (vtable);
 	    }
-	  shp = shp_n;
+	  vtable = vtable_n;
       }
 }
 
 SPATIALITE_PRIVATE int
-get_shp_extent (const char *table, double *minx, double *miny, double *maxx,
+get_vtable_extent (const char *table, double *minx, double *miny, double *maxx,
 		double *maxy, int *srid, const void *p_cache)
 {
-/* retrieving a Shapefile Full Extent */
+/* retrieving a Virtual Full Extent */
     struct splite_internal_cache *cache =
 	(struct splite_internal_cache *) p_cache;
-    struct splite_shp_extent *shp = cache->first_shp_extent;
-    while (shp != NULL)
+    struct splite_vtable_extent *vtable = cache->first_vtable_extent;
+    while (vtable != NULL)
       {
-	  if (strcasecmp (shp->table, table) == 0)
+	  if (strcasecmp (vtable->table, table) == 0)
 	    {
-		*minx = shp->minx;
-		*miny = shp->miny;
-		*maxx = shp->maxx;
-		*maxy = shp->maxy;
-		*srid = shp->srid;
+		*minx = vtable->minx;
+		*miny = vtable->miny;
+		*maxx = vtable->maxx;
+		*maxy = vtable->maxy;
+		*srid = vtable->srid;
 		return 1;
 	    }
-	  shp = shp->next;
+	  vtable = vtable->next;
       }
     return 0;
 }
@@ -797,7 +797,7 @@ free_internal_cache (struct splite_internal_cache *cache)
 	fclose (cache->SqlProcLog);
     cache->SqlProcLog = NULL;
     free_sequences (cache);
-    free_shp_extents (cache);
+    free_vtable_extents (cache);
 
     spatialite_finalize_topologies (cache);
 
