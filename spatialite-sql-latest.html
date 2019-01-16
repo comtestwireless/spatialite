@@ -260,7 +260,7 @@
 				<td>eval( X <i>TEXT</i> [ , Y <i>TEXT</i> ) : <i>Text</i></td>
 				<td colspan="3">Evaluate the SQL text in <b>X</b>.  Return the results, using string <b>Y</b> as the separator.<br>
 				If <b>Y</b> is omitted, use a single space character.<hr>
-                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to effectively enable this function.</td></tr>
+                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to enable this function.</td></tr>
 			<tr><td><b>PostgreSQL_GetLastError</b></td>
 				<td>PostgreSQL_GetLastError() : <i>Text</i></td>
 				<td colspan="3">returns the most recent error message raised by PostgreSQL.<br>
@@ -322,39 +322,39 @@
 			<tr><td><b>IsTinyPointEnabled</b></td>
 				<td>IsTinyPointEnabled( <i>void</i> ) : <i>boolean</i></td>
 				<td colspan="3">Returns <b>TRUE</b> if the <b>TinyPoint</b> BLOB encoding is currently enabled, otherwise <b>FALSE</b></td></tr>
-			<tr><td><b>BufferOptions_Reset()</b></td>
+			<tr><td><b>BufferOptions_Reset</b></td>
 				<td>BufferOptions_Reset( <i>void</i> ) : <i>boolean</i></td>
 				<td colspan="3">Will reset all BufferOptions to their initial default settings.<br>
 					Returns <b>TRUE</b> on success, <b>FALSE</b> on failure.</td></tr>
-			<tr><td><b>BufferOptions_SetEndCapStyle()</b></td>
+			<tr><td><b>BufferOptions_SetEndCapStyle</b></td>
 				<td>BufferOptions_SetEndCapStyle( style <i>Text</i> ) : <i>boolean</i></td>
 				<td colspan="3">Will set the current EndCap Style. Accepted styles (<i>case insensitive</i>) are: <b>ROUND</b>, <b>FLAT</b>, <b>SQUARE</b><br>
 					Returns <b>TRUE</b> on success, <b>FALSE</b> on failure.</td></tr>
-			<tr><td><b>BufferOptions_GetEndCapStyle()</b></td>
+			<tr><td><b>BufferOptions_GetEndCapStyle</b></td>
 				<td>BufferOptions_GetEndCapStyle( <i>void</i> ) : <i>string</i></td>
 				<td colspan="3">Will return the name of the currently set EndCap Style.<br>
 					<b>NULL</b> on failure.</td></tr>
-			<tr><td><b>BufferOptions_SetJoinStyle()</b></td>
+			<tr><td><b>BufferOptions_SetJoinStyle</b></td>
 				<td>BufferOptions_SetJoinStyle( style <i>Text</i> ) : <i>boolean</i></td>
 				<td colspan="3">Will set the current Join Style. Accepted styles (<i>case insensitive</i>) are: <b>ROUND</b>, <b>MITRE</b> or <b>MITER</b>, <b>BEVEL</b><br>
 					Returns <b>TRUE</b> on success, <b>FALSE</b> on failure.</td></tr>
-			<tr><td><b>BufferOptions_GetJoinStyle()</b></td>
+			<tr><td><b>BufferOptions_GetJoinStyle</b></td>
 				<td>BufferOptions_GetJoinStyle( <i>void</i> ) : <i>string</i></td>
 				<td colspan="3">Will return the name of the currently set Join Style.<br>
 					<b>NULL</b> on failure.</td></tr>
-			<tr><td><b>BufferOptions_SetMitreLimit()</b></td>
+			<tr><td><b>BufferOptions_SetMitreLimit</b></td>
 				<td>BufferOptions_SetMitreLimit( limit <i>Double</i> ) : <i>boolean</i></td>
 				<td colspan="3">Will set the current Mitre Limit value.<br>
 					Returns <b>TRUE</b> on success, <b>FALSE</b> on failure.</td></tr>
-			<tr><td><b>BufferOptions_GetMitreLimit()</b></td>
+			<tr><td><b>BufferOptions_GetMitreLimit</b></td>
 				<td>BufferOptions_GetMitreLimit( <i>void</i> ) : <i>double</i></td>
 				<td colspan="3">Will return the value of the currently set Mitre Limit.<br>
 					<b>NULL</b> on failure.</td></tr>
-			<tr><td><b>BufferOptions_SetQuadrantSegments()</b></td>
+			<tr><td><b>BufferOptions_SetQuadrantSegments</b></td>
 				<td>BufferOptions_SetQuadrantSegments( points <i>Integer</i> ) : <i>boolean</i></td>
 				<td colspan="3">Will set the current Quadrant Segments value.<br>
 					Returns <b>TRUE</b> on success, <b>FALSE</b> on failure.</td></tr>
-			<tr><td><b>BufferOptions_GetQuadrantSegments()</b></td>
+			<tr><td><b>BufferOptions_GetQuadrantSegments</b></td>
 				<td>BufferOptions_GetQuadrantSegments( <i>void</i> ) : <i>integer</i></td>
 				<td colspan="3">Will return the value of the currently set Quadrant Segments.<br>
 					<b>NULL</b> on failure.</td></tr>
@@ -707,14 +707,14 @@
 					BLOB value.<br>
 					Otherwise NULL will be returned.<br>
 					<u>Please note:</u> SQLite doesn't support BLOB values bigger than SQLITE_MAX_LENGTH (usually, 1 GB).<hr>
-                    <u>Please note well</u>: this SQL function open the doors to many potential security issues, and thus is always <i>disabled by default</i>.<br>
+                    <u>Please note well</u>: this SQL function opens the door to many potential security issues, and thus is always <i>disabled by default</i>.<br>
                     Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is required in order to use this function.</td></tr>
 			<tr><td><b>BlobToFile</b></td>
 				<td>BlobToFile( binary-data <i>BLOB</i> , filepath <i>String</i> ) : <i>Integer</i></td>
 				<td colspan="3">If <i>binary-data</i> is of the BLOB-type, and the filepath is valid (i.e. accessible in write/create mode), 
 					then the corresponding file will be created/overwritten with the binary-data.<br>
 					The return type is Integer, with a return value of 1 for success, 0 for failure.<hr>
-                    <u>Please note well</u>: this SQL function open the doors to many potential security issues, and thus is always <i>disabled by default</i>.<br>
+                    <u>Please note well</u>: this SQL function opend the door to many potential security issues, and thus is always <i>disabled by default</i>.<br>
                     Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is required in order to use this function.</td></tr>
 			<tr><td><b>CountUnsafeTriggers</b></td>
 				<td>CountUnsafeTriggers( ) : <i>Integer</i></td>
@@ -3449,8 +3449,8 @@ the return type is Integer, with a return value of 1 for TRUE (success) or 0 for
 					<li><b>coverage_name</b> is the symbolic name uniquely identifying each Vector Coverage (<i>Primary Key</i>).</li>
 					<li><b>virt_name</b> and <b>virt_geometry</b> are expected to match the corresponding entries in the <i>virts_geometry_columns</i> table.</li>
 					<li>the optional arguments <b>title</b> and <b>abstract</b> could be eventually be specified for better human readability.</li>
-					<li>if the optional argument <b>is_queryable</b> is left unspecified tjem the Vector Coverage will not be queryable.</li>
-					<li><b>Note</b>: VirtualTable Coverages are always not editable.</li>
+					<li>if the optional argument <b>is_queryable</b> is left unspecified then the Vector Coverage will not be queryable.</li>
+					<li><b>Note</b>: VirtualTable Coverages are never editable.</li>
 				</ul><hr>
 					Both <b>SE_RegisterVirtualShapeCoverage()</b> and <b>SE_RegisterVirtualGeoJsonCoverage()</b> are accepted <i>alias names</i> for this SQL function.
 				<hr>
@@ -4619,8 +4619,8 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 					This function is even able to acces a remote XML Document identified by an <b>URL</b>.<br>
 					Otherwise NULL will be returned.<br>
 					<u>Please note:</u> SQLite doesn't support BLOB values bigger than SQLITE_MAX_LENGTH (usually, 1 GB).<hr>
-                    <u>Please note well</u>: this SQL function open the doors to many potential security issues, and thus is always <i>disabled by default</i>.<br>
-                    Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to effectively enable this function.<br>
+                    <u>Please note well</u>: this SQL function opens the door to many potential security issues, and thus is always <i>disabled by default</i>.<br>
+                    Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to enable this function.<br>
 					Please see: <b>CountUnsafeTriggers()</b></td></tr>
 			<tr><td><b>XB_StoreXML</b></td>
 				<td>XB_StoreXML( XmlObject <i>XmlBLOB</i> , filepath <i>String</i> ) : <i>Integer</i><hr>
@@ -4634,8 +4634,8 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
                                 will be nicely formatted and properly indented by the required factor; <i>ZERO</i> will cause the whole 
                                 XmlDocument to be returned as a single line. (default setting is <i>negative</i> indenting, i.e. not reformatting at all).<hr>
 					The return type is Integer, with a return value of 1 for success, 0 for failure and -1 for invalid arguments.<hr>
-                    <u>Please note well</u>: this SQL function open the doors to many potential security issues, and thus is always <i>disabled by default</i>.<br>
-                    Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to effectively enable this function.<br>
+                    <u>Please note well</u>: this SQL function opens the door to many potential security issues, and thus is always <i>disabled by default</i>.<br>
+                    Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to enable this function.<br>
 					Please see: <b>CountUnsafeTriggers()</b></td></tr>
 			<tr><td colspan="5" align="center" bgcolor="#f0e0c0">
 				<h3><a name="srid">SQL functions supporting SRID inspection</a></h3></td></tr>
@@ -5789,13 +5789,13 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				transaction <i>Integer</i> , option_1 <i>Text</i> [ , ... , option_10 <i>Text</i> ] ) : <i>Integer</i></td>
 				<td colspan="3">Will clone (i.e. create+copy) an origin table into a destination table: 
 				the origin could be eventually located into some <i>attached</i> DB, but the destination is always
-				assumed to be located into the primary DB.<ul>
+				assumed to be located in the primary DB.<ul>
 				<li>Mandatory arguments:
 				<ul>
-					<li><b>db-prefix</b> corresponding to the origin; the primary DB always corresponds to the <i>main</i> prefix.<br>
+					<li><b>db-prefix</b> corresponding to the origin; the primary DB always using the <i>main</i> prefix.<br>
 					    Can be legitimately set to <b>NULL</b>, and in this case <b>MAIN</b> will be implicitly assumed.</b></b></li>
 					<li><b>input_table</b> name of the origin table</li>
-					<li><b>output_table</b> name of the destination table</li>
+					<li><b>output_table</b> name of the destination table inside the primary DB.</li>
 					<li><b>transaction</b> a <i>boolean</i> values stating if the whole operation has to be atomically confined
 					within a monolithic SQL transaction</li>
 				</ul></li>
@@ -5817,7 +5817,7 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				CreateClonedTable(  db-prefix <i>Text</i> , input_table <i>Text</i> , output_table <i>Text</i> , 
 				transaction <i>Integer</i> , option_1 <i>Text</i> [ , ... , option_10 <i>Text</i> ] ) : <i>Integer</i></td>
 				<td colspan="3">A strict derivative of <b>CloneTable()</b> accepting the same arguments with identical meaning.<br>
-				The only difference is in that this second variant will just create the output Table completely avoiding to copy any row betweem the two tables. 
+				The only difference is in that this second variant will only create the output Table definition, without any data being copied. 
 				<hr>
 				Will return <b>0</b> (i.e. <b>FALSE</b>) on failure, any other value (i.e. <b>TRUE</b>) on success. <b>NULL</b> will be returned on invalid arguments.</td></tr>
 			<tr><td><b>CheckDuplicateRows</b></td>
@@ -5968,8 +5968,8 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				</ul>
 				<hr>
 				Will return the total number of imported rows.<br> <b>NULL</b> will be returned on invalid arguments.<hr>
-                <u>Please note well</u>: this SQL function open the doors to many potential security issues, and thus is always <i>disabled by default</i>.<br>
-                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to effectively enable this function.</td></tr>
+                <u>Please note well</u>: this SQL function opend the door to many potential security issues, and thus is always <i>disabled by default</i>.<br>
+                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to enable this function.</td></tr>
 			<tr><td><b>ExportSHP</b></td>
 				<td>ExportSHP( table <i>Text</i> , geom_column <i>Text</i> , filename <i>Text</i> , charset <i>Text</i> ) : <i>Integer</i><hr>
 				ExportSHP( table <i>Text</i> , geom_column <i>Text</i> , filename <i>Text</i> , charset <i>Text</i> , [ geom_type <i>Text</i>
@@ -5990,8 +5990,8 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				</ul>
 				<hr>
 				Will return the total number of exported rows.<br> <b>NULL</b> will be returned on invalid arguments.<hr>
-                <u>Please note well</u>: this SQL function open the doors to many potential security issues, and thus is always <i>disabled by default</i>.<br>
-                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to effectively enable this function.</td></tr>
+                <u>Please note well</u>: this SQL function opens the door to many potential security issues, and thus is always <i>disabled by default</i>.<br>
+                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to enable this function.</td></tr>
 			<tr><td><b>ImportDBF</b></td>
 				<td>ImportDBF( filename <i>Text</i> , table <i>Text</i> , charset <i>Text</i> ) : <i>Integer</i><hr>
 				ImportDBF( filename <i>Text</i> , table <i>Text</i> , charset <i>Text</i> [ , pk_column <i>Text</i>  
@@ -6019,8 +6019,8 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				</ul>
 				<hr>
 				Will return the total number of imported rows.<br> <b>NULL</b> will be returned on invalid arguments.<hr>
-                <u>Please note well</u>: this SQL function open the doors to many potential security issues, and thus is always <i>disabled by default</i>.<br>
-                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to effectively enable this function.</td></tr>
+                <u>Please note well</u>: this SQL function opens the door to many potential security issues, and thus is always <i>disabled by default</i>.<br>
+                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to enable this function.</td></tr>
 			<tr><td><b>ExportDBF</b></td>
 				<td>ExportDBF( table <i>Text</i> , filename <i>Text</i> , charset <i>Text</i> [ , colname_case <i>Text</i> ] ) : <i>Integer</i></td>
 				<td colspan="3">Will export an internal Table as an external DBF file:
@@ -6036,8 +6036,8 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				</ul>
 				<hr>
 				Will return the total number of exported rows.<br> <b>NULL</b> will be returned on invalid arguments.<hr>
-                <u>Please note well</u>: this SQL function open the doors to many potential security issues, and thus is always <i>disabled by default</i>.<br>
-                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to effectively enable this function.</td></tr>
+                <u>Please note well</u>: this SQL function opens the door to many potential security issues, and thus is always <i>disabled by default</i>.<br>
+                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to enable this function.</td></tr>
 			<tr><td><b>ExportKML</b></td>
 				<td>ExportKML( table <i>Text</i> , geo_column <i>Text</i> , filename <i>Text</i> ) : <i>Integer</i><hr>
 				ExportKML( table <i>Text</i> , geo_column <i>Text</i> , filename <i>Text</i> [ , precision <i>Integer</i>
@@ -6059,8 +6059,8 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				</ul>
 				<hr>
 				Will return the total number of exported rows.<br> <b>NULL</b> will be returned on invalid arguments.<hr>
-                <u>Please note well</u>: this SQL function open the doors to many potential security issues, and thus is always <i>disabled by default</i>.<br>
-                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to effectively enable this function.</td></tr>
+                <u>Please note well</u>: this SQL function opens the door to many potential security issues, and thus is always <i>disabled by default</i>.<br>
+                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to enable this function.</td></tr>
 			<tr><td><b>ExportGeoJSON</b><br><br><br><b><i>Obsolete and deprecated !!!</i></b><br>Please, use <b><i>ExportGeoJSON2()</i></b> instead.</td>
 				<td>ExportGeoJSON( table <i>Text</i> , geo_column <i>Text</i> , filename <i>Text</i> ) : <i>Integer</i><hr>
 				ExportGeoJSON( table <i>Text</i> , geo_column <i>Text</i> , filename <i>Text</i> [ , format <i>Text</i>
@@ -6083,13 +6083,13 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				</ul>
 				<hr>
 				Will return the total number of exported rows.<br> <b>NULL</b> will be returned on invalid arguments.<hr>
-                <u>Please note well</u>: this SQL function open the doors to many potential security issues, and thus is always <i>disabled by default</i>.<br>
-                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to effectively enable this function.</td></tr>
+                <u>Please note well</u>: this SQL function opens the door to many potential security issues, and thus is always <i>disabled by default</i>.<br>
+                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to enable this function.</td></tr>
 			<tr><td><b>ExportGeoJSON2</b></td>
 				<td>ExportGeoJSON2( table <i>Text</i> , geo_column <i>Text</i> , filename <i>Text</i> ) : <i>Integer</i><hr>
 				ExportGeoJSON2( table <i>Text</i> , geo_column <i>Text</i> , filename <i>Text</i> [ , format <i>Text</i>
 				[ , precision <i>Integer</i> [ , lon_lat <i>Boolen</i> [ , M_coords <i>Boolean</i> [ , indented <i>Boolean</i> [ , colname_case <i>Text</i> ] ] ] ] ] ] ) : <i>Integer</i></td>
-				<td colspan="3">Will export an internal Table as an external GeoJSON file conformat to the <b>RFC 4796</b> specifications:
+				<td colspan="3">Will export an internal Table as an external GeoJSON file yhay is conformat to the <b>RFC 4796</b> specifications:
 				<ul>
 					<li>Mandatory aguments:
 					<ul>
@@ -6116,8 +6116,8 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				</ul>
 				<hr>
 				Will return the total number of exported rows.<br> <b>NULL</b> will be returned on invalid arguments.<hr>
-                <u>Please note well</u>: this SQL function open the doors to many potential security issues, and thus is always <i>disabled by default</i>.<br>
-                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to effectively enable this function.</td></tr>
+                <u>Please note well</u>: this SQL function opens the door to many potential security issues, and thus is always <i>disabled by default</i>.<br>
+                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to enable this function.</td></tr>
 			<tr><td><b>ImportGeoJSON</b></td>
 				<td>ImportGeoJSON( filename <i>Text</i> , table <i>Text</i> ) : <i>Integer</i><hr>
 				ImportGeoJSON( filename <i>Text</i> , table <i>Text</i> [ , geo_column <i>Text</i> [ , spatial_index <i>Boolean</i> [ , srid <i>Interger</i> [ , colname_case <i>Text</i> ]]]] ) : <i>Integer</i></td>
@@ -6130,7 +6130,7 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 					</ul></li>
 					<li>Optional aguments:
 					<ul>
-						<li><b>geo_column</b> name of the Geometry column in theSpatial Table (if not specified it will be <i>'geometry'</i>).</li>
+						<li><b>geo_column</b> name of the Geometry column of the Spatial Table (if not specified it will be <i>'geometry'</i>).</li>
 						<li><b>spatial_index</b> if <i>TRUE</i> a <i>SpatialIndex</i> supporting the Geometry Column will be immediately created.<br>
 								If <i>FALSE</i> all coordinates are assumed to be expressed in any other (undefined) CRS</li>
 						<li><b>srid</b> when positive, the SRID value to be assigned to all Geometries.<br>
@@ -6141,8 +6141,8 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				</ul>
 				<hr>
 				Will return the total number of imported rows.<br> <b>NULL</b> will be returned on invalid arguments.<hr>
-                <u>Please note well</u>: this SQL function open the doors to many potential security issues, and thus is always <i>disabled by default</i>.<br>
-                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to effectively enable this function.</td></tr>
+                <u>Please note well</u>: this SQL function opens the door to many potential security issues, and thus is always <i>disabled by default</i>.<br>
+                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to enable this function.</td></tr>
 			<tr><td><b>ImportXLS</b></td>
 				<td>ImportXLS( filename <i>Text</i> , table <i>Text</i> ) : <i>Integer</i><hr>
 				ImportXLS( filename <i>Text</i> , table <i>Text</i> [ , worksheet_index <i>Integer</i>  
@@ -6162,8 +6162,8 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				</ul>
 				<hr>
 				Will return the total number of imported rows.<br> <b>NULL</b> will be returned on invalid arguments.<hr>
-                <u>Please note well</u>: this SQL function open the doors to many potential security issues, and thus is always <i>disabled by default</i>.<br>
-                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to effectively enable this function.</td></tr>
+                <u>Please note well</u>: this SQL function opend the door to many potential security issues, and thus is always <i>disabled by default</i>.<br>
+                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to enable this function.</td></tr>
 			<tr><td><b>ImportWFS</b></td>
 				<td>ImportWFS( filename_or_url <i>Text</i> , layer_name <i>Text</i> , table <i>Text</i> ) : <i>Integer</i><hr>
 				ImportWFS( filename_or_url <i>Text</i> , layer_name <i>Text</i> , table <i>Text</i> [ , pk_column <i>Text</i>  
@@ -6189,8 +6189,8 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				</ul>
 				<hr>
 				Will return the total number of imported rows.<br> <b>NULL</b> will be returned on invalid arguments.<hr>
-                <u>Please note well</u>: this SQL function open the doors to many potential security issues, and thus is always <i>disabled by default</i>.<br>
-                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to effectively enable this function.</td></tr>
+                <u>Please note well</u>: this SQL function opend the door to many potential security issues, and thus is always <i>disabled by default</i>.<br>
+                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to enable this function.</td></tr>
 			<tr><td><b>ImportDXF</b></td>
 				<td>ImportDXF( filename <i>String</i> ) : <i>Integer</i><hr>
 					ImportDXF( filename <i>String</i> [ , srid <i>Integer</i>, append <i>Integer</i>, dimensions <i>Text</i>,
@@ -6206,8 +6206,8 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 					<li><b>layer_name</b>: name of a single DXF layer to be imported: <i>NULL</i> will import all layers found.</li>
 					</ul>
 					Will return <b>0</b> (i.e. <b>FALSE</b>) on failure, any other value (i.e. <b>TRUE</b>) on success.<br> <b>NULL</b> will be returned on invalid arguments.<hr>
-                    <u>Please note well</u>: this SQL function open the doors to many potential security issues, and thus is always <i>disabled by default</i>.<br>
-                    Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to effectively enable this function.</td></tr>
+                    <u>Please note well</u>: this SQL function opens the door to many potential security issues, and thus is always <i>disabled by default</i>.<br>
+                    Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to enable this function.</td></tr>
 			<tr><td><b>ImportDXFfromDir</b></td>
 				<td>ImportDXFfromDir( dir_path <i>String</i> ) : <i>Integer</i><hr>
 					ImportDXFfromDir( dir_path <i>String</i> [ , srid <i>Integer</i>, append <i>Integer</i>, dimensions <i>Text</i>,
@@ -6223,8 +6223,8 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 					<li><b>layer_name</b>: name of a single DXF layer to be imported: <i>NULL</i> will import all layers found.</li>
 					</ul>
 					Will return <b>0</b> (i.e. <b>FALSE</b>) on failure, any other value (i.e. <b>TRUE</b>) on success.<br> <b>NULL</b> will be returned on invalid arguments.<hr>
-                    <u>Please note well</u>: this SQL function open the doors to many potential security issues, and thus is always <i>disabled by default</i>.<br>
-                    Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to effectively enable this function.</td></tr>		
+                    <u>Please note well</u>: this SQL function opens the door to many potential security issues, and thus is always <i>disabled by default</i>.<br>
+                    Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to enable this function.</td></tr>		
 			<tr><td><b>ExportDXF</b></td>
 				<td>ExportDXF( out_dir <i>String</i> , filename <i>String</i> , sql_query <i>String</i> , layer_col_name <i>String</i> , 
                 geom_col_name <i>String</i> , label_col_name <i>String</i> , text_height_col_name <i>String</i> , 
@@ -6239,9 +6239,9 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 					<li>the optional argument <b>precision</b> specificies how many <u>decimal digits</u> are required for coordinate values: if not specified the default is <b>3</b>.</li>
 					</ul>
 					Will return <b>0</b> (i.e. <b>FALSE</b>) on failure, any other value (i.e. <b>TRUE</b>) on success.<hr>
-                    <u>Please note well</u>: this SQL function open the doors to many potential security issues, and thus is always <i>disabled by default</i>.<br>
-                    Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to effectively enable this function.</td></tr>		
-			<tr><td><b>ST_Cutter()</b></td>
+                    <u>Please note well</u>: this SQL function opens the door to many potential security issues, and thus is always <i>disabled by default</i>.<br>
+                    Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to enable this function.</td></tr>		
+			<tr><td><b>ST_Cutter</b></td>
 				<td>ST_Cutter( input-db-prefix <i>String</i> , input-table <i>String</i> , input-geometry <i>String</i> , blade-db-prefix <i>String</i> ,
 				    blade-table <i>String</i> , blade-geom <i>String</i> , output-table <i>String</i>
 				    [ , transaction <i>Boolean</i> [ , ram-temp-storage <i>Boolean</i> ] ] ) : <i>Integer</i></td>
@@ -6272,19 +6272,19 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 					</ul>
 					Will return <b>-1</b> on invalid arguments, <b>0</b> on failure, <b>1</b> on full success and <b>2</b> on partial success (i.e.when the output table contains
 					one or more <i>invalid geometries</i>).</td></tr>			
-			<tr><td><b>GetCutterMessage()</b></td>
+			<tr><td><b>GetCutterMessage</b></td>
 				<td>GetCutterMessage( <i>void</i> ) : <i>String</i></td>
 				<td colspan="3">Will return the most <i>recent diagnostic message</i> emitted by <b>ST_Cutter()</b>.<br>
 				<b>NULL</b> will be returned if no such message currently exists.</td></tr>			
-			<tr><td><b>GetVirtualTableExtent()</b></td>
+			<tr><td><b>GetVirtualTableExtent</b></td>
 				<td>GetVirtualTableExtent( virtual_table_name <i>String</i> ) : <i>Geometry</i></td>
-				<td colspan="3"><b>virtual_table_name</b> is expected to identify some Table of the <b>VirtualShape</b> or <b>VirtualGeoJSON</b>type.<br>
+				<td colspan="3"><b>virtual_table_name</b> is expected to identify some Table of the <b>VirtualShape</b> or <b>VirtualGeoJSON</b> type.<br>
 					An Envelope Geometry will be returned corresponding to the <b>Full Extent</b>;
-				<b>NULL</b> will be returned if any error occurs (invalid argument type or not existing VirtualTable).
+				<b>NULL</b> will be returned if any error occurs (invalid argument type or non existing VirtualTable).
 				<hr>
 					Both <b>GetVirtualShapeExtent()</b> and <b>GetVirtualGeoJsonExtent()</b> are accepted <i>alias names</i> for this SQL function.
 				</td></tr>	
-			<tr><td><b>CreateRouting()</b></td>
+			<tr><td><b>CreateRouting</b></td>
 				<td>CreateRouting( routing_data_table <i>String</i> , virtual_routing_table <i>String</i> , input_table <i>String</i> , from_column <i>String</i> , to_column <i>String</i> ,
 				geom_column <i>String</i> , cost_column <i>String</i> ) : <i>Boolean</i><hr>
 				CreateRouting( routing_data_table <i>String</i> , virtual_routing_table <i>String</i> , input_table <i>String</i> , from_column <i>String</i> , to_column <i>String</i> ,
@@ -6315,7 +6315,7 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 					<li><b>overwrite</b>: if set to <b>TRUE</b> already existing Routing Binary Data and/or VirtualRouting Tables will be silently overwritten (default: <b>0</b>).</li>
 				</ul><hr>
 				<b>1</b> (aka <b>TRUE</b>) will be returned on success, an <b>exception</b> will be raised on failure.</td></tr>
-			<tr><td><b>CreateRoutingNodes()</b></td>
+			<tr><td><b>CreateRoutingNodes</b></td>
 				<td>CreateRoutingNodes( db_prefix <i>String</i> , spatial_table <i>String</i> , geom_column <i>String</i> ,  node_from <i>String</i> , node_to <i>String</i> ) : <i>Boolean</i></td>
 				<td colspan="3">Will attempt to add both <b>node_from</b> and <b>nodes_to</b> columns to the Spatial Table identified by <b>db_prefix</b>, <b>spatial_table</b> and <b>geom_column</b>.
 				These two columns will be populated by inserting appropriate <b>Node-IDs</b> (of the <i>INTEGER</i> type) fully respecting the topological consistency of the network.<br>
@@ -6326,11 +6326,11 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 					<li>both <b>node_from</b> and <b>node_to</b> columns should not exist.</li>
 				</ul><hr>
 				<b>1</b> (aka <b>TRUE</b>) will be returned on success, an <b>exception</b> will be raised on failure.</td></tr>				
-			<tr><td><b>CreateRouting_GetLastError()</b></td>
+			<tr><td><b>CreateRouting_GetLastError</b></td>
 				<td>CreateRouting_GetLastError( <i>void</i> ) : <i>String</i></td>
 				<td colspan="3">Will return the most <i>recent error message</i> emitted by <b>CreateRouting()</b> or <b>CreateRoutingNodes()</b>.<br>
 				<b>NULL</b> will be returned if no such error message currently exists.</td></tr>	
-			<tr><td><b>IsLowASCII()</b></td>
+			<tr><td><b>IsLowASCII</b></td>
 				<td>IsLowASCII( text_string <i>String</i> ) : <i>Integer</i></td>
 				<td colspan="3">Inspects an <b>UTF-8</b> encoded <b>text_string</b> testing if it only contains <b>ASCII 7-bit</b> characters.<br>
                     The return type is Integer, with a return value of 1 for TRUE, 0 for FALSE, 
@@ -6353,7 +6353,7 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 					<li>The optional argument <b>append</b> if set to <b>TRUE</b> requires to open the Logfile for appending; if set to <b>FALSE</b> (default setting) the Logfile will be truncated.</li>
 				</ul><hr>
 				<b>1</b> will be returned on success; an exception will be raised on invalid argument or if the SQL Logfile can't be succesfully opened.<hr>
-                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to effectively enable this function.</td></tr>
+                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to enable this function.</td></tr>
 			<tr><td><b>SqlProc_GetLogfile</b></td>
 				<td>SqlProc_GetLogfile( <i>void</i> ) : <i>String</i></td>
 				<td colspan="3">Will return the pathname of the currently set SQL Logfile.<hr>
@@ -6370,7 +6370,7 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				<td colspan="3">Will return a BLOB object of the Sql Procedure type encapsulating the <b>SQL Body</b> loaded from the given <b>filepath</b>.<br>
 				If the optional second argument is explicitly specified the SQL Body will be automatically converted from the given <b>charset encoding</b> into <b>UTF-8</b>.<hr>
 				<b>1</b> will be returned on success; an exception will be raised on failure or invalid arguments.<hr>
-                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to effectively enable this function.</td></tr>	
+                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to enable this function.</td></tr>	
 			<tr><td><b>SqlProc_IsValid</b></td>
 				<td>SqlProc_IsValid( object <i>BLOB</i> ) : <i>Boolean</i></td>
 				<td colspan="3">Returns <b>TRUE</b> if the passed BLOB is valid <b>SQL Procedure</b> object, otherwise <b>FALSE</b>.<hr>

@@ -233,7 +233,7 @@ do_test_rename_table (sqlite3 * handle, void *cache)
       }
     ret =
 	strcmp (err_msg,
-		"RenameTable exception - forbidden: can't rename a Virtual Table [main.knn].");
+		"RenameTable exception - forbidden: SpatiaLite internal Table [main.knn].");
     if (ret != 0)
       {
 	  fprintf (stderr, "RenameTable \"knn\" error: %s\n", err_msg);
@@ -300,7 +300,7 @@ do_test_rename_column (sqlite3 * handle, void *cache)
       }
     ret =
 	strcmp (err_msg,
-		"RenameColumn exception - forbidden: can't rename a View Column, only Table Columns are supported [main.view_0].");
+		"RenameColumn exception - forbidden: can't rename a View, only Tables are supported [main.view_0].");
     if (ret != 0)
       {
 	  fprintf (stderr, "RenameColumn \"view_0\" error: %s\n", err_msg);
@@ -378,7 +378,7 @@ do_test_rename_column (sqlite3 * handle, void *cache)
       }
     ret =
 	strcmp (err_msg,
-		"RenameColumn exception - forbidden: R*Tree (Spatial Index) internal Table - main.data.");
+		"RenameColumn exception - forbidden: R*Tree (Spatial Index) internal Table [main.idx_table_2_geom_node].");
     if (ret != 0)
       {
 	  fprintf (stderr, "RenameColumn \"idx_table_2_geom_node\" error: %s\n",
@@ -405,7 +405,7 @@ do_test_rename_column (sqlite3 * handle, void *cache)
       }
     ret =
 	strcmp (err_msg,
-		"RenameColumn exception - forbidden: SpatiaLite internal Table [main.auth_name].");
+		"RenameColumn exception - forbidden: SpatiaLite internal Table [main.spatial_ref_sys].");
     if (ret != 0)
       {
 	  fprintf (stderr, "RenameColumn \"spatial_ref_sys\" error: %s\n",
@@ -456,10 +456,10 @@ do_test_rename_column (sqlite3 * handle, void *cache)
       }
     ret =
 	strcmp (err_msg,
-		"RenameColumn exception - forbidden: can't rename a Virtual Table Column [main.f_table_name].");
+		"RenameColumn exception - forbidden: SpatiaLite internal Table [main.knn].");
     if (ret != 0)
       {
-	  fprintf (stderr, "RenameColumn \"tknn\" error: %s\n", err_msg);
+	  fprintf (stderr, "RenameColumn \"knn\" error: %s\n", err_msg);
 	  sqlite3_free (err_msg);
 	  sqlite3_close (handle);
 	  spatialite_cleanup_ex (cache);
