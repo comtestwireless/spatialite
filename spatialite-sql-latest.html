@@ -3308,6 +3308,7 @@ the return type is Integer, with a return value of 1 for TRUE or 0 for FALSE<hr>
 						for any possible Geometry Column defined in the current DB</li>
 					<li>otherwise statistics will be updated only for Geometry Columns
 						corresponding to the given table</li>
+					<li>When called from inside a GeoPackage Database, the <b>gpkg_contents</b> entry will be updated with the extent information.</li>
 					</ul><hr>
 the return type is Integer, with a return value of 1 for TRUE or 0 for FALSE</td></tr>
 		<tr><td><b>GetLayerExtent</b></td>
@@ -4205,7 +4206,7 @@ returns nothing on success, raises exception on error</td></tr>
 				These are the mime type for the image format (without the "image/" prefix).<hr>
 				This function raises exception on error (e.g. wrong argument type).</td></tr>
 			<tr><td><b>gpkgAddGeometryColumn</b></td>
-				<td>gpkgAddGeomtryColumn( table_name <i>String</i>, geometry_column_name <i>String</i> , geometry_type <i>String</i> , 
+				<td>gpkgAddGeometryColumn( table_name <i>String</i>, geometry_column_name <i>String</i> , geometry_type <i>String</i> , 
 					with_z <i>Integer</i> , with_m <i>Integer</i> , srs_id <i>Integer</i> ) : <i>void</i></td>
 				<td></td>
 				<td align="center" bgcolor="#d0f0ff">GeoPackage</td>
@@ -5879,7 +5880,8 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				<td>DropTable( db-prefix <i>Text</i> , table <i>Text</i> ) : <i>Integer</i><hr>
 				DropTable( db-prefix <i>Text</i> , table <i>Text</i> , permissive <i>Boolean</i> ) : <i>Integer</i></td>
 				<td colspan="3">Will safely remove a Geometry Table (or Spatial View), including any SpatialIndex,
-				triggers, metadata, statistics tables. Will also work on ordinary (non-Spatial) Tables and Views.<br>
+				triggers, metadata, statistics tables.<br>
+				Will also work on ordinary (non-Spatial) Tables and Views, RasterLite2 raster_coverage, GeoPackage (Vector/Raster) and OGR/FDO Geometries.<br>
 				<ul>
 					<li><i>db-prefix</i> can be <b>NULL</b>, where the Table or View to be dropped is expected to be located within the <b>"MAIN"</b> database.</li>
 					<li>The <i>optional</i> argument <b>permissive</b> determines if  a <b>retcode</b> will be returned in the case of failure.<br>
@@ -5895,12 +5897,14 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				<td>RenameTable( db-prefix <i>Text</i> , old_name <i>Text</i> , new_name <i>Text</i> ) : <i>Integer</i><hr>
 				    RenameTable( db-prefix <i>Text</i> , old_name <i>Text</i> , new_name <i>Text</i> , permissive <i>Boolean</i> ) : <i>Integer</i></td>
 				<td colspan="3">Will safely rename a Geometry Table, including any SpatialIndex,
-				triggers, metadata, statistics tables. Will also work on ordinary (non-Spatial) Tables.<br>
+				triggers, metadata, statistics tables.<br>
+				Will also work on ordinary (non-Spatial) Tables, RasterLite2 raster_coverage, GeoPackage (Vector/Raster) and OGR/FDO Geometries.<br>
 				<ul>
 					<li><i>db-prefix</i> can be <b>NULL</b>, where the Table to be renamed is expected to be located within the <b>"MAIN"</b> database.</li>
 					<li>The <i>optional</i> argument <b>permissive</b> determines if  a <b>retcode</b> will be returned in the case of failure.<br>
 						The default setting, when not explicitly overridden, is <b>FALSE</b>, where an exception will then be raised.</li>
 					<li>Will not work on <b><i>Virtual Tables</i></b> or <b><i>Views</i></b>; <b><i>Spatial Tables</i></b> can be renamed only if they are located in the <b>MAIN</b> database.</li>
+					<li>Any Views using a renamed Table will be adapted with the renamed Table-Name</li>
 				</ul>
 				<hr>
 				Will return <b>1</b> (i.e. <b>TRUE</b>) on success.<br> 
@@ -5913,12 +5917,14 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				<td>RenameColumn( db-prefix <i>Text</i> , table <i>Text</i> , old_colname <i>Text</i> , new_colname <i>Text</i> ) : <i>Integer</i><hr>
 				    RenameColumn( db-prefix <i>Text</i> , table <i>Text</i> , old_colname <i>Text</i> , new_colname <i>Text</i> , permissive <i>Boolean</i> ) : <i>Integer</i></td>
 				<td colspan="3">Will safely rename a Column belonging to a Geometry Table, including any SpatialIndex,
-				triggers, metadata, statistics tables. Will also work on Columns of ordinary (non-Spatial) Tables.<br>
+				triggers, metadata, statistics tables.<br>
+				Will also work on Columns of ordinary (non-Spatial) Tables, GeoPackage and OGR/FDO Geometries.<br>
 				<ul>
 					<li><i>db-prefix</i> can be <b>NULL</b>, where the Table containing the Column to be renamed is expected to be located within the <b>"MAIN"</b> database.</li>
 					<li>The <i>optional</i> argument <b>permissive</b> determines if  a <b>retcode</b> will be returned in the case of failure.<br>
 						The default setting, when not explicitly overridden, is <b>FALSE</b>, where an exception will then be raised.</li>
 					<li>Will not work on <b><i>Virtual Tables</i></b> or <b><i>Views</i></b>; <b><i>Spatial Tables</i></b> can rename their Column only if they are located in the <b>MAIN</b> database.</li>
+					<li>Any Views using a renamed Column will be adapted with the renamed Column-Name</li>
 				</ul>
 				<hr>
 				Will return <b>1</b> (i.e. <b>TRUE</b>) on success.<br> 
@@ -6089,7 +6095,7 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				<td>ExportGeoJSON2( table <i>Text</i> , geo_column <i>Text</i> , filename <i>Text</i> ) : <i>Integer</i><hr>
 				ExportGeoJSON2( table <i>Text</i> , geo_column <i>Text</i> , filename <i>Text</i> [ , format <i>Text</i>
 				[ , precision <i>Integer</i> [ , lon_lat <i>Boolen</i> [ , M_coords <i>Boolean</i> [ , indented <i>Boolean</i> [ , colname_case <i>Text</i> ] ] ] ] ] ] ) : <i>Integer</i></td>
-				<td colspan="3">Will export an internal Table as an external GeoJSON file yhay is conformat to the <b>RFC 4796</b> specifications:
+				<td colspan="3">Will export an internal Table as an external GeoJSON file that is conformant to the <b>RFC 4796</b> specifications:
 				<ul>
 					<li>Mandatory aguments:
 					<ul>
@@ -6121,7 +6127,7 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 			<tr><td><b>ImportGeoJSON</b></td>
 				<td>ImportGeoJSON( filename <i>Text</i> , table <i>Text</i> ) : <i>Integer</i><hr>
 				ImportGeoJSON( filename <i>Text</i> , table <i>Text</i> [ , geo_column <i>Text</i> [ , spatial_index <i>Boolean</i> [ , srid <i>Interger</i> [ , colname_case <i>Text</i> ]]]] ) : <i>Integer</i></td>
-				<td colspan="3">Will create a Spatial Table by importing an external GeoJSON file conformat to the <b>RFC 4796</b> specifications:
+				<td colspan="3">Will create a Spatial Table by importing an external GeoJSON file conformant to the <b>RFC 4796</b> specifications:
 				<ul>
 					<li>Mandatory aguments:
 					<ul>

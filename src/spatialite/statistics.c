@@ -1238,10 +1238,39 @@ do_compute_layer_statistics (sqlite3 * sqlite, const char *table,
 
     quoted = gaiaDoubleQuotedSql ((const char *) table);
     col_quoted = gaiaDoubleQuotedSql ((const char *) column);
-    sql_statement = sqlite3_mprintf ("SELECT Count(*), "
-				     "Min(MbrMinX(\"%s\")), Min(MbrMinY(\"%s\")), Max(MbrMaxX(\"%s\")), Max(MbrMaxY(\"%s\")) "
-				     "FROM \"%s\"", col_quoted, col_quoted,
-				     col_quoted, col_quoted, quoted);
+
+    if (metadata_version == 4)
+      {
+	  /* GeoPackage Vector only */
+	  sql_statement = sqlite3_mprintf ("UPDATE gpkg_contents SET "
+					   "min_x = (SELECT Min(MbrMinX(%s)) FROM \"%s\"),"
+					   "min_y = (SELECT Min(MbrMinY(%s)) FROM \"%s\"),"
+					   "max_x = (SELECT Max(MbrMinX(%s)) FROM \"%s\"),"
+					   "max_y = (SELECT Max(MbrMinY(%s)) FROM \"%s\"),"
+					   "last_change = strftime('%%Y-%%m-%%dT%%H:%%M:%%fZ', 'now') "
+					   "WHERE ((lower(table_name) = lower('%s')) AND (Lower(data_type) = 'features'))",
+					   col_quoted, quoted, col_quoted,
+					   quoted, col_quoted, quoted,
+					   col_quoted, quoted, quoted);
+	  free (quoted);
+	  free (col_quoted);
+	  if (sqlite3_exec (sqlite, sql_statement, NULL, NULL, NULL) !=
+	      SQLITE_OK)
+	    {
+		sqlite3_free (sql_statement);
+		return 0;
+	    }
+	  sqlite3_free (sql_statement);
+	  return 1;
+      }
+    else
+      {
+	  sql_statement = sqlite3_mprintf ("SELECT Count(*), "
+					   "Min(MbrMinX(\"%s\")), Min(MbrMinY(\"%s\")), Max(MbrMaxX(\"%s\")), Max(MbrMaxY(\"%s\")) "
+					   "FROM \"%s\"", col_quoted,
+					   col_quoted, col_quoted, col_quoted,
+					   quoted);
+      }
     free (quoted);
     free (col_quoted);
 
@@ -1431,27 +1460,60 @@ genuine_layer_statistics (sqlite3 * sqlite, const char *table,
     if (table == NULL && column == NULL)
       {
 	  /* processing any table/geometry found in GEOMETRY_COLUMNS */
-	  sql_statement =
-	      sqlite3_mprintf ("SELECT f_table_name, f_geometry_column "
-			       "FROM geometry_columns");
+	  if (metadata_version == 4)
+	    {
+		/* GeoPackage Vector only */
+		sql_statement =
+		    sqlite3_mprintf
+		    ("SELECT table_name, column_name FROM gpkg_geometry_columns");
+	    }
+	  else
+	    {
+		sql_statement =
+		    sqlite3_mprintf
+		    ("SELECT f_table_name, f_geometry_column FROM geometry_columns");
+	    }
       }
     else if (column == NULL)
       {
 	  /* processing any geometry belonging to this table */
-	  sql_statement =
-	      sqlite3_mprintf ("SELECT f_table_name, f_geometry_column "
-			       "FROM geometry_columns "
-			       "WHERE Lower(f_table_name) = Lower(%Q)", table);
+	  if (metadata_version == 4)
+	    {
+		/* GeoPackage Vector only */
+		sql_statement =
+		    sqlite3_mprintf
+		    ("SELECT table_name, column_name FROM gpkg_geometry_columns WHERE (lower(table_name) = lower('%s'))",
+		     table);
+	    }
+	  else
+	    {
+		sql_statement =
+		    sqlite3_mprintf ("SELECT f_table_name, f_geometry_column "
+				     "FROM geometry_columns "
+				     "WHERE Lower(f_table_name) = Lower(%Q)",
+				     table);
+	    }
       }
     else
       {
 	  /* processing a single table/geometry entry */
-	  sql_statement =
-	      sqlite3_mprintf ("SELECT f_table_name, f_geometry_column "
-			       "FROM geometry_columns "
-			       "WHERE Lower(f_table_name) = Lower(%Q) "
-			       "AND Lower(f_geometry_column) = Lower(%Q)",
-			       table, column);
+	  if (metadata_version == 4)
+	    {
+		/* GeoPackage Vector only */
+		sql_statement =
+		    sqlite3_mprintf
+		    ("SELECT table_name, column_name FROM gpkg_geometry_columns WHERE ((lower(table_name) = lower('%s')) AND (Lower(column_name) = lower('%s')))",
+		     table, column);
+	    }
+	  else
+	    {
+		sql_statement =
+		    sqlite3_mprintf ("SELECT f_table_name, f_geometry_column "
+				     "FROM geometry_columns "
+				     "WHERE Lower(f_table_name) = Lower(%Q) "
+				     "AND Lower(f_geometry_column) = Lower(%Q)",
+				     table, column);
+	    }
       }
     ret =
 	sqlite3_get_table (sqlite, sql_statement, &results, &rows, &columns,
@@ -4535,24 +4597,24 @@ do_rename_table_pre (sqlite3 * sqlite, const char *prefix, const char *old_name,
 		if (aux->ok_gpkg_tile_matrix)
 		  {
 		      /* update entry in gpkg_tile_matrix [only raster] */
-		         q_prefix = gaiaDoubleQuotedSql (prefix);
-		         sql =
-		         sqlite3_mprintf
-		         ("UPDATE \"%s\".gpkg_tile_matrix SET table_name = lower(%Q) WHERE lower(table_name) = lower(%Q) ",
-		         q_prefix, new_name, old_name);
-		         free (q_prefix);
-		         ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
-		         sqlite3_free (sql);
-		         if (ret != SQLITE_OK)
-		         {
-		         if (error_message != NULL)
-		         *error_message = errMsg;
-		         return 0;
-		         }
-		         }
-		         if (aux->ok_gpkg_tile_matrix_set)
-		         {          
-		         /* update entry in gpkg_tile_matrix_set [only raster] */
+		      q_prefix = gaiaDoubleQuotedSql (prefix);
+		      sql =
+			  sqlite3_mprintf
+			  ("UPDATE \"%s\".gpkg_tile_matrix SET table_name = lower(%Q) WHERE lower(table_name) = lower(%Q) ",
+			   q_prefix, new_name, old_name);
+		      free (q_prefix);
+		      ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+		      sqlite3_free (sql);
+		      if (ret != SQLITE_OK)
+			{
+			    if (error_message != NULL)
+				*error_message = errMsg;
+			    return 0;
+			}
+		  }
+		if (aux->ok_gpkg_tile_matrix_set)
+		  {
+		      /* update entry in gpkg_tile_matrix_set [only raster] */
 		      q_prefix = gaiaDoubleQuotedSql (prefix);
 		      sql =
 			  sqlite3_mprintf
