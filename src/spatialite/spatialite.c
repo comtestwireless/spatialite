@@ -1883,8 +1883,6 @@ checkSpatialMetaData_ex (const void *handle, const char *db_prefix)
 		    ref_sys_name = 1;
 		if (strcasecmp (name, "proj4text") == 0)
 		    proj4text = 1;
-		if (strcasecmp (name, "srtext") == 0)
-		    srtext = 1;
 	    }
       }
     sqlite3_free_table (results);
@@ -3770,6 +3768,10 @@ fnct_AddGeometryColumn (sqlite3_context * context, int argc,
     const unsigned char *txt_dims;
     int xtype;
     int srid = -1;
+    int srid_exists = -1;
+    struct epsg_defs *first = NULL;
+    struct epsg_defs *last = NULL;
+    struct epsg_defs *p;
     int dimension = 2;
     int dims = -1;
     int auto_dims = -1;
@@ -4106,6 +4108,105 @@ fnct_AddGeometryColumn (sqlite3_context * context, int argc,
 	  sqlite3_result_int (context, 0);
 	  return;
       }
+
+/*
+ * the following code has been contributed by Mark Johnson <mj10777@googlemail.com>
+ * on 2019-01-26
+*/
+    sql_statement = NULL;
+    sql_statement =
+	sqlite3_mprintf
+	("SELECT CASE WHEN (Exists(SELECT srid FROM spatial_ref_sys WHERE (auth_srid = %d)) = 0) THEN 0 ELSE 1 END",
+	 srid);
+    ret =
+	sqlite3_prepare_v2 (sqlite, sql_statement, strlen (sql_statement),
+			    &stmt, NULL);
+    sqlite3_free (sql_statement);
+    sql_statement = NULL;
+    while (sqlite3_step (stmt) == SQLITE_ROW)
+      {
+	  if (sqlite3_column_type (stmt, 0) != SQLITE_NULL)
+	    {
+		srid_exists = sqlite3_column_int (stmt, 0);
+	    }
+      }
+    sqlite3_finalize (stmt);
+    if (srid_exists == 0)
+      {
+	  switch (metadata_version)
+	    {
+	    case 1:
+		/* Note: this will fail for Spatialite-Legacy 2.3.0 layout */
+		sql_statement =
+		    sqlite3_mprintf
+		    ("INSERT INTO spatial_ref_sys (srid, auth_name, auth_srid, ref_sys_name, proj4text, srtext) VALUES (?, ?, ?, ?, ?, ?)");
+		break;
+	    case 3:
+		/* Note: 'insert_epsg_srid' does not support Spatiaite-Legacy */
+		ret = insert_epsg_srid (sqlite, srid);
+		break;
+	    }
+	  if (sql_statement)
+	    {			/* Spatiaite-Legacy only [would be better to adapt 'insert_epsg_srid'] */
+		ret =
+		    sqlite3_prepare_v2 (sqlite, sql_statement, -1, &stmt, NULL);
+		if (ret != SQLITE_OK)
+		  {
+		      sqlite3_free (sql_statement);
+		      sql_statement = NULL;
+		      spatialite_e ("AddGeometryColumn: \"%s\"\n",
+				    sqlite3_errmsg (sqlite));
+		      sqlite3_result_int (context, 0);
+		      return;
+		  }
+		sqlite3_free (sql_statement);
+		sql_statement = NULL;
+		/* get the EPSG definition for this SRID from our master list */
+		initialize_epsg (srid, &first, &last);
+		if (first == NULL)
+		  {
+		      spatialite_e
+			  ("AddGeometryColumn() error: srid[%d] is not defined in the EPSG inlined dataset",
+			   srid);
+		      sqlite3_result_int (context, 0);
+		      sqlite3_free (sql_statement);
+		      return;
+		  }
+		p = first;
+		while (p)
+		  {
+		      if (p->auth_name == NULL)
+			  break;
+		      /* inserting into SPATIAL_REF_SYS */
+		      sqlite3_reset (stmt);
+		      sqlite3_clear_bindings (stmt);
+		      sqlite3_bind_int (stmt, 1, p->srid);
+		      sqlite3_bind_text (stmt, 2, p->auth_name,
+					 strlen (p->auth_name), SQLITE_STATIC);
+		      sqlite3_bind_int (stmt, 3, p->auth_srid);
+		      sqlite3_bind_text (stmt, 4, p->ref_sys_name,
+					 strlen (p->ref_sys_name),
+					 SQLITE_STATIC);
+		      sqlite3_bind_text (stmt, 5, p->proj4text,
+					 strlen (p->proj4text), SQLITE_STATIC);
+		      if (strlen (p->srs_wkt) == 0)
+			  sqlite3_bind_text (stmt, 6, "Undefined", 9,
+					     SQLITE_STATIC);
+		      else
+			  sqlite3_bind_text (stmt, 6, p->srs_wkt,
+					     strlen (p->srs_wkt),
+					     SQLITE_STATIC);
+		      ret = sqlite3_step (stmt);
+		      p = p->next;
+		  }
+		sqlite3_finalize (stmt);
+		/* freeing the EPSG defs list */
+		free_epsg (first);
+	    }
+      }
+/* end Mark Johnson 2019-01-26 */
+
+
 /* trying to add the column */
     switch (xtype)
       {
@@ -6202,6 +6303,7 @@ fnct_AddFDOGeometryColumn (sqlite3_context * context, int argc,
 / AddFDOGeometryColumn(table, column, srid, geometry_type , dimension, geometry_format )
 /
 / creates a new COLUMN of given TYPE into TABLE
+/ Adds a matching entry into spatial_ref_sys when needed [Mark Johnson patch]
 / returns 1 on success
 / 0 on failure
 */
@@ -6211,6 +6313,10 @@ fnct_AddFDOGeometryColumn (sqlite3_context * context, int argc,
     char xformat[64];
     int type;
     int srid = -1;
+    int srid_exists = -1;
+    struct epsg_defs *first = NULL;
+    struct epsg_defs *last = NULL;
+    sqlite3_stmt *stmt_sql;
     int dimension = 2;
     char *sql_statement;
     char *errMsg = NULL;
@@ -6342,6 +6448,92 @@ fnct_AddFDOGeometryColumn (sqlite3_context * context, int argc,
 	  sqlite3_result_int (context, 0);
 	  return;
       }
+
+/*
+ * the following code has been contributed by Mark Johnson <mj10777@googlemail.com>
+ * on 2019-01-26
+*/
+    sql_statement =
+	sqlite3_mprintf
+	("SELECT CASE WHEN (Exists(SELECT srid FROM spatial_ref_sys WHERE (auth_srid = %d)) = 0) THEN 0 ELSE 1 END",
+	 srid);
+    ret =
+	sqlite3_prepare_v2 (sqlite, sql_statement, strlen (sql_statement),
+			    &stmt_sql, NULL);
+    sqlite3_free (sql_statement);
+    if (ret != SQLITE_OK)
+      {
+	  sqlite3_result_error (context, sqlite3_errmsg (sqlite), -1);
+	  sqlite3_free (errMsg);
+	  return;
+      }
+    while (sqlite3_step (stmt_sql) == SQLITE_ROW)
+      {
+	  if (sqlite3_column_type (stmt_sql, 0) != SQLITE_NULL)
+	    {
+		srid_exists = sqlite3_column_int (stmt_sql, 0);
+	    }
+      }
+    sqlite3_finalize (stmt_sql);
+    if (srid_exists == 0)
+      {
+	  /* get the EPSG definition for this SRID from our master list */
+	  initialize_epsg (srid, &first, &last);
+	  if (first == NULL)
+	    {
+		sql_statement =
+		    sqlite3_mprintf
+		    ("AddFDOGeometryColumn() error: srid[%d] is not defined in the EPSG inlined dataset",
+		     srid);
+		sqlite3_result_error (context, sql_statement, -1);
+		sqlite3_free (sql_statement);
+		return;
+	    }
+	  /* add the definition for the SRID */
+	  sql_statement =
+	      sqlite3_mprintf
+	      ("INSERT INTO spatial_ref_sys (srid, auth_name, auth_srid,srtext) VALUES (?, ?, ?, ?)");
+	  ret =
+	      sqlite3_prepare_v2 (sqlite, sql_statement, strlen (sql_statement),
+				  &stmt_sql, NULL);
+	  if (ret != SQLITE_OK)
+	    {
+		sqlite3_free (sql_statement);
+		sqlite3_result_error (context, sqlite3_errmsg (sqlite), -1);
+		/* freeing the EPSG defs list */
+		free_epsg (first);
+		return;
+	    }
+	  sqlite3_bind_int (stmt_sql, 1, first->srid);
+	  sqlite3_bind_text (stmt_sql, 2, first->auth_name,
+			     strlen (first->auth_name), SQLITE_STATIC);
+	  sqlite3_bind_int (stmt_sql, 3, first->auth_srid);
+	  if (strlen (first->srs_wkt) == 0)
+	    {
+		sqlite3_bind_text (stmt_sql, 4, "Undefined", 9, SQLITE_STATIC);
+	    }
+	  else
+	    {
+		sqlite3_bind_text (stmt_sql, 4, first->srs_wkt,
+				   strlen (first->srs_wkt), SQLITE_STATIC);
+	    }
+	  ret = sqlite3_step (stmt_sql);
+	  /* freeing the EPSG defs list */
+	  free_epsg (first);
+	  if (stmt_sql != NULL)
+	    {
+		sqlite3_finalize (stmt_sql);
+	    }
+	  sqlite3_free (sql_statement);
+	  if (ret != SQLITE_DONE && ret != SQLITE_ROW)
+	    {
+		sqlite3_result_error (context, sqlite3_errmsg (sqlite), -1);
+		return;
+	    }
+      }
+    /* The EPSG definition for this SRID exists in spatial_ref_sys */
+/* end Mark Johnson 2019-01-26 */
+
 /* trying to add the column */
     xtable = gaiaDoubleQuotedSql (table);
     xcolumn = gaiaDoubleQuotedSql (column);
@@ -22770,11 +22962,10 @@ length_common (const void *p_cache, sqlite3_context * context, int argc,
 					l = gaiaGeodesicTotalLength (a,
 								     b,
 								     rf,
-								     line->DimensionModel,
 								     line->
-								     Coords,
-								     line->
-								     Points);
+								     DimensionModel,
+								     line->Coords,
+								     line->Points);
 					if (l < 0.0)
 					  {
 					      length = -1.0;
@@ -22797,12 +22988,9 @@ length_common (const void *p_cache, sqlite3_context * context, int argc,
 					      l = gaiaGeodesicTotalLength (a,
 									   b,
 									   rf,
-									   ring->
-									   DimensionModel,
-									   ring->
-									   Coords,
-									   ring->
-									   Points);
+									   ring->DimensionModel,
+									   ring->Coords,
+									   ring->Points);
 					      if (l < 0.0)
 						{
 						    length = -1.0;
@@ -23585,11 +23773,11 @@ fnct_Circularity (sqlite3_context * context, int argc, sqlite3_value ** argv)
 		  {
 #ifdef ENABLE_RTTOPO		/* only if RTTOPO is enabled */
 		      perimeter = gaiaGeodesicTotalLength (a, b, rf,
-							   pg->Exterior->
-							   DimensionModel,
+							   pg->
+							   Exterior->DimensionModel,
 							   pg->Exterior->Coords,
-							   pg->Exterior->
-							   Points);
+							   pg->
+							   Exterior->Points);
 		      if (perimeter < 0.0)
 			  ret = 0;
 		      else
@@ -37462,8 +37650,7 @@ fnct_GeodesicLength (sqlite3_context * context, int argc, sqlite3_value ** argv)
 				  /* interior Rings */
 				  ring = polyg->Interiors + ib;
 				  l = gaiaGeodesicTotalLength (a, b, rf,
-							       ring->
-							       DimensionModel,
+							       ring->DimensionModel,
 							       ring->Coords,
 							       ring->Points);
 				  if (l < 0.0)
@@ -37557,8 +37744,7 @@ fnct_GreatCircleLength (sqlite3_context * context, int argc,
 			    ring = polyg->Exterior;
 			    length +=
 				gaiaGreatCircleTotalLength (a, b,
-							    ring->
-							    DimensionModel,
+							    ring->DimensionModel,
 							    ring->Coords,
 							    ring->Points);
 			    for (ib = 0; ib < polyg->NumInteriors; ib++)
@@ -37567,8 +37753,7 @@ fnct_GreatCircleLength (sqlite3_context * context, int argc,
 				  ring = polyg->Interiors + ib;
 				  length +=
 				      gaiaGreatCircleTotalLength (a, b,
-								  ring->
-								  DimensionModel,
+								  ring->DimensionModel,
 								  ring->Coords,
 								  ring->Points);
 			      }
