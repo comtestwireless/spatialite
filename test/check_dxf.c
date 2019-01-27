@@ -1436,39 +1436,21 @@ main (int argc, char *argv[])
 
 	  if (check_linked (cache_mode) != 0)
 	      return -7;
-
-/* 
- * 2019-01-26 disabling this test because it fails after
- * applying the latest patch from Mark Johnson about
- * AddGeometryColumn
- * 
+ 
 	  if (check_linked_legacy (cache_mode) != 0)
 	      return -8;
-*/
 
 	  if (check_hatch (cache_mode) != 0)
 	      return -9;
 
-/* 
- * 2019-01-26 disabling this test because it fails after
- * applying the latest patch from Mark Johnson about
- * AddGeometryColumn
- * 
 	  if (check_hatch_legacy (cache_mode) != 0)
 	      return -10;
-*/
 
 	  if (check_symbol (cache_mode) != 0)
 	      return -11;
 
-/* 
- * 2019-01-26 disabling this test because it fails after
- * applying the latest patch from Mark Johnson about
- * AddGeometryColumn
- * 
 	  if (check_symbol_legacy (cache_mode) != 0)
 	      return -12;
-*/
       }
 
 #endif /* GEOS enabled */

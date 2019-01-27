@@ -3769,9 +3769,6 @@ fnct_AddGeometryColumn (sqlite3_context * context, int argc,
     int xtype;
     int srid = -1;
     int srid_exists = -1;
-    struct epsg_defs *first = NULL;
-    struct epsg_defs *last = NULL;
-    struct epsg_defs *p;
     int dimension = 2;
     int dims = -1;
     int auto_dims = -1;
@@ -4132,80 +4129,8 @@ fnct_AddGeometryColumn (sqlite3_context * context, int argc,
       }
     sqlite3_finalize (stmt);
     if (srid_exists == 0)
-      {
-	  switch (metadata_version)
-	    {
-	    case 1:
-		/* Note: this will fail for Spatialite-Legacy 2.3.0 layout */
-		sql_statement =
-		    sqlite3_mprintf
-		    ("INSERT INTO spatial_ref_sys (srid, auth_name, auth_srid, ref_sys_name, proj4text, srtext) VALUES (?, ?, ?, ?, ?, ?)");
-		break;
-	    case 3:
-		/* Note: 'insert_epsg_srid' does not support Spatiaite-Legacy */
-		ret = insert_epsg_srid (sqlite, srid);
-		break;
-	    }
-	  if (sql_statement)
-	    {			/* Spatiaite-Legacy only [would be better to adapt 'insert_epsg_srid'] */
-		ret =
-		    sqlite3_prepare_v2 (sqlite, sql_statement, -1, &stmt, NULL);
-		if (ret != SQLITE_OK)
-		  {
-		      sqlite3_free (sql_statement);
-		      sql_statement = NULL;
-		      spatialite_e ("AddGeometryColumn: \"%s\"\n",
-				    sqlite3_errmsg (sqlite));
-		      sqlite3_result_int (context, 0);
-		      return;
-		  }
-		sqlite3_free (sql_statement);
-		sql_statement = NULL;
-		/* get the EPSG definition for this SRID from our master list */
-		initialize_epsg (srid, &first, &last);
-		if (first == NULL)
-		  {
-		      spatialite_e
-			  ("AddGeometryColumn() error: srid[%d] is not defined in the EPSG inlined dataset",
-			   srid);
-		      sqlite3_result_int (context, 0);
-		      sqlite3_free (sql_statement);
-		      return;
-		  }
-		p = first;
-		while (p)
-		  {
-		      if (p->auth_name == NULL)
-			  break;
-		      /* inserting into SPATIAL_REF_SYS */
-		      sqlite3_reset (stmt);
-		      sqlite3_clear_bindings (stmt);
-		      sqlite3_bind_int (stmt, 1, p->srid);
-		      sqlite3_bind_text (stmt, 2, p->auth_name,
-					 strlen (p->auth_name), SQLITE_STATIC);
-		      sqlite3_bind_int (stmt, 3, p->auth_srid);
-		      sqlite3_bind_text (stmt, 4, p->ref_sys_name,
-					 strlen (p->ref_sys_name),
-					 SQLITE_STATIC);
-		      sqlite3_bind_text (stmt, 5, p->proj4text,
-					 strlen (p->proj4text), SQLITE_STATIC);
-		      if (strlen (p->srs_wkt) == 0)
-			  sqlite3_bind_text (stmt, 6, "Undefined", 9,
-					     SQLITE_STATIC);
-		      else
-			  sqlite3_bind_text (stmt, 6, p->srs_wkt,
-					     strlen (p->srs_wkt),
-					     SQLITE_STATIC);
-		      ret = sqlite3_step (stmt);
-		      p = p->next;
-		  }
-		sqlite3_finalize (stmt);
-		/* freeing the EPSG defs list */
-		free_epsg (first);
-	    }
-      }
+	ret = insert_epsg_srid (sqlite, srid);
 /* end Mark Johnson 2019-01-26 */
-
 
 /* trying to add the column */
     switch (xtype)
