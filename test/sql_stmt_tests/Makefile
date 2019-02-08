@@ -191,7 +191,7 @@ PACKAGE_VERSION = 5.0.0-beta1
 PATH_SEPARATOR = :
 PKG_CONFIG = /usr/bin/pkg-config
 PKG_CONFIG_LIBDIR = 
-PKG_CONFIG_PATH = /usr/local/lib/pkgconfig
+PKG_CONFIG_PATH = 
 RANLIB = ranlib
 SED = /usr/bin/sed
 SET_MAKE = 
@@ -2731,6 +2731,11 @@ EXTRA_DIST = addpoint10.testcase \
 	todms11.testcase \
 	todms12.testcase \
 	todms13.testcase \
+	todms14.testcase \
+	todms15.testcase \
+	todms16.testcase \
+	todms17.testcase \
+	todms18.testcase \
 	fromdms1.testcase \
 	fromdms2.testcase \
 	fromdms3.testcase \

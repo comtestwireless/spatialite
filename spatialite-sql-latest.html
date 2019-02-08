@@ -606,8 +606,13 @@
 				<th bgcolor="#d0d0d0">Syntax</th>
 				<th colspan="3" bgcolor="#d0d0d0">Summary</th></tr>
 			<tr><td><b>DD to DMS</b></td>
-				<td>LongLatToDMS( longitude <i>Double precision</i> , latitude <i>Double precision</i> ) : <i>String</i></td>
-				<td colspan="3">will return a DMS string (Degrees, Minutes and Seconds) using the given DD (Decimal Degrees) input coordinates<hr>
+				<td>LongLatToDMS( longitude <i>Double precision</i> , latitude <i>Double precision</i> ) : <i>String</i><hr>
+					LongLatToDMS( longitude <i>Double precision</i> , latitude <i>Double precision</i> , decimal_digits <i>Integer</i> ) : <i>String</i></td>
+				<td colspan="3">will return a DMS string (Degrees, Minutes and Seconds) using the given DD (Decimal Degrees) input coordinates
+					<ul>
+						<li>the optional argument <b>decimal_digits</b>, when explicitly specified, will determine how many decimal digits must be used for representig Seconds.<br>
+						Zero (or a negative value) intends that Seconds will be represented by an integer value (default setting).</li>
+					</ul><hr>
                                 <b>NULL</b> will be returned on invalid input.</tr>
 			<tr><td><b>DMS to DD</b></td>
 				<td>LongitudeFromDMS( dms_expression <i>String</i> ) : <i>Double precision</i><hr>

@@ -38398,12 +38398,15 @@ fnct_toDMS (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
 /* SQL function:
 / LongLatToDMS ( longitude, latitude )
+/     or
+/ LongLatToDMS ( longitude, latitude, decimal_digits )
 /
 / return a DMS text expression
 / or NULL if any error is encountered
 */
     double longitude;
     double latitude;
+    int decimal_digits = 0;
     char *dms;
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (sqlite3_value_type (argv[0]) == SQLITE_FLOAT)
@@ -38430,7 +38433,16 @@ fnct_toDMS (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  sqlite3_result_null (context);
 	  return;
       }
-    dms = gaiaConvertToDMS (longitude, latitude);
+    if (argc >= 3)
+      {
+	  if (sqlite3_value_type (argv[2]) != SQLITE_INTEGER)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  decimal_digits = sqlite3_value_int (argv[2]);
+      }
+    dms = gaiaConvertToDMSex (longitude, latitude, decimal_digits);
     if (dms == NULL)
 	sqlite3_result_null (context);
     else
@@ -48204,6 +48216,9 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_latFromDMS, 0, 0, 0);
     sqlite3_create_function_v2 (db, "LongLatToDMS", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_toDMS, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "LongLatToDMS", 3,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_toDMS, 0, 0, 0);
 

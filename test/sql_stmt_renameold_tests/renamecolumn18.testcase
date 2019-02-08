@@ -4,4 +4,4 @@ SELECT RenameColumn('main', 'table', 'old_column', 'new_column', NULL);
 1 # rows (not including the header row)
 1 # columns
 RenameColumn('main', 'table', 'old_column', 'new_column', NULL);
-RenameTable exception - libsqlite 3.25 or later is strictly required.
+RenameColumn exception - libsqlite 3.25 or later is strictly required.

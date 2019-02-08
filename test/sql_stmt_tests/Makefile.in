@@ -2731,6 +2731,11 @@ EXTRA_DIST = addpoint10.testcase \
 	todms11.testcase \
 	todms12.testcase \
 	todms13.testcase \
+	todms14.testcase \
+	todms15.testcase \
+	todms16.testcase \
+	todms17.testcase \
+	todms18.testcase \
 	fromdms1.testcase \
 	fromdms2.testcase \
 	fromdms3.testcase \
