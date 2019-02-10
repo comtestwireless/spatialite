@@ -240,6 +240,7 @@ vknn_empty_context (VKnnContextPtr ctx)
     ctx->rtree_miny = -DBL_MAX;
     ctx->rtree_maxx = DBL_MAX;
     ctx->rtree_maxy = DBL_MAX;
+    ctx->level = 0;
     ctx->current_level = 0;
     ctx->max_items = 0;
     ctx->knn_array = NULL;

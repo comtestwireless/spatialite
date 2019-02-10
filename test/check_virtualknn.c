@@ -442,8 +442,6 @@ main (int argc, char *argv[])
 
     if (argc > 1 || argv[0] == NULL)
 	argc = 1;		/* silencing stupid compiler warnings */
-/* cazzembaum */
-return 0;
 
     ret =
 	sqlite3_open_v2 (":memory:", &db_handle,
@@ -472,7 +470,6 @@ return 0;
 	  sqlite3_close (db_handle);
 	  return -2;
       }
-fprintf(stderr, "********** populate\n");
 
 /* Creating and populating the test table */
     ret = create_table (db_handle);
@@ -487,7 +484,14 @@ fprintf(stderr, "********** populate\n");
 	  sqlite3_close (db_handle);
 	  return -4;
       }
-fprintf(stderr, "** create1\n");
+/* adding a second geometry column */
+    ret = add_second_geom (db_handle);
+    if (!ret)
+      {
+	  fprintf (stderr, "Add Second Geometry: unexpected failure !!!\n");
+	  sqlite3_close (db_handle);
+	  return -5;
+      }
 
 /* Creating the VirtualKNN table */
     ret = create_knn (db_handle);
@@ -495,9 +499,8 @@ fprintf(stderr, "** create1\n");
       {
 	  fprintf (stderr, "CREATE VIRTUAL TABLE knn: expected failure !!!\n");
 	  sqlite3_close (db_handle);
-	  return -5;
+	  return -6;
       }
-fprintf(stderr, "** knn-1\n");
 
 /* Testing KNN - #1 */
     ret = test_knn (db_handle, 0);
@@ -505,9 +508,8 @@ fprintf(stderr, "** knn-1\n");
       {
 	  fprintf (stderr, "Check KNN #1: unexpected failure\n");
 	  sqlite3_close (db_handle);
-	  return -6;
+	  return -7;
       }
-fprintf(stderr, "** knn-2\n");
 
 /* Testing KNN - #2 */
     ret = test_knn (db_handle, 1);
@@ -515,9 +517,8 @@ fprintf(stderr, "** knn-2\n");
       {
 	  fprintf (stderr, "Check KNN #2: unexpected failure\n");
 	  sqlite3_close (db_handle);
-	  return -7;
+	  return -8;
       }
-fprintf(stderr, "** knn-3\n");
 
 /* Testing KNN - #3 */
     ret = test_knn (db_handle, 2);
@@ -525,9 +526,8 @@ fprintf(stderr, "** knn-3\n");
       {
 	  fprintf (stderr, "Check KNN #3: unexpected success\n");
 	  sqlite3_close (db_handle);
-	  return -8;
+	  return -9;
       }
-fprintf(stderr, "** View\n");
 
 /* creating a first SpatialView */
     ret = create_spatial_view_1 (db_handle);
@@ -535,9 +535,8 @@ fprintf(stderr, "** View\n");
       {
 	  fprintf (stderr, "Create Spatial View #1: unexpected failure !!!\n");
 	  sqlite3_close (db_handle);
-	  return -9;
+	  return -10;
       }
-fprintf(stderr, "** knn-4\n");
 
 /* Testing KNN - #4 */
     ret = test_knn (db_handle, 5);
@@ -545,9 +544,8 @@ fprintf(stderr, "** knn-4\n");
       {
 	  fprintf (stderr, "Check KNN #4: unexpected failure\n");
 	  sqlite3_close (db_handle);
-	  return -10;
+	  return -11;
       }
-fprintf(stderr, "** knn-5\n");
 
 /* Testing KNN - #5 */
     ret = test_knn (db_handle, 7);
@@ -555,19 +553,8 @@ fprintf(stderr, "** knn-5\n");
       {
 	  fprintf (stderr, "Check KNN #5: unexpected failure\n");
 	  sqlite3_close (db_handle);
-	  return -11;
-      }
-fprintf(stderr, "** second\n");
-
-/* adding a second geometry column */
-    ret = add_second_geom (db_handle);
-    if (!ret)
-      {
-	  fprintf (stderr, "Add Second Geometry: unexpected failure !!!\n");
-	  sqlite3_close (db_handle);
 	  return -12;
       }
-fprintf(stderr, "** knn-6\n");
 
 /* Testing KNN - #6 */
     ret = test_knn (db_handle, 3);
@@ -577,7 +564,6 @@ fprintf(stderr, "** knn-6\n");
 	  sqlite3_close (db_handle);
 	  return -13;
       }
-fprintf(stderr, "** knn-7\n");
 
 /* Testing KNN - #7 */
     ret = test_knn (db_handle, 1);
@@ -587,7 +573,6 @@ fprintf(stderr, "** knn-7\n");
 	  sqlite3_close (db_handle);
 	  return -14;
       }
-fprintf(stderr, "** knn-8\n");
 
 /* Testing KNN - #8 */
     ret = test_knn (db_handle, 4);
@@ -597,7 +582,6 @@ fprintf(stderr, "** knn-8\n");
 	  sqlite3_close (db_handle);
 	  return -15;
       }
-fprintf(stderr, "** spindex\n");
 
 /* creating a second SpatialIndex */
     ret = add_second_rtree (db_handle);
@@ -608,7 +592,6 @@ fprintf(stderr, "** spindex\n");
 	  sqlite3_close (db_handle);
 	  return -16;
       }
-fprintf(stderr, "** knn-9\n");
 
 /* Testing KNN - #9 */
     ret = test_knn (db_handle, 4);
@@ -618,7 +601,6 @@ fprintf(stderr, "** knn-9\n");
 	  sqlite3_close (db_handle);
 	  return -17;
       }
-fprintf(stderr, "** secondView\n");
 
 /* creating a second SpatialView */
     ret = create_spatial_view_2 (db_handle);
@@ -628,7 +610,6 @@ fprintf(stderr, "** secondView\n");
 	  sqlite3_close (db_handle);
 	  return -18;
       }
-fprintf(stderr, "** knn-10\n");
 
 /* Testing KNN - #10 */
     ret = test_knn (db_handle, 6);
@@ -638,7 +619,6 @@ fprintf(stderr, "** knn-10\n");
 	  sqlite3_close (db_handle);
 	  return -19;
       }
-fprintf(stderr, "** end\n");
 
 #endif /* end KNN conditional */
 #endif /* end GEOS conditional */
