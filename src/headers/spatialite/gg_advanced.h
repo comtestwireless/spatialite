@@ -4052,12 +4052,33 @@ extern "C"
  \sa gaiaFreeGeomColl
 
  \note you are responsible to destroy (before or after) any allocated Geometry,
- this including any Geometry returned by gaiaNode()
+ this including any Geometry returned by gaiaNodeLines()
 
  \remark \b RTTOPO support required.
  */
     GAIAGEO_DECLARE gaiaGeomCollPtr gaiaNodeLines (const void *p_cache,
 						   gaiaGeomCollPtr input);
+
+/**
+ Utility function: subdividing Geometry
+
+ \param p_cache a memory pointer returned by spatialite_alloc_connection()
+ \param input the input Geometry object.
+ \param max_vertices the maximun number of vertices for each part in the
+ output geometry that will be returned.
+
+ \return the pointer to newly created Geometry object: NULL on failure.
+
+ \sa gaiaFreeGeomColl
+
+ \note you are responsible to destroy (before or after) any allocated Geometry,
+ this including any Geometry returned by gaiaSubdivide()
+
+ \remark \b RTTOPO support required.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr gaiaSubdivide (const void *p_cache,
+						   gaiaGeomCollPtr input,
+						   int max_vertices);
 
 /**
  Converts a native binary Geometry into a compressed TWKB Geometry

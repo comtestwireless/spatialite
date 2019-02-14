@@ -4873,11 +4873,13 @@ reCreateStylingTriggers (void *p_sqlite, int relaxed, int transaction)
 	  if (ret != SQLITE_OK)
 	      goto error;
       }
-
+      
 /* (re)creating the main RasterCoverages trigger as well */
     drop_raster_coverages_triggers (sqlite);
     if (!create_raster_coverages_triggers (sqlite))
 	goto error;
+	
+#ifdef ENABLE_RTTOPO	/* only if RTTOPO enabled */
 /* (re)creating both TOPOLOGIES and NETWORKS triggers */
     drop_topologies_triggers (sqlite);
     if (!do_create_topologies_triggers (sqlite))
@@ -4885,10 +4887,12 @@ reCreateStylingTriggers (void *p_sqlite, int relaxed, int transaction)
     drop_networks_triggers (sqlite);
     if (!do_create_networks_triggers (sqlite))
 	goto error;
+	
 /* (re)creating the main VectorCoverages table as well */
     drop_vector_coverages_triggers (sqlite);
     if (!create_vector_coverages_triggers (sqlite))
 	goto error;
+#endif		/* end RTTOPO conditional */
 
     drop_styling_triggers (sqlite);
     if (!create_external_graphics_triggers (sqlite))

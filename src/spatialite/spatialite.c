@@ -30153,6 +30153,76 @@ fnct_SelfIntersections (sqlite3_context * context, int argc,
 	sqlite3_result_null (context);
 }
 
+static void
+fnct_Subdivide (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ ST_Subdivide(BLOBencoded geom)
+/    or
+/ ST_Subdivide(BLOBencoded geom, int max_vertices)
+/
+/ Divides geometry into parts until a part can be represented using no
+/ more than max_vertices.
+/ NULL is returned for invalid arguments
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    gaiaGeomCollPtr input;
+    gaiaGeomCollPtr result;
+    int max_vertices = 128;
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    int tiny_point = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+	  tiny_point = cache->tinyPointEnabled;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (argc >= 2)
+      {
+	  if (sqlite3_value_type (argv[1]) != SQLITE_INTEGER)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  max_vertices = sqlite3_value_int (argv[1]);
+      }
+
+/* retrieving the input geometry */
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    input =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (input == NULL)
+      {
+	  sqlite3_result_null (context);
+	  goto end;
+      }
+
+/* subdiving the input geometry */
+    result = gaiaSubdivide (cache, input, max_vertices);
+    if (result != NULL)
+      {
+	  gaiaToSpatiaLiteBlobWkbEx2 (result, &p_blob, &n_bytes, gpkg_mode,
+				      tiny_point);
+	  sqlite3_result_blob (context, p_blob, n_bytes, free);
+	  gaiaFreeGeomColl (result);
+      }
+    else
+	sqlite3_result_null (context);
+  end:
+    gaiaFreeGeomColl (input);
+}
+
 #endif /* end RTTOPO support */
 
 
@@ -49149,6 +49219,12 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "ST_SelfIntersections", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_SelfIntersections, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_Subdivide", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_Subdivide, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_Subdivide", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_Subdivide, 0, 0, 0);
     sqlite3_create_function_v2 (db, "ST_3dLength", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_3dLength, 0, 0, 0);
