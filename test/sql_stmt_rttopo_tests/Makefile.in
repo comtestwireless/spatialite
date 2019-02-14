@@ -932,6 +932,8 @@ EXTRA_DIST = addedgemodface1.testcase \
 	polygonize8.testcase \
 	polygonize9.testcase \
 	polygonize10.testcase \
+	recreatetopotriggers.testcase \
+	recreatevectorcoverages.testcase \
 	remedgemodface1.testcase \
 	remedgemodface2.testcase \
 	remedgemodface3.testcase \

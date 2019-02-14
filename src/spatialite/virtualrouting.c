@@ -3232,6 +3232,8 @@ reset_multiSolution (MultiSolutionPtr multiSolution)
     while (pR != NULL)
       {
 	  pRn = pR->Next;
+	  if (pR->Undefined != NULL)
+	      free (pR->Undefined);
 	  free (pR);
 	  pR = pRn;
       }
@@ -3371,6 +3373,8 @@ delete_point2PointSolution (Point2PointSolutionPtr p2pSolution)
 	    }
 	  if (pR->Geometry != NULL)
 	      gaiaFreeGeomColl (pR->Geometry);
+	  if (pR->Undefined != NULL)
+	      free (pR->Undefined);
 	  free (pR);
 	  pR = pRn;
       }
@@ -3453,6 +3457,8 @@ reset_point2PointSolution (Point2PointSolutionPtr p2pSolution)
 	    }
 	  if (pR->Geometry != NULL)
 	      gaiaFreeGeomColl (pR->Geometry);
+	  if (pR->Undefined != NULL)
+	      free (pR->Undefined);
 	  free (pR);
 	  pR = pRn;
       }
@@ -5430,6 +5436,8 @@ do_prepare_point (virtualroutingPtr net, int mode)
     char *sql;
     int ret;
     int ok = 0;
+    int geographic = 0;
+    double radius;
     sqlite3 *sqlite = net->db;
     sqlite3_stmt *stmt = NULL;
 
@@ -5437,15 +5445,36 @@ do_prepare_point (virtualroutingPtr net, int mode)
     xto = gaiaDoubleQuotedSql (graph->ToColumn);
     xtable = gaiaDoubleQuotedSql (graph->TableName);
     xgeom = gaiaDoubleQuotedSql (graph->GeometryColumn);
-    sql =
-	sqlite3_mprintf ("SELECT r.rowid, r.\"%s\", r.\"%s\", "
-			 "ST_Distance(p.geom, r.\"%s\") AS dist "
-			 "FROM \"%s\" AS r, (SELECT MakePoint(?, ?) AS geom) AS p "
-			 "WHERE dist <= ? AND r.rowid IN "
-			 "(SELECT rowid FROM SpatialIndex WHERE f_table_name = %Q  AND "
-			 "f_geometry_column = %Q AND search_frame = BuildCircleMBR(?, ?, ?)) "
-			 "ORDER BY dist", xfrom, xto, xgeom, xtable,
-			 graph->TableName, graph->GeometryColumn);
+
+    srid_is_geographic (sqlite, p2p->srid, &geographic);
+    if (geographic)
+      {
+	  /* long/lat - take care - distances are measured in degrees !!! */
+	  sql =
+	      sqlite3_mprintf ("SELECT r.rowid, r.\"%s\", r.\"%s\", "
+			       "ST_Distance(p.geom, r.\"%s\", 1) AS dist "
+			       "FROM \"%s\" AS r, (SELECT MakePoint(?, ?, %d) AS geom) AS p "
+			       "WHERE dist <= ? AND r.rowid IN "
+			       "(SELECT rowid FROM SpatialIndex WHERE f_table_name = %Q  AND "
+			       "f_geometry_column = %Q AND search_frame = BuildCircleMBR(?, ?, ?)) "
+			       "ORDER BY dist", xfrom, xto, xgeom, xtable,
+			       p2p->srid, graph->TableName,
+			       graph->GeometryColumn);
+	  radius = net->Tolerance / 111111.111;
+      }
+    else
+      {
+	  sql =
+	      sqlite3_mprintf ("SELECT r.rowid, r.\"%s\", r.\"%s\", "
+			       "ST_Distance(p.geom, r.\"%s\") AS dist "
+			       "FROM \"%s\" AS r, (SELECT MakePoint(?, ?) AS geom) AS p "
+			       "WHERE dist <= ? AND r.rowid IN "
+			       "(SELECT rowid FROM SpatialIndex WHERE f_table_name = %Q  AND "
+			       "f_geometry_column = %Q AND search_frame = BuildCircleMBR(?, ?, ?)) "
+			       "ORDER BY dist", xfrom, xto, xgeom, xtable,
+			       graph->TableName, graph->GeometryColumn);
+	  radius = net->Tolerance;
+      }
     free (xfrom);
     free (xto);
     free (xtable);
@@ -5466,7 +5495,7 @@ do_prepare_point (virtualroutingPtr net, int mode)
 	  sqlite3_bind_double (stmt, 3, net->Tolerance);
 	  sqlite3_bind_double (stmt, 4, p2p->xFrom);
 	  sqlite3_bind_double (stmt, 5, p2p->yFrom);
-	  sqlite3_bind_double (stmt, 6, net->Tolerance);
+	  sqlite3_bind_double (stmt, 6, radius);
       }
     else
       {
@@ -5475,7 +5504,7 @@ do_prepare_point (virtualroutingPtr net, int mode)
 	  sqlite3_bind_double (stmt, 3, net->Tolerance);
 	  sqlite3_bind_double (stmt, 4, p2p->xTo);
 	  sqlite3_bind_double (stmt, 5, p2p->yTo);
-	  sqlite3_bind_double (stmt, 6, net->Tolerance);
+	  sqlite3_bind_double (stmt, 6, radius);
       }
     while (1)
       {
@@ -6751,6 +6780,8 @@ build_point2point_solution (sqlite3 * sqlite, int options, RoutingPtr graph,
 		  }
 		if (pR->Geometry != NULL)
 		    gaiaFreeGeomColl (pR->Geometry);
+		if (pR->Undefined != NULL)
+		    free (pR->Undefined);
 		free (pR);
 		pR = pRn;
 	    }
@@ -7688,6 +7719,7 @@ vroute_filter (sqlite3_vtab_cursor * pCursor, int idxNum, const char *idxStr,
 				      p2p->zFrom = pt->Z;
 				  else
 				      p2p->zFrom = 0.0;
+				  p2p->srid = net->graph->Srid;
 			      }
 			    gaiaFreeGeomColl (point);
 			}
@@ -7711,6 +7743,7 @@ vroute_filter (sqlite3_vtab_cursor * pCursor, int idxNum, const char *idxStr,
 				      p2p->zTo = pt->Z;
 				  else
 				      p2p->zTo = 0.0;
+				  p2p->srid = net->graph->Srid;
 			      }
 			    gaiaFreeGeomColl (point);
 			}
@@ -7743,6 +7776,7 @@ vroute_filter (sqlite3_vtab_cursor * pCursor, int idxNum, const char *idxStr,
 				      p2p->zFrom = pt->Z;
 				  else
 				      p2p->zFrom = 0.0;
+				  p2p->srid = net->graph->Srid;
 			      }
 			    gaiaFreeGeomColl (point);
 			}
@@ -7766,6 +7800,7 @@ vroute_filter (sqlite3_vtab_cursor * pCursor, int idxNum, const char *idxStr,
 				      p2p->zTo = pt->Z;
 				  else
 				      p2p->zTo = 0.0;
+				  p2p->srid = net->graph->Srid;
 			      }
 			    gaiaFreeGeomColl (point);
 			}
@@ -8198,8 +8233,6 @@ do_common_column (virtualroutingCursorPtr cursor, virtualroutingPtr net,
 	  if (column == 0)
 	    {
 		/* the currently used Algorithm */
-		fprintf (stderr, "common_column_undefined %d\n",
-			 multiSolution->MultiTo->Items);
 		if (multiSolution->MultiTo->Items > 1)
 		  {
 		      /* multiple destinations: always defaulting to Dijkstra */
@@ -8363,8 +8396,6 @@ do_common_column (virtualroutingCursorPtr cursor, virtualroutingPtr net,
 	  if (column == 0)
 	    {
 		/* the currently used Algorithm */
-		fprintf (stderr, "common_column_summary %d\n",
-			 multiSolution->MultiTo->Items);
 		if (multiSolution->MultiTo->Items > 1)
 		  {
 		      /* multiple destinations: always defaulting to Dijkstra */

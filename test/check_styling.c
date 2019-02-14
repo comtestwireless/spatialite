@@ -1966,6 +1966,16 @@ main (int argc, char *argv[])
 	  sqlite3_free (err_msg);
 	  return -3;
       }
+      
+/* re-creating the Styling Triggers */
+    sql = "SELECT ReCreateStylingTriggers(1)";
+    ret = execute_check (handle, sql, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "Error ReCreateStylingTriggers %s\n\n", err_msg);
+	  sqlite3_free (err_msg);
+	  return -4;
+      }
 
     ret = check_vector (handle, cache);
     if (ret != 0)

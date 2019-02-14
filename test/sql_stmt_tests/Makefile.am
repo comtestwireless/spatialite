@@ -2003,6 +2003,7 @@ EXTRA_DIST = addpoint10.testcase \
 	polygcw6.testcase \
 	polygonfromtext1.testcase \
 	polygonfromtext2.testcase \
+	recreaterastercoverages.testcase \
 	reflectcoords10.testcase \
 	reflectcoords11.testcase \
 	reflectcoords12.testcase \

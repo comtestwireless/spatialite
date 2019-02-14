@@ -8346,6 +8346,32 @@ fnct_CreateRasterCoveragesTable (sqlite3_context * context, int argc,
 }
 
 static void
+fnct_ReCreateRasterCoveragesTriggers (sqlite3_context * context, int argc,
+				      sqlite3_value ** argv)
+{
+/* SQL function:
+/ ReCreateRasterCoveragesTriggers()
+/
+/ (re)creates the RasterCoverages triggers 
+/ returns 1 on success
+/ 0 on failure
+*/
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+
+    if (!reCreateRasterCoveragesTriggers (sqlite))
+	goto error;
+    updateSpatiaLiteHistory (sqlite, "*** Raster Coverages ***", NULL,
+			     "Triggers successfully (re)created");
+    sqlite3_result_int (context, 1);
+    return;
+
+  error:
+    sqlite3_result_int (context, 0);
+    return;
+}
+
+static void
 fnct_CreateVectorCoveragesTables (sqlite3_context * context, int argc,
 				  sqlite3_value ** argv)
 {
@@ -8363,6 +8389,32 @@ fnct_CreateVectorCoveragesTables (sqlite3_context * context, int argc,
 	goto error;
     updateSpatiaLiteHistory (sqlite, "*** Vector Coverages ***", NULL,
 			     "Main table successfully created");
+    sqlite3_result_int (context, 1);
+    return;
+
+  error:
+    sqlite3_result_int (context, 0);
+    return;
+}
+
+static void
+fnct_ReCreateVectorCoveragesTriggers (sqlite3_context * context, int argc,
+				      sqlite3_value ** argv)
+{
+/* SQL function:
+/ ReCreateVectorCoveragesTriggers()
+/
+/ (re)creates the VectorCoverages triggers 
+/ returns 1 on success
+/ 0 on failure
+*/
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+
+    if (!reCreateVectorCoveragesTriggers (sqlite))
+	goto error;
+    updateSpatiaLiteHistory (sqlite, "*** Vector Coverages ***", NULL,
+			     "Triggers successfully (re)created");
     sqlite3_result_int (context, 1);
     return;
 
@@ -38622,6 +38674,56 @@ fnct_CreateStylingTables (sqlite3_context * context, int argc,
 }
 
 static void
+fnct_ReCreateStylingTriggers (sqlite3_context * context, int argc,
+			      sqlite3_value ** argv)
+{
+/* SQL function:
+/ ReCreateStylingTriggers()
+/  or
+/ ReCreateStylingTriggers(bool relaxed)
+/  or
+/ ReCreateStylingTriggers(bool relaxed, bool transaction)
+/
+/ (re)creates any SLD/SE related trigger 
+/ returns 1 on success
+/ 0 on failure, -1 on invalid arguments
+*/
+    int relaxed = 0;
+    int transaction = 0;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (argc >= 1)
+      {
+	  if (sqlite3_value_type (argv[0]) != SQLITE_INTEGER)
+	    {
+		sqlite3_result_int (context, -1);
+		return;
+	    }
+	  relaxed = sqlite3_value_int (argv[0]);
+      }
+    if (argc >= 2)
+      {
+	  if (sqlite3_value_type (argv[1]) != SQLITE_INTEGER)
+	    {
+		sqlite3_result_int (context, -1);
+		return;
+	    }
+	  transaction = sqlite3_value_int (argv[1]);
+      }
+
+    if (!reCreateStylingTriggers (sqlite, relaxed, transaction))
+	goto error;
+    updateSpatiaLiteHistory (sqlite, "*** SE Styling ***", NULL,
+			     "Styling triggers successfully (re)created");
+    sqlite3_result_int (context, 1);
+    return;
+
+  error:
+    sqlite3_result_int (context, 0);
+    return;
+}
+
+static void
 fnct_RegisterExternalGraphic (sqlite3_context * context, int argc,
 			      sqlite3_value ** argv)
 {
@@ -44484,6 +44586,13 @@ fnct_CreateTopoTables (sqlite3_context * context, int argc,
 }
 
 static void
+fnct_ReCreateTopoTriggers (sqlite3_context * context, int argc,
+			   sqlite3_value ** argv)
+{
+    fnctaux_ReCreateTopoTriggers (context, argc, argv);
+}
+
+static void
 fnct_CreateTopology (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
     fnctaux_CreateTopology (context, argc, argv);
@@ -45426,9 +45535,15 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "CreateRasterCoveragesTable", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_CreateRasterCoveragesTable, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ReCreateRasterCoveragesTriggers", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_ReCreateRasterCoveragesTriggers, 0, 0, 0);
     sqlite3_create_function_v2 (db, "CreateVectorCoveragesTables", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_CreateVectorCoveragesTables, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ReCreateVectorCoveragesTriggers", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_ReCreateVectorCoveragesTriggers, 0, 0, 0);
     sqlite3_create_function_v2 (db, "WMS_CreateTables", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_CreateWMSTables, 0, 0, 0);
@@ -49117,6 +49232,15 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "CreateStylingTables", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_CreateStylingTables, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ReCreateStylingTriggers", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_ReCreateStylingTriggers, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ReCreateStylingTriggers", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_ReCreateStylingTriggers, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ReCreateStylingTriggers", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_ReCreateStylingTriggers, 0, 0, 0);
     sqlite3_create_function (db, "SE_RegisterVectorCoverage", 3, SQLITE_ANY,
 			     0, fnct_RegisterVectorCoverage, 0, 0);
     sqlite3_create_function (db, "SE_RegisterVectorCoverage", 5, SQLITE_ANY,
@@ -49548,339 +49672,299 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 	  sqlite3_create_function_v2 (db, "CreateTopoTables", 0,
 				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
 				      cache, fnct_CreateTopoTables, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ReCreateTopoTriggers", 0,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
+				      cache, fnct_ReCreateTopoTriggers, 0, 0,
+				      0);
 	  sqlite3_create_function_v2 (db, "CreateTopology", 1,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_CreateTopology, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_CreateTopology, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "CreateTopology", 2,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_CreateTopology, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_CreateTopology, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "CreateTopology", 3,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_CreateTopology, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_CreateTopology, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "CreateTopology", 4,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_CreateTopology, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_CreateTopology, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "ST_InitTopoGeo", 1,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_CreateTopology, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_CreateTopology, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "DropTopology", 1,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_DropTopology, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_DropTopology, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "GetLastTopologyException", 1,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_GetLastTopologyException, 0,
-				      0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_GetLastTopologyException, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "ST_AddIsoNode", 3,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_AddIsoNode, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_AddIsoNode, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "ST_MoveIsoNode", 3,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_MoveIsoNode, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_MoveIsoNode, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "ST_RemIsoNode", 2,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_RemIsoNode, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_RemIsoNode, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "ST_AddIsoEdge", 4,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_AddIsoEdge, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_AddIsoEdge, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "ST_RemIsoEdge", 2,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_RemIsoEdge, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_RemIsoEdge, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "ST_ModEdgeSplit", 3,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_ModEdgeSplit, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_ModEdgeSplit, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "ST_NewEdgesSplit", 3,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_NewEdgesSplit, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_NewEdgesSplit, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "ST_AddEdgeModFace", 4,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_AddEdgeModFace, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_AddEdgeModFace, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "ST_AddEdgeNewFaces", 4,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_AddEdgeNewFaces, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_AddEdgeNewFaces, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "ST_ChangeEdgeGeom", 3,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_ChangeEdgeGeom, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_ChangeEdgeGeom, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "ST_RemEdgeNewFace", 2,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_RemEdgeNewFace, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_RemEdgeNewFace, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "ST_RemEdgeModFace", 2,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_RemEdgeModFace, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_RemEdgeModFace, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "ST_ModEdgeHeal", 3,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_ModEdgeHeal, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_ModEdgeHeal, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "ST_NewEdgeHeal", 3,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_NewEdgeHeal, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_NewEdgeHeal, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "ST_GetFaceGeometry", 2,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_GetFaceGeometry, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_GetFaceGeometry, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "ST_GetFaceEdges", 2,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_GetFaceEdges, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_GetFaceEdges, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "ST_ValidateTopoGeo", 1,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_ValidateTopoGeo, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_ValidateTopoGeo, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "ST_CreateTopoGeo", 2,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_CreateTopoGeo, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_CreateTopoGeo, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "GetNodeByPoint", 2,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_GetNodeByPoint, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_GetNodeByPoint, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "GetNodeByPoint", 3,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_GetNodeByPoint, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_GetNodeByPoint, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "GetEdgeByPoint", 2,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_GetEdgeByPoint, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_GetEdgeByPoint, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "GetEdgeByPoint", 3,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_GetEdgeByPoint, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_GetEdgeByPoint, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "GetFaceByPoint", 2,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_GetFaceByPoint, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_GetFaceByPoint, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "GetFaceByPoint", 3,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_GetFaceByPoint, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_GetFaceByPoint, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_AddPoint", 2,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_AddPoint, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_AddPoint, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_AddPoint", 3,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_AddPoint, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_AddPoint, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_AddLineString", 2,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_AddLineString, 0, 0,
-				      0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_AddLineString, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_AddLineString", 3,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_AddLineString, 0, 0,
-				      0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_AddLineString, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_AddLineStringNoFace", 2,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_AddLineStringNoFace,
-				      0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_AddLineStringNoFace, 0, 0,
+				      0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_AddLineStringNoFace", 3,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_AddLineStringNoFace,
-				      0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_AddLineStringNoFace, 0, 0,
+				      0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_FromGeoTable", 4,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_FromGeoTable, 0, 0,
-				      0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_FromGeoTable, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_FromGeoTable", 5,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_FromGeoTable, 0, 0,
-				      0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_FromGeoTable, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_FromGeoTable", 6,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_FromGeoTable, 0, 0,
-				      0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_FromGeoTable, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_FromGeoTable", 7,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_FromGeoTable, 0, 0,
-				      0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_FromGeoTable, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_FromGeoTableNoFace", 4,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_FromGeoTableNoFace,
-				      0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_FromGeoTableNoFace, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_FromGeoTableNoFace", 5,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_FromGeoTableNoFace,
-				      0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_FromGeoTableNoFace, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_FromGeoTableNoFace", 6,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_FromGeoTableNoFace,
-				      0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_FromGeoTableNoFace, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_FromGeoTableNoFace", 7,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_FromGeoTableNoFace,
-				      0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_FromGeoTableNoFace, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_FromGeoTableExt", 6,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_FromGeoTableExt, 0,
-				      0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_FromGeoTableExt, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_FromGeoTableExt", 7,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_FromGeoTableExt, 0,
-				      0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_FromGeoTableExt, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_FromGeoTableExt", 8,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_FromGeoTableExt, 0,
-				      0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_FromGeoTableExt, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_FromGeoTableExt", 9,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_FromGeoTableExt, 0,
-				      0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_FromGeoTableExt, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_FromGeoTableNoFaceExt", 6,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache,
-				      fnct_TopoGeo_FromGeoTableNoFaceExt, 0,
-				      0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_FromGeoTableNoFaceExt, 0, 0,
+				      0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_FromGeoTableNoFaceExt", 7,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache,
-				      fnct_TopoGeo_FromGeoTableNoFaceExt, 0,
-				      0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_FromGeoTableNoFaceExt, 0, 0,
+				      0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_FromGeoTableNoFaceExt", 8,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache,
-				      fnct_TopoGeo_FromGeoTableNoFaceExt, 0,
-				      0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_FromGeoTableNoFaceExt, 0, 0,
+				      0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_FromGeoTableNoFaceExt", 9,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache,
-				      fnct_TopoGeo_FromGeoTableNoFaceExt, 0,
-				      0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_FromGeoTableNoFaceExt, 0, 0,
+				      0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_Polygonize", 1,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_Polygonize, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_Polygonize, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_Polygonize", 2,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_Polygonize, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_Polygonize, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_TopoSnap", 3,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_TopoSnap, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_TopoSnap, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_TopoSnap", 5,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_TopoSnap, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_TopoSnap, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_SnappedGeoTable", 6,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_SnappedGeoTable, 0,
-				      0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_SnappedGeoTable, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_SnappedGeoTable", 8,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_SnappedGeoTable, 0,
-				      0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_SnappedGeoTable, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_ToGeoTable", 5,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_ToGeoTable, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_ToGeoTable, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_ToGeoTable", 6,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_ToGeoTable, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_ToGeoTable, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_PolyFacesList", 5,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_PolyFacesList, 0, 0,
-				      0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_PolyFacesList, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_LineEdgesList", 5,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_LineEdgesList, 0, 0,
-				      0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_LineEdgesList, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_ToGeoTableGeneralize", 6,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				      fnct_TopoGeo_ToGeoTableGeneralize, 0, 0,
 				      0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_ToGeoTableGeneralize", 7,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				      fnct_TopoGeo_ToGeoTableGeneralize, 0, 0,
 				      0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_RemoveSmallFaces", 2,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_RemoveSmallFaces, 0,
-				      0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_RemoveSmallFaces, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_RemoveSmallFaces", 3,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_RemoveSmallFaces, 0,
-				      0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_RemoveSmallFaces, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_RemoveDanglingEdges", 1,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_RemoveDanglingEdges,
-				      0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_RemoveDanglingEdges, 0, 0,
+				      0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_RemoveDanglingNodes", 1,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_RemoveDanglingNodes,
-				      0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_RemoveDanglingNodes, 0, 0,
+				      0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_NewEdgeHeal", 1,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_NewEdgeHeal, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_NewEdgeHeal, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_ModEdgeHeal", 1,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_ModEdgeHeal, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_ModEdgeHeal, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_NewEdgesSplit", 2,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_NewEdgesSplit, 0, 0,
-				      0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_NewEdgesSplit, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_NewEdgesSplit", 3,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_NewEdgesSplit, 0, 0,
-				      0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_NewEdgesSplit, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_ModEdgeSplit", 2,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_ModEdgeSplit, 0, 0,
-				      0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_ModEdgeSplit, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_ModEdgeSplit", 3,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_ModEdgeSplit, 0, 0,
-				      0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_ModEdgeSplit, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_Clone", 3,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_Clone, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_Clone, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_SubdivideLines", 2,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_SubdivideLines, 0,
-				      0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_SubdivideLines, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_SubdivideLines", 3,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_SubdivideLines, 0,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_SubdivideLines, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "TopoGeo_DisambiguateSegmentEdges", 1,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_DisambiguateSegmentEdges, 0,
 				      0, 0);
-	  sqlite3_create_function_v2 (db, "TopoGeo_DisambiguateSegmentEdges",
-				      1, SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache,
-				      fnct_TopoGeo_DisambiguateSegmentEdges,
-				      0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_GetEdgeSeed", 2,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_GetEdgeSeed, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_GetEdgeSeed, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_GetFaceSeed", 2,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_GetFaceSeed, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_GetFaceSeed, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_UpdateSeeds", 1,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_UpdateSeeds, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_UpdateSeeds, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_UpdateSeeds", 2,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_UpdateSeeds, 0, 0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_UpdateSeeds, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_SnapPointToSeed", 3,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_SnapPointToSeed, 0,
-				      0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_SnapPointToSeed, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_SnapLineToSeed", 3,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_SnapLineToSeed, 0,
-				      0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_SnapLineToSeed, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_CreateTopoLayer", 5,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_CreateTopoLayer, 0,
-				      0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_CreateTopoLayer, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_CreateTopoLayer", 6,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_CreateTopoLayer, 0,
-				      0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_CreateTopoLayer, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_InitTopoLayer", 4,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_InitTopoLayer, 0, 0,
-				      0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_InitTopoLayer, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_RemoveTopoLayer", 2,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_RemoveTopoLayer, 0,
-				      0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_RemoveTopoLayer, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_ExportTopoLayer", 3,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_ExportTopoLayer, 0,
-				      0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_ExportTopoLayer, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_ExportTopoLayer", 4,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_ExportTopoLayer, 0,
-				      0, 0);
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_ExportTopoLayer, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "TopoGeo_ExportTopoLayer", 5,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-				      cache, fnct_TopoGeo_ExportTopoLayer, 0,
-				      0, 0);
-	  sqlite3_create_function_v2 (db,
-				      "TopoGeo_InsertFeatureFromTopoLayer", 4,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_TopoGeo_ExportTopoLayer, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "TopoGeo_InsertFeatureFromTopoLayer",
+				      4, SQLITE_UTF8 | SQLITE_DETERMINISTIC,
 				      cache,
 				      fnct_TopoGeo_InsertFeatureFromTopoLayer,
 				      0, 0, 0);

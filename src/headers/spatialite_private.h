@@ -451,6 +451,10 @@ extern "C"
 						   int relaxed,
 						   int transaction);
 
+    SPATIALITE_PRIVATE int reCreateStylingTriggers (void *p_sqlite,
+						    int relaxed,
+						    int transaction);
+
     SPATIALITE_PRIVATE int register_external_graphic (void *p_sqlite,
 						      const char *xlink_href,
 						      const unsigned char
@@ -655,12 +659,14 @@ extern "C"
 						  const char *fileIdentifier);
 
     SPATIALITE_PRIVATE int createRasterCoveragesTable (void *p_sqlite);
+    SPATIALITE_PRIVATE int reCreateRasterCoveragesTriggers (void *p_sqlite);
 
     SPATIALITE_PRIVATE int checkPopulatedCoverage (void *p_sqlite,
 						   const char *db_prefix,
 						   const char *coverage_name);
 
     SPATIALITE_PRIVATE int createVectorCoveragesTable (void *p_sqlite);
+    SPATIALITE_PRIVATE int reCreateVectorCoveragesTriggers (void *p_sqlite);
 
     SPATIALITE_PRIVATE int register_vector_coverage (void *p_sqlite,
 						     const char
@@ -1002,10 +1008,17 @@ extern "C"
     SPATIALITE_PRIVATE void fnctaux_CreateTopoTables (const void *context,
 						      int argc,
 						      const void *argv);
+    SPATIALITE_PRIVATE void fnctaux_ReCreateTopoTriggers (const void *context,
+							  int argc,
+							  const void *argv);
 
     SPATIALITE_PRIVATE int do_create_topologies (void *sqlite_handle);
+    SPATIALITE_PRIVATE void drop_topologies_triggers (void *sqlite_handle);
+    SPATIALITE_PRIVATE int do_create_topologies_triggers (void *sqlite_handle);
 
     SPATIALITE_PRIVATE int do_create_networks (void *sqlite_handle);
+    SPATIALITE_PRIVATE void drop_networks_triggers (void *sqlite_handle);
+    SPATIALITE_PRIVATE int do_create_networks_triggers (void *sqlite_handle);
 
     SPATIALITE_PRIVATE void fnctaux_CreateTopology (const void *context,
 						    int argc, const void *argv);
