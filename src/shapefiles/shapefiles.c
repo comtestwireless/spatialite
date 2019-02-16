@@ -2870,6 +2870,124 @@ attached_layer (sqlite3 * handle, const char *db_prefix, const char *table,
     return NULL;
 }
 
+static int
+compute_text_length(const char *string, const char *charset)
+{
+/* computing the actual length of TEXT fields */
+int len = 0;
+			    char *converted =
+				sqlite3_malloc (strlen (string) + 1);
+			    strcpy (converted, string);
+			    if (gaiaConvertCharset
+				(&converted, "UTF-8", charset))
+			      len = strlen (converted);
+				  sqlite3_free (converted);
+				  return len;
+}
+
+static void
+compute_exact_text_max_length (sqlite3 * sqlite, gaiaDbfListPtr dbf_list,
+			       const char *table, const char *charset)
+{
+/* computing the exact max length of TEXT fields */
+    char *sql;
+    char *prevsql;
+    char *xtable;
+    gaiaDbfFieldPtr fld;
+    int first = 1;
+    int ok = 0;
+    int ret;
+    sqlite3_stmt *stmt = NULL;
+    int offset = 0;
+
+/* preparing the SQL query */
+    sql = sqlite3_mprintf ("SELECT");
+    prevsql = sql;
+    fld = dbf_list->First;
+    while (fld)
+      {
+	  char *xcolumn;
+	  if (fld->Type != 'C')
+	      goto skip_field;
+	  ok = 1;
+	  xcolumn = gaiaDoubleQuotedSql (fld->Name);
+	  if (first)
+	    {
+		sql = sqlite3_mprintf ("%s \"%s\"", prevsql, xcolumn);
+		first = 0;
+	    }
+	  else
+	      sql = sqlite3_mprintf ("%s, \"%s\"", prevsql, xcolumn);
+	  free (xcolumn);
+	  sqlite3_free (prevsql);
+	  prevsql = sql;
+
+	skip_field:
+	  fld = fld->Next;
+      }
+    if (!ok)
+      {
+	  sqlite3_free (sql);
+	  return;
+      }
+
+    xtable = gaiaDoubleQuotedSql (table);
+    sql = sqlite3_mprintf ("%s FROM \"%s\"", prevsql, xtable);
+    sqlite3_free (prevsql);
+    free (xtable);
+    ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+	return;
+    while (1)
+      {
+	  /* scrolling the result set rows */
+	  ret = sqlite3_step (stmt);
+	  if (ret == SQLITE_DONE)
+	      break;		/* end of result set */
+	  if (ret == SQLITE_ROW)
+	    {
+		int col = 0;
+		fld = dbf_list->First;
+		while (fld)
+		  {
+		      if (fld->Type != 'C')
+			  goto skip_field2;
+		      if (sqlite3_column_type (stmt, col) == SQLITE_TEXT)
+			{
+			    const char *string = (const char *)
+				sqlite3_column_text (stmt, col);
+			    char *converted =
+				sqlite3_malloc (strlen (string) + 1);
+			    strcpy (converted, string);
+			    if (gaiaConvertCharset
+				(&converted, "UTF-8", charset))
+			      {
+					  /* we need to determine the field length _AFTER_ converting to the output charset */
+				  int len = strlen (converted);
+				  if (len > fld->Length)
+				      fld->Length = len;
+				  sqlite3_free (converted);
+			      }
+			    col++;
+			}
+		    skip_field2:
+		      fld = fld->Next;
+		  }
+	    }
+      }
+    sqlite3_finalize (stmt);
+
+    fld = dbf_list->First;
+    while (fld)
+      {
+	  /* readjusting all offsets */
+	  fld->Offset = offset;
+	  offset += fld->Length;
+	  fld = fld->Next;
+      }
+}
+
 SPATIALITE_DECLARE int
 dump_shapefile (sqlite3 * sqlite, char *table, char *column, char *shp_path,
 		char *charset, char *geom_type, int verbose, int *xrows,
@@ -3272,6 +3390,9 @@ dump_shapefile_ex (sqlite3 * sqlite, char *table, char *column, char *shp_path,
 	    }
 	  fld = fld->Next;
       }
+
+/* exact computation of TEXT fields max length */
+    compute_exact_text_max_length (sqlite, dbf_list, table, charset);
 
 /* resetting SQLite query */
   continue_exporting:
@@ -4273,7 +4394,8 @@ dump_dbf_ex2 (sqlite3 * sqlite, char *table, char *dbf_path, char *charset,
 			  continue;
 		      if (type == SQLITE_TEXT)
 			{
-			    len = sqlite3_column_bytes (stmt, i);
+				const char *string = (const char *)sqlite3_column_text (stmt, i);
+				len = compute_text_length (string, charset);
 			    if (len > 254)
 			      {
 				  /* DBF C type: max allowed length */
@@ -7435,8 +7557,10 @@ load_geojson (sqlite3 * sqlite, char *path, char *table, char *geom_col,
 			}
 		      else
 			{
-			    *error_message = sqlite3_mprintf("GeoJSON import: invalid Geometry (fid=%d)\n",
-				     ft->fid);
+			    *error_message =
+				sqlite3_mprintf
+				("GeoJSON import: invalid Geometry (fid=%d)\n",
+				 ft->fid);
 			    goto err;
 			}
 		  }
