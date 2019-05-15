@@ -1783,7 +1783,9 @@ check_extent (sqlite3 * handle)
 	  fprintf (stderr, "Error UpdateVectorCoverageExtent #1 %s\n\n",
 		   err_msg);
 	  sqlite3_free (err_msg);
+#ifndef PROJ_NEW	/* using old PROJ.4 */
 	  return -13;
+#endif
       }
 
     sql =
@@ -1851,7 +1853,9 @@ check_extent (sqlite3 * handle)
 	  fprintf (stderr, "Error UpdateVectorCoverageExtent #2 %s\n\n",
 		   err_msg);
 	  sqlite3_free (err_msg);
+#ifndef PROJ_NEW	/* using old PROJ.4 */
 	  return -19;
+#endif
       }
 
     sql = sqlite3_mprintf ("SELECT SE_UnRegisterVectorCoverage('table1')");
@@ -1910,7 +1914,9 @@ check_extent (sqlite3 * handle)
 	  fprintf (stderr, "Error UpdateVectorCoverageExtent #3 %s\n\n",
 		   err_msg);
 	  sqlite3_free (err_msg);
+#ifndef PROJ_NEW	/* using old PROJ.4 */
 	  return -25;
+#endif
       }
 
     return 0;

@@ -162,7 +162,7 @@ INSTALL_PROGRAM = ${INSTALL}
 INSTALL_SCRIPT = ${INSTALL}
 INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
 LD = /usr/bin/ld -m elf_x86_64
-LDFLAGS = 
+LDFLAGS = -L/usr/local/lib
 LIBOBJS = 
 LIBS = -lrttopo -lfreexl -lproj -lsqlite3 -lz -lsqlite3  -L/usr/lib64 -lgeos_c
 LIBTOOL = $(SHELL) $(top_builddir)/libtool
@@ -2784,7 +2784,6 @@ EXTRA_DIST = addpoint10.testcase \
 	sriddatum3.testcase \
 	sriddatum4.testcase \
 	sriddatum5.testcase \
-	sriddatum6.testcase \
 	sridunit1.testcase \
 	sridunit2.testcase \
 	sridunit3.testcase \
@@ -2796,31 +2795,26 @@ EXTRA_DIST = addpoint10.testcase \
 	sridprojection3.testcase \
 	sridprojection4.testcase \
 	sridprojection5.testcase \
-	sridprojection6.testcase \
 	sridax1name1.testcase \
 	sridax1name2.testcase \
 	sridax1name3.testcase \
 	sridax1name4.testcase \
 	sridax1name5.testcase \
-	sridax1name6.testcase \
 	sridax1orient1.testcase \
 	sridax1orient2.testcase \
 	sridax1orient3.testcase \
 	sridax1orient4.testcase \
 	sridax1orient5.testcase \
-	sridax1orient6.testcase \
 	sridax2name1.testcase \
 	sridax2name2.testcase \
 	sridax2name3.testcase \
 	sridax2name4.testcase \
 	sridax2name5.testcase \
-	sridax2name6.testcase \
 	sridax2orient1.testcase \
 	sridax2orient2.testcase \
 	sridax2orient3.testcase \
 	sridax2orient4.testcase \
 	sridax2orient5.testcase \
-	sridax2orient6.testcase \
 	stringlist1.testcase \
 	stringlist2.testcase \
 	stringlist3.testcase \

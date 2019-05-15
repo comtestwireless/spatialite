@@ -302,6 +302,33 @@ extern "C"
 					      int colcase_name, char *err_msg);
 
 /**
+ Dumps a full geometry-table into an external Shapefile
+
+ \param sqlite handle to current DB connection
+ \param proj_ctx pointer to the current PROJ.6 context (may be NULL)
+ \param table the name of the table to be exported
+ \param column the name of the geometry column
+ \param shp_path pathname of the Shapefile to be exported (no suffix) 
+ \param charset a valid GNU ICONV charset to be used for DBF text strings
+ \param geom_type "POINT", "LINESTRING", "POLYGON", "MULTIPOINT" or NULL
+ \param verbose if TRUE a short report is shown on stderr
+ \param rows on completion will contain the total number of exported rows
+ \param colname_case one between GAIA_DBF_COLNAME_LOWERCASE, 
+	GAIA_DBF_COLNAME_UPPERCASE or GAIA_DBF_COLNAME_CASE_IGNORE.
+ \param err_msg on completion will contain an error message (if any)
+ 
+ \sa dump_shapefile
+
+ \return 0 on failure, any other value on success
+ */
+    SPATIALITE_DECLARE int dump_shapefile_ex2 (sqlite3 * sqlite, void *proj_ctx,
+					       char *table, char *column,
+					       char *shp_path, char *charset,
+					       char *geom_type, int verbose,
+					       int *rows, int colcase_name,
+					       char *err_msg);
+
+/**
  Loads an external Shapefile into a newly created table
 
  \param sqlite handle to current DB connection
@@ -1993,6 +2020,8 @@ extern "C"
 						const char *splite_in_path,
 						sqlite3 * handle_out,
 						const char *gpkg_out_path);
+
+    SPATIALITE_DECLARE const void *gaiaGetCurrentProjContext (const void *cache);
 
 #ifdef __cplusplus
 }

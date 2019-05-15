@@ -1189,8 +1189,13 @@ vrttxt_is_scientific_double (const char *value, char decimal_separator)
 		else
 		    invalid++;
 	    }
-	  else if (*p == 'E' || *p == 'e')
-	      exp++;
+	  else if ((*p >= 'A' && *p <= 'Z') || (*p >= 'a' && *p <= 'z'))
+	    {
+		if (*p == 'E' || *p == 'e')
+		    exp++;
+		else
+		    invalid++;
+	    }
 	  else if (*p == '-' || *p == '+')
 	    {
 		if (exp && !digit3)

@@ -121,7 +121,11 @@ Regione Toscana - Settore Sistema Informativo Territoriale ed Ambientale
 #endif
 
 #ifndef OMIT_PROJ		/* including PROJ.4 */
+#ifdef PROJ_NEW			/* supporting new PROJ.6 */
+#include <proj.h>
+#else /* supporting old PROJ.4 */
 #include <proj_api.h>
+#endif
 #endif
 
 #ifdef _WIN32
@@ -395,6 +399,7 @@ fnct_proj4_version (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
 /* SQL function:
 / proj4_version()
+/ proj_version()
 /
 / return a text string representing the current PROJ.4 version
 / or NULL if PROJ.4 is currently unsupported
@@ -402,7 +407,11 @@ fnct_proj4_version (sqlite3_context * context, int argc, sqlite3_value ** argv)
 
 #ifndef OMIT_PROJ		/* PROJ.4 version */
     int len;
+#ifdef PROJ_NEW			/* supporting new PROJ.6 */
+    const char *p_result = pj_release;
+#else /* supporting old PROJ.4 */
     const char *p_result = pj_get_release ();
+#endif
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     len = strlen (p_result);
     sqlite3_result_text (context, p_result, len, SQLITE_TRANSIENT);
@@ -421,14 +430,35 @@ fnct_has_proj (sqlite3_context * context, int argc, sqlite3_value ** argv)
 */
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
 #ifndef OMIT_PROJ
+#ifdef PROJ_NEW			/* supporting new PROJ.6 */
+    sqlite3_result_int (context, 1);
+#else /* supporting old PROJ.4 */
 #if defined(PJ_VERSION) && PJ_VERSION >= 490
     sqlite3_result_int (context, 1);
 #else
     sqlite3_result_int (context, 0);
 #endif
+#endif
 #else
     sqlite3_result_int (context, 0);
 #endif
+}
+
+static void
+fnct_has_proj6 (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ HasProj6()
+/
+/ return 1 if built including Proj.6; otherwise 0
+*/
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+#ifndef OMIT_PROJ
+#ifdef PROJ_NEW			/* supporting new PROJ.6 */
+    sqlite3_result_int (context, 1);
+#endif
+#endif
+    sqlite3_result_int (context, 0);
 }
 
 static void
@@ -2485,9 +2515,9 @@ fnct_InitSpatialMetaDataFull (sqlite3_context * context, int argc,
 
 /* executing InitSpatialMetaData() */
     if (xmode != NULL)
-	sql = sqlite3_mprintf ("SELECT InitSpatialMetaData(%Q)", xmode);
+	sql = sqlite3_mprintf ("SELECT InitSpatialMetaData(0, %Q)", xmode);
     else
-	sql = sqlite3_mprintf ("SELECT InitSpatialMetaData()");
+	sql = sqlite3_mprintf ("SELECT InitSpatialMetaData(0)");
     retval = do_execute_sql_with_retval (sqlite, sql, &errMsg);
     sqlite3_free (sql);
     if (retval != 1)
@@ -2736,6 +2766,7 @@ fnct_CloneTable (sqlite3_context * context, int argc, sqlite3_value ** argv)
     if (!gaiaAuxClonerExecute (cloner))
 	goto error;
     gaiaAuxClonerDestroy (cloner);
+    cloner = NULL;
     updateSpatiaLiteHistory (sqlite, out_table, NULL,
 			     "table successfully cloned");
 
@@ -10185,8 +10216,8 @@ fnct_AsKml1 (sqlite3_context * context, int argc, sqlite3_value ** argv)
     gaiaOutBuffer out_buf;
     gaiaGeomCollPtr geo = NULL;
     gaiaGeomCollPtr geo_wgs84;
-    char *proj_from;
-    char *proj_to;
+    char *proj_from = NULL;
+    char *proj_to = NULL;
     int precision = 15;
     void *data = sqlite3_user_data (context);
     sqlite3 *sqlite = sqlite3_context_db_handle (context);
@@ -10235,8 +10266,13 @@ fnct_AsKml1 (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  else
 	    {
 		/* attempting to reproject into WGS84 */
+#ifdef PROJ_NEW			/* supporting new PROJ.6 */
+		getProjAuthNameSrid (sqlite, geo->Srid, &proj_from);
+		getProjAuthNameSrid (sqlite, 4326, &proj_to);
+#else /* supporting old PROJ.4 */
 		getProjParams (sqlite, geo->Srid, &proj_from);
 		getProjParams (sqlite, 4326, &proj_to);
+#endif
 		if (proj_to == NULL || proj_from == NULL)
 		  {
 		      if (proj_from)
@@ -10300,8 +10336,8 @@ fnct_AsKml3 (sqlite3_context * context, int argc, sqlite3_value ** argv)
     char *desc_malloc = NULL;
     char dummy[128];
     char *xdummy;
-    char *proj_from;
-    char *proj_to;
+    char *proj_from = NULL;
+    char *proj_to = NULL;
     int precision = 15;
     void *data = sqlite3_user_data (context);
     sqlite3 *sqlite = sqlite3_context_db_handle (context);
@@ -10416,8 +10452,13 @@ fnct_AsKml3 (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  else
 	    {
 		/* attempting to reproject into WGS84 */
+#ifdef PROJ_NEW			/* supporting new PROJ.6 */
+		getProjAuthNameSrid (sqlite, geo->Srid, &proj_from);
+		getProjAuthNameSrid (sqlite, 4326, &proj_to);
+#else /* supporting old PROJ.4 */
 		getProjParams (sqlite, geo->Srid, &proj_from);
 		getProjParams (sqlite, 4326, &proj_to);
+#endif
 		if (proj_to == NULL || proj_from == NULL)
 		  {
 		      if (proj_from != NULL)
@@ -22084,6 +22125,9 @@ fnct_Transform (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
 /* SQL function:
 / Transform(BLOBencoded geometry, srid)
+/ Transform(BLOBencoded geometry, srid, BBOXgeometry)
+/ Transform(BLOBencoded geometry, srid, BBOXgeometry, string_1)
+/ Transform(BLOBencoded geometry, srid, BBOXgeometry, string_1, string_2)
 /
 / returns a new geometry that is the original one received, but 
 / transformed / translated to the new SRID [coordinates translation 
@@ -22096,14 +22140,24 @@ fnct_Transform (sqlite3_context * context, int argc, sqlite3_value ** argv)
     gaiaGeomCollPtr result;
     int srid_from;
     int srid_to;
-    char *proj_from;
-    char *proj_to;
-    void *data = sqlite3_user_data (context);
+    char *proj_from = NULL;
+    char *proj_to = NULL;
+    const char *proj_string_1 = NULL;
+    const char *proj_string_2 = NULL;
     sqlite3 *sqlite = sqlite3_context_db_handle (context);
     int gpkg_amphibious = 0;
     int gpkg_mode = 0;
     int tiny_point = 0;
     struct splite_internal_cache *cache = sqlite3_user_data (context);
+    const char *msg;
+    int check_origin_destination = 0;
+#ifdef PROJ_NEW			/* supporting new PROJ.6 */
+    char *msg2;
+    gaiaGeomCollPtr bbox = NULL;
+    gaiaProjArea proj_area;
+    gaiaProjAreaPtr proj_bbox = NULL;
+#else /* supporting old PROJ.4 */
+#endif
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (cache != NULL)
       {
@@ -22123,34 +22177,202 @@ fnct_Transform (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  sqlite3_result_null (context);
 	  return;
       }
+    if (argc >= 3)
+      {
+#ifdef PROJ_NEW			/* supporting new PROJ.6 */
+	  if (sqlite3_value_type (argv[2]) == SQLITE_NULL)
+	      ;
+	  else if (sqlite3_value_type (argv[2]) != SQLITE_BLOB)
+	    {
+		msg =
+		    "ST_Transform exception - 3rd argument is neither a BLOB nor NULL.";
+		sqlite3_result_error (context, msg, -1);
+		return;
+	    }
+	  else
+	    {
+		p_blob = (unsigned char *) sqlite3_value_blob (argv[2]);
+		n_bytes = sqlite3_value_bytes (argv[2]);
+		bbox = gaiaFromSpatiaLiteBlobWkb (p_blob, n_bytes);
+		if (!bbox)
+		  {
+		      gaiaFreeGeomColl (bbox);
+		      msg =
+			  "ST_Transform exception - 3rd argument is not a valid BLOB Geometry.";
+		      sqlite3_result_error (context, msg, -1);
+		      return;
+		  }
+		if (bbox->Srid != 4326)
+		  {
+		      gaiaFreeGeomColl (bbox);
+		      msg =
+			  "ST_Transform exception - 3rd argument is not a SRID=4326 Geometry.";
+		      sqlite3_result_error (context, msg, -1);
+		      return;
+		  }
+		proj_area.WestLongitude = bbox->MinX;
+		proj_area.EastLongitude = bbox->MaxX;
+		proj_area.SouthLatitude = bbox->MinY;
+		proj_area.NorthLatitude = bbox->MaxY;
+		proj_bbox = &proj_area;
+		gaiaFreeGeomColl (bbox);
+	    }
+#else /* supporting old PROJ.4 */
+	  msg =
+	      "ST_Transform exception - extra arguments require using PROJ.6 or later.";
+	  sqlite3_result_error (context, msg, -1);
+	  return;
+#endif
+      }
+    if (argc >= 4)
+      {
+#ifdef PROJ_NEW			/* supporting new PROJ.6 */
+	  if (sqlite3_value_type (argv[3]) == SQLITE_NULL)
+	      ;
+	  else if (sqlite3_value_type (argv[3]) != SQLITE_TEXT)
+	    {
+		msg =
+		    "ST_Transform exception - 4th argument is neither a TEXT string nor NULL.";
+		sqlite3_result_error (context, msg, -1);
+		return;
+	    }
+	  else
+	      proj_string_1 = (const char *) sqlite3_value_text (argv[3]);
+#else /* supporting old PROJ.4 */
+	  msg =
+	      "ST_Transform exception - extra arguments require using PROJ.6 or later.";
+	  sqlite3_result_error (context, msg, -1);
+	  return;
+#endif
+      }
+    if (argc >= 5)
+      {
+#ifdef PROJ_NEW			/* supporting new PROJ.6 */
+	  if (sqlite3_value_type (argv[4]) == SQLITE_NULL)
+	      ;
+	  else if (sqlite3_value_type (argv[4]) != SQLITE_TEXT)
+	    {
+		msg =
+		    "ST_Transform exception - 5th argument is neither a TEXT string nor NULL.";
+		sqlite3_result_error (context, msg, -1);
+		return;
+	    }
+	  else
+	      proj_string_2 = (const char *) sqlite3_value_text (argv[4]);
+#else /* supporting old PROJ.4 */
+	  msg =
+	      "ST_Transform exception - extra arguments require using PROJ.6 or later.";
+	  sqlite3_result_error (context, msg, -1);
+	  return;
+#endif
+      }
     p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
     n_bytes = sqlite3_value_bytes (argv[0]);
     geo =
 	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
 				     gpkg_amphibious);
     if (!geo)
-	sqlite3_result_null (context);
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
     else
       {
 	  srid_from = geo->Srid;
-	  getProjParams (sqlite, srid_from, &proj_from);
-	  getProjParams (sqlite, srid_to, &proj_to);
-	  if (proj_to == NULL || proj_from == NULL)
+#ifdef PROJ_NEW			/* supporting new PROJ.6 */
+	  if (proj_string_1 == NULL && proj_string_2 == NULL)
 	    {
-		if (proj_from)
-		    free (proj_from);
-		if (proj_to)
-		    free (proj_to);
-		gaiaFreeGeomColl (geo);
+		getProjAuthNameSrid (sqlite, srid_from, &proj_from);
+		getProjAuthNameSrid (sqlite, srid_to, &proj_to);
+		proj_string_1 = proj_from;
+		proj_string_2 = proj_to;
+		check_origin_destination = 1;
+	    }
+	  else if (proj_string_1 != NULL && proj_string_2 != NULL)
+	      check_origin_destination = 0;
+	  else if (proj_string_1 != NULL && proj_string_2 == NULL)
+	      check_origin_destination = 0;
+	  else
+	    {
 		sqlite3_result_null (context);
 		return;
 	    }
-	  if (data != NULL)
-	      result = gaiaTransform_r (data, geo, proj_from, proj_to);
+#else /* supporting old PROJ.4 */
+	  getProjParams (sqlite, srid_from, &proj_from);
+	  getProjParams (sqlite, srid_to, &proj_to);
+	  proj_string_1 = proj_from;
+	  proj_string_2 = proj_to;
+	  check_origin_destination = 1;
+#endif
+	  if (check_origin_destination)
+	    {
+		if (proj_to == NULL || proj_from == NULL)
+		  {
+		      if (proj_from)
+			  free (proj_from);
+		      if (proj_to)
+			  free (proj_to);
+		      gaiaFreeGeomColl (geo);
+#ifdef PROJ_NEW			/* supporting new PROJ.6 */
+		      if (proj_string_1 == NULL)
+			{
+			    msg =
+				"ST_Transform exception - unable to find the origin SRID.";
+			    sqlite3_result_error (context, msg, -1);
+			    return;
+			}
+		      if (proj_string_2 == NULL)
+			{
+			    msg =
+				"ST_Transform exception - unable to find the destination SRID.";
+			    sqlite3_result_error (context, msg, -1);
+			    return;
+			}
+#else /* supporting old PROJ.4 */
+		      sqlite3_result_null (context);
+		      return;
+#endif
+		  }
+	    }
+
+#ifdef PROJ_NEW			/* supporting new PROJ.6 */
+	  if (cache != NULL)
+	    {
+		gaiaResetProjErrorMsg_r (cache);
+		result =
+		    gaiaTransformEx_r (cache, geo, proj_string_1, proj_string_2,
+				       proj_bbox);
+	    }
 	  else
-	      result = gaiaTransform (geo, proj_from, proj_to);
-	  free (proj_from);
-	  free (proj_to);
+	      result =
+		  gaiaTransformEx (geo, proj_string_1, proj_string_2,
+				   proj_bbox);
+	  if (result == NULL)
+	    {
+		msg2 =
+		    sqlite3_mprintf
+		    ("ST_Transform exception - PROJ reports \"%s\".",
+		     gaiaGetProjErrorMsg_r (cache));
+		sqlite3_result_error (context, msg2, -1);
+		sqlite3_free (msg2);
+		if (proj_from != NULL)
+		    free (proj_from);
+		if (proj_to != NULL)
+		    free (proj_to);
+		gaiaFreeGeomColl (geo);
+		return;
+	    }
+#else /* supporting old PROJ.4 */
+	  if (cache != NULL)
+	      result =
+		  gaiaTransform_r (cache, geo, proj_string_1, proj_string_2);
+	  else
+	      result = gaiaTransform (geo, proj_string_1, proj_string_2);
+#endif
+	  if (proj_from != NULL)
+	      free (proj_from);
+	  if (proj_to != NULL)
+	      free (proj_to);
 	  if (!result)
 	      sqlite3_result_null (context);
 	  else
@@ -22193,8 +22415,8 @@ fnct_TransformXY (sqlite3_context * context, int argc, sqlite3_value ** argv)
     gaiaGeomCollPtr result;
     int srid_from;
     int srid_to;
-    char *proj_from;
-    char *proj_to;
+    char *proj_from = NULL;
+    char *proj_to = NULL;
     void *data = sqlite3_user_data (context);
     sqlite3 *sqlite = sqlite3_context_db_handle (context);
     int gpkg_amphibious = 0;
@@ -22230,8 +22452,13 @@ fnct_TransformXY (sqlite3_context * context, int argc, sqlite3_value ** argv)
     else
       {
 	  srid_from = geo->Srid;
+#ifdef PROJ_NEW			/* supporting new PROJ.6 */
+	  getProjAuthNameSrid (sqlite, srid_from, &proj_from);
+	  getProjAuthNameSrid (sqlite, srid_to, &proj_to);
+#else /* supporting old PROJ.4 */
 	  getProjParams (sqlite, srid_from, &proj_from);
 	  getProjParams (sqlite, srid_to, &proj_to);
+#endif
 	  if (proj_to == NULL || proj_from == NULL)
 	    {
 		if (proj_from)
@@ -22264,6 +22491,396 @@ fnct_TransformXY (sqlite3_context * context, int argc, sqlite3_value ** argv)
       }
     gaiaFreeGeomColl (geo);
 }
+
+static void
+fnct_TransformXYZ (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ TransformXYZ(BLOBencoded geometry, srid)
+/
+/ returns a new geometry that is the original one received, but 
+/ transformed / translated to the new SRID [coordinates translation 
+/ is applied]
+/
+/ NOTE: this is a special "flavor" of ST_Transform()
+/       just X, Y and Z coordinates will be transformed,
+/       M values (if eventually present) will be 
+/       left untouched.
+/       Mainly intended as a workaround possibily useful
+/       when handling 4D geometries having M-values not
+/		corresponding to Time.
+/
+/ or NULL if any error is encountered
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    gaiaGeomCollPtr geo = NULL;
+    gaiaGeomCollPtr result;
+    int srid_from;
+    int srid_to;
+    char *proj_from = NULL;
+    char *proj_to = NULL;
+    void *data = sqlite3_user_data (context);
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    int tiny_point = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+	  tiny_point = cache->tinyPointEnabled;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (sqlite3_value_type (argv[1]) == SQLITE_INTEGER)
+	srid_to = sqlite3_value_int (argv[1]);
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geo =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (!geo)
+	sqlite3_result_null (context);
+    else
+      {
+	  srid_from = geo->Srid;
+#ifdef PROJ_NEW			/* supporting new PROJ.6 */
+	  getProjAuthNameSrid (sqlite, srid_from, &proj_from);
+	  getProjAuthNameSrid (sqlite, srid_to, &proj_to);
+#else /* supporting old PROJ.4 */
+	  getProjParams (sqlite, srid_from, &proj_from);
+	  getProjParams (sqlite, srid_to, &proj_to);
+#endif
+	  if (proj_to == NULL || proj_from == NULL)
+	    {
+		if (proj_from)
+		    free (proj_from);
+		if (proj_to)
+		    free (proj_to);
+		gaiaFreeGeomColl (geo);
+		sqlite3_result_null (context);
+		return;
+	    }
+	  if (data != NULL)
+	      result = gaiaTransformXYZ_r (data, geo, proj_from, proj_to);
+	  else
+	      result = gaiaTransformXYZ (geo, proj_from, proj_to);
+	  free (proj_from);
+	  free (proj_to);
+	  if (!result)
+	      sqlite3_result_null (context);
+	  else
+	    {
+		/* builds the BLOB geometry to be returned */
+		int len;
+		unsigned char *p_result = NULL;
+		result->Srid = srid_to;
+		gaiaToSpatiaLiteBlobWkbEx2 (result, &p_result, &len,
+					    gpkg_mode, tiny_point);
+		sqlite3_result_blob (context, p_result, len, free);
+		gaiaFreeGeomColl (result);
+	    }
+      }
+    gaiaFreeGeomColl (geo);
+}
+
+#ifdef PROJ_NEW			/* only if PROJ.6 is supported */
+static void
+fnct_PROJ_GetLastErrorMsg (sqlite3_context * context, int argc,
+			   sqlite3_value ** argv)
+{
+/* SQL function:
+/ PROJ_GetLastErrorMsg()
+/
+/ return the most recent PROJ error message (if any)
+/ return NULL on any other case
+*/
+    const char *msg;
+    void *data = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (data != NULL)
+	msg = gaiaGetProjErrorMsg_r (data);
+    else
+	msg = NULL;
+    if (msg == NULL)
+	sqlite3_result_null (context);
+    else
+	sqlite3_result_text (context, msg, strlen (msg), SQLITE_STATIC);
+}
+
+static void
+fnct_PROJ_GetDatabasePath (sqlite3_context * context, int argc,
+			   sqlite3_value ** argv)
+{
+/* SQL function:
+/ PROJ_GetDatabasePath()
+/
+/ return the currently set PATH leading to the private PROJ.6 database
+/ return NULL on any other case
+*/
+    const char *path;
+    void *data = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    path = gaiaGetProjDatabasePath (data);
+    if (path == NULL)
+	sqlite3_result_null (context);
+    else
+	sqlite3_result_text (context, path, strlen (path), SQLITE_STATIC);
+}
+
+static void
+fnct_PROJ_SetDatabasePath (sqlite3_context * context, int argc,
+			   sqlite3_value ** argv)
+{
+/* SQL function:
+/ PROJ_SetDatabasePath(path TEXT)
+/
+/ sets the PATH leading to the private PROJ.6 database
+/ return the new path on success
+/ or NULL on any other case
+*/
+    const char *path;
+    void *data = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) != SQLITE_TEXT)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    else
+	path = (const char *) sqlite3_value_text (argv[0]);
+    path = gaiaSetProjDatabasePath (data, path);
+    if (path == NULL)
+	sqlite3_result_null (context);
+    else
+	sqlite3_result_text (context, path, strlen (path), SQLITE_STATIC);
+}
+
+static void
+fnct_PROJ_AsProjString (sqlite3_context * context, int argc,
+			sqlite3_value ** argv)
+{
+/* SQL function:
+/ PROJ_AsProjString(auth_name TEXT, auth_srid INTEGER)
+/
+/ return the representation of some CRS as a proj-string
+/ or NULL on error or invalid arguments
+*/
+    const char *auth_name = "EPSG";
+    int auth_srid;
+    char *proj_string = NULL;
+    void *data = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) == SQLITE_NULL)
+	;
+    else if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
+	auth_name = (const char *) sqlite3_value_text (argv[0]);
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (sqlite3_value_type (argv[1]) == SQLITE_INTEGER)
+	auth_srid = sqlite3_value_int (argv[1]);
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    proj_string = gaiaGetProjString (data, auth_name, auth_srid);
+    if (proj_string == NULL)
+	sqlite3_result_null (context);
+    else
+	sqlite3_result_text (context, proj_string, strlen (proj_string), free);
+}
+
+static void
+fnct_PROJ_AsWKT (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ PROJ_AsWKT(auth_name TEXT, auth_srid INTEGER)
+/ PROJ_AsWKT(auth_name TEXT, auth_srid INTEGER, style TEXT)
+/ PROJ_AsWKT(auth_name TEXT, auth_srid INTEGER, style TEXT, indented BOOLEAN)
+/ PROJ_AsWKT(auth_name TEXT, auth_srid INTEGER, style TEXT, 
+/            indented BOOLEAN, indentation INTEGER)
+/
+/ return the WKT representation of some CRS
+/ or NULL on error or invalid arguments
+*/
+    const char *auth_name = "EPSG";
+    int auth_srid;
+    int style = GAIA_PROJ_WKT_ISO_2018;
+    int indented = 1;
+    int indentation = 4;
+    char *wkt_expr = NULL;
+    void *data = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) == SQLITE_NULL)
+	;
+    else if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
+	auth_name = (const char *) sqlite3_value_text (argv[0]);
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (sqlite3_value_type (argv[1]) == SQLITE_INTEGER)
+	auth_srid = sqlite3_value_int (argv[1]);
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (argc >= 3)
+      {
+	  if (sqlite3_value_type (argv[2]) == SQLITE_TEXT)
+	    {
+		const char *wkt = (const char *) sqlite3_value_text (argv[2]);
+		if (strcasecmp (wkt, "ISO-2015") == 0)
+		    style = GAIA_PROJ_WKT_ISO_2015;
+		if (strcasecmp (wkt, "GDAL") == 0)
+		    style = GAIA_PROJ_WKT_GDAL;
+		if (strcasecmp (wkt, "ESRI") == 0)
+		    style = GAIA_PROJ_WKT_ESRI;
+		else
+		    style = GAIA_PROJ_WKT_ISO_2018;
+	    }
+	  else
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+      }
+    if (argc >= 4)
+      {
+	  if (sqlite3_value_type (argv[3]) == SQLITE_INTEGER)
+	      indented = sqlite3_value_int (argv[3]);
+	  else
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+      }
+    if (argc >= 5)
+      {
+	  if (sqlite3_value_type (argv[4]) == SQLITE_INTEGER)
+	      indentation = sqlite3_value_int (argv[4]);
+	  else
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+      }
+    wkt_expr =
+	gaiaGetProjWKT (data, auth_name, auth_srid, style, indented,
+			indentation);
+    if (wkt_expr == NULL)
+	sqlite3_result_null (context);
+    else
+	sqlite3_result_text (context, wkt_expr, strlen (wkt_expr), free);
+}
+
+static void
+fnct_PROJ_GuessSridFromWKT (sqlite3_context * context, int argc,
+			    sqlite3_value ** argv)
+{
+/* SQL function:
+/ PROJ_GuessSridFromWKT(wkt TEXT)
+/
+/ return the SRID corresponding to a given WKT expression
+/ -1 if not matching SRID exists
+/ or NULL on error or invalid arguments
+*/
+    const char *wkt;
+    int srid;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    void *data = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
+	wkt = (const char *) sqlite3_value_text (argv[0]);
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (!gaiaGuessSridFromWKT (sqlite, data, wkt, &srid))
+	sqlite3_result_int (context, -1);
+    else
+	sqlite3_result_int (context, srid);
+}
+
+static void
+fnct_PROJ_GuessSridFromSHP (sqlite3_context * context, int argc,
+			    sqlite3_value ** argv)
+{
+/* SQL function:
+/ PROJ_GuessSridFromSHP(filename TEXT)
+/
+/ return the SRID corresponding to a given Shapefile
+/ -1 if not matching SRID exists
+/ or NULL on error or invalid arguments
+*/
+    const char *basepath;
+    char *path;
+    char *wkt = NULL;
+    int srid;
+    FILE *in;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    void *data = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
+	basepath = (const char *) sqlite3_value_text (argv[0]);
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+/* loocking for an eventual .PRJ file */
+    path = sqlite3_mprintf ("%s.prj", basepath);
+    in = fopen (path, "rb");
+    if (in != NULL)
+      {
+	  /* reading the WKT expression from the PRJ file */
+	  if (fseek (in, 0, SEEK_END) != -1)
+	    {
+		int rd;
+		int len = ftell (in);
+		rewind (in);
+		wkt = malloc (len + 1);
+		rd = fread (wkt, 1, len, in);
+		if (len != rd)
+		  {
+		      free (wkt);
+		      wkt = NULL;
+		  }
+		*(wkt + len) = '\0';
+	    }
+	  fclose (in);
+      }
+    sqlite3_free (path);
+    if (wkt == NULL)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (!gaiaGuessSridFromWKT (sqlite, data, wkt, &srid))
+	sqlite3_result_int (context, -1);
+    else
+	sqlite3_result_int (context, srid);
+    free (wkt);
+}
+#endif
 
 #endif /* end including PROJ.4 */
 
@@ -33909,6 +34526,7 @@ fnct_DropTable (sqlite3_context * context, int argc, sqlite3_value ** argv)
       {
 	  if (permissive)
 	    {
+		sqlite3_free (err);
 		sqlite3_result_int (context, 0);
 		return;
 	    }
@@ -33984,6 +34602,7 @@ fnct_RenameTable (sqlite3_context * context, int argc, sqlite3_value ** argv)
       {
 	  if (permissive)
 	    {
+		sqlite3_free (err);
 		sqlite3_result_int (context, 0);
 		return;
 	    }
@@ -34075,6 +34694,7 @@ fnct_RenameColumn (sqlite3_context * context, int argc, sqlite3_value ** argv)
       {
 	  if (permissive)
 	    {
+		sqlite3_free (err);
 		sqlite3_result_int (context, 0);
 		return;
 	    }
@@ -36730,6 +37350,8 @@ fnct_ExportSHP (sqlite3_context * context, int argc, sqlite3_value ** argv)
     int colname_case = GAIA_DBF_COLNAME_CASE_IGNORE;
     int rows;
     sqlite3 *db_handle = sqlite3_context_db_handle (context);
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    void *proj_ctx = NULL;
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (sqlite3_value_type (argv[0]) != SQLITE_TEXT)
       {
@@ -36786,9 +37408,13 @@ fnct_ExportSHP (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	    }
       }
 
+#ifdef PROJ_NEW			/* only if new PROJ.6 is supported */
+    if (cache != NULL)
+	proj_ctx = cache->PROJ_handle;
+#endif
     ret =
-	dump_shapefile_ex (db_handle, table, column, path, charset, geom_type,
-			   1, &rows, colname_case, NULL);
+	dump_shapefile_ex2 (db_handle, proj_ctx, table, column, path, charset,
+			    geom_type, 1, &rows, colname_case, NULL);
 
     if (rows < 0 || !ret)
 	sqlite3_result_null (context);
@@ -45305,6 +45931,9 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "proj4_version", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_proj4_version, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "proj_version", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_proj4_version, 0, 0, 0);
     sqlite3_create_function_v2 (db, "geos_version", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_geos_version, 0, 0, 0);
@@ -45317,6 +45946,9 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "HasProj", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_has_proj, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "HasProj6", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_has_proj6, 0, 0, 0);
     sqlite3_create_function_v2 (db, "HasProjGeodesic", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_has_proj_geodesic, 0, 0, 0);
@@ -45449,6 +46081,7 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "DiscardFDOGeometryColumn", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_DiscardFDOGeometryColumn, 0, 0, 0);
+
     sqlite3_create_function_v2 (db, "InitSpatialMetaData", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_InitSpatialMetaData, 0, 0, 0);
@@ -45458,6 +46091,7 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "InitSpatialMetaData", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_InitSpatialMetaData, 0, 0, 0);
+
     sqlite3_create_function_v2 (db, "InitSpatialMetaDataFull", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_InitSpatialMetaDataFull, 0, 0, 0);
@@ -45467,6 +46101,7 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "InitSpatialMetaDataFull", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_InitSpatialMetaDataFull, 0, 0, 0);
+
     sqlite3_create_function_v2 (db, "InsertEpsgSrid", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_InsertEpsgSrid, 0, 0, 0);
@@ -48005,14 +48640,19 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 	  sqlite3_create_function_v2 (db, "ImportSHP", 14,
 				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				      fnct_ImportSHP, 0, 0, 0);
+#ifdef PROJ_NEW			/* supporting new PROJ.6 */
+	  sqlite3_create_function_v2 (db, "PROJ_GuessSridFromSHP", 1,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_PROJ_GuessSridFromSHP, 0, 0, 0);
+#endif
 	  sqlite3_create_function_v2 (db, "ExportSHP", 4,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				      fnct_ExportSHP, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "ExportSHP", 5,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				      fnct_ExportSHP, 0, 0, 0);
 	  sqlite3_create_function_v2 (db, "ExportSHP", 6,
-				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				      fnct_ExportSHP, 0, 0, 0);
 
 #endif /* ICONV enabled */
@@ -48526,12 +49166,57 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "ST_Transform", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_Transform, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "Transform", 3,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_Transform, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_Transform", 3,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_Transform, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "Transform", 4,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_Transform, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_Transform", 4,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_Transform, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "Transform", 5,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_Transform, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_Transform", 5,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_Transform, 0, 0, 0);
     sqlite3_create_function_v2 (db, "TransformXY", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_TransformXY, 0, 0, 0);
     sqlite3_create_function_v2 (db, "ST_TransformXY", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_TransformXY, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "TransformXYZ", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_TransformXYZ, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_TransformXYZ", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_TransformXYZ, 0, 0, 0);
+
+#ifdef PROJ_NEW			/* only if PROJ.6 is supported */
+    sqlite3_create_function_v2 (db, "PROJ_GetLastErrorMsg", 0, SQLITE_UTF8,
+				cache, fnct_PROJ_GetLastErrorMsg, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "PROJ_GetDatabasePath", 0, SQLITE_UTF8,
+				cache, fnct_PROJ_GetDatabasePath, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "PROJ_SetDatabasePath", 1, SQLITE_UTF8,
+				cache, fnct_PROJ_SetDatabasePath, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "PROJ_AsProjString", 2, SQLITE_UTF8,
+				cache, fnct_PROJ_AsProjString, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "PROJ_AsWKT", 2, SQLITE_UTF8,
+				cache, fnct_PROJ_AsWKT, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "PROJ_AsWKT", 3, SQLITE_UTF8,
+				cache, fnct_PROJ_AsWKT, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "PROJ_AsWKT", 4, SQLITE_UTF8,
+				cache, fnct_PROJ_AsWKT, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "PROJ_AsWKT", 5, SQLITE_UTF8,
+				cache, fnct_PROJ_AsWKT, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "PROJ_GuessSridFromWKT", 1, SQLITE_UTF8,
+				cache, fnct_PROJ_GuessSridFromWKT, 0, 0, 0);
+#endif
 
 #endif /* end including PROJ.4 */
 
@@ -50313,7 +50998,11 @@ spatialite_splash_screen (int verbose)
 	    }
 #ifndef OMIT_PROJ		/* PROJ.4 version */
 	  if (verbose)
-	      spatialite_i ("PROJ.4 version ......: %s\n", pj_get_release ());
+#ifdef PROJ_NEW			/* supporting new PROJ.6 */
+	      spatialite_i ("PROJ version ........: %s\n", pj_release);
+#else /* supporting old PROJ.4 */
+	      spatialite_i ("PROJ version ........: %s\n", pj_get_release ());
+#endif
 #endif /* end including PROJ.4 */
 #ifndef OMIT_GEOS		/* GEOS version */
 	  if (verbose)

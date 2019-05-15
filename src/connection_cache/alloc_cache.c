@@ -46,6 +46,9 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #include <stdio.h>
 #include <string.h>
 
+#if defined(_WIN32)
+#include <libloaderapi.h>
+#endif
 
 #if defined(_WIN32) && !defined(__MINGW32__)
 #include <windows.h>
@@ -81,7 +84,11 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #endif
 
 #ifndef OMIT_PROJ		/* including PROJ.4 */
+#ifdef PROJ_NEW			/* supporting new PROJ.6 */
+#include <proj.h>
+#else /* supporting old PROJ.4 */
 #include <proj_api.h>
+#endif
 #endif
 
 #ifdef ENABLE_RTTOPO		/* including RTTOPO */
@@ -109,6 +116,17 @@ static pthread_mutex_t gaia_cache_semaphore = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 #define GAIA_CONN_RESERVED	(char *)1
+
+#ifdef PROJ_NEW			/* supporting new PROJ.6 */
+static void
+gaia_proj_log_funct (void *data, int level, const char *err_msg)
+{
+/* intercepting PROJ.6 error messages */
+    gaiaSetProjErrorMsg_r (data, err_msg);
+    if (level == 0)
+	return;			/* just silencing stupid compiler warnings aboit unused args */
+}
+#endif
 
 static void
 conn_geos_error (const char *msg, void *userdata)
@@ -373,6 +391,7 @@ init_splite_internal_cache (struct splite_internal_cache *cache)
     cache->SqlProcContinue = 1;
     cache->SqlProcRetValue = gaia_alloc_variant ();
     cache->pool_index = -1;
+    cache->gaia_proj_error_msg = NULL;
     cache->gaia_geos_error_msg = NULL;
     cache->gaia_geos_warning_msg = NULL;
     cache->gaia_geosaux_error_msg = NULL;
@@ -453,6 +472,14 @@ spatialite_alloc_reentrant ()
  * fully reentrant (thread-safe) version requiring GEOS >= 3.5.0
 */
     struct splite_internal_cache *cache = NULL;
+#ifdef PROJ_NEW			/* supporting new PROJ.6 */
+    int proj_set_ext_var = 0;
+    char *proj_db = NULL;
+    const char *proj_db_path = NULL;
+#ifdef _WIN32
+    char *win_prefix = NULL;
+#endif
+#endif
 
 /* attempting to implicitly initialize the library */
     spatialite_initialize ();
@@ -473,7 +500,103 @@ spatialite_alloc_reentrant ()
 #endif /* end GEOS  */
 
 #ifndef OMIT_PROJ		/* initializing the PROJ.4 context */
+#ifdef PROJ_NEW			/* supporting new PROJ.6 */
+    cache->PROJ_handle = proj_context_create ();
+    proj_log_func (cache->PROJ_handle, cache, gaia_proj_log_funct);	/* installing an error handler routine */
+    if (getenv ("PROJ_LIB") != NULL)
+	proj_db = sqlite3_mprintf ("%s/proj.db", getenv ("PROJ_LIB"));
+    if (proj_db != NULL)
+      {
+	  proj_context_set_database_path (cache->PROJ_handle, proj_db,
+					  NULL, NULL);
+	  sqlite3_free (proj_db);
+	  goto skip_win;
+      }
+#ifdef _WIN32			/* only for Windows - checking the default locations for PROJ.6 DB */
+    proj_set_ext_var = 1;
+    proj_db_path = proj_context_get_database_path (cache->PROJ_handle);
+    if (proj_db_path == NULL)
+      {
+	  char *win_path;
+	  char *exe_path;
+	  int max_len = 8192;
+	  int i;
+	  exe_path = malloc (max_len);
+	  GetModuleFileNameA (NULL, exe_path, max_len);
+	  if (exe_path != NULL)
+	    {
+		/* searching within the EXE's launch dir */
+		for (i = strlen (exe_path) - 1; i >= 0; i--)
+		  {
+		      /* truncating the EXE name */
+		      if (exe_path[i] == '\\')
+			{
+			    exe_path[i] = '\0';
+			    break;
+			}
+		  }
+		win_prefix = sqlite3_mprintf ("%s", exe_path);
+		win_path = sqlite3_mprintf ("%s\\proj.db", exe_path);
+		free (exe_path);
+		proj_context_set_database_path (cache->PROJ_handle, win_path,
+						NULL, NULL);
+		proj_db_path =
+		    proj_context_get_database_path (cache->PROJ_handle);
+		sqlite3_free (win_path);
+	    }
+	  if (proj_db_path == NULL)
+	    {
+		/* searching on PUBLIC dir */
+		if (win_prefix != NULL)
+		    sqlite3_free (win_prefix);
+		win_prefix =
+		    sqlite3_mprintf ("%s\\spatialite\\proj", getenv ("PUBLIC"));
+		win_path =
+		    sqlite3_mprintf ("%s\\spatialite\\proj\\proj.db",
+				     getenv ("PUBLIC"));
+		proj_context_set_database_path (cache->PROJ_handle, win_path,
+						NULL, NULL);
+		proj_db_path =
+		    proj_context_get_database_path (cache->PROJ_handle);
+		sqlite3_free (win_path);
+	    }
+	  if (proj_db_path == NULL)
+	    {
+		/* searching on USER dir */
+		if (win_prefix != NULL)
+		    sqlite3_free (win_prefix);
+		win_prefix =
+		    sqlite3_mprintf ("%s\\spatialite\\proj",
+				     getenv ("USERPROFILE"));
+		win_path =
+		    sqlite3_mprintf ("%s\\spatialite\\proj\\proj.db",
+				     getenv ("USERPROFILE"));
+		proj_context_set_database_path (cache->PROJ_handle, win_path,
+						NULL, NULL);
+		sqlite3_free (win_path);
+	    }
+      }
+#endif
+  skip_win:
+    proj_db_path = proj_context_get_database_path (cache->PROJ_handle);
+#ifdef _WIN32			/* only for Windows - setting PROJ_LIB */
+    if (proj_set_ext_var && win_prefix && proj_db_path)
+      {
+	  char *proj_lib = sqlite3_mprintf ("PROJ_LIB=%s", win_prefix);
+	  putenv (proj_lib);
+	  sqlite3_free (proj_lib);
+      }
+    if (win_prefix != NULL)
+	sqlite3_free (win_prefix);
+#else
+/* suppressing stupid compiler warnings about unused args */
+    if (proj_db_path == NULL && proj_set_ext_var < 0)
+	proj_set_ext_var = 1;
+#endif
+
+#else /* supporting old PROJ.4 */
     cache->PROJ_handle = pj_ctx_alloc ();
+#endif
 #endif /* end PROJ.4  */
 
 #ifdef ENABLE_RTTOPO		/* initializing the RTTOPO context */
@@ -623,13 +746,14 @@ free_vtable_extents (struct splite_internal_cache *cache)
 
 SPATIALITE_PRIVATE void
 add_vtable_extent (const char *table, double minx,
-		double miny, double maxx,
-		double maxy, int srid, const void *p_cache)
+		   double miny, double maxx,
+		   double maxy, int srid, const void *p_cache)
 {
 /* adding a Virtual Full Extent */
     struct splite_internal_cache *cache =
 	(struct splite_internal_cache *) p_cache;
-    struct splite_vtable_extent *vtable = malloc (sizeof (struct splite_vtable_extent));
+    struct splite_vtable_extent *vtable =
+	malloc (sizeof (struct splite_vtable_extent));
     int len = strlen (table);
     vtable->table = malloc (len + 1);
     strcpy (vtable->table, table);
@@ -678,7 +802,7 @@ remove_vtable_extent (const char *table, const void *p_cache)
 
 SPATIALITE_PRIVATE int
 get_vtable_extent (const char *table, double *minx, double *miny, double *maxx,
-		double *maxy, int *srid, const void *p_cache)
+		   double *maxy, int *srid, const void *p_cache)
 {
 /* retrieving a Virtual Full Extent */
     struct splite_internal_cache *cache =
@@ -738,9 +862,17 @@ free_internal_cache (struct splite_internal_cache *cache)
 
 #ifndef OMIT_PROJ
     if (cache->PROJ_handle != NULL)
+#ifdef PROJ_NEW			/* supporting new PROJ.6 */
+	proj_context_destroy (cache->PROJ_handle);
+#else /* supporting old PROJ.4 */
 	pj_ctx_free (cache->PROJ_handle);
     cache->PROJ_handle = NULL;
 #endif
+#endif
+
+/* freeing PROJ error buffer */
+    if (cache->gaia_proj_error_msg)
+	sqlite3_free (cache->gaia_proj_error_msg);
 
 /* freeing GEOS error buffers */
     if (cache->gaia_geos_error_msg)
@@ -1366,3 +1498,20 @@ gaia_set_variant_blob (struct gaia_variant_value *variant,
     variant->size = size;
     return 1;
 }
+
+#ifdef PROJ_NEW			/* only when using new PROJ.6 */
+SPATIALITE_DECLARE const void *
+gaiaGetCurrentProjContext (const void *p_cache)
+{
+/* return the current PROJ.6 context (if any) */
+    struct splite_internal_cache *cache =
+	(struct splite_internal_cache *) p_cache;
+    if (cache != NULL)
+      {
+	  if (cache->magic1 == SPATIALITE_CACHE_MAGIC1
+	      && cache->magic2 == SPATIALITE_CACHE_MAGIC2)
+	      return cache->PROJ_handle;
+      }
+    return NULL;
+}
+#endif

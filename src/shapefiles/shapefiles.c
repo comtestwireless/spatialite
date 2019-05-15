@@ -73,6 +73,12 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #include <freexl.h>
 #endif
 
+#ifndef OMIT_PROJ		/* including PROJ */
+#ifdef PROJ_NEW			/* supporting PROJ.6 */
+#include <proj.h>
+#endif
+#endif
+
 #if defined(_WIN32) && !defined(__MINGW32__)
 #define strcasecmp	_stricmp
 #define strncasecmp	_strnicmp
@@ -1532,8 +1538,67 @@ load_shapefile_ex3 (sqlite3 * sqlite, char *shp_path, char *table,
 
 #endif /* end ICONV (SHP) */
 
+#ifndef OMIT_PROJ		/* including PROJ */
+#ifdef PROJ_NEW			/* only if new PROJ.6 is supported */
+static int
+output_prj_file_proj_new (int srid, const char *path, void *proj_ctx)
+{
+/* attempting to export a genuine ESRI WKT */
+    PJ_CONTEXT *ctx = (PJ_CONTEXT *) proj_ctx;
+    PJ *crs_def;
+    FILE *out;
+    const char *projPath;
+    const char *auth_name = "EPSG";
+    char dummy[64];
+    const char *wkt;
+    char *prj_path;
+    char *options[4];
+    options[0] = "MULTILINE=NO";
+    options[1] = "INDENTATION_WIDTH=4";
+    options[2] = "OUTPUT_AXIS=AUTO";
+    options[3] = NULL;
+
+    if (ctx == NULL)
+	goto error;
+    projPath = proj_context_get_database_path (ctx);
+    if (projPath == NULL)
+	goto error;		/* PROJ's own SQLite DB is undefined */
+
+/* attemping to get an ESRI WKT from PROJ.6 */
+    sprintf (dummy, "%d", srid);
+    crs_def =
+	proj_create_from_database (ctx, auth_name, dummy, PJ_CATEGORY_CRS, 0,
+				   NULL);
+    if (crs_def != NULL)
+      {
+	  wkt =
+	      proj_as_wkt (ctx, crs_def, PJ_WKT1_ESRI,
+			   (const char *const *) options);
+	  if (wkt != NULL)
+	    {
+		/* generating the .PRJ file */
+		prj_path = sqlite3_mprintf ("%s.prj", path);
+		out = fopen (prj_path, "wb");
+		sqlite3_free (prj_path);
+		if (out)
+		  {
+		      fprintf (out, "%s\r\n", wkt);
+		      fclose (out);
+		  }
+	    }
+	  proj_destroy (crs_def);
+      }
+    return 1;
+
+  error:
+    return 0;
+}
+#endif
+#endif
+
 static void
-output_prj_file (sqlite3 * sqlite, char *path, char *table, char *column)
+output_prj_file (sqlite3 * sqlite, char *path, char *table, char *column,
+		 void *proj_ctx)
 {
 /* exporting [if possible] a .PRJ file */
     char **results;
@@ -1596,6 +1661,21 @@ output_prj_file (sqlite3 * sqlite, char *path, char *table, char *column)
       }
     if (srid <= 0)
 	return;
+
+#ifndef OMIT_PROJ		/* including PROJ */
+#ifdef PROJ_NEW
+/* if new PROJ.6 is available we'll attempt first to export a genuine ESRI WKT */
+    if (proj_ctx != NULL)
+      {
+	  if (output_prj_file_proj_new (srid, path, proj_ctx))
+	      return;
+      }
+#else
+/* suppressing stupid compiler warnings about unused args */
+    if (proj_ctx == NULL)
+	proj_ctx = NULL;
+#endif
+#endif
 
 /* step II: checking if the SRS_WKT or SRTEXT column actually exists */
     ret =
@@ -2871,18 +2951,16 @@ attached_layer (sqlite3 * handle, const char *db_prefix, const char *table,
 }
 
 static int
-compute_text_length(const char *string, const char *charset)
+compute_text_length (const char *string, const char *charset)
 {
 /* computing the actual length of TEXT fields */
-int len = 0;
-			    char *converted =
-				sqlite3_malloc (strlen (string) + 1);
-			    strcpy (converted, string);
-			    if (gaiaConvertCharset
-				(&converted, "UTF-8", charset))
-			      len = strlen (converted);
-				  sqlite3_free (converted);
-				  return len;
+    int len = 0;
+    char *converted = sqlite3_malloc (strlen (string) + 1);
+    strcpy (converted, string);
+    if (gaiaConvertCharset (&converted, "UTF-8", charset))
+	len = strlen (converted);
+    sqlite3_free (converted);
+    return len;
 }
 
 static void
@@ -2963,7 +3041,7 @@ compute_exact_text_max_length (sqlite3 * sqlite, gaiaDbfListPtr dbf_list,
 			    if (gaiaConvertCharset
 				(&converted, "UTF-8", charset))
 			      {
-					  /* we need to determine the field length _AFTER_ converting to the output charset */
+				  /* we need to determine the field length _AFTER_ converting to the output charset */
 				  int len = strlen (converted);
 				  if (len > fld->Length)
 				      fld->Length = len;
@@ -3002,6 +3080,16 @@ SPATIALITE_DECLARE int
 dump_shapefile_ex (sqlite3 * sqlite, char *table, char *column, char *shp_path,
 		   char *charset, char *geom_type, int verbose, int *xrows,
 		   int colname_case, char *err_msg)
+{
+    return dump_shapefile_ex2 (sqlite, NULL, table, column, shp_path, charset,
+			       geom_type, verbose, xrows,
+			       colname_case, err_msg);
+}
+
+SPATIALITE_DECLARE int
+dump_shapefile_ex2 (sqlite3 * sqlite, void *proj_ctx, char *table, char *column,
+		    char *shp_path, char *charset, char *geom_type, int verbose,
+		    int *xrows, int colname_case, char *err_msg)
 {
 /* SHAPEFILE dump */
     char *sql;
@@ -3406,7 +3494,7 @@ dump_shapefile_ex (sqlite3 * sqlite, char *table, char *column, char *shp_path,
     if (!(shp->Valid))
 	goto no_file;
 /* trying to export the .PRJ file */
-    output_prj_file (sqlite, shp_path, table, column);
+    output_prj_file (sqlite, shp_path, table, column, proj_ctx);
     while (1)
       {
 	  /* scrolling the result set to dump data into shapefile */
@@ -4394,8 +4482,9 @@ dump_dbf_ex2 (sqlite3 * sqlite, char *table, char *dbf_path, char *charset,
 			  continue;
 		      if (type == SQLITE_TEXT)
 			{
-				const char *string = (const char *)sqlite3_column_text (stmt, i);
-				len = compute_text_length (string, charset);
+			    const char *string =
+				(const char *) sqlite3_column_text (stmt, i);
+			    len = compute_text_length (string, charset);
 			    if (len > 254)
 			      {
 				  /* DBF C type: max allowed length */

@@ -502,7 +502,7 @@ populate_spatial_ref_sys (sqlite3 * handle, int mode, int metadata)
 	  if (metadata >= 2)
 	    {
 		/*  SpatiaLite-Legacy 2.4.0 - 3.0.1 and SpatiaLite 4.0.0 - present */
-		if (strlen (p->srs_wkt) == 0)
+		if  (strlen (p->srs_wkt) == 0)
 		    sqlite3_bind_text (stmt, 6, "Undefined", 9, SQLITE_STATIC);
 		else
 		    sqlite3_bind_text (stmt, 6, p->srs_wkt, strlen (p->srs_wkt),

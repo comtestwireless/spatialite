@@ -4830,11 +4830,6 @@ check_table_layout (sqlite3 * sqlite, const char *prefix, const char *table,
     char *sql;
     char *q_prefix = gaiaDoubleQuotedSql (prefix);
 
-    if (strcasecmp (prefix, "TEMP") == 0)
-      {
-	  /* TEMPORARY object; unconditioanally returning TRUE */
-	  return 1;
-      }
     if (!aux)
       {
 	  return 0;
@@ -4879,7 +4874,7 @@ check_table_layout (sqlite3 * sqlite, const char *prefix, const char *table,
     /* 'command_type MUST not be reset! */
     aux->ok_table_exists = 0;
     aux->error_message = NULL;
-    aux->ok_table_exists = 0;
+
     aux->is_geometry_column = 0;
     aux->count_geometry_columns = 0;
     aux->is_view = 0;		/* default: not a view */
@@ -4887,6 +4882,14 @@ check_table_layout (sqlite3 * sqlite, const char *prefix, const char *table,
     aux->has_topologies = 0;
     aux->is_raster_coverage_entry = 0;
     aux->has_raster_coverages = 0;
+    if (strcasecmp (prefix, "TEMP") == 0)
+      {
+	  /* TEMPORARY object; unconditioanally returning TRUE */
+	  free (q_prefix);
+	  aux->ok_table_exists = 1;
+	  aux->table_type = 1;
+	  return 1;
+      }
     sql =
 	sqlite3_mprintf
 	("SELECT type, name FROM \"%s\".sqlite_master WHERE type = 'table' or type = 'view'",

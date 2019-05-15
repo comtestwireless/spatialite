@@ -186,6 +186,7 @@ extern "C"
 	char *gaia_geosaux_error_msg;
 	char *gaia_rttopo_error_msg;
 	char *gaia_rttopo_warning_msg;
+	char *gaia_proj_error_msg;
 	int silent_mode;
 	void *firstTopology;
 	void *lastTopology;
@@ -407,6 +408,11 @@ extern "C"
 
     SPATIALITE_PRIVATE void getProjParams (void *p_sqlite, int srid,
 					   char **params);
+
+    SPATIALITE_PRIVATE void getProjWkt (void *p_sqlite, int srid, char **wkt);
+
+    SPATIALITE_PRIVATE void getProjAuthNameSrid (void *p_sqlite, int srid,
+						 char **auth_name_srid);
 
     SPATIALITE_PRIVATE int getEllipsoidParams (void *p_sqlite, int srid,
 					       double *a, double *b,

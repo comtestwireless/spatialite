@@ -4744,18 +4744,18 @@ gaiaInterpolatePoint (const void *p_cache, gaiaGeomCollPtr line,
 
 /* locating the Point along the Line */
     if (p_cache != NULL)
-    {
-	if (!gaiaGeomCollLengthOrPerimeter_r(p_cache,line,0,&length))
-	return 0;
-	fraction = gaiaLineLocatePoint_r (p_cache, line, point);
-    }
+      {
+	  if (!gaiaGeomCollLengthOrPerimeter_r (p_cache, line, 0, &length))
+	      return 0;
+	  fraction = gaiaLineLocatePoint_r (p_cache, line, point);
+      }
     else
-    {
-	if (!gaiaGeomCollLengthOrPerimeter(line,0,&length))
-	return 0;
-	fraction = gaiaLineLocatePoint (line, point);
-	}
-	normalized_len = length * fraction;
+      {
+	  if (!gaiaGeomCollLengthOrPerimeter (line, 0, &length))
+	      return 0;
+	  fraction = gaiaLineLocatePoint (line, point);
+      }
+    normalized_len = length * fraction;
 
     pL = line->FirstLinestring;
     if (fraction <= 0.0)
@@ -5094,7 +5094,7 @@ gaiaTrajectoryInterpolatePoint (gaiaGeomCollPtr geom, double m_value)
     point->Srid = geom->Srid;
     point->DeclaredType = GAIA_POINT;
 
-    ln = geom->FirstLinestring;	
+    ln = geom->FirstLinestring;
 /* testing if m < StartPoint */
     if (ln->DimensionModel == GAIA_XY_Z_M)
       {
@@ -5132,6 +5132,7 @@ gaiaTrajectoryInterpolatePoint (gaiaGeomCollPtr geom, double m_value)
 	  return point;
       }
 
+    prev_m = 0.0 - DBL_MAX;
     ln = geom->FirstLinestring;
     for (iv = 0; iv < ln->Points; iv++)
       {
