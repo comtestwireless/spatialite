@@ -69,6 +69,7 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #include <spatialite/sqlite.h>
 #include <spatialite/debug.h>
 #include <spatialite_private.h>
+#include <spatialite.h>
 
 #include <spatialite/gaiageo.h>
 
@@ -2410,7 +2411,7 @@ do_transfom_proj (gaiaGeomCollPtr org, gaiaGeomCollPtr dst, int ignore_z,
 }
 
 static gaiaGeomCollPtr
-gaiaTransformCommon (void *x_handle, void *p_cache, gaiaGeomCollPtr org,
+gaiaTransformCommon (void *x_handle, const void *p_cache, gaiaGeomCollPtr org,
 		     const char *proj_string_1,
 		     const char *proj_string_2, gaiaProjAreaPtr proj_bbox,
 		     int ignore_z, int ignore_m)
@@ -2421,6 +2422,7 @@ gaiaTransformCommon (void *x_handle, void *p_cache, gaiaGeomCollPtr org,
     PJ_CONTEXT *handle = (PJ_CONTEXT *) x_handle;
     PJ *from_to_pre;
     PJ *from_to_cs;
+    int proj_is_cached = 0;
 #else /* supporting old PROJ.4 */
     if (p_cache == NULL)
 	p_cache = NULL;		/* silencing stupid compiler warnings about unused args */
@@ -2442,6 +2444,16 @@ gaiaTransformCommon (void *x_handle, void *p_cache, gaiaGeomCollPtr org,
 	return NULL;
 
 #ifdef PROJ_NEW			/* supporting new PROJ.6 */
+    if (gaiaCurrentCachedProjMatches
+	(p_cache, proj_string_1, proj_string_2, proj_bbox))
+      {
+	  from_to_cs = gaiaGetCurrentCachedProj (p_cache);
+	  if (from_to_cs != NULL)
+	    {
+		proj_is_cached = 1;
+		goto skip_cached;
+	    }
+      }
     if (proj_string_2 != NULL)
       {
 	  PJ_AREA *area = NULL;
@@ -2464,13 +2476,20 @@ gaiaTransformCommon (void *x_handle, void *p_cache, gaiaGeomCollPtr org,
 	      proj_area_destroy (area);
 	  if (!from_to_cs)
 	      return NULL;
+	  proj_is_cached =
+	      gaiaSetCurrentCachedProj (p_cache, from_to_cs, proj_string_1,
+					proj_string_2, proj_bbox);
       }
     else			/* PROJ_STRING - PIPELINE */
       {
 	  from_to_cs = proj_create (handle, proj_string_1);
 	  if (!from_to_cs)
 	      return NULL;
+	  proj_is_cached =
+	      gaiaSetCurrentCachedProj (p_cache, from_to_cs, proj_string_1,
+					NULL, NULL);
       }
+  skip_cached:
 #else /* supporting old PROJ.4 */
     if (proj_string_2 == NULL)
 	return NULL;
@@ -2520,7 +2539,8 @@ gaiaTransformCommon (void *x_handle, void *p_cache, gaiaGeomCollPtr org,
 
 /* destroying the PROJ4 params */
 #ifdef PROJ_NEW			/* supporting new PROJ.6 */
-    proj_destroy (from_to_cs);
+    if (!proj_is_cached)
+	proj_destroy (from_to_cs);
 #else /* supporting old PROJ.4 */
     pj_free (from_cs);
     pj_free (to_cs);

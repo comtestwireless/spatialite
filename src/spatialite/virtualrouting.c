@@ -6189,15 +6189,18 @@ point2point_eval_solution (Point2PointSolutionPtr p2p,
       {
 	  /* searching FROM candidates */
 	  int ok = 0;
-	  if (nodeCode)
+	  if (solution->From != NULL)
 	    {
-		if (strcmp (solution->From->Code, p_from->codNodeTo) == 0)
-		    ok = 1;
-	    }
-	  else
-	    {
-		if (solution->From->Id == p_from->idNodeTo)
-		    ok = 1;
+		if (nodeCode)
+		  {
+		      if (strcmp (solution->From->Code, p_from->codNodeTo) == 0)
+			  ok = 1;
+		  }
+		else
+		  {
+		      if (solution->From->Id == p_from->idNodeTo)
+			  ok = 1;
+		  }
 	    }
 	  if (ok)
 	    {
@@ -6206,16 +6209,20 @@ point2point_eval_solution (Point2PointSolutionPtr p2p,
 		  {
 		      /* searching TO candidates */
 		      int ok2 = 0;
-		      if (nodeCode)
+		      if (solution->To != NULL)
 			{
-			    if (strcmp (solution->To->Code, p_to->codNodeFrom)
-				== 0)
-				ok2 = 1;
-			}
-		      else
-			{
-			    if (solution->To->Id == p_to->idNodeFrom)
-				ok2 = 1;
+			    if (nodeCode)
+			      {
+				  if (strcmp
+				      (solution->To->Code,
+				       p_to->codNodeFrom) == 0)
+				      ok2 = 1;
+			      }
+			    else
+			      {
+				  if (solution->To->Id == p_to->idNodeFrom)
+				      ok2 = 1;
+			      }
 			}
 		      if (ok2)
 			{

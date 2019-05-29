@@ -206,7 +206,7 @@ create_column (sqlite3 * sqlite, const char *table, struct aux_column *column)
     free (xtable);
     free (xcolumn);
     ret = sqlite3_exec (sqlite, sql, NULL, NULL, &err_msg);
-    sqlite3_free(sql);
+    sqlite3_free (sql);
     if (ret != SQLITE_OK)
       {
 	  spatialite_e ("ALTER TABLE ADD COLUMN error: %s\n", err_msg);
@@ -919,7 +919,7 @@ create_output_table (struct aux_cloner *cloner)
 	  constraint =
 	      sqlite3_mprintf ("idx_%s_%d", cloner->out_table, fk_no++);
 	  xconstraint = gaiaDoubleQuotedSql (constraint);
-	  sqlite3_free(constraint);
+	  sqlite3_free (constraint);
 	  xtable = gaiaDoubleQuotedSql (cloner->out_table);
 	  if (index->unique)
 	      sql =
@@ -1006,7 +1006,7 @@ copy_rows (struct aux_cloner *cloner)
 		continue;
 	    }
 	  xcolumn = gaiaDoubleQuotedSql (column->name);
-    prev_sql = sql;
+	  prev_sql = sql;
 	  if (first)
 	    {
 		sql = sqlite3_mprintf ("%s\"%s\"", prev_sql, xcolumn);
@@ -1024,7 +1024,7 @@ copy_rows (struct aux_cloner *cloner)
     prev_sql = sql;
     sql =
 	sqlite3_mprintf ("%s FROM \"%s\".\"%s\"", prev_sql, xdb_prefix, xtable);
-	sqlite3_free(prev_sql);
+    sqlite3_free (prev_sql);
     free (xdb_prefix);
     free (xtable);
 /* compiling the SELECT FROM statement */

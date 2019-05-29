@@ -2222,12 +2222,16 @@ fnct_CheckSpatialMetaData (sqlite3_context * context, int argc,
       }
     sqlite = sqlite3_context_db_handle (context);
     ret = checkSpatialMetaData_ex (sqlite, db_prefix);
-    if (ret == 3)
-      {
-	  /* trying to create the advanced metadata tables >= v.4.0.0 */
-	  if (db_prefix == NULL || strcasecmp (db_prefix, "main") == 0)
-	      createAdvancedMetaData (sqlite);
-      }
+
+    /*
+       if (ret == 3)
+       {
+       ** trying to create the advanced metadata tables >= v.4.0.0 **
+       if (db_prefix == NULL || strcasecmp (db_prefix, "main") == 0)
+       createAdvancedMetaData (sqlite);
+       }
+     */
+
     sqlite3_result_int (context, ret);
     return;
 }
@@ -2455,9 +2459,13 @@ fnct_InitSpatialMetaDataFull (sqlite3_context * context, int argc,
 /
 / conveniency "super" function internally calling in a single shot:
 /     - InitSpatialMetaData()
+/     - CreateIsoMetadataTables()
 /     - CreateRasterCoveragesTable()
 /     - CreateVectorCoveragesTables()
+/     - CreateTopoTables()
 /     - CreateStylingTables()
+/     - WMS_CreateTables()
+/     - StoredProc_CreateTables()
 / returns 1 on success
 / 0 on failure
 */
@@ -2523,6 +2531,24 @@ fnct_InitSpatialMetaDataFull (sqlite3_context * context, int argc,
     if (retval != 1)
 	goto error;
 
+#ifdef ENABLE_LIBXML2		/* only if LibXML2 support is available */
+    if (xmode != NULL)
+      {
+	  if (strcasecmp (xmode, "NONE") == 0
+	      || strcasecmp (xmode, "EMPTY") == 0)
+	      ;
+	  else
+	    {
+		/* executing CreateIsoMetadataTables() */
+		sql = sqlite3_mprintf ("SELECT CreateIsoMetadataTables()");
+		retval = do_execute_sql_with_retval (sqlite, sql, &errMsg);
+		sqlite3_free (sql);
+		if (retval != 1)
+		    goto error;
+	    }
+      }
+#endif
+
 /* executing CreateRasterCoveragesTable() */
     sql = sqlite3_mprintf ("SELECT CreateRasterCoveragesTable()");
     retval = do_execute_sql_with_retval (sqlite, sql, &errMsg);
@@ -2537,8 +2563,26 @@ fnct_InitSpatialMetaDataFull (sqlite3_context * context, int argc,
     if (retval != 1)
 	goto error;
 
+#ifdef ENABLE_RTTOPO		/* only if RtTopo support is available */
+/* executing CreateTopoTables() */
+    sql = sqlite3_mprintf ("SELECT CreateTopoTables()");
+    retval = do_execute_sql_with_retval (sqlite, sql, &errMsg);
+    sqlite3_free (sql);
+    if (retval != 1)
+	goto error;
+#endif
+
+#ifdef ENABLE_LIBXML2		/* only if LibXML2 support is available */
 /* executing CreateStylingTables() */
     sql = sqlite3_mprintf ("SELECT CreateStylingTables()");
+    retval = do_execute_sql_with_retval (sqlite, sql, &errMsg);
+    sqlite3_free (sql);
+    if (retval != 1)
+	goto error;
+#endif
+
+/* executing WMS_CreateTables() */
+    sql = sqlite3_mprintf ("SELECT WMS_CreateTables()");
     retval = do_execute_sql_with_retval (sqlite, sql, &errMsg);
     sqlite3_free (sql);
     if (retval != 1)
@@ -6738,6 +6782,46 @@ fnct_DiscardFDOGeometryColumn (sqlite3_context * context, int argc,
     sqlite3_free (errMsg);
     sqlite3_result_int (context, 0);
     return;
+}
+
+static void
+fnct_GetDbObjectScope (sqlite3_context * context, int argc,
+		       sqlite3_value ** argv)
+{
+/* SQL function:
+/ GetDbObjectScope(da-prefix, name)
+/
+/ returns the intended scope of some DB Object
+/ returns a text string
+/ NULL on invalid arguments
+*/
+    const char *db_prefix = NULL;
+    const char *name;
+    char *scope;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) == SQLITE_NULL)
+	;
+    else if (sqlite3_value_type (argv[0]) != SQLITE_TEXT)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    else
+	name = (const char *) sqlite3_value_text (argv[0]);
+    if (sqlite3_value_type (argv[1]) != SQLITE_TEXT)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    name = (const char *) sqlite3_value_text (argv[1]);
+    scope = gaiaGetDbObjectScope (sqlite, db_prefix, name);
+    if (scope == NULL)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    sqlite3_result_text (context, scope, strlen (scope), sqlite3_free);
 }
 
 static int
@@ -44606,6 +44690,80 @@ fnct_getGpkgAmphibiousMode (sqlite3_context * context, int argc,
 #endif /* end GPKG conditional */
 
 static void
+fnct_EnablePause (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ EnablePause ( void )
+/
+/ returns: nothing
+*/
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache == NULL)
+	return;
+    cache->is_pause_enabled = 1;
+}
+
+static void
+fnct_DisablePause (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ DisablePause ( void )
+/
+/ returns: nothing
+*/
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache == NULL)
+	return;
+    cache->is_pause_enabled = 0;
+}
+
+static void
+fnct_IsPauseEnabled (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ IsPauseEnabled ( void )
+/
+/ returns: TRUE or FALSE
+*/
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache == NULL)
+      {
+	  sqlite3_result_int (context, 0);
+	  return;
+      }
+    if (cache->is_pause_enabled)
+	sqlite3_result_int (context, 1);
+    else
+	sqlite3_result_int (context, 0);
+}
+
+static void
+fnct_Pause (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ Pause ( void )
+/
+/ returns: nothing
+*/
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache == NULL)
+	return;
+    if (cache->is_pause_enabled == 0)
+	return;
+
+/* only if PAUSE is explicitly enabled */
+#ifdef _WIN32
+    splite_pause_windows ();
+#else
+    splite_pause_signal ();
+#endif
+}
+
+static void
 fnct_setDecimalPrecision (sqlite3_context * context, int argc,
 			  sqlite3_value ** argv)
 {
@@ -46081,6 +46239,9 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "DiscardFDOGeometryColumn", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_DiscardFDOGeometryColumn, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "GetDbObjectScope", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_GetDbObjectScope, 0, 0, 0);
 
     sqlite3_create_function_v2 (db, "InitSpatialMetaData", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
@@ -48794,6 +48955,19 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_getGpkgAmphibiousMode, 0, 0, 0);
 #endif /* end GPKG conditional */
+
+    sqlite3_create_function_v2 (db, "EnablePause", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_EnablePause, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "DisablePause", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_DisablePause, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "IsPauseEnabled", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_IsPauseEnabled, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "Pause", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_Pause, 0, 0, 0);
 
     sqlite3_create_function_v2 (db, "SetDecimalPrecision", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,

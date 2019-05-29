@@ -7,12 +7,14 @@ noinst_LTLIBRARIES = libsplite.la splite.la
 SPATIALITE_COMMON_SOURCES = mbrcache.c \
 	spatialite.c \
 	spatialite_init.c \
+	pause.c \
 	metatables.c \
 	statistics.c \
 	extra_tables.c \
 	se_helpers.c \
 	srid_aux.c \
 	table_cloner.c \
+	dbobj_scopes.c \
 	virtualdbf.c \
 	virtualXL.c \
 	virtualfdo.c \

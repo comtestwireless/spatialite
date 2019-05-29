@@ -2016,12 +2016,33 @@ extern "C"
 						const char *gpkg_in_path,
 						sqlite3 * handle_out,
 						const char *splite_out_path);
+
     SPATIALITE_DECLARE int gaiaSpatialite2GPKG (sqlite3 * handle_in,
 						const char *splite_in_path,
 						sqlite3 * handle_out,
 						const char *gpkg_out_path);
 
-    SPATIALITE_DECLARE const void *gaiaGetCurrentProjContext (const void *cache);
+    SPATIALITE_DECLARE const void *gaiaGetCurrentProjContext (const void
+							      *cache);
+
+    SPATIALITE_DECLARE int gaiaSetCurrentCachedProj (const void
+						     *cache, void *pj,
+						     const char *proj_string_1,
+						     const char *proj_string_2,
+						     void *area);
+
+    SPATIALITE_DECLARE void *gaiaGetCurrentCachedProj (const void *cache);
+
+    SPATIALITE_DECLARE int gaiaCurrentCachedProjMatches (const void *cache,
+							 const char
+							 *proj_string_1,
+							 const char
+							 *proj_string_2,
+							 void *area);
+
+    SPATIALITE_DECLARE char *gaiaGetDbObjectScope (sqlite3 * handle,
+						   const char *db_prefix,
+						   const char *obj_name);
 
 #ifdef __cplusplus
 }

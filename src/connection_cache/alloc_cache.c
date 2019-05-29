@@ -382,6 +382,12 @@ init_splite_internal_cache (struct splite_internal_cache *cache)
     cache->decimal_precision = -1;
     cache->GEOS_handle = NULL;
     cache->PROJ_handle = NULL;
+    cache->proj6_cached = 0;
+    cache->proj6_cached_pj = NULL;
+    cache->proj6_cached_string_1 = NULL;
+    cache->proj6_cached_string_2 = NULL;
+    cache->proj6_cached_area = NULL;
+    cache->is_pause_enabled = 0;
     cache->RTTOPO_handle = NULL;
     cache->cutterMessage = NULL;
     cache->storedProcError = NULL;
@@ -861,10 +867,25 @@ free_internal_cache (struct splite_internal_cache *cache)
 #endif
 
 #ifndef OMIT_PROJ
-    if (cache->PROJ_handle != NULL)
 #ifdef PROJ_NEW			/* supporting new PROJ.6 */
+    if (cache->proj6_cached_string_1 != NULL)
+	free (cache->proj6_cached_string_1);
+    if (cache->proj6_cached_string_2 != NULL)
+	free (cache->proj6_cached_string_2);
+    if (cache->proj6_cached_area != NULL)
+	free (cache->proj6_cached_area);
+    if (cache->proj6_cached_pj != NULL)
+	proj_destroy (cache->proj6_cached_pj);
+    if (cache->PROJ_handle != NULL)
 	proj_context_destroy (cache->PROJ_handle);
+    cache->PROJ_handle = NULL;
+    cache->proj6_cached = 0;
+    cache->proj6_cached_pj = NULL;
+    cache->proj6_cached_string_1 = NULL;
+    cache->proj6_cached_string_2 = NULL;
+    cache->proj6_cached_area = NULL;
 #else /* supporting old PROJ.4 */
+    if (cache->PROJ_handle != NULL)
 	pj_ctx_free (cache->PROJ_handle);
     cache->PROJ_handle = NULL;
 #endif
@@ -1513,5 +1534,143 @@ gaiaGetCurrentProjContext (const void *p_cache)
 	      return cache->PROJ_handle;
       }
     return NULL;
+}
+
+SPATIALITE_DECLARE int
+gaiaSetCurrentCachedProj (const void
+			  *p_cache, void *pj,
+			  const char *proj_string_1,
+			  const char *proj_string_2, void *area)
+{
+/* updates the PROJ6 internal cache */
+    int ok = 0;
+    int len;
+    gaiaProjAreaPtr bbox_in = (gaiaProjAreaPtr) area;
+    struct splite_internal_cache *cache =
+	(struct splite_internal_cache *) p_cache;
+    if (cache != NULL)
+      {
+	  if (cache->magic1 == SPATIALITE_CACHE_MAGIC1
+	      && cache->magic2 == SPATIALITE_CACHE_MAGIC2)
+	      ok = 1;
+      }
+    if (!ok)
+	return 0;		/* invalid cache */
+    if (proj_string_1 == NULL || pj == NULL)
+	return 0;
+
+/* resetting the PROJ6 internal cache */
+    if (cache->proj6_cached_string_1 != NULL)
+	free (cache->proj6_cached_string_1);
+    if (cache->proj6_cached_string_2 != NULL)
+	free (cache->proj6_cached_string_2);
+    if (cache->proj6_cached_area != NULL)
+	free (cache->proj6_cached_area);
+    if (cache->proj6_cached_pj != NULL)
+	proj_destroy (cache->proj6_cached_pj);
+
+/* updating the PROJ6 internal cache */
+    cache->proj6_cached = 1;
+    cache->proj6_cached_pj = pj;
+    len = strlen (proj_string_1);
+    cache->proj6_cached_string_1 = malloc (len + 1);
+    strcpy (cache->proj6_cached_string_1, proj_string_1);
+    if (proj_string_2 == NULL)
+	cache->proj6_cached_string_2 = NULL;
+    else
+      {
+	  len = strlen (proj_string_2);
+	  cache->proj6_cached_string_2 = malloc (len + 1);
+	  strcpy (cache->proj6_cached_string_2, proj_string_2);
+      }
+    if (bbox_in == NULL)
+	cache->proj6_cached_area = NULL;
+    else
+      {
+	  gaiaProjAreaPtr bbox_out =
+	      (gaiaProjAreaPtr) (cache->proj6_cached_area);
+	  bbox_out = malloc (sizeof (gaiaProjArea));
+	  bbox_out->WestLongitude = bbox_in->WestLongitude;
+	  bbox_out->SouthLatitude = bbox_in->SouthLatitude;
+	  bbox_out->EastLongitude = bbox_in->EastLongitude;
+	  bbox_out->NorthLatitude = bbox_in->NorthLatitude;
+      }
+    return 1;
+}
+
+SPATIALITE_DECLARE void *
+gaiaGetCurrentCachedProj (const void *p_cache)
+{
+/* returning the currently cached PROJ6 object */
+    struct splite_internal_cache *cache =
+	(struct splite_internal_cache *) p_cache;
+    if (cache != NULL)
+      {
+	  if (cache->magic1 == SPATIALITE_CACHE_MAGIC1
+	      && cache->magic2 == SPATIALITE_CACHE_MAGIC2)
+	    {
+		if (cache->proj6_cached)
+		    return cache->proj6_cached_pj;
+		else
+		    return NULL;
+	    }
+      }
+    return NULL;		/* invalid cache */
+}
+
+SPATIALITE_DECLARE int
+gaiaCurrentCachedProjMatches (const void *p_cache,
+			      const char
+			      *proj_string_1,
+			      const char *proj_string_2, void *area)
+{
+/* checking if the currently cached PROJ6 object matches */
+    int ok = 0;
+    gaiaProjAreaPtr bbox_1 = (gaiaProjAreaPtr) area;
+    struct splite_internal_cache *cache =
+	(struct splite_internal_cache *) p_cache;
+    if (cache != NULL)
+      {
+	  if (cache->magic1 == SPATIALITE_CACHE_MAGIC1
+	      && cache->magic2 == SPATIALITE_CACHE_MAGIC2)
+	      ok = 1;
+      }
+    if (!ok)
+	return 0;		/* invalid cache */
+    if (proj_string_1 == NULL)
+	return 0;		/* invalid request */
+    if (cache->proj6_cached == 0)
+	return 0;		/* there is no PROJ6 object currently cached */
+
+/* checking all definitions */
+    if (strcmp (proj_string_1, cache->proj6_cached_string_1) != 0)
+	return 0;		/* mismatching string #1 */
+    if (proj_string_2 == NULL && cache->proj6_cached_string_2 == NULL)
+	;
+    else if (proj_string_2 != NULL && cache->proj6_cached_string_2 != NULL)
+      {
+	  if (strcmp (proj_string_2, cache->proj6_cached_string_2) != 0)
+	      return 0;		/* mismatching string #2 */
+      }
+    else
+	return 0;		/* mismatching string #2 */
+    if (bbox_1 == NULL && cache->proj6_cached_area == NULL)
+	;
+    else if (bbox_1 != NULL && cache->proj6_cached_area != NULL)
+      {
+	  gaiaProjAreaPtr bbox_2 = (gaiaProjAreaPtr) (cache->proj6_cached_area);
+	  if (bbox_1->WestLongitude != bbox_2->WestLongitude)
+	      return 0;
+	  if (bbox_1->SouthLatitude != bbox_2->SouthLatitude)
+	      return 0;
+	  if (bbox_1->EastLongitude != bbox_2->EastLongitude)
+	      return 0;
+	  if (bbox_1->NorthLatitude != bbox_2->NorthLatitude)
+	      return 0;
+      }
+    else
+	return 0;		/* mismatching area */
+
+    return 1;			/* anything nicely matches */
 }
 #endif

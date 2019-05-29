@@ -215,6 +215,12 @@ extern "C"
 	int buffer_join_style;
 	double buffer_mitre_limit;
 	int buffer_quadrant_segments;
+	int proj6_cached;
+	void *proj6_cached_pj;
+	char *proj6_cached_string_1;
+	char *proj6_cached_string_2;
+	void *proj6_cached_area;
+	int is_pause_enabled;
     };
 
     struct epsg_defs
@@ -1494,6 +1500,12 @@ extern "C"
 						  *variant,
 						  const unsigned char *value,
 						  int size);
+
+#ifdef _WIN32
+    SPATIALITE_PRIVATE void splite_pause_windows (void);
+#else
+    SPATIALITE_PRIVATE void splite_pause_signal (void);
+#endif
 
 #ifdef __cplusplus
 }

@@ -502,7 +502,7 @@ populate_spatial_ref_sys (sqlite3 * handle, int mode, int metadata)
 	  if (metadata >= 2)
 	    {
 		/*  SpatiaLite-Legacy 2.4.0 - 3.0.1 and SpatiaLite 4.0.0 - present */
-		if  (strlen (p->srs_wkt) == 0)
+		if (strlen (p->srs_wkt) == 0)
 		    sqlite3_bind_text (stmt, 6, "Undefined", 9, SQLITE_STATIC);
 		else
 		    sqlite3_bind_text (stmt, 6, p->srs_wkt, strlen (p->srs_wkt),
@@ -837,9 +837,11 @@ spatial_ref_sys_init2 (sqlite3 * handle, int mode, int verbose)
 	;
     else
 	mode = GAIA_EPSG_ANY;
+    if (mode == GAIA_EPSG_NONE)
+	return 1;
     if (populate_spatial_ref_sys (handle, mode, metadata))	/* Mark Johnson 2019-01-27 */
       {
-	  if (verbose && mode != GAIA_EPSG_NONE)
+	  if (verbose)
 	      spatialite_e
 		  ("OK: the SPATIAL_REF_SYS table was successfully populated\n");
 	  return 1;
