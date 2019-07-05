@@ -2045,24 +2045,25 @@ dijkstra_multi_shortest_path (sqlite3 * handle, int options, RoutingPtr graph,
 	    {
 		/* reached one of the multiple destinations */
 		RouteLinkPtr *result;
+		RoutingNodePtr nn;
 		int cnt = 0;
 		int to = destination->InternalIndex;
-		n = e->Nodes + to;
-		while (n->PreviousNode != NULL)
+		nn = e->Nodes + to;
+		while (nn->PreviousNode != NULL)
 		  {
 		      /* counting how many Links are into the Shortest Path solution */
 		      cnt++;
-		      n = n->PreviousNode;
+		      nn = nn->PreviousNode;
 		  }
 		/* allocating the solution */
 		result = malloc (sizeof (RouteLinkPtr) * cnt);
 		k = cnt - 1;
-		n = e->Nodes + to;
-		while (n->PreviousNode != NULL)
+		nn = e->Nodes + to;
+		while (nn->PreviousNode != NULL)
 		  {
 		      /* inserting a Link into the solution */
-		      result[k] = n->xLink;
-		      n = n->PreviousNode;
+		      result[k] = nn->xLink;
+		      nn = nn->PreviousNode;
 		      k--;
 		  }
 		solution =

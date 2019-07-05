@@ -205,6 +205,7 @@ extern "C"
 	int ok_last_used_sequence;
 	int last_used_sequence_val;
 	char *SqlProcLogfile;
+	int SqlProcLogfileAppend;
 	FILE *SqlProcLog;
 	int SqlProcContinue;
 	struct gaia_variant_value *SqlProcRetValue;

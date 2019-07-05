@@ -393,6 +393,7 @@ init_splite_internal_cache (struct splite_internal_cache *cache)
     cache->storedProcError = NULL;
     cache->createRoutingError = NULL;
     cache->SqlProcLogfile = NULL;
+    cache->SqlProcLogfileAppend = 0;
     cache->SqlProcLog = NULL;
     cache->SqlProcContinue = 1;
     cache->SqlProcRetValue = gaia_alloc_variant ();
