@@ -2206,7 +2206,7 @@ gaiaTopologyFromCache (const void *p_cache, const char *topo_name)
     struct gaia_topology *ptr;
     struct splite_internal_cache *cache =
 	(struct splite_internal_cache *) p_cache;
-    if (cache == 0)
+    if (cache == NULL)
 	return NULL;
 
     ptr = (struct gaia_topology *) (cache->firstTopology);
@@ -2248,7 +2248,7 @@ gaiaTopologyFromDBMS (sqlite3 * handle, const void *p_cache,
     struct gaia_topology *ptr;
     struct splite_internal_cache *cache =
 	(struct splite_internal_cache *) p_cache;
-    if (cache == 0)
+    if (cache == NULL)
 	return NULL;
     if (cache->magic1 != SPATIALITE_CACHE_MAGIC1
 	|| cache->magic2 != SPATIALITE_CACHE_MAGIC2)
@@ -6101,3 +6101,17 @@ auxtopo_insert_into_topology (GaiaTopologyAccessorPtr accessor,
 }
 
 #endif /* end ENABLE_RTTOPO conditionals */
+
+SPATIALITE_PRIVATE void
+finalize_topologies (const void *p_cache)
+{
+/* finalizing all topology related prepared statements */
+    struct splite_internal_cache *cache =
+	(struct splite_internal_cache *) p_cache;
+    if (cache == NULL)
+	return;
+
+#ifdef ENABLE_RTTOPO		/* only if RTTOPO is enabled */
+    finalize_all_topo_prepared_stmts (p_cache);
+#endif /* end ENABLE_RTTOPO conditionals */
+}

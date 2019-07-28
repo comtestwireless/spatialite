@@ -81,7 +81,7 @@ main (int argc, char *argv[])
 
     ret =
 	sqlite3_exec (db_handle,
-		      "create VIRTUAL TABLE places USING VirtualText(\"testcase1.csv\", UTF-8, 0, POINT, DOUBLEQUOTE);",
+		      "create VIRTUAL TABLE places USING VirtualText('testcase1.csv', UTF-8, 0, POINT, DOUBLEQUOTE);",
 		      NULL, NULL, &err_msg);
     if (ret != SQLITE_OK)
       {
@@ -92,7 +92,7 @@ main (int argc, char *argv[])
 
     sql_statement =
 	sqlite3_mprintf
-	("select col003, col005, col006, col008 from places WHERE col003 = \"Canal Creek\";");
+	("select col003, col005, col006, col008 from places WHERE col003 = 'Canal Creek';");
     ret =
 	sqlite3_get_table (db_handle, sql_statement, &results, &rows, &columns,
 			   &err_msg);

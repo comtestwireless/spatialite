@@ -3302,9 +3302,9 @@ dump_shapefile_ex2 (sqlite3 * sqlite, void *proj_ctx, char *table, char *column,
 		xxtable = gaiaDoubleQuotedSql (table_name);
 		sql =
 		    sqlite3_mprintf
-		    ("SELECT * FROM \"%s\".\"%s\" WHERE GeometryAliasType(\"%s\") = "
-		     "'LINESTRING' OR GeometryAliasType(\"%s\") = 'MULTILINESTRING' "
-		     "OR \"%s\" IS NULL", xprefix, xxtable, xcolumn, xcolumn,
+		    ("SELECT * FROM \"%s\".\"%s\" WHERE GeometryAliasType(\"%w\") = "
+		     "'LINESTRING' OR GeometryAliasType(\"%w\") = 'MULTILINESTRING' "
+		     "OR \"%s\" IS NULL", xprefix, xxtable, column, column,
 		     xcolumn);
 		free (xprefix);
 		free (xxtable);
@@ -3312,9 +3312,9 @@ dump_shapefile_ex2 (sqlite3 * sqlite, void *proj_ctx, char *table, char *column,
 	  else
 	      sql =
 		  sqlite3_mprintf
-		  ("SELECT * FROM \"%s\" WHERE GeometryAliasType(\"%s\") = "
-		   "'LINESTRING' OR GeometryAliasType(\"%s\") = 'MULTILINESTRING' "
-		   "OR \"%s\" IS NULL", xtable, xcolumn, xcolumn, xcolumn);
+		  ("SELECT * FROM \"%s\" WHERE GeometryAliasType(\"%w\") = "
+		   "'LINESTRING' OR GeometryAliasType(\"%w\") = 'MULTILINESTRING' "
+		   "OR \"%s\" IS NULL", xtable, column, column, xcolumn);
       }
     else if (shape == GAIA_POLYGON || shape == GAIA_POLYGONZ
 	     || shape == GAIA_POLYGONM || shape == GAIA_POLYGONZM ||
@@ -3327,9 +3327,9 @@ dump_shapefile_ex2 (sqlite3 * sqlite, void *proj_ctx, char *table, char *column,
 		xxtable = gaiaDoubleQuotedSql (table_name);
 		sql =
 		    sqlite3_mprintf
-		    ("SELECT * FROM \"%s\".\"%s\" WHERE GeometryAliasType(\"%s\") = "
-		     "'POLYGON' OR GeometryAliasType(\"%s\") = 'MULTIPOLYGON'"
-		     "OR \"%s\" IS NULL", xprefix, xxtable, xcolumn, xcolumn,
+		    ("SELECT * FROM \"%s\".\"%s\" WHERE GeometryAliasType(\"%w\") = "
+		     "'POLYGON' OR GeometryAliasType(\"%w\") = 'MULTIPOLYGON'"
+		     "OR \"%s\" IS NULL", xprefix, xxtable, column, column,
 		     xcolumn);
 		free (xprefix);
 		free (xxtable);
@@ -3337,9 +3337,9 @@ dump_shapefile_ex2 (sqlite3 * sqlite, void *proj_ctx, char *table, char *column,
 	  else
 	      sql =
 		  sqlite3_mprintf
-		  ("SELECT * FROM \"%s\" WHERE GeometryAliasType(\"%s\") = "
-		   "'POLYGON' OR GeometryAliasType(\"%s\") = 'MULTIPOLYGON'"
-		   "OR \"%s\" IS NULL", xtable, xcolumn, xcolumn, xcolumn);
+		  ("SELECT * FROM \"%s\" WHERE GeometryAliasType(\"%w\") = "
+		   "'POLYGON' OR GeometryAliasType(\"%w\") = 'MULTIPOLYGON'"
+		   "OR \"%s\" IS NULL", xtable, column, column, xcolumn);
       }
     else if (shape == GAIA_MULTIPOINT || shape == GAIA_MULTIPOINTZ
 	     || shape == GAIA_MULTIPOINTM || shape == GAIA_MULTIPOINTZM)
@@ -3350,9 +3350,9 @@ dump_shapefile_ex2 (sqlite3 * sqlite, void *proj_ctx, char *table, char *column,
 		xxtable = gaiaDoubleQuotedSql (table_name);
 		sql =
 		    sqlite3_mprintf
-		    ("SELECT * FROM \"%s\".\"%s\" WHERE GeometryAliasType(\"%s\") = "
-		     "'POINT' OR GeometryAliasType(\"%s\") = 'MULTIPOINT'"
-		     "OR \"%s\" IS NULL", xprefix, xxtable, xcolumn, xcolumn,
+		    ("SELECT * FROM \"%s\".\"%s\" WHERE GeometryAliasType(\"%w\") = "
+		     "'POINT' OR GeometryAliasType(\"%w\") = 'MULTIPOINT'"
+		     "OR \"%s\" IS NULL", xprefix, xxtable, column, column,
 		     xcolumn);
 		free (xprefix);
 		free (xxtable);
@@ -3360,9 +3360,9 @@ dump_shapefile_ex2 (sqlite3 * sqlite, void *proj_ctx, char *table, char *column,
 	  else
 	      sql =
 		  sqlite3_mprintf
-		  ("SELECT * FROM \"%s\" WHERE GeometryAliasType(\"%s\") = "
-		   "'POINT' OR GeometryAliasType(\"%s\") = 'MULTIPOINT'"
-		   "OR \"%s\" IS NULL", xtable, xcolumn, xcolumn, xcolumn);
+		  ("SELECT * FROM \"%s\" WHERE GeometryAliasType(\"%w\") = "
+		   "'POINT' OR GeometryAliasType(\"%w\") = 'MULTIPOINT'"
+		   "OR \"%s\" IS NULL", xtable, column, column, xcolumn);
       }
     else
       {
@@ -3372,8 +3372,8 @@ dump_shapefile_ex2 (sqlite3 * sqlite, void *proj_ctx, char *table, char *column,
 		xxtable = gaiaDoubleQuotedSql (table_name);
 		sql =
 		    sqlite3_mprintf
-		    ("SELECT * FROM \"%s\".\"%s\" WHERE GeometryAliasType(\"%s\") = "
-		     "'POINT' OR \"%s\" IS NULL", xprefix, xxtable, xcolumn,
+		    ("SELECT * FROM \"%s\".\"%s\" WHERE GeometryAliasType(\"%w\") = "
+		     "'POINT' OR \"%s\" IS NULL", xprefix, xxtable, column,
 		     xcolumn);
 		free (xprefix);
 		free (xxtable);
@@ -3381,8 +3381,8 @@ dump_shapefile_ex2 (sqlite3 * sqlite, void *proj_ctx, char *table, char *column,
 	  else
 	      sql =
 		  sqlite3_mprintf
-		  ("SELECT * FROM \"%s\" WHERE GeometryAliasType(\"%s\") = "
-		   "'POINT' OR \"%s\" IS NULL", xtable, xcolumn, xcolumn);
+		  ("SELECT * FROM \"%s\" WHERE GeometryAliasType(\"%w\") = "
+		   "'POINT' OR \"%s\" IS NULL", xtable, column, xcolumn);
       }
 /* compiling SQL prepared statement */
     ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
@@ -6865,6 +6865,7 @@ dump_geojson_ex (sqlite3 * sqlite, char *table, char *geom_col,
 	 xgeom_col, precision, option, xtable, xgeom_col);
     free (xtable);
     free (xgeom_col);
+fprintf(stderr, "%s\n", sql);
     ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
     sqlite3_free (sql);
     if (ret != SQLITE_OK)
@@ -7069,7 +7070,7 @@ do_prepare_sql (sqlite3 * sqlite, const char *table, const char *geom_col,
 		  {
 		      /* exporting eventual M-Values */
 		      sql =
-			  sqlite3_mprintf ("SELECT AsGeoJSON(\"%s\", %d)",
+			  sqlite3_mprintf ("SELECT AsGeoJSON(%Q, %d)",
 					   x_col, precision);
 		  }
 		else
@@ -7079,7 +7080,7 @@ do_prepare_sql (sqlite3 * sqlite, const char *table, const char *geom_col,
 			    /* exporting XYM as XY */
 			    sql =
 				sqlite3_mprintf
-				("SELECT AsGeoJSON(CastToXY(\"%s\"), %d)",
+				("SELECT AsGeoJSON(CastToXY(%Q), %d)",
 				 x_col, precision);
 			}
 		      else if (dims == GAIA_XY_Z_M)
@@ -7087,14 +7088,14 @@ do_prepare_sql (sqlite3 * sqlite, const char *table, const char *geom_col,
 			    /* exporting XYZM as XYZ */
 			    sql =
 				sqlite3_mprintf
-				("SELECT AsGeoJSON(CastToXYZ(\"%s\"), %d)",
+				("SELECT AsGeoJSON(CastToXYZ(%Q), %d)",
 				 x_col, precision);
 			}
 		      else
 			{
 			    /* unchanged dimensions */
 			    sql =
-				sqlite3_mprintf ("SELECT AsGeoJSON(\"%s\", %d)",
+				sqlite3_mprintf ("SELECT AsGeoJSON(%Q, %d)",
 						 x_col, precision);
 			}
 		  }
@@ -7107,7 +7108,7 @@ do_prepare_sql (sqlite3 * sqlite, const char *table, const char *geom_col,
 		      /* exporting eventual M-Values */
 		      sql =
 			  sqlite3_mprintf
-			  ("SELECT AsGeoJSON(ST_Transform(\"%s\", 4326), %d)",
+			  ("SELECT AsGeoJSON(ST_Transform(%Q, 4326), %d)",
 			   x_col, precision);
 		  }
 		else
@@ -7117,7 +7118,7 @@ do_prepare_sql (sqlite3 * sqlite, const char *table, const char *geom_col,
 			    /* exporting XYM as XY */
 			    sql =
 				sqlite3_mprintf
-				("SELECT AsGeoJSON(ST_Transform(CastToXY(\"%s\"), 4326), %d)",
+				("SELECT AsGeoJSON(ST_Transform(CastToXY(%Q), 4326), %d)",
 				 x_col, precision);
 			}
 		      else if (dims == GAIA_XY_Z_M)
@@ -7125,7 +7126,7 @@ do_prepare_sql (sqlite3 * sqlite, const char *table, const char *geom_col,
 			    /* exporting XYZM as XYZ */
 			    sql =
 				sqlite3_mprintf
-				("SELECT AsGeoJSON(ST_TransformCastToXYZ(\"%s\"), 4326), %d)",
+				("SELECT AsGeoJSON(ST_TransformCastToXYZ(%Q), 4326), %d)",
 				 x_col, precision);
 			}
 		      else
@@ -7133,7 +7134,7 @@ do_prepare_sql (sqlite3 * sqlite, const char *table, const char *geom_col,
 			    /* unchanged dimensions */
 			    sql =
 				sqlite3_mprintf
-				("SELECT AsGeoJSON(ST_Transform(\"%s\", 4326), %d)",
+				("SELECT AsGeoJSON(ST_Transform(%Q, 4326), %d)",
 				 x_col, precision);
 			}
 		  }
@@ -7146,7 +7147,7 @@ do_prepare_sql (sqlite3 * sqlite, const char *table, const char *geom_col,
 	    {
 		/* exporting eventual M-Values */
 		sql =
-		    sqlite3_mprintf ("SELECT AsGeoJSON(\"%s\", %d)", x_col,
+		    sqlite3_mprintf ("SELECT AsGeoJSON(%Q, %d)", x_col,
 				     precision);
 	    }
 	  else
@@ -7156,7 +7157,7 @@ do_prepare_sql (sqlite3 * sqlite, const char *table, const char *geom_col,
 		      /* exporting XYM as XY */
 		      sql =
 			  sqlite3_mprintf
-			  ("SELECT AsGeoJSON(CastToXY(\"%s\"), %d)", x_col,
+			  ("SELECT AsGeoJSON(CastToXY(%Q), %d)", x_col,
 			   precision);
 		  }
 		else if (dims == GAIA_XY_Z_M)
@@ -7164,14 +7165,14 @@ do_prepare_sql (sqlite3 * sqlite, const char *table, const char *geom_col,
 		      /* exporting XYZM as XYZ */
 		      sql =
 			  sqlite3_mprintf
-			  ("SELECT AsGeoJSON(CastToXYZ(\"%s\"), %d)", x_col,
+			  ("SELECT AsGeoJSON(CastToXYZ(%Q), %d)", x_col,
 			   precision);
 		  }
 		else
 		  {
 		      /* unchanged dimensions */
 		      sql =
-			  sqlite3_mprintf ("SELECT AsGeoJSON(\"%s\", %d)",
+			  sqlite3_mprintf ("SELECT AsGeoJSON(%Q, %d)",
 					   x_col, precision);
 		  }
 	    }
@@ -7186,7 +7187,7 @@ do_prepare_sql (sqlite3 * sqlite, const char *table, const char *geom_col,
 	      continue;		/* skipping the Geometry itself */
 	  x_col = gaiaDoubleQuotedSql (col);
 	  prev = sql;
-	  sql = sqlite3_mprintf ("%s, \"%s\"", prev, x_col);
+	  sql = sqlite3_mprintf ("%s, %Q", prev, x_col);
 	  free (x_col);
 	  sqlite3_free (prev);
       }

@@ -1,6 +1,6 @@
 assvg - relative/absolute Linestring XY
 :memory: #use in-memory database
-SELECT assvg(geom, 1) AS rel, assvg(geom, 0) AS abs FROM (SELECT GeomFromText("LINESTRING(1 2, 4 3, 5 6, 8 7)", 4326) AS geom) dummy;
+SELECT assvg(geom, 1) AS rel, assvg(geom, 0) AS abs FROM (SELECT GeomFromText('LINESTRING(1 2, 4 3, 5 6, 8 7)', 4326) AS geom) dummy;
 1 # rows (not including the header row)
 2 # columns
 rel

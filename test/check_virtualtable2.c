@@ -66,7 +66,7 @@ do_test (sqlite3 * db_handle)
 
     ret =
 	sqlite3_exec (db_handle,
-		      "create VIRTUAL TABLE shapetest USING VirtualShape(\"shapetest1\", UTF-8, 4326);",
+		      "create VIRTUAL TABLE shapetest USING VirtualShape('shapetest1', UTF-8, 4326);",
 		      NULL, NULL, &err_msg);
     if (ret != SQLITE_OK)
       {
@@ -344,7 +344,7 @@ do_test (sqlite3 * db_handle)
 
     sql_statement =
 	sqlite3_mprintf
-	("select testcase1, testcase2, AsText(Geometry) from shapetest where testcase1 < \"p\";");
+	("select testcase1, testcase2, AsText(Geometry) from shapetest where testcase1 < 'p';");
     ret =
 	sqlite3_get_table (db_handle, sql_statement, &results, &rows, &columns,
 			   &err_msg);
@@ -390,7 +390,7 @@ do_test (sqlite3 * db_handle)
 
     sql_statement =
 	sqlite3_mprintf
-	("select testcase1, testcase2, AsText(Geometry) from shapetest where testcase1 <= \"p\";");
+	("select testcase1, testcase2, AsText(Geometry) from shapetest where testcase1 <= 'p';");
     ret =
 	sqlite3_get_table (db_handle, sql_statement, &results, &rows, &columns,
 			   &err_msg);
@@ -445,7 +445,7 @@ do_test (sqlite3 * db_handle)
 
     sql_statement =
 	sqlite3_mprintf
-	("select testcase1, testcase2, AsText(Geometry) from shapetest where testcase1 > \"p\";");
+	("select testcase1, testcase2, AsText(Geometry) from shapetest where testcase1 > 'p';");
     ret =
 	sqlite3_get_table (db_handle, sql_statement, &results, &rows, &columns,
 			   &err_msg);
@@ -510,7 +510,7 @@ do_test (sqlite3 * db_handle)
 
     sql_statement =
 	sqlite3_mprintf
-	("select testcase1, testcase2, AsText(Geometry) from shapetest where testcase1 >= \"p\";");
+	("select testcase1, testcase2, AsText(Geometry) from shapetest where testcase1 >= 'p';");
     ret =
 	sqlite3_get_table (db_handle, sql_statement, &results, &rows, &columns,
 			   &err_msg);
@@ -556,7 +556,7 @@ do_test (sqlite3 * db_handle)
 
     sql_statement =
 	sqlite3_mprintf
-	("select testcase1, testcase2, AsText(Geometry) from shapetest where testcase1 = \"windward\";");
+	("select testcase1, testcase2, AsText(Geometry) from shapetest where testcase1 = 'windward';");
     ret =
 	sqlite3_get_table (db_handle, sql_statement, &results, &rows, &columns,
 			   &err_msg);
@@ -832,7 +832,7 @@ do_test (sqlite3 * db_handle)
 
     sql_statement =
 	sqlite3_mprintf
-	("select PKUID, testcase1, testcase2, AsText(Geometry) from shapetest where testcase1 LIKE \"wind%%\";");
+	("select PKUID, testcase1, testcase2, AsText(Geometry) from shapetest where testcase1 LIKE 'wind%%';");
     ret =
 	sqlite3_get_table (db_handle, sql_statement, &results, &rows, &columns,
 			   &err_msg);
@@ -903,7 +903,7 @@ do_test (sqlite3 * db_handle)
 
     ret =
 	sqlite3_exec (db_handle,
-		      "create VIRTUAL TABLE shapetest2 USING VirtualShape(\"shp/merano-3d/roads\", CP1252, 25832);",
+		      "create VIRTUAL TABLE shapetest2 USING VirtualShape('shp/merano-3d/roads', CP1252, 25832);",
 		      NULL, NULL, &err_msg);
     if (ret != SQLITE_OK)
       {
@@ -990,7 +990,7 @@ do_test (sqlite3 * db_handle)
 
     ret =
 	sqlite3_exec (db_handle,
-		      "create VIRTUAL TABLE shapetest3 USING VirtualShape(\"shp/merano-3d/points\", CP1252, 25832);",
+		      "create VIRTUAL TABLE shapetest3 USING VirtualShape('shp/merano-3d/points', CP1252, 25832);",
 		      NULL, NULL, &err_msg);
     if (ret != SQLITE_OK)
       {
@@ -1052,7 +1052,7 @@ do_test (sqlite3 * db_handle)
 
     ret =
 	sqlite3_exec (db_handle,
-		      "create VIRTUAL TABLE shapetest4 USING VirtualShape(\"shp/merano-3d/polygons\", CP1252, 25832);",
+		      "create VIRTUAL TABLE shapetest4 USING VirtualShape('shp/merano-3d/polygons', CP1252, 25832);",
 		      NULL, NULL, &err_msg);
     if (ret != SQLITE_OK)
       {

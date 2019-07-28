@@ -77,11 +77,11 @@ main (int argc, char *argv[])
     spatialite_init_ex (handle, cache, 0);
 
     ret =
-	sqlite3_exec (handle, "SELECT InitSpatialMetadataFull(\"NONE\")", NULL,
+	sqlite3_exec (handle, "SELECT InitSpatialMetadataFull('NONE')", NULL,
 		      NULL, &err_msg);
     if (ret != SQLITE_OK)
       {
-	  fprintf (stderr, "InitSpatialMetadataFull(\"NONE\") error: %s\n",
+	  fprintf (stderr, "InitSpatialMetadataFull('NONE') error: %s\n",
 		   err_msg);
 	  sqlite3_free (err_msg);
 	  sqlite3_close (handle);
@@ -187,7 +187,7 @@ main (int argc, char *argv[])
     spatialite_init_ex (handle, cache, 0);
 
     ret =
-	sqlite3_get_table (handle, "SELECT InitSpatialMetadataFull(\"EMPTY\")",
+	sqlite3_get_table (handle, "SELECT InitSpatialMetadataFull('EMPTY')",
 			   &results, &rows, &columns, &err_msg);
     if (ret != SQLITE_OK)
       {
@@ -198,7 +198,7 @@ main (int argc, char *argv[])
     if ((rows != 1) || (columns != 1))
       {
 	  fprintf (stderr,
-		   "Unexpected result InitSpatialMetadataFull(\"EMPTY\") bad result: %i/%i.\n",
+		   "Unexpected result InitSpatialMetadataFull('EMPTY') bad result: %i/%i.\n",
 		   rows, columns);
 	  return -13;
       }
@@ -209,7 +209,7 @@ main (int argc, char *argv[])
 #endif
       {
 	  fprintf (stderr,
-		   "Unexpected error: InitSpatialMetadataFull(\"EMPTY\"): %s.\n",
+		   "Unexpected error: InitSpatialMetadataFull('EMPTY'): %s.\n",
 		   results[1]);
 	  return -14;
       }
@@ -240,7 +240,7 @@ main (int argc, char *argv[])
     sqlite3_free_table (results);
 
     ret =
-	sqlite3_get_table (handle, "SELECT InsertEpsgSrid(\"Non-integer\")",
+	sqlite3_get_table (handle, "SELECT InsertEpsgSrid('Non-integer')",
 			   &results, &rows, &columns, &err_msg);
     if (ret != SQLITE_OK)
       {
@@ -251,7 +251,7 @@ main (int argc, char *argv[])
     if ((rows != 1) || (columns != 1))
       {
 	  fprintf (stderr,
-		   "Unexpected result InsertEpsgSrid(\"Non-integer\") bad result: %i/%i.\n",
+		   "Unexpected result InsertEpsgSrid('Non-integer') bad result: %i/%i.\n",
 		   rows, columns);
 	  return -19;
       }
@@ -289,7 +289,7 @@ main (int argc, char *argv[])
     spatialite_init_ex (handle, cache, 0);
 
     ret =
-	sqlite3_get_table (handle, "SELECT InitSpatialMetadataFull(\"WGS84\")",
+	sqlite3_get_table (handle, "SELECT InitSpatialMetadataFull('WGS84')",
 			   &results, &rows, &columns, &err_msg);
     if (ret != SQLITE_OK)
       {
@@ -300,7 +300,7 @@ main (int argc, char *argv[])
     if ((rows != 1) || (columns != 1))
       {
 	  fprintf (stderr,
-		   "Unexpected result InitSpatialMetadataFull(\"WGS84\") bad result: %i/%i.\n",
+		   "Unexpected result InitSpatialMetadataFull('WGS84') bad result: %i/%i.\n",
 		   rows, columns);
 	  return -24;
       }
@@ -311,7 +311,7 @@ main (int argc, char *argv[])
 #endif
       {
 	  fprintf (stderr,
-		   "Unexpected error: InitSpatialMetadataFull(\"WGS84\"): %s.\n",
+		   "Unexpected error: InitSpatialMetadataFull('WGS84'): %s.\n",
 		   results[1]);
 	  return -25;
       }
@@ -395,7 +395,7 @@ main (int argc, char *argv[])
 
     ret =
 	sqlite3_get_table (handle,
-			   "SELECT InitSpatialMetadataFull(\"WGS84_only\")",
+			   "SELECT InitSpatialMetadataFull('WGS84_only')",
 			   &results, &rows, &columns, &err_msg);
     if (ret != SQLITE_OK)
       {
@@ -406,7 +406,7 @@ main (int argc, char *argv[])
     if ((rows != 1) || (columns != 1))
       {
 	  fprintf (stderr,
-		   "Unexpected result InitSpatialMetadataFull(\"WGS84_ONLY\") bad result: %i/%i.\n",
+		   "Unexpected result InitSpatialMetadataFull('WGS84_ONLY') bad result: %i/%i.\n",
 		   rows, columns);
 	  return -35;
       }
@@ -417,7 +417,7 @@ main (int argc, char *argv[])
 #endif
       {
 	  fprintf (stderr,
-		   "Unexpected error: InitSpatialMetadataFull(\"WGS84_ONLY\"): %s.\n",
+		   "Unexpected error: InitSpatialMetadataFull('WGS84_ONLY'): %s.\n",
 		   results[1]);
 	  return -36;
       }

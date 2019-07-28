@@ -578,7 +578,7 @@ do_test (sqlite3 * handle, int legacy)
 
     ret =
 	sqlite3_exec (handle,
-		      "UPDATE Councils SET geom = GeomFromText('MULTIPOLYGON(((987226.750031 4627372.000018, 997301.750031 4627331.000018, 997402.500032 4627344.000018, 997541.500031 4627326.500018, 987226.750031 4627372.000018)))', 23032) WHERE lc_name = \"Quairading\";",
+		      "UPDATE Councils SET geom = GeomFromText('MULTIPOLYGON(((987226.750031 4627372.000018, 997301.750031 4627331.000018, 997402.500032 4627344.000018, 997541.500031 4627326.500018, 987226.750031 4627372.000018)))', 23032) WHERE lc_name = 'Quairading';",
 		      NULL, NULL, &err_msg);
     if (ret != SQLITE_OK)
       {
@@ -626,7 +626,7 @@ do_test (sqlite3 * handle, int legacy)
 
     ret =
 	sqlite3_exec (handle,
-		      "DELETE FROM Councils WHERE lc_name = \"Ascoli Satriano\";",
+		      "DELETE FROM Councils WHERE lc_name = 'Ascoli Satriano';",
 		      NULL, NULL, &err_msg);
     if (ret != SQLITE_OK)
       {

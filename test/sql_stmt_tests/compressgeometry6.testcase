@@ -1,6 +1,6 @@
 CompressGeometry - LINESTRINGM
 :memory: #use in-memory database
-SELECT Hex(geom), AsText(geom) FROM (SELECT CompressGeometry(GeomFromText("LINESTRINGM(1 2 3, 3 4 3, 5 6 4)", 4326)) AS geom)
+SELECT Hex(geom), AsText(geom) FROM (SELECT CompressGeometry(GeomFromText('LINESTRINGM(1 2 3, 3 4 3, 5 6 4)', 4326)) AS geom)
 1 # rows (not including the header row)
 2 # columns
 Hex(geom)

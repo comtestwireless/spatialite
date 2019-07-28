@@ -1512,7 +1512,7 @@ main (int argc, char *argv[])
 	  fprintf (stderr, "Test Invalid cases error\n");
 	  return -4;
       }
-      
+
 #endif /* end GEOS conditional */
 
     sqlite3_close (handle);

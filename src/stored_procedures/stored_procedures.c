@@ -2095,7 +2095,7 @@ do_attach_all (sqlite3 * origin, sqlite3 * handle)
 		else if (*db_path == '\0')
 		    mem_db = 1;
 		if (mem_db && strcasecmp (db_name, "temp") == 0)
-		    goto skip_temp;		/* "temp" is already attached by default */
+		    goto skip_temp;	/* "temp" is already attached by default */
 		xdb_name = gaiaDoubleQuotedSql (db_name);
 		if (mem_db)
 		    sql =
@@ -2385,6 +2385,7 @@ gaia_sql_proc_execute (sqlite3 * main_handle, const void *ctx, const char *sql)
     do_clone_memory_db (main_handle, handle, "main");
 
 /* terminating the new connection */
+    finalize_topologies (cache);
     ret = sqlite3_close (handle);
     if (ret != SQLITE_OK)
 	spatialite_e ("SqlProcExec: sqlite3_close() error: %s\n",

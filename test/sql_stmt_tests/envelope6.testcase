@@ -1,7 +1,7 @@
 Envelope - non-geom
 :memory: #use in-memory database
-SELECT Envelope("hello")
+SELECT Envelope('hello')
 1 # rows (not including the header row)
 1 # columns
-Envelope("hello")
+Envelope('hello')
 (NULL)

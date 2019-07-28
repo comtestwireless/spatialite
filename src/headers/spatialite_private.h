@@ -1508,6 +1508,8 @@ extern "C"
     SPATIALITE_PRIVATE void splite_pause_signal (void);
 #endif
 
+    SPATIALITE_PRIVATE void finalize_topologies (const void *p_cache);
+
 #ifdef __cplusplus
 }
 #endif

@@ -292,7 +292,7 @@ main (int argc, char *argv[])
 
     sql_statement =
 	sqlite3_mprintf
-	("select testcase1, testcase2 from dbftest where testcase1 < \"p\";");
+	("select testcase1, testcase2 from dbftest where testcase1 < 'p';");
     ret =
 	sqlite3_get_table (db_handle, sql_statement, &results, &rows, &columns,
 			   &err_msg);
@@ -332,7 +332,7 @@ main (int argc, char *argv[])
 
     sql_statement =
 	sqlite3_mprintf
-	("select testcase1, testcase2 from dbftest where testcase1 <= \"p\";");
+	("select testcase1, testcase2 from dbftest where testcase1 <= 'p';");
     ret =
 	sqlite3_get_table (db_handle, sql_statement, &results, &rows, &columns,
 			   &err_msg);
@@ -380,7 +380,7 @@ main (int argc, char *argv[])
 
     sql_statement =
 	sqlite3_mprintf
-	("select testcase1, testcase2 from dbftest where testcase1 > \"p\";");
+	("select testcase1, testcase2 from dbftest where testcase1 > 'p';");
     ret =
 	sqlite3_get_table (db_handle, sql_statement, &results, &rows, &columns,
 			   &err_msg);
@@ -439,7 +439,7 @@ main (int argc, char *argv[])
 
     sql_statement =
 	sqlite3_mprintf
-	("select testcase1, testcase2 from dbftest where testcase1 >= \"p\";");
+	("select testcase1, testcase2 from dbftest where testcase1 >= 'p';");
     ret =
 	sqlite3_get_table (db_handle, sql_statement, &results, &rows, &columns,
 			   &err_msg);
@@ -479,7 +479,7 @@ main (int argc, char *argv[])
 
     sql_statement =
 	sqlite3_mprintf
-	("select testcase1, testcase2 from dbftest where testcase1 = \"windward\";");
+	("select testcase1, testcase2 from dbftest where testcase1 = 'windward';");
     ret =
 	sqlite3_get_table (db_handle, sql_statement, &results, &rows, &columns,
 			   &err_msg);
@@ -719,7 +719,7 @@ main (int argc, char *argv[])
 
     sql_statement =
 	sqlite3_mprintf
-	("select PKUID, testcase1, testcase2 from dbftest where testcase1 LIKE \"wind%%\";");
+	("select PKUID, testcase1, testcase2 from dbftest where testcase1 LIKE 'wind%%';");
     ret =
 	sqlite3_get_table (db_handle, sql_statement, &results, &rows, &columns,
 			   &err_msg);
@@ -774,7 +774,7 @@ main (int argc, char *argv[])
     /* error cases */
     ret =
 	sqlite3_exec (db_handle,
-		      "create VIRTUAL TABLE toofewargs USING VirtualDBF(\"shapetest1.dbf\");",
+		      "create VIRTUAL TABLE toofewargs USING VirtualDBF('shapetest1.dbf');",
 		      NULL, NULL, &err_msg);
     if (ret != SQLITE_ERROR)
       {
@@ -785,7 +785,7 @@ main (int argc, char *argv[])
 
     ret =
 	sqlite3_exec (db_handle,
-		      "create VIRTUAL TABLE toomanyargs USING VirtualDBF(\"shapetest1.dbf\", UTF-8, 1, UPPER, 1);",
+		      "create VIRTUAL TABLE toomanyargs USING VirtualDBF('shapetest1.dbf', UTF-8, 1, UPPER, 1);",
 		      NULL, NULL, &err_msg);
     if (ret != SQLITE_ERROR)
       {
@@ -796,7 +796,7 @@ main (int argc, char *argv[])
 
     ret =
 	sqlite3_exec (db_handle,
-		      "create VIRTUAL TABLE nosuchfile USING VirtualDBF(\"not_a_file.dbf\", UTF-8);",
+		      "create VIRTUAL TABLE nosuchfile USING VirtualDBF('not_a_file.dbf', UTF-8);",
 		      NULL, NULL, &err_msg);
     if (ret != SQLITE_OK)
       {

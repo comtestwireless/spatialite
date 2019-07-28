@@ -1,7 +1,7 @@
 great circle length - text
 :memory:
-SELECT GreatCircleLength("Hello");
+SELECT GreatCircleLength('Hello');
 1 # rows
 1 # column
-GreatCircleLength("Hello")
+GreatCircleLength('Hello')
 (NULL)

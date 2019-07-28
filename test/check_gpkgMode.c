@@ -170,8 +170,8 @@ main (int argc, char *argv[])
 	  ret = -7;
 	  goto end;
       }
-      
-#ifndef OMIT_GEOS	/* only if GEOS is enabled */
+
+#ifndef OMIT_GEOS		/* only if GEOS is enabled */
     sql = "SELECT IsValidGPB( ST_Union(geom) ) FROM ln2dm";
     if (!test_sql_query (db_handle, sql))
       {
@@ -248,7 +248,7 @@ main (int argc, char *argv[])
 	  ret = -18;
 	  goto end;
       }
-#endif	/* end GEOS conditionals */
+#endif /* end GEOS conditionals */
 
 /* testing MULTILINESTRINGs */
     sql =
@@ -265,8 +265,8 @@ main (int argc, char *argv[])
 	  ret = -20;
 	  goto end;
       }
-      
-#ifndef OMIT_GEOS	/* only if GEOS is enabled */
+
+#ifndef OMIT_GEOS		/* only if GEOS is enabled */
     sql =
 	"SELECT IsValidGPB( ST_Line_Interpolate_Point( ST_GeometryN(geom, 1), 0.66) ) FROM mln3dz WHERE id = 2";
     if (!test_sql_query (db_handle, sql))
@@ -281,7 +281,7 @@ main (int argc, char *argv[])
 	  ret = -22;
 	  goto end;
       }
-#endif	/* end GEOS conditionals */
+#endif /* end GEOS conditionals */
 
 /* testing MULTIPOLYGONs */
     sql =

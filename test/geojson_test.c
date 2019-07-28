@@ -75,9 +75,12 @@ do_test (sqlite3 * handle)
 	  sqlite3_close (handle);
 	  return -3;
       }
-      
+
 /* testing ImportGeoJSON basic options */
-	ret = sqlite3_exec(handle, "SELECT ImportGeoJSON('./test.geojson', 'euro_cities')", NULL,  NULL, &err_msg);
+    ret =
+	sqlite3_exec (handle,
+		      "SELECT ImportGeoJSON('./test.geojson', 'euro_cities')",
+		      NULL, NULL, &err_msg);
     if (ret != SQLITE_OK)
       {
 	  fprintf (stderr, "ImportGeoJSON() #1 error: %s\n", err_msg);
@@ -85,9 +88,12 @@ do_test (sqlite3 * handle)
 	  sqlite3_close (handle);
 	  return -4;
       }
-      
+
 /* testing ImportGeoJSON full options */
-	ret = sqlite3_exec(handle, "SELECT ImportGeoJSON('./test.geojson', 'euro_cities2', 1, 4326, 'UPPER')", NULL,  NULL, &err_msg);
+    ret =
+	sqlite3_exec (handle,
+		      "SELECT ImportGeoJSON('./test.geojson', 'euro_cities2', 1, 4326, 'UPPER')",
+		      NULL, NULL, &err_msg);
     if (ret != SQLITE_OK)
       {
 	  fprintf (stderr, "ImportGeoJSON() #2 error: %s\n", err_msg);
@@ -95,9 +101,12 @@ do_test (sqlite3 * handle)
 	  sqlite3_close (handle);
 	  return -5;
       }
-      
+
 /* testing ExportGeoJSON2 basic options */
-	ret = sqlite3_exec(handle, "SELECT ExportGeoJSON2('euro_cities', NULL, './text_export1.geojson')", NULL,  NULL, &err_msg);
+    ret =
+	sqlite3_exec (handle,
+		      "SELECT ExportGeoJSON2('euro_cities', NULL, './text_export1.geojson')",
+		      NULL, NULL, &err_msg);
     if (ret != SQLITE_OK)
       {
 	  fprintf (stderr, "ExportGeoJSON2() #1 error: %s\n", err_msg);
@@ -105,9 +114,12 @@ do_test (sqlite3 * handle)
 	  sqlite3_close (handle);
 	  return -6;
       }
-      
+
 /* testing ExportGeoJSON2 basic options */
-	ret = sqlite3_exec(handle, "SELECT ExportGeoJSON2('euro_cities', NULL, './text_export2.geojson', 8, 1, 0, 'UPPER')", NULL,  NULL, &err_msg);
+    ret =
+	sqlite3_exec (handle,
+		      "SELECT ExportGeoJSON2('euro_cities', NULL, './text_export2.geojson', 8, 1, 0, 'UPPER')",
+		      NULL, NULL, &err_msg);
     if (ret != SQLITE_OK)
       {
 	  fprintf (stderr, "ExportGeoJSON2() #2 error: %s\n", err_msg);
@@ -115,8 +127,8 @@ do_test (sqlite3 * handle)
 	  sqlite3_close (handle);
 	  return -7;
       }
-      
-      return 0;
+
+    return 0;
 }
 
 int

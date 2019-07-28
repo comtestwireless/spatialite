@@ -3802,8 +3802,7 @@ do_drop_table5 (sqlite3 * sqlite, const char *prefix, const char *table,
     char *q_table;
     int ret;
     char *errMsg = NULL;
-    if ((aux) && (aux->metadata_version > 0)
-	&& (aux->count_geometry_columns > 0))
+    if ((aux) && (aux->metadata_version > 0))
       {
 /* updating first all metadata tables */
 	  if (aux->ok_geometry_columns)

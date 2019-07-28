@@ -1,7 +1,7 @@
 casttomulti - non-blob
 :memory: #use in-memory database
-SELECT CastToMulti("hello")
+SELECT CastToMulti('hello')
 1 # rows (not including the header row)
 1 # columns
-CastToMulti("hello")
+CastToMulti('hello')
 (NULL)
