@@ -1,9 +1,9 @@
 POLYGONIZE - text
 :memory: #use in-memory database
-SELECT Polygonize("hello world");
+SELECT Polygonize('hello world');
 1 # rows (not including the header row)
 1 # columns
-Polygonize("hello world")
+Polygonize('hello world')
 (NULL)
 
 

@@ -102,7 +102,9 @@ check_PROGRAMS = check_endian$(EXEEXT) check_version$(EXEEXT) \
 	check_xls_load$(EXEEXT) check_math_funcs$(EXEEXT) \
 	check_gaia_util$(EXEEXT) check_gaia_utf8$(EXEEXT) \
 	check_extension$(EXEEXT) check_recover_geom$(EXEEXT) \
-	check_sql_stmt$(EXEEXT) check_multithread$(EXEEXT) \
+	check_sql_stmt$(EXEEXT) check_sql_stmt_tiny$(EXEEXT) \
+	check_sql_stmt_legacy$(EXEEXT) \
+	check_sql_stmt_extension$(EXEEXT) check_multithread$(EXEEXT) \
 	check_virtualtable1$(EXEEXT) check_virtualtable2$(EXEEXT) \
 	check_virtualtable3$(EXEEXT) check_virtualtable4$(EXEEXT) \
 	check_virtualtable5$(EXEEXT) check_virtualtable6$(EXEEXT) \
@@ -448,6 +450,15 @@ check_spatialindex_LDADD = $(LDADD)
 check_sql_stmt_SOURCES = check_sql_stmt.c
 check_sql_stmt_OBJECTS = check_sql_stmt.$(OBJEXT)
 check_sql_stmt_LDADD = $(LDADD)
+check_sql_stmt_extension_SOURCES = check_sql_stmt_extension.c
+check_sql_stmt_extension_OBJECTS = check_sql_stmt_extension.$(OBJEXT)
+check_sql_stmt_extension_LDADD = $(LDADD)
+check_sql_stmt_legacy_SOURCES = check_sql_stmt_legacy.c
+check_sql_stmt_legacy_OBJECTS = check_sql_stmt_legacy.$(OBJEXT)
+check_sql_stmt_legacy_LDADD = $(LDADD)
+check_sql_stmt_tiny_SOURCES = check_sql_stmt_tiny.c
+check_sql_stmt_tiny_OBJECTS = check_sql_stmt_tiny.$(OBJEXT)
+check_sql_stmt_tiny_LDADD = $(LDADD)
 check_srid_fncts_SOURCES = check_srid_fncts.c
 check_srid_fncts_OBJECTS = check_srid_fncts.$(OBJEXT)
 check_srid_fncts_LDADD = $(LDADD)
@@ -608,16 +619,17 @@ SOURCES = check_add_tile_triggers.c \
 	check_network3d.c check_network_log.c check_recover_geom.c \
 	check_relations_fncts.c check_sequence.c check_shp_load.c \
 	check_shp_load_3d.c check_spatialindex.c check_sql_stmt.c \
-	check_srid_fncts.c check_stored_proc.c check_styling.c \
-	check_topology2d.c check_topology3d.c check_toponoface2d.c \
-	check_topoplus.c check_toposnap.c check_version.c \
-	check_virtual_ovflw.c check_virtualbbox.c check_virtualelem.c \
-	check_virtualknn.c check_virtualtable1.c check_virtualtable2.c \
-	check_virtualtable3.c check_virtualtable4.c \
-	check_virtualtable5.c check_virtualtable6.c \
-	check_virtualxpath.c check_wfsin.c check_wms.c \
-	check_xls_load.c geojson_test.c routing_test.c shape_3d.c \
-	shape_cp1252.c shape_primitives.c shape_utf8_1.c \
+	check_sql_stmt_extension.c check_sql_stmt_legacy.c \
+	check_sql_stmt_tiny.c check_srid_fncts.c check_stored_proc.c \
+	check_styling.c check_topology2d.c check_topology3d.c \
+	check_toponoface2d.c check_topoplus.c check_toposnap.c \
+	check_version.c check_virtual_ovflw.c check_virtualbbox.c \
+	check_virtualelem.c check_virtualknn.c check_virtualtable1.c \
+	check_virtualtable2.c check_virtualtable3.c \
+	check_virtualtable4.c check_virtualtable5.c \
+	check_virtualtable6.c check_virtualxpath.c check_wfsin.c \
+	check_wms.c check_xls_load.c geojson_test.c routing_test.c \
+	shape_3d.c shape_cp1252.c shape_primitives.c shape_utf8_1.c \
 	shape_utf8_1ex.c shape_utf8_2.c
 DIST_SOURCES = check_add_tile_triggers.c \
 	check_add_tile_triggers_bad_table_name.c check_bufovflw.c \
@@ -652,16 +664,17 @@ DIST_SOURCES = check_add_tile_triggers.c \
 	check_network3d.c check_network_log.c check_recover_geom.c \
 	check_relations_fncts.c check_sequence.c check_shp_load.c \
 	check_shp_load_3d.c check_spatialindex.c check_sql_stmt.c \
-	check_srid_fncts.c check_stored_proc.c check_styling.c \
-	check_topology2d.c check_topology3d.c check_toponoface2d.c \
-	check_topoplus.c check_toposnap.c check_version.c \
-	check_virtual_ovflw.c check_virtualbbox.c check_virtualelem.c \
-	check_virtualknn.c check_virtualtable1.c check_virtualtable2.c \
-	check_virtualtable3.c check_virtualtable4.c \
-	check_virtualtable5.c check_virtualtable6.c \
-	check_virtualxpath.c check_wfsin.c check_wms.c \
-	check_xls_load.c geojson_test.c routing_test.c shape_3d.c \
-	shape_cp1252.c shape_primitives.c shape_utf8_1.c \
+	check_sql_stmt_extension.c check_sql_stmt_legacy.c \
+	check_sql_stmt_tiny.c check_srid_fncts.c check_stored_proc.c \
+	check_styling.c check_topology2d.c check_topology3d.c \
+	check_toponoface2d.c check_topoplus.c check_toposnap.c \
+	check_version.c check_virtual_ovflw.c check_virtualbbox.c \
+	check_virtualelem.c check_virtualknn.c check_virtualtable1.c \
+	check_virtualtable2.c check_virtualtable3.c \
+	check_virtualtable4.c check_virtualtable5.c \
+	check_virtualtable6.c check_virtualxpath.c check_wfsin.c \
+	check_wms.c check_xls_load.c geojson_test.c routing_test.c \
+	shape_3d.c shape_cp1252.c shape_primitives.c shape_utf8_1.c \
 	shape_utf8_1ex.c shape_utf8_2.c
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
@@ -1074,6 +1087,7 @@ EXTRA_DIST = fnmatch_impl4win.h \
 	fnmatch4win.h \
 	scandir4win.h \
 	test_helpers.h \
+	check_sql_stmt.h \
 	shapetest1.dbf \
 	shapetest1.prj \
 	shapetest1.qpj \
@@ -1506,6 +1520,18 @@ check_sql_stmt$(EXEEXT): $(check_sql_stmt_OBJECTS) $(check_sql_stmt_DEPENDENCIES
 	@rm -f check_sql_stmt$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(check_sql_stmt_OBJECTS) $(check_sql_stmt_LDADD) $(LIBS)
 
+check_sql_stmt_extension$(EXEEXT): $(check_sql_stmt_extension_OBJECTS) $(check_sql_stmt_extension_DEPENDENCIES) $(EXTRA_check_sql_stmt_extension_DEPENDENCIES) 
+	@rm -f check_sql_stmt_extension$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(check_sql_stmt_extension_OBJECTS) $(check_sql_stmt_extension_LDADD) $(LIBS)
+
+check_sql_stmt_legacy$(EXEEXT): $(check_sql_stmt_legacy_OBJECTS) $(check_sql_stmt_legacy_DEPENDENCIES) $(EXTRA_check_sql_stmt_legacy_DEPENDENCIES) 
+	@rm -f check_sql_stmt_legacy$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(check_sql_stmt_legacy_OBJECTS) $(check_sql_stmt_legacy_LDADD) $(LIBS)
+
+check_sql_stmt_tiny$(EXEEXT): $(check_sql_stmt_tiny_OBJECTS) $(check_sql_stmt_tiny_DEPENDENCIES) $(EXTRA_check_sql_stmt_tiny_DEPENDENCIES) 
+	@rm -f check_sql_stmt_tiny$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(check_sql_stmt_tiny_OBJECTS) $(check_sql_stmt_tiny_LDADD) $(LIBS)
+
 check_srid_fncts$(EXEEXT): $(check_srid_fncts_OBJECTS) $(check_srid_fncts_DEPENDENCIES) $(EXTRA_check_srid_fncts_DEPENDENCIES) 
 	@rm -f check_srid_fncts$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(check_srid_fncts_OBJECTS) $(check_srid_fncts_LDADD) $(LIBS)
@@ -1706,6 +1732,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_shp_load_3d.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_spatialindex.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_sql_stmt.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_sql_stmt_extension.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_sql_stmt_legacy.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_sql_stmt_tiny.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_srid_fncts.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_stored_proc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_styling.Po@am__quote@
@@ -2218,6 +2247,27 @@ check_recover_geom.log: check_recover_geom$(EXEEXT)
 check_sql_stmt.log: check_sql_stmt$(EXEEXT)
 	@p='check_sql_stmt$(EXEEXT)'; \
 	b='check_sql_stmt'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+check_sql_stmt_tiny.log: check_sql_stmt_tiny$(EXEEXT)
+	@p='check_sql_stmt_tiny$(EXEEXT)'; \
+	b='check_sql_stmt_tiny'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+check_sql_stmt_legacy.log: check_sql_stmt_legacy$(EXEEXT)
+	@p='check_sql_stmt_legacy$(EXEEXT)'; \
+	b='check_sql_stmt_legacy'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+check_sql_stmt_extension.log: check_sql_stmt_extension$(EXEEXT)
+	@p='check_sql_stmt_extension$(EXEEXT)'; \
+	b='check_sql_stmt_extension'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

@@ -73,6 +73,8 @@ CIG: 6038019AE5
 #include "config.h"
 #endif
 
+#include <spatialite_private.h>
+
 #ifdef ENABLE_RTTOPO		/* only if RTTOPO is enabled */
 
 #include <spatialite/sqlite.h>
@@ -83,7 +85,6 @@ CIG: 6038019AE5
 #include <spatialite/gaiaaux.h>
 
 #include <spatialite.h>
-#include <spatialite_private.h>
 
 #include <librttopo.h>
 

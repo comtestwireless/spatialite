@@ -1,7 +1,7 @@
 degrees-text
 :memory: #use in-memory database
-SELECT degrees("foo");
+SELECT degrees('foo');
 1 # rows (not including the header row)
 1 # columns
-degrees("foo") # header
+degrees('foo') # header
 (NULL) #result

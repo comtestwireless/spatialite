@@ -336,6 +336,73 @@ fnct_spatialite_version (sqlite3_context * context, int argc,
     sqlite3_result_text (context, p_result, len, SQLITE_TRANSIENT);
 }
 
+static int
+do_check_dqs (sqlite3 * sqlite)
+{
+/* checking if SQLite supports the DQS misfeature */
+    char *sql;
+    int ret;
+    int ok = 1;
+    unsigned char rnd[16];
+    char random[40];
+    char *p = random;
+    int i;
+    char *table;
+
+    sqlite3_randomness (16, rnd);
+    for (i = 0; i < 16; i++)
+      {
+	  sprintf (p, "%02x", rnd[i]);
+	  p += 2;
+      }
+    *p = '\0';
+    table = sqlite3_mprintf ("tmp_%s", random);
+
+/* NOTE: the following SQL statements are INTENTIONALLY badly quoted */
+    sql = sqlite3_mprintf ("CREATE TEMPORARY TABLE %Q ('column' TEXT)", table);
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+      {
+	  ok = 0;
+	  goto stop;
+      }
+
+    sql = sqlite3_mprintf ("INSERT INTO %Q ('column') VALUES (\"one\")", table);
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+      {
+	  ok = 0;
+	  goto stop;
+      }
+
+  stop:
+    sql = sqlite3_mprintf ("DROP TABLE IF EXISTS %Q", table);
+    sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    sqlite3_free (table);
+    return ok;
+}
+
+static void
+fnct_requires_strict_sql_quoting (sqlite3_context * context, int argc,
+				  sqlite3_value ** argv)
+{
+/* SQL function:
+/ requires_strict_sql_quoting()
+/
+/ return TRUE of FALSE depending on SQLite3 supporting the DQS misfeature or not
+*/
+    int ret;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    ret = do_check_dqs (sqlite);
+    if (ret == 0)
+	sqlite3_result_int (context, 1);
+    else
+	sqlite3_result_int (context, 0);
+}
+
 static void
 fnct_spatialite_target_cpu (sqlite3_context * context, int argc,
 			    sqlite3_value ** argv)
@@ -46083,6 +46150,9 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "spatialite_target_cpu", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_spatialite_target_cpu, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "requires_strict_sql_quoting", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_requires_strict_sql_quoting, 0, 0, 0);
     sqlite3_create_function_v2 (db, "freexl_version", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_freexl_version, 0, 0, 0);

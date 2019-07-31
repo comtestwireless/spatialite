@@ -1,6 +1,6 @@
 isXblob - png
 :memory: #use in-memory database
-SELECT Hex(blob), IsPngBlob(blob), IsGifBlob(blob), IsGeometryBlob(blob), IsZipBlob(blob), IsPdfBlob(blob), IsTiffBlob(blob), IsJpegBlob(blob), IsExifBlob(blob), IsExifGpsBlob(blob), IsWebpBlob(blob)  FROM (SELECT BlobFromFile("sql_stmt_tests/k3b-icon.png") as blob) dummy 
+SELECT Hex(blob), IsPngBlob(blob), IsGifBlob(blob), IsGeometryBlob(blob), IsZipBlob(blob), IsPdfBlob(blob), IsTiffBlob(blob), IsJpegBlob(blob), IsExifBlob(blob), IsExifGpsBlob(blob), IsWebpBlob(blob)  FROM (SELECT BlobFromFile('sql_stmt_tests/k3b-icon.png') as blob) dummy 
 1 # rows (not including the header rows)
 11 # columns
 Hex(blob)

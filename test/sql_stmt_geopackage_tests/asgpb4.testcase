@@ -1,9 +1,9 @@
 asgpb4
 :memory: #use in-memory database
-SELECT AsGPB("blah")
+SELECT AsGPB('blah')
 1 # rows (not including the header row)
 1 # columns
-AsGPB("blah")
+AsGPB('blah')
 (NULL)
 
 

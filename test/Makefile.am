@@ -31,6 +31,9 @@ check_PROGRAMS = check_endian \
 		check_extension \
 		check_recover_geom \
 		check_sql_stmt \
+		check_sql_stmt_tiny \
+		check_sql_stmt_legacy \
+		check_sql_stmt_extension \
 		check_multithread \
 		check_virtualtable1 \
 		check_virtualtable2 \
@@ -121,6 +124,7 @@ EXTRA_DIST = fnmatch_impl4win.h \
 	fnmatch4win.h \
 	scandir4win.h \
 	test_helpers.h \
+	check_sql_stmt.h \
 	shapetest1.dbf \
 	shapetest1.prj \
 	shapetest1.qpj \

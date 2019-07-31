@@ -78,6 +78,11 @@
 			<tr><td><b>spatialite_target_cpu</b></td>
 				<td>spatialite_target_cpu( void ) : <i>String</i></td>
 				<td colspan="3">returns the current <b>SpatiaLite</b> Target CPU as a text string</td></tr>
+			<tr><td><b>requires_strict_sql_quoting</b></td>
+				<td>requires_strict_sql_quoting( void ) : <i>String</i></td>
+				<td colspan="3">returns <b>TRUE</b> or<b>FALSE</b> depending on the actual behavior of current <b>SQLite</b>.<br>
+				<u><b>Note</b></u>:SQLite can effectively enforce strict SQL quoting (<b>single-quoted</b> text constants and <b>double-quoted</b> table and column names) 
+				only since version <b>3.29.0</b>, depending on build-time settings.</td></tr>
 			<tr><td><b>freexl_version</b></td>
 				<td>freexl_version( void ) : <i>String</i></td>
 				<td colspan="3">returns the current <b>FreeXL</b> version as a text string<br>

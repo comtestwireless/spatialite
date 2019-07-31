@@ -1590,11 +1590,14 @@ gaiaSetCurrentCachedProj (const void
       {
 	  gaiaProjAreaPtr bbox_out =
 	      (gaiaProjAreaPtr) (cache->proj6_cached_area);
+	  if (bbox_out != NULL)
+	      free (bbox_out);
 	  bbox_out = malloc (sizeof (gaiaProjArea));
 	  bbox_out->WestLongitude = bbox_in->WestLongitude;
 	  bbox_out->SouthLatitude = bbox_in->SouthLatitude;
 	  bbox_out->EastLongitude = bbox_in->EastLongitude;
 	  bbox_out->NorthLatitude = bbox_in->NorthLatitude;
+	  cache->proj6_cached_area = bbox_out;
       }
     return 1;
 }

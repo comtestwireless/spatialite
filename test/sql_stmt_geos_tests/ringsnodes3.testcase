@@ -1,7 +1,7 @@
 RingsCutAtNodes - non-blob
 :memory: #use in-memory database
-SELECT RingsCutAtNodes("hello")
+SELECT RingsCutAtNodes('hello')
 1 # rows (not including the header row)
 1 # columns
-RingsCutAtNodes("hello")
+RingsCutAtNodes('hello')
 (NULL)

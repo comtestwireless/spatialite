@@ -1,7 +1,7 @@
 isvalid6
 :memory: #use in-memory database
-SELECT IsValid(GeomFromText("POLYGON()"));
+SELECT IsValid(GeomFromText('POLYGON()'));
 1 # rows (not including the header row)
 1 # columns
-IsValid(GeomFromText("POLYGON()"))
+IsValid(GeomFromText('POLYGON()'))
 -1

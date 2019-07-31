@@ -1,7 +1,7 @@
 sin(text)
 :memory: #use in-memory database
-SELECT sin("text");
+SELECT sin('text');
 1 # rows (not including the header row)
 1 # columns
-sin("text") # header
+sin('text') # header
 (NULL) #result
