@@ -143,6 +143,10 @@ Regione Toscana - Settore Sistema Informativo Territoriale ed Ambientale
 
 #define GAIA_UNUSED() if (argc || argv) argc = argc;
 
+#define LINESTRING_MIN_SEGMENT_LENGTH	1
+#define LINESTRING_MAX_SEGMENT_LENGTH	2
+#define LINESTRING_AVG_SEGMENT_LENGTH	3
+
 struct gaia_geom_chain_item
 {
 /* a struct used to store a chain item */
@@ -385,11 +389,11 @@ do_check_dqs (sqlite3 * sqlite)
 }
 
 static void
-fnct_requires_strict_sql_quoting (sqlite3_context * context, int argc,
-				  sqlite3_value ** argv)
+fnct_check_strict_sql_quoting (sqlite3_context * context, int argc,
+			       sqlite3_value ** argv)
 {
 /* SQL function:
-/ requires_strict_sql_quoting()
+/ check_strict_sql_quoting()
 /
 / return TRUE of FALSE depending on SQLite3 supporting the DQS misfeature or not
 */
@@ -23881,6 +23885,164 @@ fnct_Perimeter (sqlite3_context * context, int argc, sqlite3_value ** argv)
     length_common (data, context, argc, argv, 1);
 }
 
+static void
+linestring_segment_length_common (sqlite3_context * context, int argc,
+				  sqlite3_value ** argv, int mode)
+{
+/* common implementation supporting LinestringXxxSegmentLenght */
+    unsigned char *p_blob;
+    int n_bytes;
+    int ignore_repeated_vertices = 1;
+    int iv;
+    double x;
+    double y;
+    double z;
+    double m;
+    double last_x;
+    double last_y;
+    double min = DBL_MAX;
+    double max = 0.0;
+    double tot = 0.0;
+    int n = 0;
+    gaiaLinestringPtr ln;
+    gaiaGeomCollPtr geo = NULL;
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (argc == 2)
+      {
+	  if (sqlite3_value_type (argv[1]) != SQLITE_INTEGER)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  ignore_repeated_vertices = sqlite3_value_int (argv[1]);
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geo =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (!geo)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (!is_single_linestring (geo))
+      {
+	  gaiaFreeGeomColl (geo);
+	  sqlite3_result_null (context);
+	  return;
+      }
+
+    ln = geo->FirstLinestring;
+    for (iv = 0; iv < ln->Points; iv++)
+      {
+	  if (geo->DimensionModel == GAIA_XY_Z)
+	    {
+		gaiaGetPointXYZ (ln->Coords, iv, &x, &y, &z);
+	    }
+	  else if (geo->DimensionModel == GAIA_XY_M)
+	    {
+		gaiaGetPointXYM (ln->Coords, iv, &x, &y, &m);
+	    }
+	  else if (geo->DimensionModel == GAIA_XY_Z_M)
+	    {
+		gaiaGetPointXYZM (ln->Coords, iv, &x, &y, &z, &m);
+	    }
+	  else
+	    {
+		gaiaGetPoint (ln->Coords, iv, &x, &y);
+	    }
+	  if (iv > 0)
+	    {
+		int ok = 1;
+		if (ignore_repeated_vertices)
+		  {
+		      if (last_x == x && last_y == y)
+			  ok = 0;
+		  }
+		if (ok)
+		  {
+		      double l =
+			  sqrt (((last_x - x) * (last_x - x)) +
+				((last_y - y) * (last_y - y)));
+		      if (l < min)
+			  min = l;
+		      if (l > max)
+			  max = l;
+		      tot += l;
+		      n++;
+		  }
+	    }
+	  last_x = x;
+	  last_y = y;
+      }
+    if (mode == LINESTRING_MIN_SEGMENT_LENGTH)
+	sqlite3_result_double (context, min);
+    else if (mode == LINESTRING_MAX_SEGMENT_LENGTH)
+	sqlite3_result_double (context, max);
+    else
+	sqlite3_result_double (context, tot / (double) n);
+}
+
+static void
+fnct_LinestringMinSegmentLength (sqlite3_context * context, int argc,
+				 sqlite3_value ** argv)
+{
+/* SQL function:
+/ ST_LinestringMinSegmentLength(BLOB encoded LINESTRING)
+/ ST_LinestringMinSegmentLength(BLOB encoded LINESTRING, BOOL ignore_repeated_vertices)
+/
+/ returns  the length of the shortest segment in the Linestring
+/ or NULL if any error is encountered
+/
+*/
+    linestring_segment_length_common (context, argc, argv,
+				      LINESTRING_MIN_SEGMENT_LENGTH);
+}
+
+static void
+fnct_LinestringMaxSegmentLength (sqlite3_context * context, int argc,
+				 sqlite3_value ** argv)
+{
+/* SQL function:
+/ ST_LinsetringMaxSegmentLength(BLOB encoded LINESTRING)
+/
+/ returns  the length of the longest segment in the Linstring
+/ or NULL if any error is encountered
+/
+*/
+    linestring_segment_length_common (context, argc, argv,
+				      LINESTRING_MAX_SEGMENT_LENGTH);
+}
+
+static void
+fnct_LinestringAvgSegmentLength (sqlite3_context * context, int argc,
+				 sqlite3_value ** argv)
+{
+/* SQL function:
+/ ST_LinestringMaxSegmentLength(BLOB encoded LINESTRING)
+/
+/ returns  the average segment length in the Linstring
+/ or NULL if any error is encountered
+/
+*/
+    linestring_segment_length_common (context, argc, argv,
+				      LINESTRING_AVG_SEGMENT_LENGTH);
+}
+
 #ifdef ENABLE_RTTOPO		/* only if RTTOPO is enabled */
 
 static void
@@ -29758,6 +29920,132 @@ fnct_Segmentize (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	    }
       }
     gaiaFreeGeomColl (geo);
+}
+
+static int
+is_line (gaiaGeomCollPtr geom)
+{
+/* checking for a Linestring or MultiLinestring */
+    if (geom->FirstPoint != NULL || geom->FirstPolygon != NULL)
+	return 0;
+    if (geom->FirstLinestring != NULL)
+	return 1;
+    return 0;
+}
+
+static int
+is_point_blade (gaiaGeomCollPtr geom)
+{
+/* checking for a Point or MultiPoint */
+    if (geom->FirstLinestring != NULL || geom->FirstPolygon != NULL)
+	return 0;
+    if (geom->FirstPoint != NULL)
+	return 1;
+    return 0;
+}
+
+static void
+fnct_SnapAndSplit (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ SnapAndSplit(BLOBencoded geometry1, BLOBencoded geometry2, double tolerance)
+/
+/ - geometry1 is expected to be a LINESTRING or MULTILINESTRING
+/ - geometry2 is expected to be a MULTIPOINT
+/ - in a first pass geometry1 will be snapped against geometry2
+/ - then the intermediate result of Snap will be Split using
+/   geometry2 as the cutting blade.
+/ .- 
+/ Returns a new Geometry of the MULTILINESTRING type
+/ NULL is returned for invalid arguments
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    int int_value;
+    double tolerance;
+    gaiaGeomCollPtr geo1 = NULL;
+    gaiaGeomCollPtr geo2 = NULL;
+    gaiaGeomCollPtr result_snap;
+    gaiaGeomCollPtr result_split;
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    int tiny_point = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+	  tiny_point = cache->tinyPointEnabled;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (sqlite3_value_type (argv[1]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (sqlite3_value_type (argv[2]) == SQLITE_FLOAT)
+	tolerance = sqlite3_value_double (argv[2]);
+    else if (sqlite3_value_type (argv[2]) == SQLITE_INTEGER)
+      {
+	  int_value = sqlite3_value_int (argv[2]);
+	  tolerance = int_value;
+      }
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geo1 =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[1]);
+    n_bytes = sqlite3_value_bytes (argv[1]);
+    geo2 =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (geo1 == NULL || geo2 == NULL)
+	sqlite3_result_null (context);
+    else if (is_line (geo1) == 0)
+	sqlite3_result_null (context);
+    else if (is_point_blade (geo2) == 0)
+	sqlite3_result_null (context);
+    else
+      {
+	  void *data = sqlite3_user_data (context);
+	  if (data != NULL)
+	      result_snap = gaiaSnap_r (data, geo1, geo2, tolerance);
+	  else
+	      result_snap = gaiaSnap (geo1, geo2, tolerance);
+	  if (result_snap == NULL)
+	      sqlite3_result_null (context);
+	  else
+	    {
+		result_split = gaiaSplit (cache, result_snap, geo2);
+		gaiaFreeGeomColl (result_snap);
+		if (result_split == NULL)
+		    sqlite3_result_null (context);
+		else
+		  {
+		      /* builds the BLOB geometry to be returned */
+		      int len;
+		      unsigned char *p_result = NULL;
+		      result_split->Srid = geo1->Srid;
+		      gaiaToSpatiaLiteBlobWkbEx2 (result_split, &p_result, &len,
+						  gpkg_mode, tiny_point);
+		      sqlite3_result_blob (context, p_result, len, free);
+		      gaiaFreeGeomColl (result_split);
+		  }
+	    }
+      }
+    gaiaFreeGeomColl (geo1);
+    gaiaFreeGeomColl (geo2);
 }
 
 static void
@@ -46150,9 +46438,9 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "spatialite_target_cpu", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_spatialite_target_cpu, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "requires_strict_sql_quoting", 0,
+    sqlite3_create_function_v2 (db, "check_strict_sql_quoting", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
-				fnct_requires_strict_sql_quoting, 0, 0, 0);
+				fnct_check_strict_sql_quoting, 0, 0, 0);
     sqlite3_create_function_v2 (db, "freexl_version", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_freexl_version, 0, 0, 0);
@@ -49563,6 +49851,30 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "ST_Perimeter", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_Perimeter, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "LinestringMinSegmentLength", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_LinestringMinSegmentLength, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_LinestringMinSegmentLength", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_LinestringMinSegmentLength, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "LinestringMinSegmentLength", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_LinestringMinSegmentLength, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_LinestringMinSegmentLength", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_LinestringMinSegmentLength, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "LinestringMaxSegmentLength", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_LinestringMaxSegmentLength, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_LinestringMaxSegmentLength", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_LinestringMaxSegmentLength, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "LinestringAvgSegmentLength", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_LinestringAvgSegmentLength, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_LinestringAvgSegmentLength", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_LinestringAvgSegmentLength, 0, 0, 0);
     sqlite3_create_function_v2 (db, "Area", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_Area, 0, 0, 0);
@@ -50139,6 +50451,12 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "ST_SplitRight", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_SplitRight, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SnapAndSplit", 3,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_SnapAndSplit, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_SnapAndSplit", 3,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_SnapAndSplit, 0, 0, 0);
     sqlite3_create_function_v2 (db, "ST_Node", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_Node, 0, 0, 0);

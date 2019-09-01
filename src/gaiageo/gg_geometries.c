@@ -4806,8 +4806,10 @@ gaiaInterpolatePoint (const void *p_cache, gaiaGeomCollPtr line,
 
 	  if (iv != 0)
 	    {
-		progressive_length +=
+		double length =
 		    sqrt (((x0 - x) * (x0 - x)) + ((y0 - y) * (y0 - y)));
+		progressive_length += length;
+
 		if (progressive_length == normalized_len)
 		  {
 		      /* special case: exactly intercepting a vertex */
@@ -4818,8 +4820,9 @@ gaiaInterpolatePoint (const void *p_cache, gaiaGeomCollPtr line,
 		  {
 		      /* interpolating the M-Value */
 		      double interval = m - m0;
-		      double diff = fraction - pl0;
-		      *m_value = m0 + (interval * diff);
+		      double diff = normalized_len - pl0;
+		      double ratio = diff / length;
+		      *m_value = m0 + (interval * ratio);
 		      break;
 		  }
 	    }

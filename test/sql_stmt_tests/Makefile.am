@@ -1576,6 +1576,39 @@ EXTRA_DIST = addpoint10.testcase \
 	linesfromrings5.testcase \
 	linesfromrings6.testcase \
 	linesfromrings7.testcase \
+	linesegavg1.testcase \
+	linesegavg2.testcase \
+	linesegavg3.testcase \
+	linesegavg4.testcase \
+	linesegavg5.testcase \
+	linesegavg6.testcase \
+	linesegavg7.testcase \
+	linesegavg8.testcase \
+	linesegavg9.testcase \
+	linesegmax1.testcase \
+	linesegmax2.testcase \
+	linesegmax3.testcase \
+	linesegmax4.testcase \
+	linesegmax5.testcase \
+	linesegmax6.testcase \
+	linesegmax7.testcase \
+	linesegmax8.testcase \
+	linesegmax9.testcase \
+	linesegmin1.testcase \
+	linesegmin2.testcase \
+	linesegmin3.testcase \
+	linesegmin4.testcase \
+	linesegmin5.testcase \
+	linesegmin6.testcase \
+	linesegmin7.testcase \
+	linesegmin8.testcase \
+	linesegmin9.testcase \
+	linesegmin10.testcase \
+	linesegmin11.testcase \
+	linesegmin12.testcase \
+	linesegmin13.testcase \
+	linesegmin14.testcase \
+	linesegmin15.testcase \
 	link_m.testcase \
 	locatemeasure10.testcase \
 	locatemeasure11.testcase \

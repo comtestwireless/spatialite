@@ -78,8 +78,8 @@
 			<tr><td><b>spatialite_target_cpu</b></td>
 				<td>spatialite_target_cpu( void ) : <i>String</i></td>
 				<td colspan="3">returns the current <b>SpatiaLite</b> Target CPU as a text string</td></tr>
-			<tr><td><b>requires_strict_sql_quoting</b></td>
-				<td>requires_strict_sql_quoting( void ) : <i>String</i></td>
+			<tr><td><b>check_strict_sql_quoting</b></td>
+				<td>rcheck_strict_sql_quoting( void ) : <i>String</i></td>
 				<td colspan="3">returns <b>TRUE</b> or<b>FALSE</b> depending on the actual behavior of current <b>SQLite</b>.<br>
 				<u><b>Note</b></u>:SQLite can effectively enforce strict SQL quoting (<b>single-quoted</b> text constants and <b>double-quoted</b> table and column names) 
 				only since version <b>3.29.0</b>, depending on build-time settings.</td></tr>
@@ -1884,6 +1884,34 @@ algorithm with given <i>tolerance</i> and respecting topology</td></tr>
 				<td align="center" bgcolor="#d0f0d0">base</td>
 				<td>returns a new Linestring by removing the Point at <b>position</b> (zero-based index).<br>
                                 <b>NULL</b> will be returned if any error is encountered.</td></tr>
+			<tr><td><b>LinestringMinSegmentLength</b></td>
+				<td>LinestringMinSegmentLength( line <i>LineString</i> ) : <i>Double precision</i><hr>
+					LinestringMinSegmentLength( line <i>LineString</i> , boolean <i>ignore_repeated_vertices</i> ) : <i>Double precision</i><hr>
+					ST_LinestringMinSegmentLength( line <i>LineString</i> ) : <i>Double precision</i><hr>
+					ST_LinestringMinSegmentLength( line <i>LineString</i> , boolean <i>ignore_repeated_vertices</i> ) : <i>Double precision</i></td>
+				<td></td>
+				<td align="center" bgcolor="#d0f0d0">base</td>
+				<td><ul><li>any eventual repeated vertex will be ignored or considered accordingly to the seeting of the optional argument <b>ignore_repeated_vertices</b><br>
+					The default setting is <b>TRUE</b> (that is, ignore)</nr></li></ul>
+					returns the length of the shortest segment in the Linestring.<br>
+                                <b>NULL</b> will be returned if any error is encountered.<hr>
+                                <b>Note</b>: this function only accepts simple Linestrings; Geometries containing any Point or Polygon, or containing more than a single Linesting will be considered invalid.</td></tr>
+			<tr><td><b>LinestringMaxSegmentLength</b></td>
+				<td>LinestringMaxSegmentLength( line <i>LineString</i> ) : <i>Double precision</i><hr>
+					ST_LinestringMaxSegmentLength( line <i>LineString</i> ) : <i>Double precision</i></td>
+				<td></td>
+				<td align="center" bgcolor="#d0f0d0">base</td>
+				<td>returns the length of the longest segment in the Linestring.<br>
+                                <b>NULL</b> will be returned if any error is encountered.<hr>
+                                <b>Note</b>: this function only accepts simple Linestrings; Geometries containing any Point or Polygon, or containing more than a single Linesting will be considered invalid.</td></tr>
+			<tr><td><b>LinestringAvgSegmentLength</b></td>
+				<td>LinestringAvgSegmentLength( line <i>LineString</i> ) : <i>Double precision</i><hr>
+					ST_LinestringAvgSegmentLength( line <i>LineString</i> ) : <i>Double precision</i></td>
+				<td></td>
+				<td align="center" bgcolor="#d0f0d0">base</td>
+				<td>returns the average length of segments in the Linestring.<br>
+                                <b>NULL</b> will be returned if any error is encountered.<hr>
+                                <b>Note</b>: this function only accepts simple Linestrings; Geometries containing any Point or Polygon, or containing more than a single Linesting will be considered invalid.</td></tr>
 			<tr><td colspan="5" align="center" bgcolor="#f0f0c0">
 				<h3><a name="p8">SQL functions on type Surface [Polygon or Ring]</a></h3></td></tr>
 			<tr><th bgcolor="#d0d0d0">Function</th>
@@ -2710,6 +2738,20 @@ This function only supports Long/Lat coordinates, and will return NULL for any p
 				<td align="center" bgcolor="#f0d0f0">RTTOPO</td>
 				<td>return a new Geometry collecting all items resulting by splitting the input Geometry by the <i>blade</i> and falling on the <i>right side</i>.<br>
 					NULL is returned on failure (or if the <i>right side</i> is empty).</td></tr>
+			<tr><td><b>SnapAndSplit</b></td>
+				<td>SnapAndSplit( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> , tolerance <i>Double precision</i> ) : <i>Geometry</i><hr>
+					ST_SnapAndSplit( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> , tolerance <i>Double precision</i> ) : <i>Geometry</i></td>
+				<td></td>
+				<td align="center" bgcolor="#f0d0f0">RTTOPO</td>
+				<td>This one simply is a <i>convenience function</i> accepting the same arguments of <b>ST_Snap()</b> (with identical meaning).
+					<ul>
+						<li><b>geom1</b> is expected to be a <b>LINESTRING</b> or a <b>MULTILINESTRING</b></li>
+						<li><b>geom2</b> is expected to be a <b>POINT</b> or a <b>MULTIPOINT</b></li>
+						<li>first pass: <b>geom1</b> will be snapped against <b>geom2</b></li>
+						<li>second pass: the resulting geometry returned by the above <b>snap</b> will then be <b>split</b> using <b>geom2</b> as the cutting blade.</li>
+						<li>the final result returned by <b>SnapAndSplit</b> will always be a <b>MULTILINESTRING</b></li>
+					</ul>
+					NULL is returned for invalid arguments</td></tr>
 			<tr><td><b>Azimuth</b></td>
 				<td>Azimuth( pt1 <i>Geometry</i>, pt2 <i>Geometry</i>  ) : <i>Double precision</i><hr>
 					ST_Azimuth( pt1 <i>Geometry</i> , pt2 <i>Geometry</i> ) : <i>Double precision</i></td>

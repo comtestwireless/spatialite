@@ -84,6 +84,23 @@ EXTRA_DIST = 3ddistance10.testcase \
 	maxdistance7.testcase \
 	maxdistance8.testcase \
 	maxdistance9.testcase \
+	snapsplit1.testcase \
+	snapsplit2.testcase \
+	snapsplit3.testcase \
+	snapsplit4.testcase \
+	snapsplit5.testcase \
+	snapsplit6.testcase \
+	snapsplit7.testcase \
+	snapsplit8.testcase \
+	snapsplit9.testcase \
+	snapsplit10.testcase \
+	snapsplit11.testcase \
+	snapsplit12.testcase \
+	snapsplit13.testcase \
+	snapsplit14.testcase \
+	snapsplit15.testcase \
+	snapsplit16.testcase \
+	snapsplit17.testcase \
 	st_asx3d10.testcase \
 	st_asx3d11.testcase \
 	st_asx3d12.testcase \
