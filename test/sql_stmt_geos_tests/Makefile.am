@@ -236,11 +236,9 @@ EXTRA_DIST = bdmpolyfromtext10.testcase \
 	isring8.testcase \
 	isring9.testcase \
 	issimple1.testcase \
-	issimple2.testcase \
 	issimple3.testcase \
 	issimple4.testcase \
 	issimple5.testcase \
-	issimple6.testcase \
 	isvalid10.testcase \
 	isvalid11.testcase \
 	isvalid12.testcase \
@@ -272,7 +270,6 @@ EXTRA_DIST = bdmpolyfromtext10.testcase \
 	isvalidreason4.testcase \
 	isvalidreason5.testcase \
 	pointonsurface1.testcase \
-	pointonsurface2.testcase \
 	pointonsurface3.testcase \
 	pointonsurface4.testcase \
 	pointonsurface5.testcase \

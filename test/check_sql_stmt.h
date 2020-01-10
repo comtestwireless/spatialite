@@ -724,7 +724,21 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
       {
 	  return result;
       }
-      
+    if (strcmp (GEOSversion (), "3.8") >= 0)
+      {
+	  /* GEOS 3.8.0 changed historical beheviour for some tests */
+	  result =
+	      run_subdir_test ("sql_stmt_geos_380", conn, load_extension, 0);
+      }
+    else
+      {
+	  /* older versions supporting historical beheviour for some tests */
+	  result =
+	      run_subdir_test ("sql_stmt_geos_non380", conn, load_extension, 0);
+      }
+    if (result != 0)
+	return result;
+
   skip_geos:
 #endif /* end GEOS conditional */
 

@@ -135,10 +135,8 @@ Regione Toscana - Settore Sistema Informativo Territoriale ed Ambientale
 /* 64 bit integer: portable format for printf() */
 #if defined(_WIN32) && !defined(__MINGW32__)
 #define FRMT64 "%I64d"
-#define FRMT64_WO_PCT "I64d"
 #else
 #define FRMT64 "%lld"
-#define FRMT64_WO_PCT "lld"
 #endif
 
 #define GAIA_UNUSED() if (argc || argv) argc = argc;
@@ -478,10 +476,12 @@ fnct_proj4_version (sqlite3_context * context, int argc, sqlite3_value ** argv)
 
 #ifndef OMIT_PROJ		/* PROJ.4 version */
     int len;
+    const char *p_result;
 #ifdef PROJ_NEW			/* supporting new PROJ.6 */
-    const char *p_result = pj_release;
+	PJ_INFO info = proj_info();
+    p_result = info.release;
 #else /* supporting old PROJ.4 */
-    const char *p_result = pj_get_release ();
+    p_result = pj_get_release ();
 #endif
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     len = strlen (p_result);
@@ -2293,16 +2293,6 @@ fnct_CheckSpatialMetaData (sqlite3_context * context, int argc,
       }
     sqlite = sqlite3_context_db_handle (context);
     ret = checkSpatialMetaData_ex (sqlite, db_prefix);
-
-    /*
-       if (ret == 3)
-       {
-       ** trying to create the advanced metadata tables >= v.4.0.0 **
-       if (db_prefix == NULL || strcasecmp (db_prefix, "main") == 0)
-       createAdvancedMetaData (sqlite);
-       }
-     */
-
     sqlite3_result_int (context, ret);
     return;
 }
@@ -2483,6 +2473,107 @@ fnct_InitSpatialMetaData (sqlite3_context * context, int argc,
     return;
 }
 
+static void
+fnct_InitAdvancedMetaData (sqlite3_context * context, int argc,
+			   sqlite3_value ** argv)
+{
+/* SQL function:
+/ InitAdvancedlMetaData()
+/     or
+/ InitAdvancedMetaData(integer transaction)
+/
+/ safely creates several ancillary MetaData tables
+/ returns 1 on success
+/ 0 on failure
+*/
+    char sql[8192];
+    char *errMsg = NULL;
+    int ret;
+    int transaction = 0;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (argc == 1)
+      {
+	  if (sqlite3_value_type (argv[0]) != SQLITE_INTEGER)
+	    {
+		spatialite_e
+		    ("InitAdvancedMetaData() error: argument 1 is not of the Integer type\n");
+		sqlite3_result_int (context, 0);
+		return;
+	    }
+	  transaction = sqlite3_value_int (argv[0]);
+      }
+
+    if (transaction)
+      {
+	  /* starting a Transaction */
+	  ret = sqlite3_exec (sqlite, "BEGIN", NULL, NULL, &errMsg);
+	  if (ret != SQLITE_OK)
+	      goto error;
+      }
+/* creating the GEOM_COLS_REF_SYS view */
+    strcpy (sql, "CREATE VIEW IF NOT EXISTS geom_cols_ref_sys AS\n");
+    strcat (sql, "SELECT f_table_name, f_geometry_column, geometry_type,\n");
+    strcat (sql, "coord_dimension, spatial_ref_sys.srid AS srid,\n");
+    strcat (sql, "auth_name, auth_srid, ref_sys_name, proj4text, srtext\n");
+    strcat (sql, "FROM geometry_columns, spatial_ref_sys\n");
+    strcat (sql, "WHERE geometry_columns.srid = spatial_ref_sys.srid");
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+    updateSpatiaLiteHistory (sqlite, "geom_cols_ref_sys", NULL,
+			     "view 'geom_cols_ref_sys' successfully created");
+    if (ret != SQLITE_OK)
+	goto error;
+    if (!createAdvancedMetaData (sqlite))
+	goto error;
+/* creating the SpatialIndex VIRTUAL TABLE */
+    strcpy (sql, "CREATE VIRTUAL TABLE IF NOT EXISTS SpatialIndex ");
+    strcat (sql, "USING VirtualSpatialIndex()");
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+    if (ret != SQLITE_OK)
+	goto error;
+/* creating the ElementaryGeometries VIRTUAL TABLE */
+    strcpy (sql, "CREATE VIRTUAL TABLE IF NOT EXISTS ElementaryGeometries ");
+    strcat (sql, "USING VirtualElementary()");
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+    if (ret != SQLITE_OK)
+	goto error;
+
+#ifndef OMIT_KNN		/* only if KNN is enabled */
+/* creating the KNN VIRTUAL TABLE */
+    strcpy (sql, "CREATE VIRTUAL TABLE IF NOT EXISTS KNN ");
+    strcat (sql, "USING VirtualKNN()");
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
+    if (ret != SQLITE_OK)
+	goto error;
+#endif /* end KNN conditional */
+
+    if (transaction)
+      {
+	  /* confirming the still pending Transaction */
+	  ret = sqlite3_exec (sqlite, "COMMIT", NULL, NULL, &errMsg);
+	  if (ret != SQLITE_OK)
+	      goto error;
+      }
+
+    sqlite3_result_int (context, 1);
+    return;
+  error:
+    spatialite_e ("InitSpatiaMetaData() error:\"%s\"\n", errMsg);
+    sqlite3_free (errMsg);
+    if (transaction)
+      {
+	  /* performing a Rollback */
+	  ret = sqlite3_exec (sqlite, "ROLLBACK", NULL, NULL, &errMsg);
+	  if (ret != SQLITE_OK)
+	    {
+		spatialite_e (" InitSpatiaMetaData() error:\"%s\"\n", errMsg);
+		sqlite3_free (errMsg);
+	    }
+      }
+    sqlite3_result_int (context, 0);
+    return;
+}
+
 static int
 do_execute_sql_with_retval (sqlite3 * sqlite, const char *sql, char **errMsg)
 {
@@ -2600,6 +2691,8 @@ fnct_InitSpatialMetaDataFull (sqlite3_context * context, int argc,
     retval = do_execute_sql_with_retval (sqlite, sql, &errMsg);
     sqlite3_free (sql);
     if (retval != 1)
+	goto error;
+    if (!createAdvancedMetaData (sqlite))
 	goto error;
 
 #ifdef ENABLE_LIBXML2		/* only if LibXML2 support is available */
@@ -32006,7 +32099,7 @@ fnct_CastToText (sqlite3_context * context, int argc, sqlite3_value ** argv)
     if (sqlite3_value_type (argv[0]) == SQLITE_INTEGER)
       {
 	  char format[32];
-	  const char *fmt = FRMT64;
+	  const char *fmt = "%lld";
 	  sqlite3_int64 val;
 	  if (argc == 2)
 	    {
@@ -32019,7 +32112,7 @@ fnct_CastToText (sqlite3_context * context, int argc, sqlite3_value ** argv)
 		length = sqlite3_value_int (argv[1]);
 		if (length > 0)
 		  {
-		      sprintf (format, "%%0%d" FRMT64_WO_PCT, length);
+		      sprintf (format, "%%0%dlld", length);
 		      fmt = format;
 		  }
 	    }
@@ -37789,7 +37882,9 @@ fnct_ExportSHP (sqlite3_context * context, int argc, sqlite3_value ** argv)
     int colname_case = GAIA_DBF_COLNAME_CASE_IGNORE;
     int rows;
     sqlite3 *db_handle = sqlite3_context_db_handle (context);
+#ifdef PROJ_NEW			/* only if new PROJ.6 is supported */
     struct splite_internal_cache *cache = sqlite3_user_data (context);
+#endif
     void *proj_ctx = NULL;
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (sqlite3_value_type (argv[0]) != SQLITE_TEXT)
@@ -46611,6 +46706,13 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_InitSpatialMetaData, 0, 0, 0);
 
+    sqlite3_create_function_v2 (db, "InitAdvancedMetaData", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_InitAdvancedMetaData, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "InitAdvancedMetaData", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_InitAdvancedMetaData, 0, 0, 0);
+
     sqlite3_create_function_v2 (db, "InitSpatialMetaDataFull", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_InitSpatialMetaDataFull, 0, 0, 0);
@@ -51477,10 +51579,11 @@ SQLITE_EXTENSION_INIT1 static int
 init_spatialite_extension (sqlite3 * db, char **pzErrMsg,
 			   const sqlite3_api_routines * pApi)
 {
-    void *p_cache = spatialite_alloc_connection ();
-    struct splite_internal_cache *cache =
-	(struct splite_internal_cache *) p_cache;
+    void *p_cache;
+    struct splite_internal_cache *cache;
     SQLITE_EXTENSION_INIT2 (pApi);
+    p_cache = spatialite_alloc_connection ();
+    cache = (struct splite_internal_cache *) p_cache;
 
 /* setting the POSIX locale for numeric */
     setlocale (LC_NUMERIC, "POSIX");
@@ -51558,14 +51661,21 @@ spatialite_splash_screen (int verbose)
 		spatialite_i ("\t- 'VirtualBBox'\t\t[BoundingBox tables]\n");
 		spatialite_i ("\t- 'SpatiaLite'\t\t[Spatial SQL - OGC]\n");
 	    }
+
 #ifndef OMIT_PROJ		/* PROJ.4 version */
 	  if (verbose)
+	    {
+		const char *p_result = "unknown";
 #ifdef PROJ_NEW			/* supporting new PROJ.6 */
-	      spatialite_i ("PROJ version ........: %s\n", pj_release);
+	PJ_INFO info = proj_info();
+    p_result = info.release;
 #else /* supporting old PROJ.4 */
-	      spatialite_i ("PROJ version ........: %s\n", pj_get_release ());
+		p_result = pj_get_release ();
 #endif
-#endif /* end including PROJ.4 */
+		spatialite_i ("PROJ version ........: %s\n", p_result);
+	    }
+#endif /* end PROJ */
+
 #ifndef OMIT_GEOS		/* GEOS version */
 	  if (verbose)
 	      spatialite_i ("GEOS version ........: %s\n", GEOSversion ());
@@ -51667,7 +51777,7 @@ spatialite_internal_cleanup (const void *ptr)
 #ifdef LOADABLE_EXTENSION	/* loadable-extension only */
 #if !(defined _WIN32) || defined(__MINGW32__)
 /* MSVC is unable to understand this declaration */
-__attribute__ ((visibility ("default")))
+__attribute__((visibility ("default")))
 #endif
      SPATIALITE_DECLARE int
 	 sqlite3_modspatialite_init (sqlite3 * db, char **pzErrMsg,

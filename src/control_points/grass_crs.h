@@ -32,7 +32,11 @@
 */
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
+#ifdef _WIN32
+#define GCP_PRIVATE
+#else
 #define GCP_PRIVATE __attribute__ ((visibility("hidden")))
+#endif
 #endif
 
 /* STRUCTURE FOR USE INTERNALLY WITH THESE FUNCTIONS.  THESE FUNCTIONS EXPECT

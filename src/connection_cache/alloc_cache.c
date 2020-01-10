@@ -47,6 +47,7 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #include <string.h>
 
 #if defined(_WIN32)
+#include <windows.h>
 #include <libloaderapi.h>
 #endif
 
@@ -590,7 +591,7 @@ spatialite_alloc_reentrant ()
     if (proj_set_ext_var && win_prefix && proj_db_path)
       {
 	  char *proj_lib = sqlite3_mprintf ("PROJ_LIB=%s", win_prefix);
-	  putenv (proj_lib);
+	  _putenv (proj_lib);
 	  sqlite3_free (proj_lib);
       }
     if (win_prefix != NULL)

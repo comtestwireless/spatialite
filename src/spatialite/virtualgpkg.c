@@ -75,6 +75,10 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #define LONG64_MIN	(-LONG64_MAX + 1)
 #endif
 
+#ifdef _WIN32
+#define strcasecmp	_stricmp
+#endif /* not WIN32 */
+
 #ifdef ENABLE_GEOPACKAGE	/* only if GeoPackage support is enabled */
 
 struct sqlite3_module my_gpkg_module;

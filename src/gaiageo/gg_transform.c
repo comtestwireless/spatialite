@@ -50,6 +50,7 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #include <math.h>
 
 #if defined(_WIN32)
+#include <windows.h>
 #include <libloaderapi.h>
 #endif
 

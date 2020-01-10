@@ -611,7 +611,12 @@ gaiaOpenShpRead (gaiaShapefilePtr shp, const char *path, const char *charFrom,
 	  if (iconv
 	      ((iconv_t) (shp->IconvObj), &pBuf, &len, &pUtf8buf,
 	       &utf8len) == (size_t) (-1))
-	      goto conversion_error;
+	    {
+		spatialite_e
+		    ("**** libiconv: unable to convert string=\"%s\"\n",
+		     field_name);
+		goto conversion_error;
+	    }
 	  memcpy (field_name, utf8buf, 2048 - utf8len);
 	  field_name[2048 - utf8len] = '\0';
 	  gaiaAddDbfField (dbf_list, field_name, *(bf + 11), off_dbf,
@@ -2584,7 +2589,15 @@ gaiaReadShpEntity_ex (gaiaShapefilePtr shp, int current_row, int srid,
     while (pFld)
       {
 	  if (!parseDbfField (shp->BufDbf, shp->IconvObj, pFld, text_dates))
-	      goto conversion_error;
+	    {
+		char *text = malloc (pFld->Length + 1);
+		memcpy (text, shp->BufDbf + pFld->Offset + 1, pFld->Length);
+		text[pFld->Length] = '\0';
+		spatialite_e
+		    ("**** libiconv: unable to convert string=\"%s\"\n", text);
+		free (text);
+		goto conversion_error;
+	    }
 	  pFld = pFld->Next;
       }
     if (shp->LastError)
@@ -2615,7 +2628,7 @@ gaiaReadShpEntity_ex (gaiaShapefilePtr shp, int current_row, int srid,
   conversion_error:
     if (shp->LastError)
 	free (shp->LastError);
-    sprintf (errMsg, "Invalid character sequence");
+    sprintf (errMsg, "Invalid character sequence at DBF line %d", current_row);
     len = strlen (errMsg);
     shp->LastError = malloc (len + 1);
     strcpy (shp->LastError, errMsg);
@@ -2841,6 +2854,9 @@ gaiaWriteShpEntity (gaiaShapefilePtr shp, gaiaDbfListPtr entity)
 				((iconv_t) (shp->IconvObj), &pBuf, &len,
 				 &pUtf8buf, &utf8len) == (size_t) (-1))
 			      {
+				  spatialite_e
+				      ("**** libiconv: unable to convert string=\"%s\"\n",
+				       dynbuf);
 				  free (dynbuf);
 				  goto conversion_error;
 			      }
@@ -4876,7 +4892,12 @@ gaiaOpenDbfRead (gaiaDbfPtr dbf, const char *path, const char *charFrom,
 	  if (iconv
 	      ((iconv_t) (dbf->IconvObj), &pBuf, &len, &pUtf8buf,
 	       &utf8len) == (size_t) (-1))
-	      goto conversion_error;
+	    {
+		spatialite_e
+		    ("**** libiconv: unable to convert string=\"%s\"\n",
+		     field_name);
+		goto conversion_error;
+	    }
 	  memcpy (field_name, utf8buf, 2048 - utf8len);
 	  field_name[2048 - utf8len] = '\0';
 	  gaiaAddDbfField (dbf_list, field_name, *(bf + 11), off_dbf,
@@ -4955,7 +4976,7 @@ gaiaOpenDbfRead (gaiaDbfPtr dbf, const char *path, const char *charFrom,
 /* libiconv error */
     if (dbf->LastError)
 	free (dbf->LastError);
-    sprintf (errMsg, "'%s' field name: invalid character sequence", path);
+    sprintf (errMsg, "'%s.dbf' field name: invalid character sequence", path);
     len = strlen (errMsg);
     dbf->LastError = malloc (len + 1);
     strcpy (dbf->LastError, errMsg);
@@ -5185,6 +5206,9 @@ gaiaWriteDbfEntity (gaiaDbfPtr dbf, gaiaDbfListPtr entity)
 				((iconv_t) (dbf->IconvObj), &pBuf, &len,
 				 &pUtf8buf, &utf8len) == (size_t) (-1))
 			      {
+				  spatialite_e
+				      ("**** libiconv: unable to convert string=\"%s\"\n",
+				       dynbuf);
 				  free (dynbuf);
 				  goto conversion_error;
 			      }
@@ -5308,7 +5332,15 @@ gaiaReadDbfEntity_ex (gaiaDbfPtr dbf, int current_row, int *deleted,
     while (pFld)
       {
 	  if (!parseDbfField (dbf->BufDbf, dbf->IconvObj, pFld, text_dates))
-	      goto conversion_error;
+	    {
+		char *text = malloc (pFld->Length + 1);
+		memcpy (text, dbf->BufDbf + pFld->Offset + 1, pFld->Length);
+		text[pFld->Length] = '\0';
+		spatialite_e
+		    ("**** libiconv: unable to convert string=\"%s\"\n", text);
+		free (text);
+		goto conversion_error;
+	    }
 	  pFld = pFld->Next;
       }
     if (dbf->LastError)
@@ -5325,6 +5357,7 @@ gaiaReadDbfEntity_ex (gaiaDbfPtr dbf, int current_row, int *deleted,
     if (dbf->LastError)
 	free (dbf->LastError);
     sprintf (errMsg, "Invalid character sequence");
+    sprintf (errMsg, "Invalid character sequence at DBF line %d", current_row);
     len = strlen (errMsg);
     dbf->LastError = malloc (len + 1);
     strcpy (dbf->LastError, errMsg);

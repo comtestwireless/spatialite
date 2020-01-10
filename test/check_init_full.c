@@ -423,12 +423,30 @@ main (int argc, char *argv[])
       }
     sqlite3_free_table (results);
 
+    ret =
+	sqlite3_get_table (handle,
+			   "SELECT InitAdvancedMetadata(1)",
+			   &results, &rows, &columns, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "Error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  return -37;
+      }
+    if ((rows != 1) || (columns != 1))
+      {
+	  fprintf (stderr,
+		   "Unexpected result InitAdvancedMetadata(1) bad result: %i/%i.\n",
+		   rows, columns);
+	  return -38;
+      }
+
     ret = sqlite3_close (handle);
     if (ret != SQLITE_OK)
       {
 	  fprintf (stderr, "sqlite3_close() error: %s\n",
 		   sqlite3_errmsg (handle));
-	  return -32;
+	  return -39;
       }
 
     spatialite_cleanup_ex (cache);
