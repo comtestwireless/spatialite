@@ -320,6 +320,351 @@ vector_style_causes_duplicate_name (sqlite3 * sqlite, sqlite3_int64 id,
     return 0;
 }
 
+static int
+map_configuration_causes_duplicate_name (sqlite3 * sqlite, sqlite3_int64 id,
+					 const unsigned char *p_blob,
+					 int n_bytes)
+{
+/* auxiliary function: checks for an eventual duplicate name */
+    int count = 0;
+    int ret;
+    const char *sql;
+    sqlite3_stmt *stmt;
+
+    sql = "SELECT Count(*) FROM rl2map_configurations "
+	"WHERE Lower(name) = Lower(XB_GetName(?)) AND id <> ?";
+    ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
+    if (ret != SQLITE_OK)
+      {
+	  spatialite_e ("MapConfigurations duplicate Name: \"%s\"\n",
+			sqlite3_errmsg (sqlite));
+	  return 0;
+      }
+    sqlite3_reset (stmt);
+    sqlite3_clear_bindings (stmt);
+    sqlite3_bind_blob (stmt, 1, p_blob, n_bytes, SQLITE_STATIC);
+    sqlite3_bind_int64 (stmt, 2, id);
+    while (1)
+      {
+	  /* scrolling the result set rows */
+	  ret = sqlite3_step (stmt);
+	  if (ret == SQLITE_DONE)
+	      break;		/* end of result set */
+	  if (ret == SQLITE_ROW)
+	      count = sqlite3_column_int (stmt, 0);
+      }
+    sqlite3_finalize (stmt);
+    if (count != 0)
+	return 1;
+    return 0;
+}
+
+SPATIALITE_PRIVATE int
+register_map_configuration (void *p_sqlite, const unsigned char *p_blob,
+			    int n_bytes)
+{
+/* auxiliary function: inserts a Map Configuration definition */
+    sqlite3 *sqlite = (sqlite3 *) p_sqlite;
+    int ret;
+    const char *sql;
+    sqlite3_stmt *stmt;
+    char *name;
+    char *title;
+    char *abstract;
+
+    if (p_blob != NULL && n_bytes > 0)
+      {
+	  /* attempting to insert the Map Configuration */
+	  if (map_configuration_causes_duplicate_name
+	      (sqlite, -1, p_blob, n_bytes))
+	      return 0;
+	  sql = "INSERT INTO rl2map_configurations "
+	      "(id, name, title, abstract, config) VALUES (NULL, ?, ?, ?, ?)";
+	  ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
+	  if (ret != SQLITE_OK)
+	    {
+		spatialite_e ("registerMapConfigurations: \"%s\"\n",
+			      sqlite3_errmsg (sqlite));
+		return 0;
+	    }
+	  name = gaiaXmlBlobGetName (p_blob, n_bytes);
+	  title = gaiaXmlBlobGetTitle (p_blob, n_bytes);
+	  abstract = gaiaXmlBlobGetAbstract (p_blob, n_bytes);
+	  sqlite3_reset (stmt);
+	  sqlite3_clear_bindings (stmt);
+	  if (name == NULL)
+	      sqlite3_bind_null (stmt, 1);
+	  else
+	      sqlite3_bind_text (stmt, 1, name, strlen (name), SQLITE_STATIC);
+	  if (title == NULL)
+	      sqlite3_bind_null (stmt, 2);
+	  else
+	      sqlite3_bind_text (stmt, 2, title, strlen (title), SQLITE_STATIC);
+	  if (abstract == NULL)
+	      sqlite3_bind_null (stmt, 3);
+	  else
+	      sqlite3_bind_text (stmt, 3, abstract, strlen (abstract),
+				 SQLITE_STATIC);
+	  sqlite3_bind_blob (stmt, 4, p_blob, n_bytes, SQLITE_STATIC);
+	  ret = sqlite3_step (stmt);
+	  if (ret == SQLITE_DONE || ret == SQLITE_ROW)
+	      ;
+	  else
+	    {
+		spatialite_e ("registerMapConfigurations() error: \"%s\"\n",
+			      sqlite3_errmsg (sqlite));
+		sqlite3_finalize (stmt);
+		return 0;
+	    }
+	  sqlite3_finalize (stmt);
+	  return 1;
+      }
+    else
+	return 0;
+}
+
+static int
+check_map_configuration_by_id (sqlite3 * sqlite, int id)
+{
+/* checks if a Map Configuration do actually exists - by ID */
+    int ret;
+    const char *sql;
+    sqlite3_stmt *stmt;
+    int count = 0;
+
+    sql = "SELECT id FROM rl2map_configurations " "WHERE id = ?";
+    ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
+    if (ret != SQLITE_OK)
+      {
+	  spatialite_e ("check MapConfigurations by ID: \"%s\"\n",
+			sqlite3_errmsg (sqlite));
+	  goto stop;
+      }
+    sqlite3_reset (stmt);
+    sqlite3_clear_bindings (stmt);
+    sqlite3_bind_int (stmt, 1, id);
+    while (1)
+      {
+	  /* scrolling the result set rows */
+	  ret = sqlite3_step (stmt);
+	  if (ret == SQLITE_DONE)
+	      break;		/* end of result set */
+	  if (ret == SQLITE_ROW)
+	      count++;
+      }
+    sqlite3_finalize (stmt);
+    if (count == 1)
+	return 1;
+    return 0;
+  stop:
+    return 0;
+}
+
+static int
+check_map_configuration_by_name (sqlite3 * sqlite, const char *name,
+				 sqlite3_int64 * id)
+{
+/* checks if a Map Configuration do actually exists - by name */
+    int ret;
+    const char *sql;
+    sqlite3_stmt *stmt;
+    int count = 0;
+    sqlite3_int64 xid = 0;
+
+    sql = "SELECT id FROM rl2map_configurations "
+	"WHERE Lower(name) = Lower(?)";
+    ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
+    if (ret != SQLITE_OK)
+      {
+	  spatialite_e ("check MapConfigurations by Name: \"%s\"\n",
+			sqlite3_errmsg (sqlite));
+	  goto stop;
+      }
+    sqlite3_reset (stmt);
+    sqlite3_clear_bindings (stmt);
+    sqlite3_bind_text (stmt, 1, name, strlen (name), SQLITE_STATIC);
+    while (1)
+      {
+	  /* scrolling the result set rows */
+	  ret = sqlite3_step (stmt);
+	  if (ret == SQLITE_DONE)
+	      break;		/* end of result set */
+	  if (ret == SQLITE_ROW)
+	    {
+		xid = sqlite3_column_int64 (stmt, 0);
+		count++;
+	    }
+      }
+    sqlite3_finalize (stmt);
+    if (count == 1)
+      {
+	  *id = xid;
+	  return 1;
+      }
+    return 0;
+  stop:
+    return 0;
+}
+
+static int
+do_delete_map_configuration (sqlite3 * sqlite, sqlite3_int64 id)
+{
+/* auxiliary function: really deleting a Map Configuration */
+    int ret;
+    const char *sql;
+    sqlite3_stmt *stmt;
+    int retval = 0;
+    sql = "DELETE FROM rl2map_configurations WHERE id = ?";
+    ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
+    if (ret != SQLITE_OK)
+      {
+	  spatialite_e ("unregisterMapConfigurations: \"%s\"\n",
+			sqlite3_errmsg (sqlite));
+	  goto stop;
+      }
+    sqlite3_reset (stmt);
+    sqlite3_clear_bindings (stmt);
+    sqlite3_bind_int64 (stmt, 1, id);
+    ret = sqlite3_step (stmt);
+    if (ret == SQLITE_DONE || ret == SQLITE_ROW)
+	retval = 1;
+    else
+	spatialite_e ("unregisterMapConfigurations() error: \"%s\"\n",
+		      sqlite3_errmsg (sqlite));
+    sqlite3_finalize (stmt);
+    return retval;
+  stop:
+    return 0;
+}
+
+SPATIALITE_PRIVATE int
+unregister_map_configuration (void *p_sqlite, int xid, const char *name)
+{
+/* auxiliary function: deletes a Map Configuration definition */
+    sqlite3 *sqlite = (sqlite3 *) p_sqlite;
+    sqlite3_int64 id;
+
+    if (xid >= 0)
+      {
+	  /* checking if the Map Configuration do actually exists */
+	  if (check_map_configuration_by_id (sqlite, xid))
+	      id = xid;
+	  else
+	      return 0;
+	  /* deleting the Map Configuration */
+	  return do_delete_map_configuration (sqlite, id);
+      }
+    else if (name != NULL)
+      {
+	  /* checking if the Map Configuration do actually exists */
+	  if (!check_map_configuration_by_name (sqlite, name, &id))
+	      return 0;
+	  /* deleting the Vector Style */
+	  return do_delete_map_configuration (sqlite, id);
+      }
+    else
+	return 0;
+}
+
+static int
+do_reload_map_configuration (sqlite3 * sqlite, sqlite3_int64 id,
+			     const unsigned char *p_blob, int n_bytes)
+{
+/* auxiliary function: reloads a Map Configurarion definition */
+    int ret;
+    const char *sql;
+    sqlite3_stmt *stmt;
+    char *name;
+    char *title;
+    char *abstract;
+
+    if (p_blob != NULL && n_bytes > 0)
+      {
+	  /* attempting to update the Vector Style */
+	  sql =
+	      "UPDATE rl2map_configurations SET name = ?, title = ?, abstract = ?, config = ? "
+	      "WHERE id = ?";
+	  ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
+	  if (ret != SQLITE_OK)
+	    {
+		spatialite_e ("reloadMapConfiguration: \"%s\"\n",
+			      sqlite3_errmsg (sqlite));
+		return 0;
+	    }
+	  name = gaiaXmlBlobGetName (p_blob, n_bytes);
+	  title = gaiaXmlBlobGetTitle (p_blob, n_bytes);
+	  abstract = gaiaXmlBlobGetAbstract (p_blob, n_bytes);
+	  sqlite3_reset (stmt);
+	  sqlite3_clear_bindings (stmt);
+	  if (name == NULL)
+	      sqlite3_bind_null (stmt, 1);
+	  else
+	      sqlite3_bind_text (stmt, 1, name, strlen (name), SQLITE_STATIC);
+	  if (title == NULL)
+	      sqlite3_bind_null (stmt, 2);
+	  else
+	      sqlite3_bind_text (stmt, 2, title, strlen (title), SQLITE_STATIC);
+	  if (abstract == NULL)
+	      sqlite3_bind_null (stmt, 3);
+	  else
+	      sqlite3_bind_text (stmt, 3, abstract, strlen (abstract),
+				 SQLITE_STATIC);
+	  sqlite3_bind_blob (stmt, 4, p_blob, n_bytes, SQLITE_STATIC);
+	  sqlite3_bind_int64 (stmt, 5, id);
+	  ret = sqlite3_step (stmt);
+	  if (ret == SQLITE_DONE || ret == SQLITE_ROW)
+	      ;
+	  else
+	    {
+		spatialite_e ("reloadMapConfiguration() error: \"%s\"\n",
+			      sqlite3_errmsg (sqlite));
+		sqlite3_finalize (stmt);
+		return 0;
+	    }
+	  sqlite3_finalize (stmt);
+	  return 1;
+      }
+    else
+	return 0;
+}
+
+SPATIALITE_PRIVATE int
+reload_map_configuration (void *p_sqlite, int xid,
+			  const char *name,
+			  const unsigned char *p_blob, int n_bytes)
+{
+/* auxiliary function: reloads a Map Configuration definition */
+    sqlite3 *sqlite = (sqlite3 *) p_sqlite;
+    sqlite3_int64 id;
+
+    if (xid >= 0)
+      {
+	  /* checking if the MapConfiguration do actually exists */
+	  if (check_map_configuration_by_id (sqlite, xid))
+	      id = xid;
+	  else
+	      return 0;
+	  /* reloading the Map Configuration */
+	  if (map_configuration_causes_duplicate_name
+	      (sqlite, id, p_blob, n_bytes))
+	      return 0;
+	  return do_reload_map_configuration (sqlite, id, p_blob, n_bytes);
+      }
+    else if (name != NULL)
+      {
+	  /* checking if the Map Configuration do actually exists */
+	  if (!check_map_configuration_by_name (sqlite, name, &id))
+	      return 0;
+	  /* reloading the Map Configuration */
+	  if (map_configuration_causes_duplicate_name
+	      (sqlite, id, p_blob, n_bytes))
+	      return 0;
+	  return do_reload_map_configuration (sqlite, id, p_blob, n_bytes);
+      }
+    else
+	return 0;
+}
+
 SPATIALITE_PRIVATE int
 register_vector_style (void *p_sqlite, const unsigned char *p_blob, int n_bytes)
 {

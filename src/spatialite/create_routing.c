@@ -1294,8 +1294,7 @@ do_check_input_table (sqlite3 * db_handle, const void *cache,
 			    sqlite3_bind_text (stmt_ins_links, 5, to,
 					       strlen (to), SQLITE_STATIC);
 			}
-		      sqlite3_bind_double (stmt_ins_links, 6, length);
-		      sqlite3_bind_double (stmt_ins_links, 7, cost);
+		      sqlite3_bind_double (stmt_ins_links, 6, cost);
 		      ret = sqlite3_step (stmt_ins_links);
 		      if (ret == SQLITE_DONE || ret == SQLITE_ROW)
 			  ;

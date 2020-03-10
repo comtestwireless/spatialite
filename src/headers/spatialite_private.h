@@ -658,6 +658,19 @@ extern "C"
 							  const char
 							  *style_name);
 
+    SPATIALITE_PRIVATE int register_map_configuration (void *p_sqlite,
+						  const unsigned char *p_blob,
+						  int n_bytes);
+
+    SPATIALITE_PRIVATE int unregister_map_configuration (void *p_sqlite,
+						    int id,
+						    const char *name);
+
+    SPATIALITE_PRIVATE int reload_map_configuration (void *p_sqlite, int id,
+						const char *name,
+						const unsigned char *p_blob,
+						int n_bytes);
+
     SPATIALITE_PRIVATE int createIsoMetadataTables (void *p_sqlite,
 						    int relaxed);
 

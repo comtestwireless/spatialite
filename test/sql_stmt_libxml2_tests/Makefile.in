@@ -301,6 +301,13 @@ EXTRA_DIST = addfileid1.testcase \
 	isisometadata5.testcase \
 	isisometadata6.testcase \
 	isisometadata7.testcase \
+	ismapconfig1.testcase \
+	ismapconfig2.testcase \
+	ismapconfig3.testcase \
+	ismapconfig4.testcase \
+	ismapconfig5.testcase \
+	ismapconfig6.testcase \
+	ismapconfig7.testcase \
 	isschemavalidatedxmlblob1.testcase \
 	isschemavalidatedxmlblob2.testcase \
 	isschemavalidatedxmlblob3.testcase \
@@ -411,6 +418,11 @@ EXTRA_DIST = addfileid1.testcase \
 	registerIsoMeta7.testcase \
 	registerIsoMeta8.testcase \
 	registerIsoMeta9.testcase \
+	registerMapConfig1.testcase \
+	registerMapConfig2.testcase \
+	registerMapConfig3.testcase \
+	registerMapConfig4.testcase \
+	registerMapConfig5.testcase \
 	registerRaster1.testcase \
 	registerRaster2.testcase \
 	registerRaster3.testcase \
@@ -637,6 +649,15 @@ EXTRA_DIST = addfileid1.testcase \
 	reloadGroupStyle8.testcase \
 	reloadGroupStyle9.testcase \
 	reloadGroupStyle10.testcase \
+	reloadMapConfig1.testcase \
+	reloadMapConfig2.testcase \
+	reloadMapConfig3.testcase \
+	reloadMapConfig5.testcase \
+	reloadMapConfig6.testcase \
+	reloadMapConfig7.testcase \
+	reloadMapConfig8.testcase \
+	reloadMapConfig9.testcase \
+	reloadMapConfig10.testcase \
 	reloadRasterStyle1.testcase \
 	reloadRasterStyle2.testcase \
 	reloadRasterStyle3.testcase \
@@ -793,6 +814,11 @@ EXTRA_DIST = addfileid1.testcase \
 	unregisterGroupVector7.testcase \
 	unregisterGroupVector8.testcase \
 	unregisterGroupVector9.testcase \
+	unregisterMapConfig1.testcase \
+	unregisterMapConfig2.testcase \
+	unregisterMapConfig3.testcase \
+	unregisterMapConfig4.testcase \
+	unregisterMapConfig5.testcase \
 	unregisterRaster1.testcase \
 	unregisterRaster2.testcase \
 	unregisterRaster3.testcase \

@@ -51,6 +51,7 @@ check_PROGRAMS = check_endian \
 		check_geoscvt_fncts \
 		check_libxml2 \
 		check_styling \
+		check_map_config \
 		check_virtualxpath \
 		check_virtualbbox \
 		check_wfsin \
@@ -211,7 +212,7 @@ EXTRA_DIST = fnmatch_impl4win.h \
 	Gpx-sample.gpx 000323485.gpx \
 	sqlproc_sample.txt sqlproc_logfile.txt \
 	sqlproc_error.txt orbetello.sqlite \
-	test.geojson
+	test.geojson mapconfig.xml mapconfig2.xml
 
 SUBDIRS = sql_stmt_geosadvanced_tests sql_stmt_geos_tests \
 	sql_stmt_geos_380 sql_stmt_geos_non380 \

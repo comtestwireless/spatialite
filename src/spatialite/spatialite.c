@@ -40676,6 +40676,104 @@ fnct_UpdateVectorCoverageExtent (sqlite3_context * context, int argc,
 }
 
 static void
+fnct_RegisterMapConfiguration (sqlite3_context * context, int argc,
+			  sqlite3_value ** argv)
+{
+/* SQL function:
+/ RL2_RegisterMapConfiguration(BLOB style)
+/
+/ inserts an RL2 Map Configuration
+/ returns 1 on success
+/ 0 on failure, -1 on invalid arguments
+*/
+    int ret;
+    const unsigned char *p_blob;
+    int n_bytes;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_int (context, -1);
+	  return;
+      }
+    p_blob = sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    ret = register_map_configuration (sqlite, p_blob, n_bytes);
+    sqlite3_result_int (context, ret);
+}
+
+static void
+fnct_UnRegisterMapConfiguration (sqlite3_context * context, int argc,
+			    sqlite3_value ** argv)
+{
+/* SQL function:
+/ UnRegisterMapConfiguration(Integer id )
+/   or
+/ UnRegisterMapConfiguration(Text name )
+/
+/ removes a Map Configuration definition
+/ returns 1 on success
+/ 0 on failure, -1 on invalid arguments
+*/
+    int ret;
+    int id = -1;
+    const char *name = NULL;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) == SQLITE_INTEGER)
+	id = sqlite3_value_int (argv[0]);
+    else if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
+	name = (const char *) sqlite3_value_text (argv[0]);
+    else
+      {
+	  sqlite3_result_int (context, -1);
+	  return;
+      }
+    ret = unregister_map_configuration (sqlite, id, name);
+    sqlite3_result_int (context, ret);
+}
+
+static void
+fnct_ReloadMapConfiguration (sqlite3_context * context, int argc,
+			sqlite3_value ** argv)
+{
+/* SQL function:
+/ ReloadMapConfiguration(Integer id, BLOB style)
+/    or
+/ ReloadMapConfiguration(Text name, BLOB style)
+/
+/ updates a  Map Configuration definition
+/ returns 1 on success
+/ 0 on failure, -1 on invalid arguments
+*/
+    int ret;
+    int id = -1;
+    const char *name = NULL;
+    const unsigned char *p_blob;
+    int n_bytes;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) == SQLITE_INTEGER)
+	id = sqlite3_value_int (argv[0]);
+    else if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
+	name = (const char *) sqlite3_value_text (argv[0]);
+    else
+      {
+	  sqlite3_result_int (context, -1);
+	  return;
+      }
+    if (sqlite3_value_type (argv[1]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_int (context, -1);
+	  return;
+      }
+    p_blob = sqlite3_value_blob (argv[1]);
+    n_bytes = sqlite3_value_bytes (argv[1]);
+    ret = reload_map_configuration (sqlite, id, name, p_blob, n_bytes);
+    sqlite3_result_int (context, ret);
+}
+
+static void
 fnct_RegisterVectorStyle (sqlite3_context * context, int argc,
 			  sqlite3_value ** argv)
 {
@@ -42443,6 +42541,31 @@ fnct_XB_IsSldStyle (sqlite3_context * context, int argc, sqlite3_value ** argv)
     p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
     n_bytes = sqlite3_value_bytes (argv[0]);
     ret = gaiaIsSldStyleXmlBlob (p_blob, n_bytes);
+    sqlite3_result_int (context, ret);
+}
+
+static void
+fnct_XB_IsMapConfig (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ XB_IsMapConfig(XmlBLOB)
+/
+/ returns TRUE if the current BLOB is an XML MapConfig
+/ FALSE if it's a valid XmlBLOB but not a MapConfig
+/ or -1 if any error is encountered
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    int ret;
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_int (context, -1);
+	  return;
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    ret = gaiaIsMapConfigXmlBlob (p_blob, n_bytes);
     sqlite3_result_int (context, ret);
 }
 
@@ -50867,6 +50990,17 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "SE_UnRegisterStyledGroupStyle", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_UnRegisterStyledGroupStyle, 0, 0, 0);
+				
+    sqlite3_create_function_v2 (db, "RL2_RegisterMapConfiguration", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_RegisterMapConfiguration, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "RL2_UnRegisterMapConfiguration", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_UnRegisterMapConfiguration, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "RL2_ReloadMapConfiguration", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_ReloadMapConfiguration, 0, 0, 0);
+				
     sqlite3_create_function_v2 (db, "CreateIsoMetadataTables", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_CreateIsoMetadataTables, 0, 0, 0);
@@ -50933,6 +51067,9 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "XB_IsSldStyle", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_XB_IsSldStyle, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "XB_IsMapConfig", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_XB_IsMapConfig, 0, 0, 0);
     sqlite3_create_function_v2 (db, "XB_IsSvg", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_XB_IsSvg, 0, 0, 0);

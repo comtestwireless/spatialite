@@ -747,6 +747,34 @@ gaiaCreateMetaCatalogTables (sqlite3 * sqlite)
 }
 
 static int
+check_rl2map_configurations (sqlite3 * sqlite)
+{
+/* checking if the "rl2map_configurations" table already exists */
+    int exists = 0;
+    char *sql_statement;
+    char *errMsg = NULL;
+    int ret;
+    char **results;
+    int rows;
+    int columns;
+    int i;
+    sql_statement = "SELECT name FROM sqlite_master WHERE type = 'table' "
+	"AND Upper(name) = Upper('rl2map_configurations')";
+    ret =
+	sqlite3_get_table (sqlite, sql_statement, &results, &rows, &columns,
+			   &errMsg);
+    if (ret != SQLITE_OK)
+      {
+	  sqlite3_free (errMsg);
+	  return 0;
+      }
+    for (i = 1; i <= rows; i++)
+	exists = 1;
+    sqlite3_free_table (results);
+    return exists;
+}
+
+static int
 check_raster_coverages (sqlite3 * sqlite)
 {
 /* checking if the "raster_coverages" table already exists */
@@ -2148,6 +2176,155 @@ reCreateRasterCoveragesTriggers (void *p_sqlite)
 
     drop_raster_coverages_triggers (sqlite);
     if (!create_raster_coverages_triggers (sqlite))
+	return 0;
+    return 1;
+}
+
+static int
+create_rl2map_configurations_triggers (sqlite3 * sqlite, int relaxed)
+{
+/* creating the rl2map_configurations triggers */
+    char *sql;
+    int ret;
+    char **results;
+    int rows;
+    int columns;
+    int i;
+    char *err_msg = NULL;
+    int ok_rl2map_config = 0;
+
+/* checking for existing tables */
+    sql =
+	"SELECT tbl_name FROM sqlite_master WHERE type = 'table' AND tbl_name = 'rl2map_configurations'";
+    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  spatialite_e ("SQL error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  return 0;
+      }
+    for (i = 1; i <= rows; i++)
+      {
+	  const char *name = results[(i * columns) + 0];
+	  if (strcasecmp (name, "rl2map_configurations") == 0)
+	      ok_rl2map_config = 1;
+      }
+    sqlite3_free_table (results);
+
+    if (ok_rl2map_config)
+      {
+	  /* creating the rl2map_configurations triggers */
+	  if (relaxed == 0)
+	    {
+		/* strong trigger - imposing XML schema validation */
+		sql = "CREATE TRIGGER rl2map_config_insert\n"
+		    "BEFORE INSERT ON 'rl2map_configurations'\nFOR EACH ROW BEGIN\n"
+		    "SELECT RAISE(ABORT,'insert on rl2map_configurations violates constraint: "
+		    "not a valid RL2 Map Configuration')\n"
+		    "WHERE XB_IsMapConfig(NEW.config) <> 1;\n"
+		    "SELECT RAISE(ABORT,'insert on rl2map_configurations violates constraint: "
+		    "not an XML Schema Validated RL2 Map Configuration')\n"
+		    "WHERE XB_IsSchemaValidated(NEW.config) <> 1;\nEND";
+	    }
+	  else
+	    {
+		/* relaxed trigger - not imposing XML schema validation */
+		sql = "CREATE TRIGGER rl2map_config_insert\n"
+		    "BEFORE INSERT ON 'rl2map_configurations'\nFOR EACH ROW BEGIN\n"
+		    "SELECT RAISE(ABORT,'insert on rl2map_configurations violates constraint: "
+		    "not a valid RL2 Map Configuration')\n"
+		    "WHERE XB_IsMapConfig(NEW.config) <> 1;\nEND";
+	    }
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &err_msg);
+	  if (ret != SQLITE_OK)
+	    {
+		spatialite_e ("SQL error: %s\n", err_msg);
+		sqlite3_free (err_msg);
+		return 0;
+	    }
+	  if (relaxed == 0)
+	    {
+		/* strong trigger - imposing XML schema validation */
+		sql = "CREATE TRIGGER rl2map_config_update\n"
+		    "BEFORE UPDATE ON 'rl2map_configurations'\nFOR EACH ROW BEGIN\n"
+		    "SELECT RAISE(ABORT,'update on rl2map_configurations violates constraint: "
+		    "not a valid RL2 Map Configuration')\n"
+		    "WHERE XB_IsMapConfig(NEW.config) <> 1;\n"
+		    "SELECT RAISE(ABORT,'update on rl2map_configurations violates constraint: "
+		    "not an XML Schema Validated RL2 Map Configuration')\n"
+		    "WHERE XB_IsSchemaValidated(NEW.config) <> 1;\nEND";
+	    }
+	  else
+	    {
+		/* relaxed trigger - not imposing XML schema validation */
+		sql = "CREATE TRIGGER rl2map_config_update\n"
+		    "BEFORE UPDATE ON 'rl2map_configurations'\nFOR EACH ROW BEGIN\n"
+		    "SELECT RAISE(ABORT,'update on rl2map_configurations violates constraint: "
+		    "not a valid RL2 Map Configuration')\n"
+		    "WHERE XB_IsMapConfig(NEW.config) <> 1;\nEND";
+	    }
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &err_msg);
+	  if (ret != SQLITE_OK)
+	    {
+		spatialite_e ("SQL error: %s\n", err_msg);
+		sqlite3_free (err_msg);
+		return 0;
+	    }
+/* automatically setting the style_name after inserting */
+	  sql = "CREATE TRIGGER rl2map_config_name_ins\n"
+	      "AFTER INSERT ON 'rl2map_configurations'\nFOR EACH ROW BEGIN\n"
+	      "UPDATE rl2map_configurations "
+	      "SET name = XB_GetName(NEW.config) "
+	      "WHERE id = NEW.id;\nEND";
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &err_msg);
+	  if (ret != SQLITE_OK)
+	    {
+		spatialite_e ("SQL error: %s\n", err_msg);
+		sqlite3_free (err_msg);
+		return 0;
+	    }
+/* automatically setting the style_name after updating */
+	  sql = "CREATE TRIGGER rl2map_config_name_upd\n"
+	      "AFTER UPDATE OF config ON "
+	      "'rl2map_configurations'\nFOR EACH ROW BEGIN\n"
+	      "UPDATE rl2map_configurations "
+	      "SET name = XB_GetName(NEW.config) "
+	      "WHERE id = NEW.id;\nEND";
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &err_msg);
+	  if (ret != SQLITE_OK)
+	    {
+		spatialite_e ("SQL error: %s\n", err_msg);
+		sqlite3_free (err_msg);
+		return 0;
+	    }
+      }
+    return 1;
+}
+
+static int
+create_rl2map_configurations (sqlite3 * sqlite, int relaxed)
+{
+/* creating the "rl2map_configurations" table */
+    char *sql;
+    int ret;
+    char *err_msg = NULL;
+    
+    sql = "CREATE TABLE rl2map_configurations (\n"
+	"id INTEGER PRIMARY KEY AUTOINCREMENT,\n"
+	"name TEXT NOT NULL DEFAULT 'missing_name' UNIQUE,\n"
+	"title TEXT NOT NULL DEFAULT '*** missing Title ***',\n"
+	"abstract TEXT NOT NULL DEFAULT '*** missing Abstract ***',\n"
+	"config BLOB NOT NULL)";
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  spatialite_e ("CREATE TABLE 'rl2map_configurations' error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  return 0;
+      }
+      
+/* creating the Triggers */
+    if (!create_rl2map_configurations_triggers (sqlite, relaxed))
 	return 0;
     return 1;
 }
@@ -4809,6 +4986,12 @@ createStylingTables_ex (void *p_sqlite, int relaxed, int transaction)
 	      goto error;
       }
 #endif /* end TOPOLOGY conditionals */
+if (!check_rl2map_configurations(sqlite))
+{
+	/* creating the rl2map_configurations table as well */
+	if (!create_rl2map_configurations(sqlite, relaxed))
+	goto error;
+}
     if (!create_external_graphics (sqlite))
 	goto error;
     if (!create_fonts (sqlite))
