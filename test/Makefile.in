@@ -90,9 +90,9 @@ host_triplet = @host@
 check_PROGRAMS = check_endian$(EXEEXT) check_version$(EXEEXT) \
 	check_init$(EXEEXT) check_init2$(EXEEXT) \
 	check_init_full$(EXEEXT) check_geom_aux$(EXEEXT) \
-	check_geometry_cols$(EXEEXT) check_create$(EXEEXT) \
-	check_bufovflw$(EXEEXT) check_fdo1$(EXEEXT) \
-	check_fdo2$(EXEEXT) check_fdo3$(EXEEXT) \
+	check_geometry_cols$(EXEEXT) check_tempgeom$(EXEEXT) \
+	check_create$(EXEEXT) check_bufovflw$(EXEEXT) \
+	check_fdo1$(EXEEXT) check_fdo2$(EXEEXT) check_fdo3$(EXEEXT) \
 	check_fdo_bufovflw$(EXEEXT) check_md5$(EXEEXT) \
 	check_dbf_load$(EXEEXT) check_shp_load$(EXEEXT) \
 	check_shp_load_3d$(EXEEXT) shape_cp1252$(EXEEXT) \
@@ -471,6 +471,9 @@ check_stored_proc_LDADD = $(LDADD)
 check_styling_SOURCES = check_styling.c
 check_styling_OBJECTS = check_styling.$(OBJEXT)
 check_styling_LDADD = $(LDADD)
+check_tempgeom_SOURCES = check_tempgeom.c
+check_tempgeom_OBJECTS = check_tempgeom.$(OBJEXT)
+check_tempgeom_LDADD = $(LDADD)
 check_topology2d_SOURCES = check_topology2d.c
 check_topology2d_OBJECTS = check_topology2d.$(OBJEXT)
 check_topology2d_LDADD = $(LDADD)
@@ -631,7 +634,7 @@ am__depfiles_remade = ./$(DEPDIR)/check_add_tile_triggers.Po \
 	./$(DEPDIR)/check_sql_stmt_tiny.Po \
 	./$(DEPDIR)/check_srid_fncts.Po \
 	./$(DEPDIR)/check_stored_proc.Po ./$(DEPDIR)/check_styling.Po \
-	./$(DEPDIR)/check_topology2d.Po \
+	./$(DEPDIR)/check_tempgeom.Po ./$(DEPDIR)/check_topology2d.Po \
 	./$(DEPDIR)/check_topology3d.Po \
 	./$(DEPDIR)/check_toponoface2d.Po \
 	./$(DEPDIR)/check_topoplus.Po ./$(DEPDIR)/check_toposnap.Po \
@@ -707,15 +710,15 @@ SOURCES = check_add_tile_triggers.c \
 	check_sql_stmt.c check_sql_stmt_extension.c \
 	check_sql_stmt_legacy.c check_sql_stmt_tiny.c \
 	check_srid_fncts.c check_stored_proc.c check_styling.c \
-	check_topology2d.c check_topology3d.c check_toponoface2d.c \
-	check_topoplus.c check_toposnap.c check_version.c \
-	check_virtual_ovflw.c check_virtualbbox.c check_virtualelem.c \
-	check_virtualknn.c check_virtualtable1.c check_virtualtable2.c \
-	check_virtualtable3.c check_virtualtable4.c \
-	check_virtualtable5.c check_virtualtable6.c \
-	check_virtualxpath.c check_wfsin.c check_wms.c \
-	check_xls_load.c geojson_test.c routing_test.c shape_3d.c \
-	shape_cp1252.c shape_primitives.c shape_utf8_1.c \
+	check_tempgeom.c check_topology2d.c check_topology3d.c \
+	check_toponoface2d.c check_topoplus.c check_toposnap.c \
+	check_version.c check_virtual_ovflw.c check_virtualbbox.c \
+	check_virtualelem.c check_virtualknn.c check_virtualtable1.c \
+	check_virtualtable2.c check_virtualtable3.c \
+	check_virtualtable4.c check_virtualtable5.c \
+	check_virtualtable6.c check_virtualxpath.c check_wfsin.c \
+	check_wms.c check_xls_load.c geojson_test.c routing_test.c \
+	shape_3d.c shape_cp1252.c shape_primitives.c shape_utf8_1.c \
 	shape_utf8_1ex.c shape_utf8_2.c
 DIST_SOURCES = check_add_tile_triggers.c \
 	check_add_tile_triggers_bad_table_name.c check_bufovflw.c \
@@ -753,15 +756,15 @@ DIST_SOURCES = check_add_tile_triggers.c \
 	check_sql_stmt.c check_sql_stmt_extension.c \
 	check_sql_stmt_legacy.c check_sql_stmt_tiny.c \
 	check_srid_fncts.c check_stored_proc.c check_styling.c \
-	check_topology2d.c check_topology3d.c check_toponoface2d.c \
-	check_topoplus.c check_toposnap.c check_version.c \
-	check_virtual_ovflw.c check_virtualbbox.c check_virtualelem.c \
-	check_virtualknn.c check_virtualtable1.c check_virtualtable2.c \
-	check_virtualtable3.c check_virtualtable4.c \
-	check_virtualtable5.c check_virtualtable6.c \
-	check_virtualxpath.c check_wfsin.c check_wms.c \
-	check_xls_load.c geojson_test.c routing_test.c shape_3d.c \
-	shape_cp1252.c shape_primitives.c shape_utf8_1.c \
+	check_tempgeom.c check_topology2d.c check_topology3d.c \
+	check_toponoface2d.c check_topoplus.c check_toposnap.c \
+	check_version.c check_virtual_ovflw.c check_virtualbbox.c \
+	check_virtualelem.c check_virtualknn.c check_virtualtable1.c \
+	check_virtualtable2.c check_virtualtable3.c \
+	check_virtualtable4.c check_virtualtable5.c \
+	check_virtualtable6.c check_virtualxpath.c check_wfsin.c \
+	check_wms.c check_xls_load.c geojson_test.c routing_test.c \
+	shape_3d.c shape_cp1252.c shape_primitives.c shape_utf8_1.c \
 	shape_utf8_1ex.c shape_utf8_2.c
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
@@ -1636,6 +1639,10 @@ check_styling$(EXEEXT): $(check_styling_OBJECTS) $(check_styling_DEPENDENCIES) $
 	@rm -f check_styling$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(check_styling_OBJECTS) $(check_styling_LDADD) $(LIBS)
 
+check_tempgeom$(EXEEXT): $(check_tempgeom_OBJECTS) $(check_tempgeom_DEPENDENCIES) $(EXTRA_check_tempgeom_DEPENDENCIES) 
+	@rm -f check_tempgeom$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(check_tempgeom_OBJECTS) $(check_tempgeom_LDADD) $(LIBS)
+
 check_topology2d$(EXEEXT): $(check_topology2d_OBJECTS) $(check_topology2d_DEPENDENCIES) $(EXTRA_check_topology2d_DEPENDENCIES) 
 	@rm -f check_topology2d$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(check_topology2d_OBJECTS) $(check_topology2d_LDADD) $(LIBS)
@@ -1831,6 +1838,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_srid_fncts.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_stored_proc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_styling.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_tempgeom.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_topology2d.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_topology3d.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_toponoface2d.Po@am__quote@ # am--include-marker
@@ -2178,6 +2186,13 @@ check_geom_aux.log: check_geom_aux$(EXEEXT)
 check_geometry_cols.log: check_geometry_cols$(EXEEXT)
 	@p='check_geometry_cols$(EXEEXT)'; \
 	b='check_geometry_cols'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+check_tempgeom.log: check_tempgeom$(EXEEXT)
+	@p='check_tempgeom$(EXEEXT)'; \
+	b='check_tempgeom'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -3065,6 +3080,7 @@ distclean: distclean-recursive
 	-rm -f ./$(DEPDIR)/check_srid_fncts.Po
 	-rm -f ./$(DEPDIR)/check_stored_proc.Po
 	-rm -f ./$(DEPDIR)/check_styling.Po
+	-rm -f ./$(DEPDIR)/check_tempgeom.Po
 	-rm -f ./$(DEPDIR)/check_topology2d.Po
 	-rm -f ./$(DEPDIR)/check_topology3d.Po
 	-rm -f ./$(DEPDIR)/check_toponoface2d.Po
@@ -3215,6 +3231,7 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -f ./$(DEPDIR)/check_srid_fncts.Po
 	-rm -f ./$(DEPDIR)/check_stored_proc.Po
 	-rm -f ./$(DEPDIR)/check_styling.Po
+	-rm -f ./$(DEPDIR)/check_tempgeom.Po
 	-rm -f ./$(DEPDIR)/check_topology2d.Po
 	-rm -f ./$(DEPDIR)/check_topology3d.Po
 	-rm -f ./$(DEPDIR)/check_toponoface2d.Po

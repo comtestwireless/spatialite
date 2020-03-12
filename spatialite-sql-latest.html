@@ -6,6 +6,7 @@
 			h2 {color:navy; text-align:center;} 
 			h3 {color:blue;} 
 			b {color:brown;}
+			b.black {color:navy;}
 			i {color:navy;}
 		</style>
 	</head><body bgcolor="#fffff0">
@@ -3303,6 +3304,19 @@ the optional 6th arg [<b>not_null</b>] is a non-standard extension required by t
 					This is the <u>default</u> behaviour</li>
 				<li>if set to any <b>&lt;&gt; 0 value</b> [<i>true</i>], then the Geometry will be defined using a <b>NOT NULL</b> clause</li>
 				</ul></td></tr>
+			<tr><td><b>AddTemporaryGeometryColumn</b></td>
+				<td>AddTemporaryGeometryColumn( db-prefix <i>String</i> , table <i>String</i> , column <i>String</i> , srid <i>Integer</i> ,
+geom_type <i>String</i> [ , dimension <i>String</i> [ , not_null <i>Integer</i> ] ] ) : <i>Integer</i></td>
+				<td></td></td>
+				<td align="center" bgcolor="#d0f0d0">base</td>
+				<td>Almost the same as <b>AddGeometryColumn()</b>, with a critical difference:
+				<ul>
+					<li><b>db-prefix</b> is the <i>schema-name</i> of some <b>attached database</b></li>
+					<li>Such an <i>Attached Database</i> must necessarily be of the <b>:memory:</b> type being previously created by issuing an SQL statement like:<br>
+					<b class="black">ATTACH DATABASE ':memory:' AS prefix;</b></li>
+					<li>If the above prerequisite is not fullfilled this function will always fail.</li>
+				</ul>
+				</td></tr>
 			<tr><td><b>RecoverGeometryColumn</b></td>
 				<td>RecoverGeometryColumn( table <i>String</i> , column <i>String</i> , srid <i>Integer</i> ,
 geom_type <i>String</i> [ , dimension <i>Integer</i> ] ) : <i>Integer</i></td>
@@ -3342,6 +3356,19 @@ the return type is Integer, with a return value of 1 for TRUE or 0 for FALSE</td
 required in order to enforce full data coherency between the main table and Spatial Index<hr>
 the return type is Integer, with a return value of 1 for TRUE or 0 for FALSE<hr>
 -1 will be returned if any physical column named "rowid" (caseless) shadowing the real ROWID is detected.</td></tr>
+			<tr><td><b>CreateTemporarySpatialIndex</b></td>
+				<td>CreateTemporarySpatialIndex( db-prefix <i>String</i> , table <i>String</i> , column <i>String</i> ) : <i>Integer</i></td>
+				<td></td>
+				<td align="center" bgcolor="#d0f0d0">base</td>
+				<td>Almost the same as <b>CreateSpatialIndex()</b>, but specifically intended to support Geometry columns created by <b>AddTemporaryGeometryColumn()</b>
+				<ul>
+					<li><b>db-prefix</b> is the <i>schema-name</i> of some <b>attached database</b></li>
+					<li>Such an <i>Attached Database</i> must necessarily be of the <b>:memory:</b> type being previously created by issuing an SQL statement like:<br>
+					<b class="black">ATTACH DATABASE ':memory:' AS prefix;</b></li>
+					<li><b>table</b> and <b>column</b> must identify an already existing Temporary Geometry located on that Database.</li>
+					<li>If the above prerequisites are not fullfilled this function will always fail.</li>
+				</ul>
+			</td></tr>
 			<tr><td><b>CreateMbrCache</b></td>
 				<td>CreateMbrCache( table <i>String</i> , column <i>String</i> ) : <i>Integer</i></td>
 				<td></td>

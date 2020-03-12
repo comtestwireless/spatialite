@@ -380,6 +380,13 @@ extern "C"
 
     SPATIALITE_PRIVATE int createGeometryColumns (void *p_sqlite);
 
+    SPATIALITE_PRIVATE int createTemporarySpatialRefSys (void *p_sqlite,
+							 const char *db_prefix);
+
+    SPATIALITE_PRIVATE int createTemporaryGeometryColumns (void *p_sqlite,
+							   const char
+							   *db_prefix);
+
     SPATIALITE_PRIVATE int check_layer_statistics (void *p_sqlite);
 
     SPATIALITE_PRIVATE int check_views_layer_statistics (void *p_sqlite);
@@ -390,12 +397,26 @@ extern "C"
 						    const char *table,
 						    const char *column);
 
+    SPATIALITE_PRIVATE void updateTemporaryGeometryTriggers (void *p_sqlite,
+							     const char
+							     *db_prefix,
+							     const char *table,
+							     const char
+							     *column);
+
     SPATIALITE_PRIVATE int upgradeGeometryTriggers (void *p_sqlite);
 
     SPATIALITE_PRIVATE int getRealSQLnames (void *p_sqlite, const char *table,
 					    const char *column,
 					    char **real_table,
 					    char **real_column);
+
+    SPATIALITE_PRIVATE int getRealSQLnamesTemporary (void *p_sqlite,
+						     const char *db_prefix,
+						     const char *table,
+						     const char *column,
+						     char **real_table,
+						     char **real_column);
 
     /* DEPRECATED - always use buildSpatialIndexEx */
     SPATIALITE_PRIVATE void buildSpatialIndex (void *p_sqlite,
@@ -406,7 +427,17 @@ extern "C"
 						const unsigned char *table,
 						const char *column);
 
+    SPATIALITE_PRIVATE int buildTemporarySpatialIndex (void *p_sqlite,
+						       const char *db_prefix,
+						       const unsigned char
+						       *table,
+						       const char *column);
+
     SPATIALITE_PRIVATE int validateRowid (void *p_sqlite, const char *table);
+
+    SPATIALITE_PRIVATE int validateTemporaryRowid (void *p_sqlite,
+						   const char *db_prefix,
+						   const char *table);
 
     SPATIALITE_PRIVATE int doComputeFieldInfos (void *p_sqlite,
 						const char *table,
@@ -659,17 +690,17 @@ extern "C"
 							  *style_name);
 
     SPATIALITE_PRIVATE int register_map_configuration (void *p_sqlite,
-						  const unsigned char *p_blob,
-						  int n_bytes);
+						       const unsigned char
+						       *p_blob, int n_bytes);
 
     SPATIALITE_PRIVATE int unregister_map_configuration (void *p_sqlite,
-						    int id,
-						    const char *name);
+							 int id,
+							 const char *name);
 
     SPATIALITE_PRIVATE int reload_map_configuration (void *p_sqlite, int id,
-						const char *name,
-						const unsigned char *p_blob,
-						int n_bytes);
+						     const char *name,
+						     const unsigned char
+						     *p_blob, int n_bytes);
 
     SPATIALITE_PRIVATE int createIsoMetadataTables (void *p_sqlite,
 						    int relaxed);
