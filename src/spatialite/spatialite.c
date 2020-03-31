@@ -4987,11 +4987,9 @@ fnct_AddTemporaryGeometryColumn (sqlite3_context * context, int argc,
     const unsigned char *txt_dims;
     int xtype;
     int srid = -1;
-    int srid_exists = -1;
     int dimension = 2;
     int dims = -1;
     int auto_dims = -1;
-    char sql[1024];
     char *sql2;
     int ret;
     int notNull = 0;
@@ -5001,7 +4999,6 @@ fnct_AddTemporaryGeometryColumn (sqlite3_context * context, int argc,
     char *quoted_table;
     char *quoted_column;
     const char *p_type = NULL;
-    const char *p_dims = NULL;
     int n_type = 0;
     int n_dims = 0;
     char *sql_statement;
@@ -5552,48 +5549,6 @@ fnct_AddTemporaryGeometryColumn (sqlite3_context * context, int argc,
     sqlite3_finalize (stmt);
     updateTemporaryGeometryTriggers (sqlite, db_prefix, table, column);
     sqlite3_result_int (context, 1);
-    switch (xtype)
-      {
-      case GAIA_POINT:
-	  p_type = "POINT";
-	  break;
-      case GAIA_LINESTRING:
-	  p_type = "LINESTRING";
-	  break;
-      case GAIA_POLYGON:
-	  p_type = "POLYGON";
-	  break;
-      case GAIA_MULTIPOINT:
-	  p_type = "MULTIPOINT";
-	  break;
-      case GAIA_MULTILINESTRING:
-	  p_type = "MULTILINESTRING";
-	  break;
-      case GAIA_MULTIPOLYGON:
-	  p_type = "MULTIPOLYGON";
-	  break;
-      case GAIA_GEOMETRYCOLLECTION:
-	  p_type = "GEOMETRYCOLLECTION";
-	  break;
-      case -1:
-	  p_type = "GEOMETRY";
-	  break;
-      };
-    switch (dims)
-      {
-      case GAIA_XY:
-	  p_dims = "XY";
-	  break;
-      case GAIA_XY_Z:
-	  p_dims = "XYZ";
-	  break;
-      case GAIA_XY_M:
-	  p_dims = "XYM";
-	  break;
-      case GAIA_XY_Z_M:
-	  p_dims = "XYZM";
-	  break;
-      };
     sqlite3_free (p_table);
     return;
   error:
@@ -8935,7 +8890,6 @@ fnct_CreateTemporarySpatialIndex (sqlite3_context * context, int argc,
     const char *table;
     const char *column;
     char *sql_statement;
-    char sql[1024];
     char *prefix;
     char *errMsg = NULL;
     int ret;
@@ -17507,6 +17461,8 @@ fnct_MinZ (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
 /* SQL function:
 / ST_MinZ(BLOB encoded GEMETRY)
+/    or
+/ ST_MinZ(BLOB encoded GEOMETRY, DOUBLE nodata-value)
 /
 / returns the MinZ coordinate for current geometry 
 / or NULL if any error is encountered
@@ -17515,6 +17471,8 @@ fnct_MinZ (sqlite3_context * context, int argc, sqlite3_value ** argv)
     int n_bytes;
     double min;
     double max;
+    double nodata = DBL_MAX;
+    int hasNodata = 0;
     gaiaGeomCollPtr geo = NULL;
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
@@ -17522,6 +17480,23 @@ fnct_MinZ (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  sqlite3_result_null (context);
 	  return;
       }
+      if (argc == 2)
+      {
+		  if (sqlite3_value_type(argv[1]) == SQLITE_FLOAT)
+		  {
+			  nodata = sqlite3_value_double(argv[1]);
+			  hasNodata = 1;
+		  }
+		  else if (sqlite3_value_type(argv[1]) == SQLITE_INTEGER)
+		  {
+			  int intval = sqlite3_value_int(argv[1]);
+			  nodata = intval;
+			  hasNodata = 1;
+		  }
+		  else
+		  sqlite3_result_null(context);
+		  return;
+	  }
     p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
     n_bytes = sqlite3_value_bytes (argv[0]);
     geo = gaiaFromSpatiaLiteBlobWkb (p_blob, n_bytes);
@@ -17559,6 +17534,9 @@ fnct_MinZ (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  if (geo->DimensionModel == GAIA_XY_Z
 	      || geo->DimensionModel == GAIA_XY_Z_M)
 	    {
+			if (hasNodata)
+		gaiaZRangeGeometryEx(geo, nodata, &min, &max);
+		else
 		gaiaZRangeGeometry (geo, &min, &max);
 		sqlite3_result_double (context, min);
 	    }
@@ -17573,6 +17551,8 @@ fnct_MaxZ (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
 /* SQL function:
 / ST_MaxZ(BLOB encoded GEMETRY)
+/    or
+/ ST_MaxZ(BLOB encoded GEOMETRY, DOUBLE nodata-value)
 /
 / returns the MaxZ coordinate for current geometry 
 / or NULL if any error is encountered
@@ -17581,6 +17561,8 @@ fnct_MaxZ (sqlite3_context * context, int argc, sqlite3_value ** argv)
     int n_bytes;
     double min;
     double max;
+    double nodata = DBL_MAX;
+    int hasNodata = 0;
     gaiaGeomCollPtr geo = NULL;
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
@@ -17588,6 +17570,23 @@ fnct_MaxZ (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  sqlite3_result_null (context);
 	  return;
       }
+      if (argc == 2)
+      {
+		  if (sqlite3_value_type(argv[1]) == SQLITE_FLOAT)
+		  {
+			  nodata = sqlite3_value_double(argv[1]);
+			  hasNodata = 1;
+		  }
+		  else if (sqlite3_value_type(argv[1]) == SQLITE_INTEGER)
+		  {
+			  int intval = sqlite3_value_int(argv[1]);
+			  nodata = intval;
+			  hasNodata = 1;
+		  }
+		  else
+		  sqlite3_result_null(context);
+		  return;
+	  }
     p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
     n_bytes = sqlite3_value_bytes (argv[0]);
     geo = gaiaFromSpatiaLiteBlobWkb (p_blob, n_bytes);
@@ -17625,6 +17624,9 @@ fnct_MaxZ (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  if (geo->DimensionModel == GAIA_XY_Z
 	      || geo->DimensionModel == GAIA_XY_Z_M)
 	    {
+			if (hasNodata)
+		gaiaZRangeGeometryEx(geo, nodata, &min, &max);
+		else
 		gaiaZRangeGeometry (geo, &min, &max);
 		sqlite3_result_double (context, max);
 	    }
@@ -17639,6 +17641,8 @@ fnct_MinM (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
 /* SQL function:
 / ST_MinM(BLOB encoded GEMETRY)
+/    or
+/ ST_MinM(BLOB encoded GEOMETRY, DOUBLE nodata-value)
 /
 / returns the MinM coordinate for current geometry 
 / or NULL if any error is encountered
@@ -17647,6 +17651,8 @@ fnct_MinM (sqlite3_context * context, int argc, sqlite3_value ** argv)
     int n_bytes;
     double min;
     double max;
+    double nodata = DBL_MAX;
+    int hasNodata = 0;
     gaiaGeomCollPtr geo = NULL;
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
@@ -17654,6 +17660,23 @@ fnct_MinM (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  sqlite3_result_null (context);
 	  return;
       }
+      if (argc == 2)
+      {
+		  if (sqlite3_value_type(argv[1]) == SQLITE_FLOAT)
+		  {
+			  nodata = sqlite3_value_double(argv[1]);
+			  hasNodata = 1;
+		  }
+		  else if (sqlite3_value_type(argv[1]) == SQLITE_INTEGER)
+		  {
+			  int intval = sqlite3_value_int(argv[1]);
+			  nodata = intval;
+			  hasNodata = 1;
+		  }
+		  else
+		  sqlite3_result_null(context);
+		  return;
+	  }
     p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
     n_bytes = sqlite3_value_bytes (argv[0]);
     geo = gaiaFromSpatiaLiteBlobWkb (p_blob, n_bytes);
@@ -17691,6 +17714,9 @@ fnct_MinM (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  if (geo->DimensionModel == GAIA_XY_M
 	      || geo->DimensionModel == GAIA_XY_Z_M)
 	    {
+			if (hasNodata)
+		gaiaMRangeGeometryEx(geo, nodata, &min, &max);
+		else
 		gaiaMRangeGeometry (geo, &min, &max);
 		sqlite3_result_double (context, min);
 	    }
@@ -17705,6 +17731,8 @@ fnct_MaxM (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
 /* SQL function:
 / ST_MaxM(BLOB encoded GEMETRY)
+/    or
+/ ST_MaxM(BLOB encoded GEOMETRY, DOUBLE nodata-value)
 /
 / returns the MaxM coordinate for current geometry 
 / or NULL if any error is encountered
@@ -17713,6 +17741,8 @@ fnct_MaxM (sqlite3_context * context, int argc, sqlite3_value ** argv)
     int n_bytes;
     double min;
     double max;
+    double nodata = DBL_MAX;
+    int hasNodata = 0;
     gaiaGeomCollPtr geo = NULL;
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
@@ -17720,6 +17750,23 @@ fnct_MaxM (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  sqlite3_result_null (context);
 	  return;
       }
+      if (argc == 2)
+      {
+		  if (sqlite3_value_type(argv[1]) == SQLITE_FLOAT)
+		  {
+			  nodata = sqlite3_value_double(argv[1]);
+			  hasNodata = 1;
+		  }
+		  else if (sqlite3_value_type(argv[1]) == SQLITE_INTEGER)
+		  {
+			  int intval = sqlite3_value_int(argv[1]);
+			  nodata = intval;
+			  hasNodata = 1;
+		  }
+		  else
+		  sqlite3_result_null(context);
+		  return;
+	  }
     p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
     n_bytes = sqlite3_value_bytes (argv[0]);
     geo = gaiaFromSpatiaLiteBlobWkb (p_blob, n_bytes);
@@ -17757,6 +17804,9 @@ fnct_MaxM (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  if (geo->DimensionModel == GAIA_XY_M
 	      || geo->DimensionModel == GAIA_XY_Z_M)
 	    {
+			if (hasNodata)
+		gaiaMRangeGeometryEx(geo, nodata, &min, &max);
+		else
 		gaiaMRangeGeometry (geo, &min, &max);
 		sqlite3_result_double (context, max);
 	    }
@@ -25045,7 +25095,7 @@ fnct_LinestringMinSegmentLength (sqlite3_context * context, int argc,
 / ST_LinestringMinSegmentLength(BLOB encoded LINESTRING)
 / ST_LinestringMinSegmentLength(BLOB encoded LINESTRING, BOOL ignore_repeated_vertices)
 /
-/ returns  the length of the shortest segment in the Linestring
+/ returns the length of the shortest segment in the Linestring
 / or NULL if any error is encountered
 /
 */
@@ -25060,7 +25110,7 @@ fnct_LinestringMaxSegmentLength (sqlite3_context * context, int argc,
 /* SQL function:
 / ST_LinsetringMaxSegmentLength(BLOB encoded LINESTRING)
 /
-/ returns  the length of the longest segment in the Linstring
+/ returns the length of the longest segment in the Linestring
 / or NULL if any error is encountered
 /
 */
@@ -25075,12 +25125,235 @@ fnct_LinestringAvgSegmentLength (sqlite3_context * context, int argc,
 /* SQL function:
 / ST_LinestringMaxSegmentLength(BLOB encoded LINESTRING)
 /
-/ returns  the average segment length in the Linstring
+/ returns the average segment length in the Linsetring
 / or NULL if any error is encountered
 /
 */
     linestring_segment_length_common (context, argc, argv,
 				      LINESTRING_AVG_SEGMENT_LENGTH);
+}
+
+static void
+fnct_CurvosityIndex (sqlite3_context * context, int argc,
+				 sqlite3_value ** argv)
+{
+/* SQL function:
+/ ST_CurvosityIndex(BLOB encoded LINESTRING)
+/    or
+/ ST_CurvosityIndex(BLOB encoded LINESTRING, points INTEGER)
+/
+/ returns the CurvosityIndex of some Linestring
+/ or NULL if any error is encountered
+/
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    int extra_points = 0;
+    double index;
+    gaiaLinestringPtr ln;
+    gaiaGeomCollPtr geo = NULL;
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (argc == 2)
+      {
+	  if (sqlite3_value_type (argv[1]) != SQLITE_INTEGER)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  extra_points = sqlite3_value_int (argv[1]);
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geo =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (!geo)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (!is_single_linestring (geo))
+      {
+	  gaiaFreeGeomColl (geo);
+	  sqlite3_result_null (context);
+	  return;
+      }
+
+    ln = geo->FirstLinestring;
+    index = gaiaCurvosityIndex (cache, ln, extra_points);
+	sqlite3_result_double (context, index);
+}
+
+static void
+fnct_UphillHeight (sqlite3_context * context, int argc,
+				 sqlite3_value ** argv)
+{
+/* SQL function:
+/ ST_UphillHeight(BLOB encoded LINESTRING)
+/
+/ returns the cumulative Uphill Height of some 3D Linestring
+/ or NULL if any error is encountered
+/
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    double up;
+    double down;
+    gaiaLinestringPtr ln;
+    gaiaGeomCollPtr geo = NULL;
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geo =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (!geo)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (!is_single_linestring (geo))
+      {
+	  gaiaFreeGeomColl (geo);
+	  sqlite3_result_null (context);
+	  return;
+      }
+
+    ln = geo->FirstLinestring;
+    gaiaUpDownHeight (ln, &up, &down);
+	sqlite3_result_double (context, up);
+}
+
+static void
+fnct_DownhillHeight (sqlite3_context * context, int argc,
+				 sqlite3_value ** argv)
+{
+/* SQL function:
+/ ST_DownhillHeight(BLOB encoded LINESTRING)
+/
+/ returns the cumulative Downhill Height of some 3D Linestring
+/ or NULL if any error is encountered
+/
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    double up;
+    double down;
+    gaiaLinestringPtr ln;
+    gaiaGeomCollPtr geo = NULL;
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geo =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (!geo)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (!is_single_linestring (geo))
+      {
+	  gaiaFreeGeomColl (geo);
+	  sqlite3_result_null (context);
+	  return;
+      }
+
+    ln = geo->FirstLinestring;
+    gaiaUpDownHeight (ln, &up, &down);
+	sqlite3_result_double (context, down);
+}
+
+static void
+fnct_UpDownHeight (sqlite3_context * context, int argc,
+				 sqlite3_value ** argv)
+{
+/* SQL function:
+/ ST_UpDownHeight(BLOB encoded LINESTRING)
+/
+/ returns the cumulative UpDown Height of some 3D Linestring
+/ or NULL if any error is encountered
+/
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    double up;
+    double down;
+    gaiaLinestringPtr ln;
+    gaiaGeomCollPtr geo = NULL;
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geo =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (!geo)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (!is_single_linestring (geo))
+      {
+	  gaiaFreeGeomColl (geo);
+	  sqlite3_result_null (context);
+	  return;
+      }
+
+    ln = geo->FirstLinestring;
+    gaiaUpDownHeight (ln, &up, &down);
+	sqlite3_result_double (context, up + down);
 }
 
 #ifdef ENABLE_RTTOPO		/* only if RTTOPO is enabled */
@@ -48805,7 +49078,13 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "ST_MinZ", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_MinZ, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_MinZ", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_MinZ, 0, 0, 0);
     sqlite3_create_function_v2 (db, "ST_MinM", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_MinM, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_MinM", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_MinM, 0, 0, 0);
     sqlite3_create_function_v2 (db, "ST_MaxX", 1,
@@ -48817,7 +49096,13 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "ST_MaxZ", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_MaxZ, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_MaxZ", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_MaxZ, 0, 0, 0);
     sqlite3_create_function_v2 (db, "ST_MaxM", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_MaxM, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_MaxM", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_MaxM, 0, 0, 0);
     sqlite3_create_function_v2 (db, "NumPoints", 1,
@@ -51062,6 +51347,36 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "ST_LinestringAvgSegmentLength", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_LinestringAvgSegmentLength, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "CurvosityIndex", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_CurvosityIndex, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_CurvosityIndex", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_CurvosityIndex, 0, 0, 0);	
+    sqlite3_create_function_v2 (db, "CurvosityIndex", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_CurvosityIndex, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_CurvosityIndex", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_CurvosityIndex, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "UphillHeight", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_UphillHeight, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_UphillHeight", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_UphillHeight, 0, 0, 0);	
+    sqlite3_create_function_v2 (db, "DownhillHeight", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_DownhillHeight, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_DownhillHeight", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_DownhillHeight, 0, 0, 0);	
+    sqlite3_create_function_v2 (db, "UpDownHeight", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_UpDownHeight, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_UpDownHeight", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_UpDownHeight, 0, 0, 0);	
     sqlite3_create_function_v2 (db, "Area", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_Area, 0, 0, 0);

@@ -991,28 +991,44 @@ a Geometry will be returned representing the MBR for the corresponding GARS area
 				<td>return the y-coordinate for <i>geom</i> MBR's <u>uppermost side</u> as a double precision number.<hr>
                                 NULL will be returned if <i>geom</i> isn't a valid Geometry.</td></tr>
 			<tr><td><b>MinZ</b></td>
-				<td>ST_MinZ( geom <i>Geometry</i>) : <i>Double precision</i></td>
+				<td>ST_MinZ( geom <i>Geometry</i>) : <i>Double precision</i><hr>
+				    ST_MinZ( geom <i>Geometry</i> , nodata-value <i>Double</i> ) : <i>Double precision</i></td>
 				<td></td>
 				<td align="center" bgcolor="#d0f0d0">base</td>
-				<td>return the minimum Z-coordinate value for <i>geom</i> as a double precision number.<hr>
+				<td>return the minimum Z-coordinate value for <i>geom</i> as a double precision number.
+					<ul>
+						<li>if the optional argument <b>nodata-value</b> is set, then any NODATA value eventually found will be ignored.</li>
+					</ul><hr>
                                 NULL will be returned if <i>geom</i> isn't a valid Geometry or if <i>geom</i> has no Z dimension.</td></tr>
 			<tr><td><b>MaxZ</b></td>
-				<td>ST_MaxZ( geom <i>Geometry</i>) : <i>Double precision</i></td>
+				<td>ST_MaxZ( geom <i>Geometry</i>) : <i>Double precision</i><hr>
+				    ST_MaxZ( geom <i>Geometry</i> , nodata-value <i>Double</i> ) : <i>Double precision</i></td>
 				<td></td>
 				<td align="center" bgcolor="#d0f0d0">base</td>
-				<td>return the maximum Z-coordinate value for <i>geom</i> as a double precision number.<hr>
+				<td>return the maximum Z-coordinate value for <i>geom</i> as a double precision number.
+					<ul>
+						<li>if the optional argument <b>nodata-value</b> is set, then any NODATA value eventually found will be ignored.</li>
+					</ul><hr>
                                 NULL will be returned if <i>geom</i> isn't a valid Geometry or if <i>geom</i> has no Z dimension.</td></tr>
 			<tr><td><b>MinM</b></td>
-				<td>ST_MinM( geom <i>Geometry</i>) : <i>Double precision</i></td>
+				<td>ST_MinM( geom <i>Geometry</i>) : <i>Double precision</i><hr>
+				    ST_MinM( geom <i>Geometry</i> , nodata-value <i>Double</i> ): <i>Double precision</i></td>
 				<td></td>
 				<td align="center" bgcolor="#d0f0d0">base</td>
-				<td>return the minimum M-coordinate value for <i>geom</i> as a double precision number.<hr>
+				<td>return the minimum M-coordinate value for <i>geom</i> as a double precision number.
+					<ul>
+						<li>if the optional argument <b>nodata-value</b> is set, then any NODATA value eventually found will be ignored.</li>
+					</ul><hr>
                                 NULL will be returned if <i>geom</i> isn't a valid Geometry or if <i>geom</i> has no M dimension.</td></tr>
 			<tr><td><b>MaxM</b></td>
-				<td>ST_MaxM( geom <i>Geometry</i>) : <i>Double precision</i></td>
+				<td>ST_MaxM( geom <i>Geometry</i>) : <i>Double precision</i><hr>
+				    ST_MaxM( geom <i>Geometry</i> , nodata-value <i>Double</i> ) : <i>Double precision</i></td>
 				<td></td>
 				<td align="center" bgcolor="#d0f0d0">base</td>
-				<td>return the maximum M-coordinate value for <i>geom</i> as a double precision number.<hr>
+				<td>return the maximum M-coordinate value for <i>geom</i> as a double precision number.
+					<ul>
+						<li>if the optional argument <b>nodata-value</b> is set, then any NODATA value eventually found will be ignored.</li>
+					</ul><hr>
                                 NULL will be returned if <i>geom</i> isn't a valid Geometry or if <i>geom</i> has no M dimension.</td></tr>
 			<tr><td colspan="5" align="center" bgcolor="#f0f0c0">
 				<h3><a name="p1">SQL functions for constructing a geometric object given its Well-known Text Representation</a></h3></td></tr>
@@ -1921,6 +1937,56 @@ algorithm with given <i>tolerance</i> and respecting topology</td></tr>
 				<td>returns the average length of segments in the Linestring.<br>
                                 <b>NULL</b> will be returned if any error is encountered.<hr>
                                 <b>Note</b>: this function only accepts simple Linestrings; Geometries containing any Point or Polygon, or containing more than a single Linesting will be considered invalid.</td></tr>
+			<tr><td><b>CurvosityIndex</b></td>
+				<td>CurvosityIndex( line <i>LineString</i> ) : <i>Double precision</i><hr>
+					CurvosityIndex( line <i>LineString</i> , extra-points <i>Integer</i> ) : <i>Double precision</i><hr>
+					ST_CurvosityIndex( line <i>LineString</i> ) : <i>Double precision</i><hr>
+					ST_CurvosityIndex( line <i>LineString</i> , extra-points <i>Integer</i> ) : <i>Double precision</i></td>
+				<td></td>
+				<td align="center" bgcolor="#d0f0d0">base</td>
+				<td>returns the Curvosity Index of a generic simple Linestring:
+				    <ul>
+						<li>the Index will range between <b>1.0</b> (<i>in the case of a perfectly straight line</i>) and 
+				             <b>0.0</b> (<i>in the case of a closed line with coincident start and end points</i>).</li>
+				        <li>if the optional argument <b>extra-points</b> is explicitly set, then the given number of equidistant points will be interpolated into the <i>reference line</i> used to calculate the Index.</li>
+				    </ul>
+                                <b>NULL</b> will be returned if any error is encountered.<hr>
+                                <b>Note</b>: this function only accepts simple Linestrings; Geometries containing any Point or Polygon, or containing more than a single Linesting will be considered invalid.</td></tr>
+			<tr><td><b>UphillHeight</b></td>
+				<td>UphillHeight( line <i>LineString</i> ) : <i>Double precision</i><hr>
+					ST_UphillHeight( line <i>LineString</i> ) : <i>Double precision</i></td>
+				<td></td>
+				<td align="center" bgcolor="#d0f0d0">base</td>
+				<td>returns the total Uphill Height of a generic simple Linestring:
+				    <ul>
+						<li><b>0.0</b> will be always returned for any <b>2D</b> Linestring not containing <b>Z</b> coordinates.</li>
+				    </ul>
+                                <b>NULL</b> will be returned if any error is encountered.<hr>
+                                <b>Note</b>: this function only accepts simple Linestrings; Geometries containing any Point or Polygon, or containing more than a single Linesting will be considered invalid.</td></tr>
+			<tr><td><b>DownhillHeight</b></td>
+				<td>DownhillHeight( line <i>LineString</i> ) : <i>Double precision</i><hr>
+					ST_DownhillHeight( line <i>LineString</i> ) : <i>Double precision</i></td>
+				<td></td>
+				<td align="center" bgcolor="#d0f0d0">base</td>
+				<td>returns the total Downhill Height of a generic simple Linestring:
+				    <ul>
+						<li><b>0.0</b> will be always returned for any <b>2D</b> Linestring not containing <b>Z</b> coordinates.</li>
+				    </ul>
+                                <b>NULL</b> will be returned if any error is encountered.<hr>
+                                <b>Note</b>: this function only accepts simple Linestrings; Geometries containing any Point or Polygon, or containing more than a single Linesting will be considered invalid.</td></tr>
+			<tr><td><b>UpDownHeight</b></td>
+				<td>UpDownHeight( line <i>LineString</i> ) : <i>Double precision</i><hr>
+					ST_UpDownHeight( line <i>LineString</i> ) : <i>Double precision</i></td>
+				<td></td>
+				<td align="center" bgcolor="#d0f0d0">base</td>
+				<td>returns the sum of total UpHill and DownHill Heights of a generic simple Linestring:
+				    <ul>
+						<li>this is just a <i>convenience method</i>; calling <b>ST_UpDownHeight(line)</b> is exactly the same than calling <b>ST_UphillHeight(geom) + ST_DownhillHeight(geom)</b></li>
+						<li><b>0.0</b> will be always returned for any <b>2D</b> Linestring not containing <b>Z</b> coordinates.</li>
+				    </ul>
+                                <b>NULL</b> will be returned if any error is encountered.<hr>
+                                <b>Note</b>: this function only accepts simple Linestrings; Geometries containing any Point or Polygon, or containing more than a single Linesting will be considered invalid.</td></tr>
+                                
 			<tr><td colspan="5" align="center" bgcolor="#f0f0c0">
 				<h3><a name="p8">SQL functions on type Surface [Polygon or Ring]</a></h3></td></tr>
 			<tr><th bgcolor="#d0d0d0">Function</th>

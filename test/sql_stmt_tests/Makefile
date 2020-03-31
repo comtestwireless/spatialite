@@ -917,6 +917,18 @@ EXTRA_DIST = addpoint10.testcase \
 	compressgeometry9.testcase \
 	createrastercoverages.testcase \
 	createuuid1.testcase \
+	curvosity1.testcase \
+	curvosity2.testcase \
+	curvosity3.testcase \
+	curvosity4.testcase \
+	curvosity5.testcase \
+	curvosity6.testcase \
+	curvosity7.testcase \
+	curvosity8.testcase \
+	curvosity9.testcase \
+	curvosity10.testcase \
+	curvosity11.testcase \
+	curvosity12.testcase \
 	datalic_register1.testcase \
 	datalic_register2.testcase \
 	datalic_register3.testcase \
@@ -994,6 +1006,14 @@ EXTRA_DIST = addpoint10.testcase \
 	dissolve8.testcase \
 	dissolve9.testcase \
 	dm_m.testcase \
+	downhill1.testcase \
+	downhill2.testcase \
+	downhill3.testcase \
+	downhill4.testcase \
+	downhill5.testcase \
+	downhill6.testcase \
+	downhill7.testcase \
+	downhill8.testcase \
 	DSC_1467.JPG \
 	DSCN0042.JPG \
 	dropgeo1.testcase \
@@ -2875,6 +2895,22 @@ EXTRA_DIST = addpoint10.testcase \
 	trajectorypoint10.testcase \
 	trajectorypoint11.testcase \
 	trajectorypoint12.testcase \
+	uphill1.testcase \
+	uphill2.testcase \
+	uphill3.testcase \
+	uphill4.testcase \
+	uphill5.testcase \
+	uphill6.testcase \
+	uphill7.testcase \
+	uphill8.testcase \
+	updown1.testcase \
+	updown2.testcase \
+	updown3.testcase \
+	updown4.testcase \
+	updown5.testcase \
+	updown6.testcase \
+	updown7.testcase \
+	updown8.testcase \
 	wms_defaultsetting1.testcase \
 	wms_defaultsetting2.testcase \
 	wms_defaultsetting3.testcase \
