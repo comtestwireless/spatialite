@@ -807,6 +807,7 @@ with_geosonlyreentrant
 enable_geos370
 enable_rttopo
 enable_libxml2
+enable_minizip
 enable_geopackage
 enable_gcov
 enable_examples
@@ -1477,6 +1478,7 @@ Optional Features:
   --enable-geos370        enables GEOS 3.7.0 features [default=yes]
   --enable-rttopo         enables RTTOPO support [default=no]
   --enable-libxml2        enables libxml2 inclusion [default=yes]
+  --enable-minizip        enables MiniZIP inclusion [default=yes]
   --enable-geopackage     enables GeoPackage support [default=yes]
   --enable-gcov           turn on code coverage analysis tools
   --enable-examples       enables building examples [default=yes]
@@ -3180,6 +3182,7 @@ $as_echo "#define NDEBUG 1" >>confdefs.h
 
 
 # config depending options
+
 
 
 
@@ -17418,7 +17421,7 @@ else
 fi
 
 
-ac_config_files="$ac_config_files Makefile src/Makefile src/headers/Makefile src/gaiaaux/Makefile src/gaiaexif/Makefile src/gaiageo/Makefile src/gaiageo/flex/Makefile src/gaiageo/lemon/Makefile src/gaiageo/lemon/lemon_src/Makefile src/geopackage/Makefile src/spatialite/Makefile src/shapefiles/Makefile src/dxf/Makefile src/md5/Makefile src/control_points/Makefile src/cutter/Makefile src/topology/Makefile src/srsinit/Makefile src/srsinit/epsg_update/Makefile src/stored_procedures/Makefile src/connection_cache/Makefile src/connection_cache/generator/Makefile src/virtualtext/Makefile src/wfs/Makefile test/Makefile test/sql_stmt_tests/Makefile test/sql_stmt_geos_tests/Makefile test/sql_stmt_geos_380/Makefile test/sql_stmt_geos_non380/Makefile test/sql_stmt_geosadvanced_tests/Makefile test/sql_stmt_geopackage_tests/Makefile test/sql_stmt_gpkg_epsg492_tests/Makefile test/sql_stmt_gpkg_epsg493_tests/Makefile test/sql_stmt_gpkg_epsg600_tests/Makefile test/sql_stmt_proj_tests/Makefile test/sql_stmt_proj492_tests/Makefile test/sql_stmt_proj493_tests/Makefile test/sql_stmt_proj600_tests/Makefile test/sql_stmt_proj600security_tests/Makefile test/sql_stmt_mathsql_tests/Makefile test/sql_stmt_rtgeom_tests/Makefile test/sql_stmt_rttopo_tests/Makefile test/sql_stmt_libxml2_tests/Makefile test/sql_stmt_security_tests/Makefile test/sql_stmt_xmlsec_tests/Makefile test/sql_stmt_freexl_tests/Makefile test/sql_stmt_cache_tests/Makefile test/sql_stmt_gpkgcache_tests/Makefile test/sql_stmt_nocache_tests/Makefile test/sql_stmt_gpkgnocache_tests/Makefile test/sql_stmt_voronoj1_tests/Makefile test/sql_stmt_voronoj2_tests/Makefile test/sql_stmt_sequence_tests/Makefile test/sql_stmt_routing_tests/Makefile test/sql_stmt_logfile_tests/Makefile test/sql_stmt_iconv_tests/Makefile test/sql_stmt_proc_tests/Makefile test/sql_stmt_point_geom/Makefile test/sql_stmt_tiny_point/Makefile test/sql_stmt_postgres_tests/Makefile test/sql_stmt_geos370_tests/Makefile test/sql_stmt_renamenew_tests/Makefile test/sql_stmt_renameold_tests/Makefile test/sql_stmt_bufoptsnew_tests/Makefile test/sql_stmt_bufoptsold_tests/Makefile examples/Makefile Doxyfile spatialite.pc"
+ac_config_files="$ac_config_files Makefile src/Makefile src/headers/Makefile src/gaiaaux/Makefile src/gaiaexif/Makefile src/gaiageo/Makefile src/gaiageo/flex/Makefile src/gaiageo/lemon/Makefile src/gaiageo/lemon/lemon_src/Makefile src/geopackage/Makefile src/spatialite/Makefile src/shapefiles/Makefile src/dxf/Makefile src/md5/Makefile src/control_points/Makefile src/cutter/Makefile src/topology/Makefile src/srsinit/Makefile src/srsinit/epsg_update/Makefile src/stored_procedures/Makefile src/connection_cache/Makefile src/connection_cache/generator/Makefile src/virtualtext/Makefile src/wfs/Makefile test/Makefile test/sql_stmt_tests/Makefile test/sql_stmt_geos_tests/Makefile test/sql_stmt_geos_380/Makefile test/sql_stmt_geos_non380/Makefile test/sql_stmt_geosadvanced_tests/Makefile test/sql_stmt_geopackage_tests/Makefile test/sql_stmt_gpkg_epsg492_tests/Makefile test/sql_stmt_gpkg_epsg493_tests/Makefile test/sql_stmt_gpkg_epsg600_tests/Makefile test/sql_stmt_proj_tests/Makefile test/sql_stmt_proj492_tests/Makefile test/sql_stmt_proj493_tests/Makefile test/sql_stmt_proj600_tests/Makefile test/sql_stmt_proj600security_tests/Makefile test/sql_stmt_mathsql_tests/Makefile test/sql_stmt_rtgeom_tests/Makefile test/sql_stmt_rttopo_tests/Makefile test/sql_stmt_libxml2_tests/Makefile test/sql_stmt_security_tests/Makefile test/sql_stmt_xmlsec_tests/Makefile test/sql_stmt_freexl_tests/Makefile test/sql_stmt_cache_tests/Makefile test/sql_stmt_gpkgcache_tests/Makefile test/sql_stmt_nocache_tests/Makefile test/sql_stmt_gpkgnocache_tests/Makefile test/sql_stmt_voronoj1_tests/Makefile test/sql_stmt_voronoj2_tests/Makefile test/sql_stmt_sequence_tests/Makefile test/sql_stmt_routing_tests/Makefile test/sql_stmt_logfile_tests/Makefile test/sql_stmt_iconv_tests/Makefile test/sql_stmt_proc_tests/Makefile test/sql_stmt_point_geom/Makefile test/sql_stmt_tiny_point/Makefile test/sql_stmt_postgres_tests/Makefile test/sql_stmt_geos370_tests/Makefile test/sql_stmt_renamenew_tests/Makefile test/sql_stmt_renameold_tests/Makefile test/sql_stmt_bufoptsnew_tests/Makefile test/sql_stmt_bufoptsold_tests/Makefile test/sql_stmt_minizip/Makefile test/sql_stmt_zip_proj6/Makefile examples/Makefile Doxyfile spatialite.pc"
 
 
 # exporting the TARGET_CPU string
@@ -18821,6 +18824,93 @@ fi
 fi
 
 #-----------------------------------------------------------------------
+#   --enable-minizip
+#
+# Check whether --enable-minizip was given.
+if test "${enable_minizip+set}" = set; then :
+  enableval=$enable_minizip;
+else
+  enable_minizip=yes
+fi
+
+if test x"$enable_minizip" != "xno"; then
+  for ac_header in minizip/unzip.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "minizip/unzip.h" "ac_cv_header_minizip_unzip_h" "$ac_includes_default"
+if test "x$ac_cv_header_minizip_unzip_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_MINIZIP_UNZIP_H 1
+_ACEOF
+
+else
+  as_fn_error $? "cannot find minizip/unzip.h, bailing out" "$LINENO" 5
+fi
+
+done
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing unzLocateFile" >&5
+$as_echo_n "checking for library containing unzLocateFile... " >&6; }
+if ${ac_cv_search_unzLocateFile+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char unzLocateFile ();
+int
+main ()
+{
+return unzLocateFile ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' minizip; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_search_unzLocateFile=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_unzLocateFile+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_unzLocateFile+:} false; then :
+
+else
+  ac_cv_search_unzLocateFile=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_unzLocateFile" >&5
+$as_echo "$ac_cv_search_unzLocateFile" >&6; }
+ac_res=$ac_cv_search_unzLocateFile
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+else
+  as_fn_error $? "'libminizip' is required but it doesn't seem to be installed on this system." "$LINENO" 5
+fi
+
+  $as_echo "#define ENABLE_MINIZIP 1" >>confdefs.h
+
+fi
+
+#-----------------------------------------------------------------------
 #   --enable-geopackage
 #
 # Check whether --enable-geopackage was given.
@@ -20143,6 +20233,8 @@ do
     "test/sql_stmt_renameold_tests/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_renameold_tests/Makefile" ;;
     "test/sql_stmt_bufoptsnew_tests/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_bufoptsnew_tests/Makefile" ;;
     "test/sql_stmt_bufoptsold_tests/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_bufoptsold_tests/Makefile" ;;
+    "test/sql_stmt_minizip/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_minizip/Makefile" ;;
+    "test/sql_stmt_zip_proj6/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_zip_proj6/Makefile" ;;
     "examples/Makefile") CONFIG_FILES="$CONFIG_FILES examples/Makefile" ;;
     "Doxyfile") CONFIG_FILES="$CONFIG_FILES Doxyfile" ;;
     "spatialite.pc") CONFIG_FILES="$CONFIG_FILES spatialite.pc" ;;

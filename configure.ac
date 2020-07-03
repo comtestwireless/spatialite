@@ -59,6 +59,8 @@ AH_TEMPLATE([OMIT_FREEXL],
             [Should be defined in order to disable FREEXL support.])
 AH_TEMPLATE([ENABLE_LIBXML2],
             [Should be defined in order to enable LIBXML2 support.])
+AH_TEMPLATE([ENABLE_MINIZIP],
+            [Should be defined in order to enable MiniZIP support.])
 AH_TEMPLATE([ENABLE_GEOPACKAGE],
             [Should be defined in order to enable GeoPackage support.])
 AH_TEMPLATE([TARGET_CPU],
@@ -179,6 +181,8 @@ AC_CONFIG_FILES([Makefile \
 		test/sql_stmt_renameold_tests/Makefile \
 		test/sql_stmt_bufoptsnew_tests/Makefile \
 		test/sql_stmt_bufoptsold_tests/Makefile \
+		test/sql_stmt_minizip/Makefile \
+		test/sql_stmt_zip_proj6/Makefile \
 		examples/Makefile \
 		Doxyfile \
 		spatialite.pc])
@@ -415,6 +419,18 @@ if test x"$enable_libxml2" != "xno"; then
   AC_SUBST(LIBXML2_CFLAGS)
   AC_SUBST(LIBXML2_LIBS)
   AC_DEFINE(ENABLE_LIBXML2)
+fi
+
+#-----------------------------------------------------------------------
+#   --enable-minizip
+#
+AC_ARG_ENABLE(minizip, [AS_HELP_STRING(
+  [--enable-minizip], [enables MiniZIP inclusion [default=yes]])],
+  [], [enable_minizip=yes])
+if test x"$enable_minizip" != "xno"; then
+  AC_CHECK_HEADERS(minizip/unzip.h,, [AC_MSG_ERROR([cannot find minizip/unzip.h, bailing out])])
+  AC_SEARCH_LIBS(unzLocateFile, minizip,,AC_MSG_ERROR(['libminizip' is required but it doesn't seem to be installed on this system.]))
+  AC_DEFINE(ENABLE_MINIZIP)
 fi
 
 #-----------------------------------------------------------------------

@@ -2074,6 +2074,12 @@ EXTRA_DIST = addpoint10.testcase \
 	reflectcoords7.testcase \
 	reflectcoords8.testcase \
 	reflectcoords9.testcase \
+	remextrasp1.testcase \
+	remextrasp2.testcase \
+	remextrasp3.testcase \
+	remextrasp4.testcase \
+	remextrasp5.testcase \
+	remextrasp6.testcase \
 	removedupl1.testcase \
 	removedupl2.testcase \
 	removedupl3.testcase \

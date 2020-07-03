@@ -519,6 +519,20 @@ extern "C"
  */
     GAIAAUX_DECLARE char *gaiaFileExtFromPath (const char *path);
 
+/**
+ Return a text string containing no repeated whitespaces
+
+ \param string the input string to be cleaned
+
+ \return the corresponding string containing no repeated whitespaces,
+ or NULL on failure
+
+ \note this function will return a dynamically allocated buffer created 
+ by malloc(). 
+ You are required to explicitly free() any string returned by this function.
+ */
+    GAIAAUX_DECLARE char *gaiaRemoveExtraSpaces (const char *string);
+
 #ifdef __cplusplus
 }
 #endif

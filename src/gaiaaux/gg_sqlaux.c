@@ -1474,3 +1474,38 @@ gaiaFileExtFromPath (const char *path)
     strcpy (name, path + pos + 1);
     return name;
 }
+
+GAIAAUX_DECLARE char *
+gaiaRemoveExtraSpaces (const char *string)
+{
+/* removing all repeated whitespaces from a string */
+	int len;
+	char *clean;
+	char *p;
+	int i;
+	int space = 0;
+	
+	if (string == NULL)
+		return NULL;
+		
+	len = strlen(string);
+	clean = malloc (len + 1);
+	p = clean;
+	for (i = 0; i < len; i++)
+	{
+		int sp = 0;
+		if (string[i] == ' ' || string[i] == '\t')
+			sp = 1;
+		else
+			sp = 0;
+		if (space && sp)
+		continue;
+		*p++ = string[i];
+		if (sp)
+		space = 1;
+		else
+		space = 0;
+	}
+	*p = '\0';
+	return clean;
+}

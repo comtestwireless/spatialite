@@ -137,6 +137,9 @@
 			<tr><td><b>HasGeosOnlyReentrant</b></td>
 				<td>HasGeosOnlyReentrant( void ) : <i>Boolean</i></td>
 				<td colspan="3">TRUE if the underlying library was built enabling <b>GEOSONLYREENTRANT</b></td></tr>
+			<tr><td><b>HasMiniZip</b></td>
+				<td>HasMiniZip( void ) : <i>Boolean</i></td>
+				<td colspan="3">TRUE if the underlying library was built enabling <b>MINIZIP</b></td></tr>
 			<tr><td><b>HasRtTopo</b></td>
 				<td>HasRtTopo( void ) : <i>Boolean</i></td>
 				<td colspan="3">TRUE if the underlying library was built enabling <b>RTTOPO</b></td></tr>
@@ -270,6 +273,9 @@
 				<td>FileExtFromPath( TEXT ) : <i>Text</i></td>
 				<td colspan="3">returns the File Extension from a relative or absolute Pathname.<br>Will return <b>NULL</b> for invalid input of for any path
 				 lacking a File Name or when no Extension is present.</td></tr>
+			<tr><td><b>RemoveExtraSpaces</b></td>
+				<td>RemoveExtraSpaces( TEXT ) : <i>Text</i></td>
+				<td colspan="3">returns a text string containing no repeated whitespaces (<b>SPACE</b> or <b>TAB</b> characters).<br>Will return <b>NULL</b> for invalid input.</td></tr>
 			<tr><td><b>MakeStringList</b></td>
 				<td>MakeStringList( value ) : <i>Text</i><hr>
 				    MakeStringList( value , delimiter <i>text</i>) : <i>Text</i></td>
@@ -5061,6 +5067,18 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				<b>NULL</b> will be returned on invalid path or if no .PRJ member supports the Shapefile.<br>
 				<u>Note</u>: this SQL function will be available only when SpatiaLite is built on <b>PROJ.6</b> (or any later version).<br>
                 Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to enable this function.</td></tr>
+			<tr><td><b>PROJ_GuessSridFromZipSHP</b></td>
+				<td>PROJ_GuessSridFromZipSHP( zip_path <i>String</i> , filename <i>String</i> ) : <i>Integer</i></td>
+				<td colspan="3">Will return the SRID value [if any] corresponding to the CRS defined by the <b>.PRJ</b> member of a zipped Shapefile.<br>
+				This function is almost the same as <b>PROJ_GuessSridFromSHP()</b>, except in that the Shapefile is expected to be stored within some Zipfile.<br>
+				The following arguments are required:
+				<ul>
+					<li><b>zip_path</b>: expected to be the full or relative pathname of some Zipfile.</li>
+					<li><b>filename</b> base name of the Shapefile within the Zipfile (omitting any <i>.shp</i>, <i>.shx</i> or <i>.dbf</i> suffix).</li>
+				</ul>
+				<hr>
+				<u>Note</u>: this SQL function will be available only when SpatiaLite is built on <b>PROJ.6</b> (or any later version).<br>
+                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to enable this function.</td></tr>
 			<tr><td colspan="5" align="center" bgcolor="#f0e0c0">
 				<h3><a name="topology">SQL functions supporting Topology-Geometry</a></h3></td></tr>
 			<tr><th bgcolor="#d0d0d0">Function</th>
@@ -6348,6 +6366,31 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				Will return the total number of imported rows.<br> <b>NULL</b> will be returned on invalid arguments.<hr>
                 <u>Please note well</u>: this SQL function opens the door to many potential security issues, and thus is always <i>disabled by default</i>.<br>
                 Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to enable this function.</td></tr>
+			<tr><td><b>ImportZipSHP</b></td>
+				<td>ImportZipSHP( zip_path <i>Text</i> , basename <i>Text</i> , table <i>Text</i> , charset <i>Text</i> ) : <i>Integer</i><hr>
+				ImportZipSHP( zip_path <i>Text</i> , basename <i>Text</i> , table <i>Text</i> , charset <i>Text</i> [ , srid <i>Integer</i>  [ ,
+				    geom_column <i>Text</i> [ , pk_column <i>Text</i> [ , geometry_type <i>Text</i> [ , coerce2D <i>Integer</i> 
+				    [ , compressed <i>Integer</i> [ , spatial_index <i>Integer</i> [ , text_dates <i>Integer</i> 
+				    [ , colname_case <i>Text</i> [ , update_statistics <i>Integer</i> [ , verbose <i>Integer</i> ] ] ] ] ] ] ] ] ] ] ] )
+				    : <i>Integer</i></td>
+				<td colspan="3">Will import an external Shapfile from a Zipfile into an internal Table.
+				This function is almost the same as <b>ImportSHP()</b>, except in that the Shapefile is expected to be stored within some Zipfile.<br>
+				The only two arguments having a different meaning are:
+				<ul>
+					<li><b>zip_path</b>: expected to be the full or relative pathname of some Zipfile.</li>
+					<li><b>basename</b> base name of the Shapefile within the Zipfile (omitting any <i>.shp</i>, <i>.shx</i> or <i>.dbf</i> suffix).</li>
+				</ul>
+				<hr>
+                <u>Please note well</u>: this SQL function opens the door to many potential security issues, and thus is always <i>disabled by default</i>.<br>
+                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to enable this function.</td></tr>
+			<tr><td><b>Zipfile_NumSHP</b></td>
+				<td>Zipfile_NumSHP( zip_path <i>Text</i> ) : <i>Integer</i></td>
+				<td colspan="3">return the number of Shapefiles contained within the Zipfile identified by <b>zip_path</b><br>
+				<b>NULL</b> on invalid argument or if the Zipfile does not exist or is corrupted.</td></tr>
+			<tr><td><b>Zipfile_ShpN</b></td>
+				<td>Zipfile_ShpN( zip_path <i>Text</i> , idx <i>Integer</i> ) : <i>Text</i></td>
+				<td colspan="3">return the basename of the nth (1-based) Shapefile contained within the Zipfile identified by <b>zip_path</b><br>
+				<b>NULL</b> on invalid arguments or if the Zipfile does not exist or is corrupted.</td></tr>
 			<tr><td><b>ExportSHP</b></td>
 				<td>ExportSHP( table <i>Text</i> , geom_column <i>Text</i> , filename <i>Text</i> , charset <i>Text</i> ) : <i>Integer</i><hr>
 				ExportSHP( table <i>Text</i> , geom_column <i>Text</i> , filename <i>Text</i> , charset <i>Text</i> , [ geom_type <i>Text</i>
@@ -6399,6 +6442,29 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				Will return the total number of imported rows.<br> <b>NULL</b> will be returned on invalid arguments.<hr>
                 <u>Please note well</u>: this SQL function opens the door to many potential security issues, and thus is always <i>disabled by default</i>.<br>
                 Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to enable this function.</td></tr>
+			<tr><td><b>ImportZipDBF</b></td>
+				<td>ImportZipDBF( zip_path <i>Text</i> , filename <i>Text</i> , table <i>Text</i> , charset <i>Text</i> ) : <i>Integer</i><hr>
+				ImportZipDBF( zip_path <i>Text</i> , filename <i>Text</i> , table <i>Text</i> , charset <i>Text</i> [ , pk_column <i>Text</i>  
+				    [ , text_dates <i>Integer</i> [ , colname_case <i>Text</i> ] ] ] ) : <i>Integer</i></td>
+				<td colspan="3">Will import an external DBF file from a Zipfile into an internal Table.
+				This function is almost the same as <b>ImportDBF()</b>, except in that the DBF file is expected to be stored within some Zipfile.<br>
+				The only two arguments having a different meaning are:
+				<ul>
+					<li><b>zip_path</b>: expected to be the full or relative pathname of some Zipfile.</li>
+					<li><b>filename</b> name of the Shapefile within the Zipfile (including the <i>.dbf</i> suffix).</li>
+				</ul>
+				<hr>
+				Will return the total number of imported rows.<br> <b>NULL</b> will be returned on invalid arguments.<hr>
+                <u>Please note well</u>: this SQL function opens the door to many potential security issues, and thus is always <i>disabled by default</i>.<br>
+                Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to enable this function.</td></tr>
+			<tr><td><b>Zipfile_NumDBF</b></td>
+				<td>Zipfile_NumDBF( zip_path <i>Text</i> ) : <i>Integer</i></td>
+				<td colspan="3">return the number of DBF files contained within the Zipfile identified by <b>zip_path</b><br>
+				<b>NULL</b> on invalid argument or if the Zipfile does not exist or is corrupted.</td></tr>
+			<tr><td><b>Zipfile_DbfN</b></td>
+				<td>Zipfile_DbfN( zip_path <i>Text</i> , idx <i>Integer</i> ) : <i>Text</i></td>
+				<td colspan="3">return the filename of the nth (1-based)  DBF file contained within the Zipfile identified by <b>zip_path</b><br>
+				<b>NULL</b> on invalid arguments or if the Zipfile does not exist or is corrupted.</td></tr>
 			<tr><td><b>ExportDBF</b></td>
 				<td>ExportDBF( table <i>Text</i> , filename <i>Text</i> , charset <i>Text</i> [ , colname_case <i>Text</i> ] ) : <i>Integer</i></td>
 				<td colspan="3">Will export an internal Table as an external DBF file:

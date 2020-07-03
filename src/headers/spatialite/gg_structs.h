@@ -56,6 +56,7 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #endif
 
 #include <sys/types.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -360,6 +361,24 @@ extern "C"
     typedef gaiaDbfList *gaiaDbfListPtr;
 
 /**
+ A Memory based File
+ */
+    typedef struct gaiaMemFileStruct
+    {
+/* Memory File Type */
+	char *path;
+	void *buf;
+	uint32_t size;
+	uint32_t offset;
+    } gaiaMemFile;
+/** 
+ Typedef for Memory File structure
+
+ \sa gaiaMemFile
+ */
+    typedef gaiaMemFile *gaiaMemFilePtr;
+
+/**
  Container for DBF file handling
  */
     typedef struct gaiaDbfStruct
@@ -373,6 +392,8 @@ extern "C"
 	char *Path;		/* the DBF path */
 /** FILE handle */
 	FILE *flDbf;		/* the DBF file handle */
+/** Memory based DBF file */
+	gaiaMemFilePtr memDbf;	/* the DBF memory file */
 /** list of DBF fields */
 	gaiaDbfListPtr Dbf;	/* the DBF attributes list */
 /** I/O buffer */
@@ -417,6 +438,12 @@ extern "C"
 	FILE *flShp;		/* the SHP file handle */
 /** FILE handle to DBF file */
 	FILE *flDbf;		/* the DBF file handle */
+/** Memory based SHX file */
+	gaiaMemFilePtr memShx;	/* the SHX memory file */
+/** Memory based SHP file */
+	gaiaMemFilePtr memShp;	/* the SHP memory file */
+/** Memory based DBF file */
+	gaiaMemFilePtr memDbf;	/* the DBF memory file */
 /** the SHP shape code */
 	int Shape;		/* the SHAPE code for the whole shapefile */
 /** list of DBF fields */

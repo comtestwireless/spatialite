@@ -633,6 +633,22 @@ fnct_has_geos_only_reentrant (sqlite3_context * context, int argc,
 }
 
 static void
+fnct_has_minizip (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ HasMiniZip()
+/
+/ return 1 if built including MINIZIP; otherwise 0
+*/
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+#ifdef ENABLE_MINIZIP		/* MINIZIP is supported */
+    sqlite3_result_int (context, 1);
+#else
+    sqlite3_result_int (context, 0);
+#endif
+}
+
+static void
 fnct_rttopo_version (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
 /* SQL function:
@@ -11035,6 +11051,142 @@ fnct_UpdateMetaCatalogStatistics (sqlite3_context * context, int argc,
     return;
 }
 
+#ifdef ENABLE_MINIZIP		/* only id MINIZIP is enabled */
+
+static void
+fnct_Zipfile_NumSHP (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ Zipfile_NumSHP(zip_path TEXT)
+/
+/ return the total number of Shapefiles contained within a given Zipfile
+/ 0 if not Shapefile exists
+/ or NULL on error or invalid arguments
+*/
+    const char *zip_path;
+    int count;
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
+	zip_path = (const char *) sqlite3_value_text (argv[0]);
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+/* searching for Shapefiles */
+    if (!gaiaZipfileNumSHP (zip_path, &count))
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    sqlite3_result_int (context, count);
+}
+
+static void
+fnct_Zipfile_ShpN (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ Zipfile_ShpN(zip_path TEXT, idx INTEGER)
+/
+/ return the name of the Nth Shapefile from within a Zipfile
+/ or NULL on error or invalid arguments
+*/
+    const char *zip_path;
+    int idx;
+    char *basename;
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
+	zip_path = (const char *) sqlite3_value_text (argv[0]);
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (sqlite3_value_type (argv[1]) == SQLITE_INTEGER)
+	idx = sqlite3_value_int (argv[1]);
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+/* searching the Nth Shapefile */
+    basename = gaiaZipfileShpN (zip_path, idx);
+    if (basename == NULL)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    sqlite3_result_text (context, basename, strlen (basename), free);
+}
+
+static void
+fnct_Zipfile_NumDBF (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ Zipfile_NumDBF(zip_path TEXT)
+/
+/ return the total number of DBF files contained within a given Zipfile
+/ 0 if not DBF file exists
+/ or NULL on error or invalid arguments
+*/
+    const char *zip_path;
+    int count;
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
+	zip_path = (const char *) sqlite3_value_text (argv[0]);
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+/* searching for DBF files */
+    if (!gaiaZipfileNumDBF (zip_path, &count))
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    sqlite3_result_int (context, count);
+}
+
+static void
+fnct_Zipfile_DbfN (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ Zipfile_DbfN(zip_path TEXT, idx INTEGER)
+/
+/ return the name of the Nth DBF file from within a Zipfile
+/ or NULL on error or invalid arguments
+*/
+    const char *zip_path;
+    int idx;
+    char *filename;
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
+	zip_path = (const char *) sqlite3_value_text (argv[0]);
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (sqlite3_value_type (argv[1]) == SQLITE_INTEGER)
+	idx = sqlite3_value_int (argv[1]);
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+/* searching the Nth DBF file */
+    filename = gaiaZipfileDbfN (zip_path, idx);
+    if (filename == NULL)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    sqlite3_result_text (context, filename, strlen (filename), free);
+}
+
+#endif /* end MINIZIP */
+
 static gaiaPointPtr
 simplePoint (gaiaGeomCollPtr geo)
 {
@@ -17480,23 +17632,23 @@ fnct_MinZ (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  sqlite3_result_null (context);
 	  return;
       }
-      if (argc == 2)
+    if (argc == 2)
       {
-		  if (sqlite3_value_type(argv[1]) == SQLITE_FLOAT)
-		  {
-			  nodata = sqlite3_value_double(argv[1]);
-			  hasNodata = 1;
-		  }
-		  else if (sqlite3_value_type(argv[1]) == SQLITE_INTEGER)
-		  {
-			  int intval = sqlite3_value_int(argv[1]);
-			  nodata = intval;
-			  hasNodata = 1;
-		  }
-		  else
-		  sqlite3_result_null(context);
-		  return;
-	  }
+	  if (sqlite3_value_type (argv[1]) == SQLITE_FLOAT)
+	    {
+		nodata = sqlite3_value_double (argv[1]);
+		hasNodata = 1;
+	    }
+	  else if (sqlite3_value_type (argv[1]) == SQLITE_INTEGER)
+	    {
+		int intval = sqlite3_value_int (argv[1]);
+		nodata = intval;
+		hasNodata = 1;
+	    }
+	  else
+	      sqlite3_result_null (context);
+	  return;
+      }
     p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
     n_bytes = sqlite3_value_bytes (argv[0]);
     geo = gaiaFromSpatiaLiteBlobWkb (p_blob, n_bytes);
@@ -17534,10 +17686,10 @@ fnct_MinZ (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  if (geo->DimensionModel == GAIA_XY_Z
 	      || geo->DimensionModel == GAIA_XY_Z_M)
 	    {
-			if (hasNodata)
-		gaiaZRangeGeometryEx(geo, nodata, &min, &max);
+		if (hasNodata)
+		    gaiaZRangeGeometryEx (geo, nodata, &min, &max);
 		else
-		gaiaZRangeGeometry (geo, &min, &max);
+		    gaiaZRangeGeometry (geo, &min, &max);
 		sqlite3_result_double (context, min);
 	    }
 	  else
@@ -17570,23 +17722,23 @@ fnct_MaxZ (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  sqlite3_result_null (context);
 	  return;
       }
-      if (argc == 2)
+    if (argc == 2)
       {
-		  if (sqlite3_value_type(argv[1]) == SQLITE_FLOAT)
-		  {
-			  nodata = sqlite3_value_double(argv[1]);
-			  hasNodata = 1;
-		  }
-		  else if (sqlite3_value_type(argv[1]) == SQLITE_INTEGER)
-		  {
-			  int intval = sqlite3_value_int(argv[1]);
-			  nodata = intval;
-			  hasNodata = 1;
-		  }
-		  else
-		  sqlite3_result_null(context);
-		  return;
-	  }
+	  if (sqlite3_value_type (argv[1]) == SQLITE_FLOAT)
+	    {
+		nodata = sqlite3_value_double (argv[1]);
+		hasNodata = 1;
+	    }
+	  else if (sqlite3_value_type (argv[1]) == SQLITE_INTEGER)
+	    {
+		int intval = sqlite3_value_int (argv[1]);
+		nodata = intval;
+		hasNodata = 1;
+	    }
+	  else
+	      sqlite3_result_null (context);
+	  return;
+      }
     p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
     n_bytes = sqlite3_value_bytes (argv[0]);
     geo = gaiaFromSpatiaLiteBlobWkb (p_blob, n_bytes);
@@ -17624,10 +17776,10 @@ fnct_MaxZ (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  if (geo->DimensionModel == GAIA_XY_Z
 	      || geo->DimensionModel == GAIA_XY_Z_M)
 	    {
-			if (hasNodata)
-		gaiaZRangeGeometryEx(geo, nodata, &min, &max);
+		if (hasNodata)
+		    gaiaZRangeGeometryEx (geo, nodata, &min, &max);
 		else
-		gaiaZRangeGeometry (geo, &min, &max);
+		    gaiaZRangeGeometry (geo, &min, &max);
 		sqlite3_result_double (context, max);
 	    }
 	  else
@@ -17660,23 +17812,23 @@ fnct_MinM (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  sqlite3_result_null (context);
 	  return;
       }
-      if (argc == 2)
+    if (argc == 2)
       {
-		  if (sqlite3_value_type(argv[1]) == SQLITE_FLOAT)
-		  {
-			  nodata = sqlite3_value_double(argv[1]);
-			  hasNodata = 1;
-		  }
-		  else if (sqlite3_value_type(argv[1]) == SQLITE_INTEGER)
-		  {
-			  int intval = sqlite3_value_int(argv[1]);
-			  nodata = intval;
-			  hasNodata = 1;
-		  }
-		  else
-		  sqlite3_result_null(context);
-		  return;
-	  }
+	  if (sqlite3_value_type (argv[1]) == SQLITE_FLOAT)
+	    {
+		nodata = sqlite3_value_double (argv[1]);
+		hasNodata = 1;
+	    }
+	  else if (sqlite3_value_type (argv[1]) == SQLITE_INTEGER)
+	    {
+		int intval = sqlite3_value_int (argv[1]);
+		nodata = intval;
+		hasNodata = 1;
+	    }
+	  else
+	      sqlite3_result_null (context);
+	  return;
+      }
     p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
     n_bytes = sqlite3_value_bytes (argv[0]);
     geo = gaiaFromSpatiaLiteBlobWkb (p_blob, n_bytes);
@@ -17714,10 +17866,10 @@ fnct_MinM (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  if (geo->DimensionModel == GAIA_XY_M
 	      || geo->DimensionModel == GAIA_XY_Z_M)
 	    {
-			if (hasNodata)
-		gaiaMRangeGeometryEx(geo, nodata, &min, &max);
+		if (hasNodata)
+		    gaiaMRangeGeometryEx (geo, nodata, &min, &max);
 		else
-		gaiaMRangeGeometry (geo, &min, &max);
+		    gaiaMRangeGeometry (geo, &min, &max);
 		sqlite3_result_double (context, min);
 	    }
 	  else
@@ -17750,23 +17902,23 @@ fnct_MaxM (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  sqlite3_result_null (context);
 	  return;
       }
-      if (argc == 2)
+    if (argc == 2)
       {
-		  if (sqlite3_value_type(argv[1]) == SQLITE_FLOAT)
-		  {
-			  nodata = sqlite3_value_double(argv[1]);
-			  hasNodata = 1;
-		  }
-		  else if (sqlite3_value_type(argv[1]) == SQLITE_INTEGER)
-		  {
-			  int intval = sqlite3_value_int(argv[1]);
-			  nodata = intval;
-			  hasNodata = 1;
-		  }
-		  else
-		  sqlite3_result_null(context);
-		  return;
-	  }
+	  if (sqlite3_value_type (argv[1]) == SQLITE_FLOAT)
+	    {
+		nodata = sqlite3_value_double (argv[1]);
+		hasNodata = 1;
+	    }
+	  else if (sqlite3_value_type (argv[1]) == SQLITE_INTEGER)
+	    {
+		int intval = sqlite3_value_int (argv[1]);
+		nodata = intval;
+		hasNodata = 1;
+	    }
+	  else
+	      sqlite3_result_null (context);
+	  return;
+      }
     p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
     n_bytes = sqlite3_value_bytes (argv[0]);
     geo = gaiaFromSpatiaLiteBlobWkb (p_blob, n_bytes);
@@ -17804,10 +17956,10 @@ fnct_MaxM (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  if (geo->DimensionModel == GAIA_XY_M
 	      || geo->DimensionModel == GAIA_XY_Z_M)
 	    {
-			if (hasNodata)
-		gaiaMRangeGeometryEx(geo, nodata, &min, &max);
+		if (hasNodata)
+		    gaiaMRangeGeometryEx (geo, nodata, &min, &max);
 		else
-		gaiaMRangeGeometry (geo, &min, &max);
+		    gaiaMRangeGeometry (geo, &min, &max);
 		sqlite3_result_double (context, max);
 	    }
 	  else
@@ -24125,7 +24277,56 @@ fnct_PROJ_GuessSridFromSHP (sqlite3_context * context, int argc,
 	sqlite3_result_int (context, srid);
     free (wkt);
 }
-#endif
+
+#ifdef ENABLE_MINIZIP		/* only id MINIZIP is enabled */
+static void
+fnct_PROJ_GuessSridFromZipSHP (sqlite3_context * context, int argc,
+			       sqlite3_value ** argv)
+{
+/* SQL function:
+/ PROJ_GuessSridFromZipSHP(zip_path TEXT, filename TEXT)
+/
+/ return the SRID corresponding to a given Shapefile
+/ -1 if not matching SRID exists
+/ or NULL on error or invalid arguments
+*/
+    const char *zip_path;
+    const char *basepath;
+    char *wkt = NULL;
+    int srid;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    void *data = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
+	zip_path = (const char *) sqlite3_value_text (argv[0]);
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (sqlite3_value_type (argv[1]) == SQLITE_TEXT)
+	basepath = (const char *) sqlite3_value_text (argv[1]);
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+/* loocking for an eventual .PRJ file */
+    wkt = gaiaReadWktFromZipShp (zip_path, basepath);
+    if (wkt == NULL)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (!gaiaGuessSridFromWKT (sqlite, data, wkt, &srid))
+	sqlite3_result_int (context, -1);
+    else
+	sqlite3_result_int (context, srid);
+    free (wkt);
+}
+#endif /* end MINIZIP */
+
+#endif /* end PROJ_NEW */
 
 #endif /* end including PROJ.4 */
 
@@ -25134,8 +25335,7 @@ fnct_LinestringAvgSegmentLength (sqlite3_context * context, int argc,
 }
 
 static void
-fnct_CurvosityIndex (sqlite3_context * context, int argc,
-				 sqlite3_value ** argv)
+fnct_CurvosityIndex (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
 /* SQL function:
 / ST_CurvosityIndex(BLOB encoded LINESTRING)
@@ -25194,12 +25394,11 @@ fnct_CurvosityIndex (sqlite3_context * context, int argc,
 
     ln = geo->FirstLinestring;
     index = gaiaCurvosityIndex (cache, ln, extra_points);
-	sqlite3_result_double (context, index);
+    sqlite3_result_double (context, index);
 }
 
 static void
-fnct_UphillHeight (sqlite3_context * context, int argc,
-				 sqlite3_value ** argv)
+fnct_UphillHeight (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
 /* SQL function:
 / ST_UphillHeight(BLOB encoded LINESTRING)
@@ -25247,12 +25446,11 @@ fnct_UphillHeight (sqlite3_context * context, int argc,
 
     ln = geo->FirstLinestring;
     gaiaUpDownHeight (ln, &up, &down);
-	sqlite3_result_double (context, up);
+    sqlite3_result_double (context, up);
 }
 
 static void
-fnct_DownhillHeight (sqlite3_context * context, int argc,
-				 sqlite3_value ** argv)
+fnct_DownhillHeight (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
 /* SQL function:
 / ST_DownhillHeight(BLOB encoded LINESTRING)
@@ -25300,12 +25498,11 @@ fnct_DownhillHeight (sqlite3_context * context, int argc,
 
     ln = geo->FirstLinestring;
     gaiaUpDownHeight (ln, &up, &down);
-	sqlite3_result_double (context, down);
+    sqlite3_result_double (context, down);
 }
 
 static void
-fnct_UpDownHeight (sqlite3_context * context, int argc,
-				 sqlite3_value ** argv)
+fnct_UpDownHeight (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
 /* SQL function:
 / ST_UpDownHeight(BLOB encoded LINESTRING)
@@ -25353,7 +25550,7 @@ fnct_UpDownHeight (sqlite3_context * context, int argc,
 
     ln = geo->FirstLinestring;
     gaiaUpDownHeight (ln, &up, &down);
-	sqlite3_result_double (context, up + down);
+    sqlite3_result_double (context, up + down);
 }
 
 #ifdef ENABLE_RTTOPO		/* only if RTTOPO is enabled */
@@ -34075,6 +34272,36 @@ fnct_FileExtFromPath (sqlite3_context * context, int argc,
 }
 
 static void
+fnct_RemoveExtraSpaces (sqlite3_context * context, int argc,
+			sqlite3_value ** argv)
+{
+/* SQL function:
+/ RemoveExtraSpaces(TEXT string)
+/
+/ returns a TEXT value containing no repeated whitespaces
+/      or
+/ NULL on invalid arguments
+*/
+    const char *dirty;
+    char *clean;
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+
+    if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
+	dirty = (const char *) sqlite3_value_text (argv[0]);
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+/* removing whitespaces from the string */
+    clean = gaiaRemoveExtraSpaces (dirty);
+    if (clean == NULL)
+	sqlite3_result_null (context);
+    else
+	sqlite3_result_text (context, clean, strlen (clean), free);
+}
+
+static void
 fnct_make_string_list_step (sqlite3_context * context, int argc,
 			    sqlite3_value ** argv)
 {
@@ -39079,6 +39306,336 @@ fnct_ImportSHP (sqlite3_context * context, int argc, sqlite3_value ** argv)
       }
 }
 
+#ifdef ENABLE_MINIZIP		/* only if MINIZIP is enabled */
+
+static void
+fnct_ImportZipDBF (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ ImportZipDBF(TEXT zip_path, TEXT filename, TEXT table, TEXT charset)
+/ ImportZipDBF(TEXT zip_path, TEXT filename, TEXT table, TEXT charset, 
+/              TEXT pk_column)
+/ ImportZipDBF(TEXT zip_path, TEXT filename, TEXT table, TEXT charset,
+/              TEXT pk_column, INTEGER text_dates)
+/ ImportZipDBF(TEXT zip_path, TEXT filename, TEXT table, TEXT charset, 
+/              TEXT pk_column, INTEGER text_dates, INTEGER colname_case)
+/
+/ returns:
+/ the number of inserted rows
+/ NULL on invalid arguments
+*/
+    int ret;
+    char *zip_path;
+    char *table;
+    char *path;
+    char *charset;
+    char *pk_column = NULL;
+    int text_dates = 0;
+    int colname_case = GAIA_DBF_COLNAME_LOWERCASE;
+    int rows = 0;
+    sqlite3 *db_handle = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) != SQLITE_TEXT)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    zip_path = (char *) sqlite3_value_text (argv[0]);
+    if (sqlite3_value_type (argv[1]) != SQLITE_TEXT)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    path = (char *) sqlite3_value_text (argv[1]);
+    if (sqlite3_value_type (argv[2]) != SQLITE_TEXT)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    table = (char *) sqlite3_value_text (argv[2]);
+    if (sqlite3_value_type (argv[3]) != SQLITE_TEXT)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    charset = (char *) sqlite3_value_text (argv[3]);
+    if (argc > 4)
+      {
+	  if (sqlite3_value_type (argv[4]) != SQLITE_TEXT)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  else
+	      pk_column = (char *) sqlite3_value_text (argv[4]);
+      }
+    if (argc > 5)
+      {
+	  if (sqlite3_value_type (argv[5]) != SQLITE_INTEGER)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  else
+	      text_dates = sqlite3_value_int (argv[5]);
+      }
+    if (argc > 6)
+      {
+	  if (sqlite3_value_type (argv[6]) != SQLITE_TEXT)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  else
+	    {
+		const char *val = (char *) sqlite3_value_text (argv[6]);
+		if (strcasecmp (val, "UPPER") == 0
+		    || strcasecmp (val, "UPPERCASE") == 0)
+		    colname_case = GAIA_DBF_COLNAME_UPPERCASE;
+		else if (strcasecmp (val, "SAME") == 0
+			 || strcasecmp (val, "SAMECASE") == 0)
+		    colname_case = GAIA_DBF_COLNAME_CASE_IGNORE;
+		else
+		    colname_case = GAIA_DBF_COLNAME_LOWERCASE;
+	    }
+      }
+
+    ret =
+	load_zip_dbf (db_handle, zip_path, path, table, pk_column, charset, 1,
+		      text_dates, &rows, colname_case, NULL);
+
+    if (rows < 0 || !ret)
+	sqlite3_result_null (context);
+    else
+	sqlite3_result_int (context, rows);
+}
+
+static void
+fnct_ImportZipSHP (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ ImportZipSHP(TEXT zip_path, TEXT filename, TEXT table, TEXT charset)
+/ ImportZipSHP(TEXT zip_path, TEXT filename, TEXT table, TEXT charset, 
+/              INT srid)
+/ ImportZipSHP(TEXT zip_path, TEXT filename, TEXT table, TEXT charset, 
+/              INT srid, TEXT geom_column)
+/ ImportZipSHP(TEXT zip_path, TEXT filename, TEXT table, TEXT charset, 
+/              INT srid, TEXT geom_column, TEXT pk_column)
+/ ImportZipSHP(TEXT zip_path, TEXT filename, TEXT table, TEXT charset, 
+/              INT srid, TEXT geom_column, TEXT pk_column, TEXT geom_type)
+/ ImportZipSHP(TEXT zip_path, TEXT filename, TEXT table, TEXT charset, 
+/              INT srid, TEXT geom_column, TEXT pk_column, TEXT geom_type,
+/              INT coerce2d) 
+/ ImportZipSHP(TEXT zip_path, TEXT filename, TEXT table, TEXT charset, 
+/              INT srid, TEXT geom_column, TEXT pk_column, TEXT geom_type,
+/              INT coerce2d, INT compressed) 
+/ ImportZipSHP(TEXT zip_path, TEXT filename, TEXT table, TEXT charset, 
+/              INT srid, TEXT geom_column, TEXT pk_column, TEXT geom_type,
+/              INT coerce2d, INT compressed, INT spatial_index) 
+/ ImportZipSHP(TEXT zip_path, TEXT filename, TEXT table, TEXT charset, 
+/              INT srid, TEXT geom_column, TEXT pk_column, TEXT geom_type,
+/              INT coerce2d, INT compressed, INT spatial_index,
+/              INT text_dates)
+/ ImportZipSHP(TEXT zip_path, TEXT filename, TEXT table, TEXT charset, 
+/              INT srid, TEXT geom_column, TEXT pk_column, TEXT geom_type,
+/              INT coerce2d, INT compressed, INT spatial_index,
+/              INT text_dates, TEXT colname_case)
+/ ImportZipSHP(TEXT zip_path, TEXT filename, TEXT table, TEXT charset, 
+/              INT srid, TEXT geom_column, TEXT pk_column, TEXT geom_type,
+/              INT coerce2d, INT compressed, INT spatial_index,
+/              INT text_dates, TEXT colname_case, INT update_statistics)
+/ ImportZipSHP(TEXT zip_path, TEXT filename, TEXT table, TEXT charset, 
+/              INT srid, TEXT geom_column, TEXT pk_column, TEXT geom_type,
+/              INT coerce2d, INT compressed, INT spatial_index,
+/              INT text_dates, TEXT colname_case, INT update_statistics,
+/              INT verbose)
+/
+/ returns:
+/ the number of imported rows
+/ NULL on invalid arguments
+*/
+    int ret;
+    char *zip_path;
+    char *table;
+    char *path;
+    char *charset;
+    int srid = -1;
+    int coerce2d = 0;
+    int compressed = 0;
+    int spatial_index = 0;
+    int text_dates = 0;
+    int update_statistics = 1;
+    int verbose = 1;
+    char *pk_column = NULL;
+    char *geo_column = NULL;
+    char *geom_type = NULL;
+    int colname_case = GAIA_DBF_COLNAME_LOWERCASE;
+    int rows = 0;
+    sqlite3 *db_handle = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) != SQLITE_TEXT)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    zip_path = (char *) sqlite3_value_text (argv[0]);
+    if (sqlite3_value_type (argv[1]) != SQLITE_TEXT)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    path = (char *) sqlite3_value_text (argv[1]);
+    if (sqlite3_value_type (argv[2]) != SQLITE_TEXT)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    table = (char *) sqlite3_value_text (argv[2]);
+    if (sqlite3_value_type (argv[3]) != SQLITE_TEXT)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    charset = (char *) sqlite3_value_text (argv[3]);
+    if (argc > 4)
+      {
+	  if (sqlite3_value_type (argv[4]) != SQLITE_INTEGER)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  else
+	      srid = sqlite3_value_int (argv[4]);
+      }
+    if (argc > 5)
+      {
+	  if (sqlite3_value_type (argv[5]) != SQLITE_TEXT)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  else
+	      geo_column = (char *) sqlite3_value_text (argv[5]);
+      }
+    if (argc > 6)
+      {
+	  if (sqlite3_value_type (argv[6]) != SQLITE_TEXT)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  else
+	      pk_column = (char *) sqlite3_value_text (argv[6]);
+      }
+    if (argc > 7)
+      {
+	  if (sqlite3_value_type (argv[7]) != SQLITE_TEXT)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  else
+	      geom_type = (char *) sqlite3_value_text (argv[7]);
+      }
+    if (argc > 8)
+      {
+	  if (sqlite3_value_type (argv[8]) != SQLITE_INTEGER)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  else
+	      coerce2d = sqlite3_value_int (argv[8]);
+      }
+    if (argc > 9)
+      {
+	  if (sqlite3_value_type (argv[9]) != SQLITE_INTEGER)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  else
+	      compressed = sqlite3_value_int (argv[9]);
+      }
+    if (argc > 10)
+      {
+	  if (sqlite3_value_type (argv[10]) != SQLITE_INTEGER)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  else
+	      spatial_index = sqlite3_value_int (argv[10]);
+      }
+    if (argc > 11)
+      {
+	  if (sqlite3_value_type (argv[11]) != SQLITE_INTEGER)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  else
+	      text_dates = sqlite3_value_int (argv[11]);
+      }
+    if (argc > 12)
+      {
+	  if (sqlite3_value_type (argv[12]) != SQLITE_TEXT)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  else
+	    {
+		const char *val = (char *) sqlite3_value_text (argv[12]);
+		if (strcasecmp (val, "UPPER") == 0
+		    || strcasecmp (val, "UPPERCASE") == 0)
+		    colname_case = GAIA_DBF_COLNAME_UPPERCASE;
+		else if (strcasecmp (val, "SAME") == 0
+			 || strcasecmp (val, "SAMECASE") == 0)
+		    colname_case = GAIA_DBF_COLNAME_CASE_IGNORE;
+		else
+		    colname_case = GAIA_DBF_COLNAME_LOWERCASE;
+	    }
+      }
+    if (argc > 13)
+      {
+	  if (sqlite3_value_type (argv[13]) != SQLITE_INTEGER)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  else
+	      update_statistics = sqlite3_value_int (argv[13]);
+      }
+    if (argc > 14)
+      {
+	  if (sqlite3_value_type (argv[14]) != SQLITE_INTEGER)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  else
+	      verbose = sqlite3_value_int (argv[14]);
+      }
+
+    ret =
+	load_zip_shapefile (db_handle, zip_path, path, table, charset, srid,
+			    geo_column, geom_type, pk_column, coerce2d,
+			    compressed, verbose, spatial_index, text_dates,
+			    &rows, colname_case, NULL);
+
+    if (rows < 0 || !ret)
+	sqlite3_result_null (context);
+    else
+      {
+	  if (update_statistics)
+	      update_layer_statistics (db_handle, table, NULL);
+	  sqlite3_result_int (context, rows);
+      }
+}
+
+#endif /* end enabling ImportZipSHP */
+
 static void
 fnct_ExportSHP (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
@@ -39933,6 +40490,7 @@ fnct_CountUnsafeTriggers (sqlite3_context * context, int argc,
 	"OR sql LIKE '%XB_StoreXML%' OR sql LIKE '%ImportDXF%' "
 	"OR sql LIKE '%ExportDXF%' OR sql LIKE '%ImportDBF%' "
 	"OR sql LIKE '%ExportDBF%' OR sql LIKE '%ImportSHP%' "
+	"OR sql LIKE '%ImportZipDBF%' OR sql LIKE '%ImportZipSHP%' "
 	"OR sql LIKE '%ExportSHP%' OR sql LIKE '%ExportKML%' "
 	"OR sql LIKE '%ExportGeoJSON%' OR (sql LIKE '%eval%' AND sql LIKE '%(%') "
 	"OR sql LIKE '%ExportGeoJSON2%' OR sql LIKE '%ImportGeoJSON%' "
@@ -39963,9 +40521,15 @@ fnct_CountUnsafeTriggers (sqlite3_context * context, int argc,
 		    dangerous = 1;
 		if (do_check_impexp (results[(i * columns) + 0], "importdbf"))
 		    dangerous = 1;
+		if (do_check_impexp
+		    (results[(i * columns) + 0], "importzipdbf"))
+		    dangerous = 1;
 		if (do_check_impexp (results[(i * columns) + 0], "exportdbf"))
 		    dangerous = 1;
 		if (do_check_impexp (results[(i * columns) + 0], "importshp"))
+		    dangerous = 1;
+		if (do_check_impexp
+		    (results[(i * columns) + 0], "importzipshp"))
 		    dangerous = 1;
 		if (do_check_impexp (results[(i * columns) + 0], "exportshp"))
 		    dangerous = 1;
@@ -47921,6 +48485,9 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "HasGeosOnlyReentrant", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_has_geos_only_reentrant, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "HasMinZip", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_has_minizip, 0, 0, 0);
     sqlite3_create_function_v2 (db, "HasRtTopo", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_has_rttopo, 0, 0, 0);
@@ -48884,6 +49451,10 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 				fnct_MD5TotalChecksum_step,
 				fnct_MD5TotalChecksum_final, 0);
 
+    sqlite3_create_function_v2 (db, "RemoveExtraSpaces", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_RemoveExtraSpaces, 0, 0, 0);
+
 #if OMIT_ICONV == 0		/* ICONV is absolutely required */
 
     sqlite3_create_function_v2 (db, "EncodeURL", 1,
@@ -48900,6 +49471,21 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 				fnct_DecodeURL, 0, 0, 0);
 
 #endif /* ICONV enabled/disabled */
+
+#ifdef ENABLE_MINIZIP		/* only if MINIZIP is enabled */
+    sqlite3_create_function_v2 (db, "Zipfile_NumSHP", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_Zipfile_NumSHP, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "Zipfile_ShpN", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_Zipfile_ShpN, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "Zipfile_NumDBF", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_Zipfile_NumDBF, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "Zipfile_DbfN", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_Zipfile_DbfN, 0, 0, 0);
+#endif /* end MINIZIP */
 
     sqlite3_create_function_v2 (db, "DirNameFromPath", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
@@ -50631,11 +51217,73 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 	  sqlite3_create_function_v2 (db, "ImportSHP", 14,
 				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				      fnct_ImportSHP, 0, 0, 0);
+
+#ifdef ENABLE_MINIZIP		/* only if MINIZIP is enabled */
+
+	  sqlite3_create_function_v2 (db, "ImportZipDBF", 4,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ImportZipDBF, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ImportZipDBF", 5,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ImportZipDBF, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ImportZipDBF", 6,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ImportZipDBF, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ImportZipDBF", 7,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ImportZipDBF, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ImportZipSHP", 4,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ImportZipSHP, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ImportZipSHP", 5,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ImportZipSHP, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ImportZipSHP", 6,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ImportZipSHP, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ImportZipSHP", 7,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ImportZipSHP, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ImportZipSHP", 8,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ImportZipSHP, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ImportZipSHP", 9,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ImportZipSHP, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ImportZipSHP", 10,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ImportZipSHP, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ImportZipSHP", 11,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ImportZipSHP, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ImportZipSHP", 12,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ImportZipSHP, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ImportZipSHP", 13,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ImportZipSHP, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ImportZipSHP", 14,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ImportZipSHP, 0, 0, 0);
+	  sqlite3_create_function_v2 (db, "ImportZipSHP", 15,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				      fnct_ImportZipSHP, 0, 0, 0);
+
+#endif /* end enabling ImportZipSHP */
+
 #ifdef PROJ_NEW			/* supporting new PROJ.6 */
 	  sqlite3_create_function_v2 (db, "PROJ_GuessSridFromSHP", 1,
 				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				      fnct_PROJ_GuessSridFromSHP, 0, 0, 0);
-#endif
+
+#ifdef ENABLE_MINIZIP		/* only if MINIZIP is enabled */
+	  sqlite3_create_function_v2 (db, "PROJ_GuessSridFromZipSHP", 2,
+				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				      fnct_PROJ_GuessSridFromZipSHP, 0, 0, 0);
+#endif /* end MINIZIP */
+
+#endif /* end PROJ_NEW */
+
 	  sqlite3_create_function_v2 (db, "ExportSHP", 4,
 				      SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				      fnct_ExportSHP, 0, 0, 0);
@@ -51352,7 +52000,7 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 				fnct_CurvosityIndex, 0, 0, 0);
     sqlite3_create_function_v2 (db, "ST_CurvosityIndex", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
-				fnct_CurvosityIndex, 0, 0, 0);	
+				fnct_CurvosityIndex, 0, 0, 0);
     sqlite3_create_function_v2 (db, "CurvosityIndex", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_CurvosityIndex, 0, 0, 0);
@@ -51364,19 +52012,19 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 				fnct_UphillHeight, 0, 0, 0);
     sqlite3_create_function_v2 (db, "ST_UphillHeight", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
-				fnct_UphillHeight, 0, 0, 0);	
+				fnct_UphillHeight, 0, 0, 0);
     sqlite3_create_function_v2 (db, "DownhillHeight", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_DownhillHeight, 0, 0, 0);
     sqlite3_create_function_v2 (db, "ST_DownhillHeight", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
-				fnct_DownhillHeight, 0, 0, 0);	
+				fnct_DownhillHeight, 0, 0, 0);
     sqlite3_create_function_v2 (db, "UpDownHeight", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_UpDownHeight, 0, 0, 0);
     sqlite3_create_function_v2 (db, "ST_UpDownHeight", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
-				fnct_UpDownHeight, 0, 0, 0);	
+				fnct_UpDownHeight, 0, 0, 0);
     sqlite3_create_function_v2 (db, "Area", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_Area, 0, 0, 0);
@@ -52350,6 +52998,9 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "XB_IsSvg", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_XB_IsSvg, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "XB_IsGpx", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_XB_IsGpx, 0, 0, 0);
     sqlite3_create_function_v2 (db, "XB_IsGpx", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_XB_IsGpx, 0, 0, 0);

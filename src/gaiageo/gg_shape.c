@@ -175,6 +175,49 @@ gaiaSetStrValue (gaiaDbfFieldPtr field, char *str)
     strcpy (field->Value->TxtValue, str);
 }
 
+GAIAGEO_DECLARE int
+gaiaMemFseek (gaiaMemFilePtr mem, long offset)
+{
+/* repositioning a Memory File */
+    if (mem == NULL)
+	return -1;
+    if (mem->buf == NULL)
+	return -1;
+    if (offset < 0)
+	return -1;
+    if (offset >= mem->size)
+	return -1;
+    mem->offset = offset;
+    return 0;
+}
+
+GAIAGEO_DECLARE size_t
+gaiaMemRead (void *ptr, size_t bytes, gaiaMemFilePtr mem)
+{
+/* reading from Memory File */
+    size_t rd = 0;
+    size_t i;
+    unsigned char *in;
+    unsigned char *out;
+
+    if (mem == NULL)
+	return 0;
+    if (mem->buf == NULL)
+	return 0;
+
+    for (i = 0; i < bytes; i++)
+      {
+	  if (mem->offset >= mem->size)
+	      break;
+	  in = (unsigned char *) (mem->buf) + mem->offset;
+	  out = (unsigned char *) ptr + i;
+	  *out = *in;
+	  mem->offset += 1;
+	  rd++;
+      }
+    return rd;
+}
+
 GAIAGEO_DECLARE gaiaDbfFieldPtr
 gaiaAllocDbfField (char *name, unsigned char type,
 		   int offset, unsigned char length, unsigned char decimals)
@@ -376,6 +419,9 @@ gaiaAllocShapefile ()
     shp->flShp = NULL;
     shp->flShx = NULL;
     shp->flDbf = NULL;
+    shp->memShp = NULL;
+    shp->memShx = NULL;
+    shp->memDbf = NULL;
     shp->Dbf = NULL;
     shp->BufShp = NULL;
     shp->ShpBfsz = 0;
@@ -477,42 +523,57 @@ gaiaOpenShpRead (gaiaShapefilePtr shp, const char *path, const char *charFrom,
 		   "attempting to reopen an already opened Shapefile\n");
 	  goto unsupported_conversion;
       }
-    sprintf (xpath, "%s.shx", path);
-    fl_shx = fopen (xpath, "rb");
-    if (!fl_shx)
+    if (shp->memShx == NULL)
       {
-	  sys_err = strerror (errno);
-	  sprintf (errMsg, "unable to open '%s' for reading: %s", xpath,
-		   sys_err);
-	  goto no_file;
+	  sprintf (xpath, "%s.shx", path);
+	  fl_shx = fopen (xpath, "rb");
+	  if (!fl_shx)
+	    {
+		sys_err = strerror (errno);
+		sprintf (errMsg, "unable to open '%s' for reading: %s", xpath,
+			 sys_err);
+		goto no_file;
+	    }
       }
-    sprintf (xpath, "%s.shp", path);
-    fl_shp = fopen (xpath, "rb");
-    if (!fl_shp)
+    if (shp->memShp == NULL)
       {
-	  sys_err = strerror (errno);
-	  sprintf (errMsg, "unable to open '%s' for reading: %s", xpath,
-		   sys_err);
-	  goto no_file;
+	  sprintf (xpath, "%s.shp", path);
+	  fl_shp = fopen (xpath, "rb");
+	  if (!fl_shp)
+	    {
+		sys_err = strerror (errno);
+		sprintf (errMsg, "unable to open '%s' for reading: %s", xpath,
+			 sys_err);
+		goto no_file;
+	    }
       }
-    sprintf (xpath, "%s.dbf", path);
-    fl_dbf = fopen (xpath, "rb");
-    if (!fl_dbf)
+    if (shp->memDbf == NULL)
       {
-	  sys_err = strerror (errno);
-	  sprintf (errMsg, "unable to open '%s' for reading: %s", xpath,
-		   sys_err);
-	  goto no_file;
+	  sprintf (xpath, "%s.dbf", path);
+	  fl_dbf = fopen (xpath, "rb");
+	  if (!fl_dbf)
+	    {
+		sys_err = strerror (errno);
+		sprintf (errMsg, "unable to open '%s' for reading: %s", xpath,
+			 sys_err);
+		goto no_file;
+	    }
       }
 /* reading SHX file header */
-    rd = fread (buf_shx, sizeof (unsigned char), 100, fl_shx);
+    if (shp->memShx != NULL)
+	rd = gaiaMemRead (buf_shx, 100, shp->memShx);
+    else
+	rd = fread (buf_shx, sizeof (unsigned char), 100, fl_shx);
     if (rd != 100)
 	goto error;
     if (gaiaImport32 (buf_shx + 0, GAIA_BIG_ENDIAN, endian_arch) != 9994)	/* checks the SHX magic number */
 	goto error;
 /* reading SHP file header */
     buf_shp = malloc (sizeof (unsigned char) * buf_size);
-    rd = fread (buf_shp, sizeof (unsigned char), 100, fl_shp);
+    if (shp->memShp != NULL)
+	rd = gaiaMemRead (buf_shp, 100, shp->memShp);
+    else
+	rd = fread (buf_shp, sizeof (unsigned char), 100, fl_shp);
     if (rd != 100)
 	goto error;
     if (gaiaImport32 (buf_shp + 0, GAIA_BIG_ENDIAN, endian_arch) != 9994)	/* checks the SHP magic number */
@@ -532,7 +593,10 @@ gaiaOpenShpRead (gaiaShapefilePtr shp, const char *path, const char *charFrom,
     shp->MaxX = gaiaImport64 (buf_shp + 52, GAIA_LITTLE_ENDIAN, endian_arch);
     shp->MaxY = gaiaImport64 (buf_shp + 60, GAIA_LITTLE_ENDIAN, endian_arch);
 /* reading DBF file header */
-    rd = fread (bf, sizeof (unsigned char), 32, fl_dbf);
+    if (shp->memDbf != NULL)
+	rd = gaiaMemRead (bf, 32, shp->memDbf);
+    else
+	rd = fread (bf, sizeof (unsigned char), 32, fl_dbf);
     if (rd != 32)
 	goto error;
     switch (*bf)
@@ -582,13 +646,19 @@ gaiaOpenShpRead (gaiaShapefilePtr shp, const char *path, const char *charFrom,
 	    {
 		/* some odd DBF could contain some unexpected extra-padding */
 		int extra = dbf_size - ind;
-		rd = fread (bf, sizeof (unsigned char), extra, fl_dbf);
+		if (shp->memDbf != NULL)
+		    rd = gaiaMemRead (bf, extra, shp->memDbf);
+		else
+		    rd = fread (bf, sizeof (unsigned char), extra, fl_dbf);
 		if (rd != extra)
 		    goto error;
 		/* ignoring the extra-padding */
 		break;
 	    }
-	  rd = fread (bf, sizeof (unsigned char), 32, fl_dbf);
+	  if (shp->memDbf != NULL)
+	      rd = gaiaMemRead (bf, 32, shp->memDbf);
+	  else
+	      rd = fread (bf, sizeof (unsigned char), 32, fl_dbf);
 	  if (rd != 32)
 	      goto error;
 	  if (*(bf + 11) == 'M')
@@ -1716,10 +1786,16 @@ gaiaReadShpEntity_ex (gaiaShapefilePtr shp, int current_row, int srid,
     ringsColl.Last = NULL;
 /* positioning and reading the SHX file */
     offset = 100 + ((gaia_off_t) current_row * (gaia_off_t) 8);	/* 100 bytes for the header + current row displacement; each SHX row = 8 bytes */
-    skpos = gaia_fseek (shp->flShx, offset, SEEK_SET);
+    if (shp->memShx != NULL)
+	skpos = gaiaMemFseek (shp->memShx, offset);
+    else
+	skpos = gaia_fseek (shp->flShx, offset, SEEK_SET);
     if (skpos != 0)
 	goto eof;
-    rd = fread (buf, sizeof (unsigned char), 8, shp->flShx);
+    if (shp->memDbf != NULL)
+	rd = gaiaMemRead (buf, 8, shp->memShx);
+    else
+	rd = fread (buf, sizeof (unsigned char), 8, shp->flShx);
     if (rd != 8)
 	goto eof;
     off_shp = gaiaImport32 (buf, GAIA_BIG_ENDIAN, shp->endian_arch);
@@ -1727,21 +1803,33 @@ gaiaReadShpEntity_ex (gaiaShapefilePtr shp, int current_row, int srid,
     offset =
 	shp->DbfHdsz +
 	((gaia_off_t) current_row * (gaia_off_t) (shp->DbfReclen));
-    skpos = gaia_fseek (shp->flDbf, offset, SEEK_SET);
+    if (shp->memDbf != NULL)
+	skpos = gaiaMemFseek (shp->memDbf, offset);
+    else
+	skpos = gaia_fseek (shp->flDbf, offset, SEEK_SET);
     if (skpos != 0)
 	goto error;
-    rd = fread (shp->BufDbf, sizeof (unsigned char), shp->DbfReclen,
-		shp->flDbf);
+    if (shp->memDbf != NULL)
+	rd = gaiaMemRead (shp->BufDbf, shp->DbfReclen, shp->memDbf);
+    else
+	rd = fread (shp->BufDbf, sizeof (unsigned char), shp->DbfReclen,
+		    shp->flDbf);
     if (rd != shp->DbfReclen)
 	goto error;
     if (*(shp->BufDbf) == '*')
 	goto dbf_deleted;
 /* positioning and reading corresponding SHP entity - geometry */
     offset = (gaia_off_t) off_shp *2;
-    skpos = gaia_fseek (shp->flShp, offset, SEEK_SET);
+    if (shp->memShp != NULL)
+	skpos = gaiaMemFseek (shp->memShp, offset);
+    else
+	skpos = gaia_fseek (shp->flShp, offset, SEEK_SET);
     if (skpos != 0)
 	goto error;
-    rd = fread (buf, sizeof (unsigned char), 12, shp->flShp);
+    if (shp->memShp != NULL)
+	rd = gaiaMemRead (buf, 12, shp->memShp);
+    else
+	rd = fread (buf, sizeof (unsigned char), 12, shp->flShp);
     if (rd != 12)
 	goto error;
     sz = gaiaImport32 (buf + 4, GAIA_BIG_ENDIAN, shp->endian_arch);
@@ -1763,7 +1851,10 @@ gaiaReadShpEntity_ex (gaiaShapefilePtr shp, int current_row, int srid,
     if (shape == GAIA_SHP_POINT)
       {
 	  /* shape point */
-	  rd = fread (shp->BufShp, sizeof (unsigned char), 16, shp->flShp);
+	  if (shp->memShp != NULL)
+	      rd = gaiaMemRead (shp->BufShp, 16, shp->memShp);
+	  else
+	      rd = fread (shp->BufShp, sizeof (unsigned char), 16, shp->flShp);
 	  if (rd != 16)
 	      goto error;
 	  x = gaiaImport64 (shp->BufShp, GAIA_LITTLE_ENDIAN, shp->endian_arch);
@@ -1795,7 +1886,10 @@ gaiaReadShpEntity_ex (gaiaShapefilePtr shp, int current_row, int srid,
     if (shape == GAIA_SHP_POINTZ)
       {
 	  /* shape point Z */
-	  rd = fread (shp->BufShp, sizeof (unsigned char), 32, shp->flShp);
+	  if (shp->memShp != NULL)
+	      rd = gaiaMemRead (shp->BufShp, 32, shp->memShp);
+	  else
+	      rd = fread (shp->BufShp, sizeof (unsigned char), 32, shp->flShp);
 	  if (rd != 32)
 	    {
 		/* required by some buggish SHP (e.g. the GDAL/OGR ones) */
@@ -1838,7 +1932,10 @@ gaiaReadShpEntity_ex (gaiaShapefilePtr shp, int current_row, int srid,
     if (shape == GAIA_SHP_POINTM)
       {
 	  /* shape point M */
-	  rd = fread (shp->BufShp, sizeof (unsigned char), 24, shp->flShp);
+	  if (shp->memShp != NULL)
+	      rd = gaiaMemRead (shp->BufShp, 24, shp->memShp);
+	  else
+	      rd = fread (shp->BufShp, sizeof (unsigned char), 24, shp->flShp);
 	  if (rd != 24)
 	      goto error;
 	  x = gaiaImport64 (shp->BufShp, GAIA_LITTLE_ENDIAN, shp->endian_arch);
@@ -1873,11 +1970,17 @@ gaiaReadShpEntity_ex (gaiaShapefilePtr shp, int current_row, int srid,
       {
 	  /* shape polyline */
 	  int extra_check = 0;
-	  rd = fread (shp->BufShp, sizeof (unsigned char), 32, shp->flShp);
+	  if (shp->memShp != NULL)
+	      rd = gaiaMemRead (shp->BufShp, 32, shp->memShp);
+	  else
+	      rd = fread (shp->BufShp, sizeof (unsigned char), 32, shp->flShp);
 	  if (rd != 32)
 	      goto error;
-	  rd = fread (shp->BufShp, sizeof (unsigned char), (sz * 2) - 36,
-		      shp->flShp);
+	  if (shp->memShp != NULL)
+	      rd = gaiaMemRead (shp->BufShp, (sz * 2) - 36, shp->memShp);
+	  else
+	      rd = fread (shp->BufShp, sizeof (unsigned char), (sz * 2) - 36,
+			  shp->flShp);
 	  if (rd != (sz * 2) - 36)
 	    {
 		if (rd == (sz * 2) - 44)
@@ -1976,11 +2079,17 @@ gaiaReadShpEntity_ex (gaiaShapefilePtr shp, int current_row, int srid,
     if (shape == GAIA_SHP_POLYLINEZ)
       {
 	  /* shape polyline Z */
-	  rd = fread (shp->BufShp, sizeof (unsigned char), 32, shp->flShp);
+	  if (shp->memShp != NULL)
+	      rd = gaiaMemRead (shp->BufShp, 32, shp->memShp);
+	  else
+	      rd = fread (shp->BufShp, sizeof (unsigned char), 32, shp->flShp);
 	  if (rd != 32)
 	      goto error;
-	  rd = fread (shp->BufShp, sizeof (unsigned char), (sz * 2) - 36,
-		      shp->flShp);
+	  if (shp->memShp != NULL)
+	      rd = gaiaMemRead (shp->BufShp, (sz * 2) - 36, shp->memShp);
+	  else
+	      rd = fread (shp->BufShp, sizeof (unsigned char), (sz * 2) - 36,
+			  shp->flShp);
 	  if (rd != (sz * 2) - 36)
 	      goto error;
 	  n = gaiaImport32 (shp->BufShp, GAIA_LITTLE_ENDIAN, shp->endian_arch);
@@ -2073,11 +2182,17 @@ gaiaReadShpEntity_ex (gaiaShapefilePtr shp, int current_row, int srid,
     if (shape == GAIA_SHP_POLYLINEM)
       {
 	  /* shape polyline M */
-	  rd = fread (shp->BufShp, sizeof (unsigned char), 32, shp->flShp);
+	  if (shp->memShp != NULL)
+	      rd = gaiaMemRead (shp->BufShp, 32, shp->memShp);
+	  else
+	      rd = fread (shp->BufShp, sizeof (unsigned char), 32, shp->flShp);
 	  if (rd != 32)
 	      goto error;
-	  rd = fread (shp->BufShp, sizeof (unsigned char), (sz * 2) - 36,
-		      shp->flShp);
+	  if (shp->memShp != NULL)
+	      rd = gaiaMemRead (shp->BufShp, (sz * 2) - 36, shp->memShp);
+	  else
+	      rd = fread (shp->BufShp, sizeof (unsigned char), (sz * 2) - 36,
+			  shp->flShp);
 	  if (rd != (sz * 2) - 36)
 	      goto error;
 	  n = gaiaImport32 (shp->BufShp, GAIA_LITTLE_ENDIAN, shp->endian_arch);
@@ -2168,11 +2283,17 @@ gaiaReadShpEntity_ex (gaiaShapefilePtr shp, int current_row, int srid,
     if (shape == GAIA_SHP_POLYGON)
       {
 	  /* shape polygon */
-	  rd = fread (shp->BufShp, sizeof (unsigned char), 32, shp->flShp);
+	  if (shp->memShp != NULL)
+	      rd = gaiaMemRead (shp->BufShp, 32, shp->memShp);
+	  else
+	      rd = fread (shp->BufShp, sizeof (unsigned char), 32, shp->flShp);
 	  if (rd != 32)
 	      goto error;
-	  rd = fread (shp->BufShp, sizeof (unsigned char), (sz * 2) - 36,
-		      shp->flShp);
+	  if (shp->memShp != NULL)
+	      rd = gaiaMemRead (shp->BufShp, (sz * 2) - 36, shp->memShp);
+	  else
+	      rd = fread (shp->BufShp, sizeof (unsigned char), (sz * 2) - 36,
+			  shp->flShp);
 	  if (rd != (sz * 2) - 36)
 	      goto error;
 	  n = gaiaImport32 (shp->BufShp, GAIA_LITTLE_ENDIAN, shp->endian_arch);
@@ -2247,11 +2368,17 @@ gaiaReadShpEntity_ex (gaiaShapefilePtr shp, int current_row, int srid,
     if (shape == GAIA_SHP_POLYGONZ)
       {
 	  /* shape polygon Z */
-	  rd = fread (shp->BufShp, sizeof (unsigned char), 32, shp->flShp);
+	  if (shp->memShp != NULL)
+	      rd = gaiaMemRead (shp->BufShp, 32, shp->memShp);
+	  else
+	      rd = fread (shp->BufShp, sizeof (unsigned char), 32, shp->flShp);
 	  if (rd != 32)
 	      goto error;
-	  rd = fread (shp->BufShp, sizeof (unsigned char), (sz * 2) - 36,
-		      shp->flShp);
+	  if (shp->memShp != NULL)
+	      rd = gaiaMemRead (shp->BufShp, (sz * 2) - 36, shp->memShp);
+	  else
+	      rd = fread (shp->BufShp, sizeof (unsigned char), (sz * 2) - 36,
+			  shp->flShp);
 	  if (rd != (sz * 2) - 36)
 	      goto error;
 	  n = gaiaImport32 (shp->BufShp, GAIA_LITTLE_ENDIAN, shp->endian_arch);
@@ -2344,11 +2471,17 @@ gaiaReadShpEntity_ex (gaiaShapefilePtr shp, int current_row, int srid,
     if (shape == GAIA_SHP_POLYGONM)
       {
 	  /* shape polygon M */
-	  rd = fread (shp->BufShp, sizeof (unsigned char), 32, shp->flShp);
+	  if (shp->memShp != NULL)
+	      rd = gaiaMemRead (shp->BufShp, 32, shp->memShp);
+	  else
+	      rd = fread (shp->BufShp, sizeof (unsigned char), 32, shp->flShp);
 	  if (rd != 32)
 	      goto error;
-	  rd = fread (shp->BufShp, sizeof (unsigned char), (sz * 2) - 36,
-		      shp->flShp);
+	  if (shp->memShp != NULL)
+	      rd = gaiaMemRead (shp->BufShp, (sz * 2) - 36, shp->memShp);
+	  else
+	      rd = fread (shp->BufShp, sizeof (unsigned char), (sz * 2) - 36,
+			  shp->flShp);
 	  if (rd != (sz * 2) - 36)
 	      goto error;
 	  n = gaiaImport32 (shp->BufShp, GAIA_LITTLE_ENDIAN, shp->endian_arch);
@@ -2438,11 +2571,17 @@ gaiaReadShpEntity_ex (gaiaShapefilePtr shp, int current_row, int srid,
     if (shape == GAIA_SHP_MULTIPOINT)
       {
 	  /* shape multipoint */
-	  rd = fread (shp->BufShp, sizeof (unsigned char), 32, shp->flShp);
+	  if (shp->memShp != NULL)
+	      rd = gaiaMemRead (shp->BufShp, 32, shp->memShp);
+	  else
+	      rd = fread (shp->BufShp, sizeof (unsigned char), 32, shp->flShp);
 	  if (rd != 32)
 	      goto error;
-	  rd = fread (shp->BufShp, sizeof (unsigned char), (sz * 2) - 36,
-		      shp->flShp);
+	  if (shp->memShp != NULL)
+	      rd = gaiaMemRead (shp->BufShp, (sz * 2) - 36, shp->memShp);
+	  else
+	      rd = fread (shp->BufShp, sizeof (unsigned char), (sz * 2) - 36,
+			  shp->flShp);
 	  if (rd != (sz * 2) - 36)
 	      goto error;
 	  n = gaiaImport32 (shp->BufShp, GAIA_LITTLE_ENDIAN, shp->endian_arch);
@@ -2475,11 +2614,17 @@ gaiaReadShpEntity_ex (gaiaShapefilePtr shp, int current_row, int srid,
     if (shape == GAIA_SHP_MULTIPOINTZ)
       {
 	  /* shape multipoint Z */
-	  rd = fread (shp->BufShp, sizeof (unsigned char), 32, shp->flShp);
+	  if (shp->memShp != NULL)
+	      rd = gaiaMemRead (shp->BufShp, 32, shp->memShp);
+	  else
+	      rd = fread (shp->BufShp, sizeof (unsigned char), 32, shp->flShp);
 	  if (rd != 32)
 	      goto error;
-	  rd = fread (shp->BufShp, sizeof (unsigned char), (sz * 2) - 36,
-		      shp->flShp);
+	  if (shp->memShp != NULL)
+	      rd = gaiaMemRead (shp->BufShp, (sz * 2) - 36, shp->memShp);
+	  else
+	      rd = fread (shp->BufShp, sizeof (unsigned char), (sz * 2) - 36,
+			  shp->flShp);
 	  if (rd != (sz * 2) - 36)
 	      goto error;
 	  n = gaiaImport32 (shp->BufShp, GAIA_LITTLE_ENDIAN, shp->endian_arch);
@@ -2530,11 +2675,17 @@ gaiaReadShpEntity_ex (gaiaShapefilePtr shp, int current_row, int srid,
     if (shape == GAIA_SHP_MULTIPOINTM)
       {
 	  /* shape multipoint M */
-	  rd = fread (shp->BufShp, sizeof (unsigned char), 32, shp->flShp);
+	  if (shp->memShp != NULL)
+	      rd = gaiaMemRead (shp->BufShp, 32, shp->memShp);
+	  else
+	      rd = fread (shp->BufShp, sizeof (unsigned char), 32, shp->flShp);
 	  if (rd != 32)
 	      goto error;
-	  rd = fread (shp->BufShp, sizeof (unsigned char), (sz * 2) - 36,
-		      shp->flShp);
+	  if (shp->memShp != NULL)
+	      rd = gaiaMemRead (shp->BufShp, (sz * 2) - 36, shp->memShp);
+	  else
+	      rd = fread (shp->BufShp, sizeof (unsigned char), (sz * 2) - 36,
+			  shp->flShp);
 	  if (rd != (sz * 2) - 36)
 	      goto error;
 	  n = gaiaImport32 (shp->BufShp, GAIA_LITTLE_ENDIAN, shp->endian_arch);
@@ -4540,19 +4691,31 @@ gaiaShpAnalyze (gaiaShapefilePtr shp)
       {
 	  /* positioning and reading the SHX file */
 	  offset = 100 + ((gaia_off_t) current_row * (gaia_off_t) 8);	/* 100 bytes for the header + current row displacement; each SHX row = 8 bytes */
-	  skpos = gaia_fseek (shp->flShx, offset, SEEK_SET);
+	  if (shp->memShx != NULL)
+	      skpos = gaiaMemFseek (shp->memShx, offset);
+	  else
+	      skpos = gaia_fseek (shp->flShx, offset, SEEK_SET);
 	  if (skpos != 0)
 	      goto exit;
-	  rd = fread (buf, sizeof (unsigned char), 8, shp->flShx);
+	  if (shp->memShx != NULL)
+	      rd = gaiaMemRead (buf, 8, shp->memShx);
+	  else
+	      rd = fread (buf, sizeof (unsigned char), 8, shp->flShx);
 	  if (rd != 8)
 	      goto exit;
 	  off_shp = gaiaImport32 (buf, GAIA_BIG_ENDIAN, shp->endian_arch);
 	  /* positioning and reading corresponding SHP entity - geometry */
 	  offset = (gaia_off_t) off_shp *2;
-	  skpos = gaia_fseek (shp->flShp, offset, SEEK_SET);
+	  if (shp->memShp != NULL)
+	      skpos = gaiaMemFseek (shp->memShp, offset);
+	  else
+	      skpos = gaia_fseek (shp->flShp, offset, SEEK_SET);
 	  if (skpos != 0)
 	      goto exit;
-	  rd = fread (buf, sizeof (unsigned char), 12, shp->flShp);
+	  if (shp->memShp != NULL)
+	      rd = gaiaMemRead (buf, 12, shp->memShp);
+	  else
+	      rd = fread (buf, sizeof (unsigned char), 12, shp->flShp);
 	  if (rd != 12)
 	      goto exit;
 	  sz = gaiaImport32 (buf + 4, GAIA_BIG_ENDIAN, shp->endian_arch);
@@ -4568,12 +4731,18 @@ gaiaShpAnalyze (gaiaShapefilePtr shp)
 	      || shape == GAIA_SHP_POLYLINEM)
 	    {
 		/* shape polyline */
-		rd = fread (shp->BufShp, sizeof (unsigned char), 32,
-			    shp->flShp);
+		if (shp->memShp != NULL)
+		    rd = gaiaMemRead (shp->BufShp, 32, shp->memShp);
+		else
+		    rd = fread (shp->BufShp, sizeof (unsigned char), 32,
+				shp->flShp);
 		if (rd != 32)
 		    goto exit;
-		rd = fread (shp->BufShp, sizeof (unsigned char),
-			    (sz * 2) - 36, shp->flShp);
+		if (shp->memShp != NULL)
+		    rd = gaiaMemRead (shp->BufShp, (sz * 2) - 36, shp->memShp);
+		else
+		    rd = fread (shp->BufShp, sizeof (unsigned char),
+				(sz * 2) - 36, shp->flShp);
 		if (rd != (sz * 2) - 36)
 		    goto exit;
 		n = gaiaImport32 (shp->BufShp, GAIA_LITTLE_ENDIAN,
@@ -4599,12 +4768,18 @@ gaiaShpAnalyze (gaiaShapefilePtr shp)
 		ringsColl.First = NULL;
 		ringsColl.Last = NULL;
 
-		rd = fread (shp->BufShp, sizeof (unsigned char), 32,
-			    shp->flShp);
+		if (shp->memShp != NULL)
+		    rd = gaiaMemRead (shp->BufShp, 32, shp->memShp);
+		else
+		    rd = fread (shp->BufShp, sizeof (unsigned char), 32,
+				shp->flShp);
 		if (rd != 32)
 		    goto exit;
-		rd = fread (shp->BufShp, sizeof (unsigned char),
-			    (sz * 2) - 36, shp->flShp);
+		if (shp->memShp != NULL)
+		    rd = gaiaMemRead (shp->BufShp, (sz * 2) - 36, shp->memShp);
+		else
+		    rd = fread (shp->BufShp, sizeof (unsigned char),
+				(sz * 2) - 36, shp->flShp);
 		if (rd != (sz * 2) - 36)
 		    goto exit;
 		n = gaiaImport32 (shp->BufShp, GAIA_LITTLE_ENDIAN,
@@ -4665,12 +4840,18 @@ gaiaShpAnalyze (gaiaShapefilePtr shp)
 	  if (shape == GAIA_SHP_MULTIPOINTZ)
 	    {
 		/* shape multipoint Z */
-		rd = fread (shp->BufShp, sizeof (unsigned char), 32,
-			    shp->flShp);
+		if (shp->memShp != NULL)
+		    rd = gaiaMemRead (shp->BufShp, 32, shp->memShp);
+		else
+		    rd = fread (shp->BufShp, sizeof (unsigned char), 32,
+				shp->flShp);
 		if (rd != 32)
 		    goto exit;
-		rd = fread (shp->BufShp, sizeof (unsigned char),
-			    (sz * 2) - 36, shp->flShp);
+		if (shp->memShp != NULL)
+		    rd = gaiaMemRead (shp->BufShp, (sz * 2) - 36, shp->memShp);
+		else
+		    rd = fread (shp->BufShp, sizeof (unsigned char),
+				(sz * 2) - 36, shp->flShp);
 		if (rd != (sz * 2) - 36)
 		    goto exit;
 		n = gaiaImport32 (shp->BufShp, GAIA_LITTLE_ENDIAN,
@@ -4724,6 +4905,7 @@ gaiaAllocDbf ()
     dbf->endian_arch = 1;
     dbf->Path = NULL;
     dbf->flDbf = NULL;
+    dbf->memDbf = NULL;
     dbf->Dbf = NULL;
     dbf->BufDbf = NULL;
     dbf->DbfHdsz = 0;
@@ -4804,16 +4986,22 @@ gaiaOpenDbfRead (gaiaDbfPtr dbf, const char *path, const char *charFrom,
 	  sprintf (errMsg, "attempting to reopen an already opened DBF\n");
 	  goto unsupported_conversion;
       }
-    fl_dbf = fopen (path, "rb");
-    if (!fl_dbf)
+    if (dbf->memDbf == NULL)
       {
-	  sys_err = strerror (errno);
-	  sprintf (errMsg, "unable to open '%s' for reading: %s", path,
-		   sys_err);
-	  goto no_file;
+	  fl_dbf = fopen (path, "rb");
+	  if (!fl_dbf)
+	    {
+		sys_err = strerror (errno);
+		sprintf (errMsg, "unable to open '%s' for reading: %s", path,
+			 sys_err);
+		goto no_file;
+	    }
       }
 /* reading DBF file header */
-    rd = fread (bf, sizeof (unsigned char), 32, fl_dbf);
+    if (dbf->memDbf != NULL)
+	rd = gaiaMemRead (bf, 32, dbf->memDbf);
+    else
+	rd = fread (bf, sizeof (unsigned char), 32, fl_dbf);
     if (rd != 32)
 	goto error;
     switch (*bf)
@@ -4863,13 +5051,19 @@ gaiaOpenDbfRead (gaiaDbfPtr dbf, const char *path, const char *charFrom,
 	    {
 		/* some odd DBF could contain some unexpected extra-padding */
 		int extra = dbf_size - ind;
-		rd = fread (bf, sizeof (unsigned char), extra, fl_dbf);
+		if (dbf->memDbf != NULL)
+		    rd = gaiaMemRead (bf, extra, dbf->memDbf);
+		else
+		    rd = fread (bf, sizeof (unsigned char), extra, fl_dbf);
 		if (rd != extra)
 		    goto error;
 		/* ignoring the extra-padding */
 		break;
 	    }
-	  rd = fread (bf, sizeof (unsigned char), 32, fl_dbf);
+	  if (dbf->memDbf != NULL)
+	      rd = gaiaMemRead (bf, 32, dbf->memDbf);
+	  else
+	      rd = fread (bf, sizeof (unsigned char), 32, fl_dbf);
 	  if (rd != 32)
 	      goto error;
 	  if (*(bf + 11) == 'M')
@@ -5308,11 +5502,17 @@ gaiaReadDbfEntity_ex (gaiaDbfPtr dbf, int current_row, int *deleted,
     offset =
 	dbf->DbfHdsz +
 	((gaia_off_t) current_row * (gaia_off_t) (dbf->DbfReclen));
-    skpos = gaia_fseek (dbf->flDbf, offset, SEEK_SET);
+    if (dbf->memDbf != NULL)
+	skpos = gaiaMemFseek (dbf->memDbf, offset);
+    else
+	skpos = gaia_fseek (dbf->flDbf, offset, SEEK_SET);
     if (skpos != 0)
 	goto eof;
-    rd = fread (dbf->BufDbf, sizeof (unsigned char), dbf->DbfReclen,
-		dbf->flDbf);
+    if (dbf->memDbf != NULL)
+	rd = gaiaMemRead (dbf->BufDbf, dbf->DbfReclen, dbf->memDbf);
+    else
+	rd = fread (dbf->BufDbf, sizeof (unsigned char), dbf->DbfReclen,
+		    dbf->flDbf);
     if (rd != dbf->DbfReclen)
 	goto eof;
 /* setting up the current DBF ENTITY */

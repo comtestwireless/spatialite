@@ -604,6 +604,16 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
 		  {
 		      return result;
 		  }
+#ifdef ENABLE_MINIZIP	/* only if MINIZIP is enabled */
+		result =
+		    run_subdir_test ("sql_stmt_minizip", conn,
+				     load_extension, 0);
+		if (result != 0)
+		  {
+		      return result;
+		  }
+#endif
+
 #ifdef PROJ_NEW			/* only id PROJ.6 is supported */
 		result =
 		    run_subdir_test ("sql_stmt_proj600security_tests", conn,
@@ -612,7 +622,16 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
 		  {
 		      return result;
 		  }
-#endif
+#ifdef ENABLE_MINIZIP	/* only if MINIZIP is enabled */
+		result =
+		    run_subdir_test ("sql_stmt_zip_proj6", conn,
+				     load_extension, 0);
+		if (result != 0)
+		  {
+		      return result;
+		  }
+#endif	/* end MINIZIP */
+#endif	/* end PROJ.6 */
 	    }
       }
 

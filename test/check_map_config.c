@@ -83,34 +83,6 @@ execute_check (sqlite3 * sqlite, const char *sql, char **error)
 #ifndef OMIT_ICONV		/* only if ICONV is supported */
 
 static unsigned char *
-load_blob (const char *path, int *blob_len)
-{
-/* loading an external image */
-    unsigned char *blob;
-    int sz = 0;
-    int rd;
-    FILE *fl = fopen (path, "rb");
-    if (!fl)
-      {
-	  fprintf (stderr, "cannot open \"%s\"\n", path);
-	  return NULL;
-      }
-    if (fseek (fl, 0, SEEK_END) == 0)
-	sz = ftell (fl);
-    blob = (unsigned char *) malloc (sz);
-    *blob_len = sz;
-    rewind (fl);
-    rd = fread (blob, 1, sz, fl);
-    if (rd != sz)
-      {
-	  fprintf (stderr, "read error \"%s\"\n", path);
-	  return NULL;
-      }
-    fclose (fl);
-    return blob;
-}
-
-static unsigned char *
 load_xml (const char *path, int *len)
 {
 /* loading an external XML */

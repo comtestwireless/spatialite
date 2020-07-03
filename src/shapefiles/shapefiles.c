@@ -79,6 +79,8 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #endif
 #endif
 
+#include <minizip/unzip.h>
+
 #if defined(_WIN32) && !defined(__MINGW32__)
 #define strcasecmp	_stricmp
 #define strncasecmp	_strnicmp
@@ -90,6 +92,11 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #else
 #define FRMT64 "%lld"
 #endif
+
+#define GAIA_ZIPFILE_SHP	1
+#define GAIA_ZIPFILE_SHX	2
+#define GAIA_ZIPFILE_DBF	3
+#define GAIA_ZIPFILE_PRJ	4
 
 struct auxdbf_fld
 {
@@ -140,6 +147,231 @@ struct aux_elemgeom_options
     struct aux_elemgeom_ignore *last;
     int cast2multi;
 };
+
+struct zip_mem_shapefile
+{
+/* a struct wrapping a Memory Shapefile from Zipfile */
+    gaiaMemFile shp;
+    gaiaMemFile shx;
+    gaiaMemFile dbf;
+    gaiaMemFile prj;
+};
+
+struct zip_mem_shp_item
+{
+/* a Shapefile within a Zipfile */
+    char *basename;
+    int shp;
+    int shx;
+    int dbf;
+    int prj;
+    struct zip_mem_shp_item *next;
+};
+
+struct zip_mem_shp_list
+{
+/* a list of Shapefiles within a Zipfile */
+    struct zip_mem_shp_item *first;
+    struct zip_mem_shp_item *last;
+};
+
+static struct zip_mem_shp_item *
+alloc_zip_mem_shp_item (const char *basename, int wich, int dbf_only)
+{
+/* creating a Shapefile within a Zipfile */
+    struct zip_mem_shp_item *item = malloc (sizeof (struct zip_mem_shp_item));
+    if (basename == NULL)
+	item->basename = NULL;
+    else
+      {
+	  int len = strlen (basename);
+	  item->basename = malloc (len + 1);
+	  strcpy (item->basename, basename);
+	  if (!dbf_only)
+	    {
+		if (*(item->basename + len - 4) == '.')
+		    *(item->basename + len - 4) = '\0';
+	    }
+      }
+    item->shp = 0;
+    item->shx = 0;
+    item->dbf = 0;
+    item->prj = 0;
+    switch (wich)
+      {
+      case GAIA_ZIPFILE_SHP:
+	  item->shp = 1;
+	  break;
+      case GAIA_ZIPFILE_SHX:
+	  item->shx = 1;
+	  break;
+      case GAIA_ZIPFILE_DBF:
+	  item->dbf = 1;
+	  break;
+      case GAIA_ZIPFILE_PRJ:
+	  item->prj = 1;
+	  break;
+      };
+    item->next = NULL;
+    return item;
+}
+
+static void
+add_item_into_zip_mem_shp_list (struct zip_mem_shp_list *list,
+				const char *filename, int wich, int dbf_only)
+{
+/* populating the list of Zipfile Shapefiles */
+    struct zip_mem_shp_item *item;
+
+    if (list == NULL)
+	return;
+
+    item = list->first;
+    while (item != NULL)
+      {
+	  /* verifying an already existing basename */
+	  char *name = NULL;
+	  switch (wich)
+	    {
+	    case GAIA_ZIPFILE_SHP:
+		name = sqlite3_mprintf ("%s.shp", item->basename);
+		break;
+	    case GAIA_ZIPFILE_SHX:
+		name = sqlite3_mprintf ("%s.shx", item->basename);
+		break;
+	    case GAIA_ZIPFILE_DBF:
+		name = sqlite3_mprintf ("%s.dbf", item->basename);
+		break;
+	    case GAIA_ZIPFILE_PRJ:
+		name = sqlite3_mprintf ("%s.prj", item->basename);
+		break;
+	    };
+	  if (name != NULL)
+	    {
+		if (strcasecmp (name, filename) == 0)
+		  {
+		      /* found a mathcing basename */
+		      sqlite3_free (name);
+		      switch (wich)
+			{
+			case GAIA_ZIPFILE_SHP:
+			    item->shp = 1;
+			    break;
+			case GAIA_ZIPFILE_SHX:
+			    item->shx = 1;
+			    break;
+			case GAIA_ZIPFILE_DBF:
+			    item->dbf = 1;
+			    break;
+			case GAIA_ZIPFILE_PRJ:
+			    item->prj = 1;
+			    break;
+			};
+		      return;
+		  }
+		sqlite3_free (name);
+	    }
+	  item = item->next;
+      }
+
+/* inserting a new basename into the list */
+    item = alloc_zip_mem_shp_item (filename, wich, dbf_only);
+    if (list->first == NULL)
+	list->first = item;
+    if (list->last != NULL)
+	list->last->next = item;
+    list->last = item;
+}
+
+static struct zip_mem_shapefile *
+alloc_zip_mem_shapefile ()
+{
+/* allocating a Memory Zip Shapefile */
+    struct zip_mem_shapefile *mem_shp =
+	malloc (sizeof (struct zip_mem_shapefile));
+    mem_shp->shp.path = NULL;
+    mem_shp->shp.buf = NULL;
+    mem_shp->shp.size = 0;
+    mem_shp->shp.offset = 0;
+    mem_shp->shx.path = NULL;
+    mem_shp->shx.buf = NULL;
+    mem_shp->shx.size = 0;
+    mem_shp->shx.offset = 0;
+    mem_shp->dbf.path = NULL;
+    mem_shp->dbf.buf = NULL;
+    mem_shp->dbf.size = 0;
+    mem_shp->dbf.offset = 0;
+    mem_shp->prj.path = NULL;
+    mem_shp->prj.buf = NULL;
+    mem_shp->prj.size = 0;
+    mem_shp->prj.offset = 0;
+    return mem_shp;
+}
+
+static void
+destroy_zip_mem_file (gaiaMemFilePtr mem)
+{
+/* memory cleanup: destroying a Memoroy Zip File */
+    if (mem == NULL)
+	return;
+    if (mem->path != NULL)
+	free (mem->path);
+    if (mem->buf != NULL)
+	free (mem->buf);
+}
+
+static void
+destroy_zip_mem_shapefile (struct zip_mem_shapefile *mem_shp)
+{
+/* memory cleanup: destroying a Memory Zip Shapefile */
+    if (mem_shp == NULL)
+	return;
+    destroy_zip_mem_file (&(mem_shp->shp));
+    destroy_zip_mem_file (&(mem_shp->shx));
+    destroy_zip_mem_file (&(mem_shp->dbf));
+    destroy_zip_mem_file (&(mem_shp->prj));
+    free (mem_shp);
+}
+
+static void
+destroy_zip_mem_shp_item (struct zip_mem_shp_item *item)
+{
+/* destroying a Shapefile item */
+    if (item == NULL)
+	return;
+    if (item->basename != NULL)
+	free (item->basename);
+    free (item);
+}
+
+static struct zip_mem_shp_list *
+alloc_zip_mem_shp_list ()
+{
+/* creating a list of Shapefiles within a Shapefile */
+    struct zip_mem_shp_list *list = malloc (sizeof (struct zip_mem_shp_list));
+    list->first = NULL;
+    list->last = NULL;
+    return list;
+}
+
+static void
+destroy_zip_mem_shp_list (struct zip_mem_shp_list *list)
+{
+/* memory cleanup: destroying a list of Shapefiles within a Shapefile */
+    struct zip_mem_shp_item *item;
+    struct zip_mem_shp_item *item_n;
+
+    if (list == NULL)
+	return;
+    item = list->first;
+    while (item != NULL)
+      {
+	  item_n = item->next;
+	  destroy_zip_mem_shp_item (item);
+	  item = item_n;
+      }
+    free (list);
+}
 
 static struct resultset_comparator *
 create_resultset_comparator (int columns)
@@ -572,12 +804,14 @@ load_shapefile_ex2 (sqlite3 * sqlite, char *shp_path, char *table,
 			       GAIA_DBF_COLNAME_LOWERCASE, err_msg);
 }
 
-SPATIALITE_DECLARE int
-load_shapefile_ex3 (sqlite3 * sqlite, char *shp_path, char *table,
-		    char *charset, int srid, char *g_column, char *gtype,
-		    char *pk_column, int coerce2d, int compressed,
-		    int verbose, int spatial_index, int text_dates, int *rows,
-		    int colname_case, char *err_msg)
+static int
+load_shapefile_common (struct zip_mem_shapefile *mem_shape, sqlite3 * sqlite,
+		       const char *shp_path, const char *table,
+		       const char *charset, int srid, const char *g_column,
+		       const char *gtype, const char *pk_column, int coerce2d,
+		       int compressed, int verbose, int spatial_index,
+		       int text_dates, int *rows, int colname_case,
+		       char *err_msg)
 {
     sqlite3_stmt *stmt = NULL;
     int ret;
@@ -602,8 +836,8 @@ load_shapefile_ex3 (sqlite3 * sqlite, char *shp_path, char *table,
     int blob_size;
     char *geom_type = NULL;
     char *txt_dims;
-    char *geo_column = g_column;
-    char *xgtype = gtype;
+    const char *geo_column = g_column;
+    const char *xgtype = gtype;
     char *qtable = NULL;
     char *qpk_name = NULL;
     const char *pk_name = NULL;
@@ -743,6 +977,13 @@ load_shapefile_ex3 (sqlite3 * sqlite, char *shp_path, char *table,
       }
     sqlite3_finalize (stmt);
     shp = gaiaAllocShapefile ();
+    if (mem_shape != NULL)
+      {
+	  /* initializing Memory based files */
+	  shp->memShx = &(mem_shape->shx);
+	  shp->memShp = &(mem_shape->shp);
+	  shp->memDbf = &(mem_shape->dbf);
+      }
     gaiaOpenShpRead (shp, shp_path, charset, "UTF-8");
     if (!(shp->Valid))
       {
@@ -1535,6 +1776,1147 @@ load_shapefile_ex3 (sqlite3 * sqlite, char *shp_path, char *table,
 	  return 1;
       }
 }
+
+SPATIALITE_DECLARE int
+load_shapefile_ex3 (sqlite3 * sqlite, const char *shp_path, const char *table,
+		    const char *charset, int srid, const char *g_column,
+		    const char *gtype, const char *pk_column, int coerce2d,
+		    int compressed, int verbose, int spatial_index,
+		    int text_dates, int *rows, int colname_case, char *err_msg)
+{
+    return load_shapefile_common (NULL, sqlite, shp_path, table, charset, srid,
+				  g_column, gtype, pk_column, coerce2d,
+				  compressed, verbose, spatial_index,
+				  text_dates, rows, colname_case, err_msg);
+}
+
+#ifdef ENABLE_MINIZIP		/* MINIZIP is enabled */
+
+static int
+do_sniff_zipfile_dir (unzFile uf, struct zip_mem_shp_list *list, int dbf_only)
+{
+/* sniffing a Zipfile directory */
+    int retval = 1;
+    unz_global_info64 gi;
+    int ret;
+    unsigned int i;
+
+    ret = unzGetGlobalInfo64 (uf, &gi);
+    if (ret != UNZ_OK)
+      {
+	  spatialite_e ("Error %d within zipfile in unzGetGlobalInfo\n", ret);
+	  return 0;
+      }
+
+    for (i = 0; i < gi.number_entry; i++)
+      {
+	  unsigned int len;
+	  char suffix[6];
+	  char filename[256];
+	  unz_file_info64 file_info;
+
+	  ret =
+	      unzGetCurrentFileInfo64 (uf, &file_info, filename, 256, NULL, 0,
+				       NULL, 0);
+	  if (ret != UNZ_OK)
+	    {
+		spatialite_e
+		    ("Error %d with zipfile in unzGetCurrentFileInfo\n", ret);
+		retval = 0;
+		goto stop;
+	    }
+
+	  suffix[0] = '\0';
+	  len = strlen (filename);
+	  if (len >= 5)
+	    {
+		suffix[0] = *(filename + len - 4);
+		suffix[1] = *(filename + len - 3);
+		suffix[2] = *(filename + len - 2);
+		suffix[3] = *(filename + len - 1);
+		suffix[4] = '\0';
+	    }
+	  if (strcasecmp (suffix, ".shp") == 0)
+	      add_item_into_zip_mem_shp_list (list, filename, GAIA_ZIPFILE_SHP,
+					      0);
+	  if (strcasecmp (suffix, ".shx") == 0)
+	      add_item_into_zip_mem_shp_list (list, filename, GAIA_ZIPFILE_SHX,
+					      0);
+	  if (strcasecmp (suffix, ".dbf") == 0)
+	      add_item_into_zip_mem_shp_list (list, filename, GAIA_ZIPFILE_DBF,
+					      dbf_only);
+	  if (strcasecmp (suffix, ".prj") == 0)
+	      add_item_into_zip_mem_shp_list (list, filename, GAIA_ZIPFILE_PRJ,
+					      0);
+
+	  if (i + 1 == gi.number_entry)
+	      break;
+	  ret = unzGoToNextFile (uf);
+	  if (ret != UNZ_OK)
+	    {
+		spatialite_e ("Error %d with zipfile in unzGoToNextFile\n",
+			      ret);
+		retval = 0;
+		goto stop;
+	    }
+      }
+  stop:
+    return retval;
+}
+
+static struct zip_mem_shapefile *
+do_list_zipfile_dir (unzFile uf, const char *shp_path, int dbf_mode)
+{
+/* parsing a Zipfile directory */
+    unz_global_info64 gi;
+    int ret;
+    unsigned int i;
+    int len;
+    int shp = 0;
+    int dbf = 0;
+    int shx = 0;
+    int prj = 0;
+    struct zip_mem_shapefile *mem_shp = NULL;
+
+    ret = unzGetGlobalInfo64 (uf, &gi);
+    if (ret != UNZ_OK)
+      {
+	  spatialite_e ("Error %d within zipfile in unzGetGlobalInfo\n", ret);
+	  return 0;
+      }
+
+    mem_shp = alloc_zip_mem_shapefile ();
+    for (i = 0; i < gi.number_entry; i++)
+      {
+	  char *path;
+	  char filename[256];
+	  unz_file_info64 file_info;
+
+	  ret =
+	      unzGetCurrentFileInfo64 (uf, &file_info, filename, 256, NULL, 0,
+				       NULL, 0);
+	  if (ret != UNZ_OK)
+	    {
+		spatialite_e
+		    ("Error %d with zipfile in unzGetCurrentFileInfo\n", ret);
+		goto error;
+	    }
+	  if (dbf_mode)
+	    {
+		/* searching for just a bare DBF */
+		if (!dbf)
+		  {
+		      if (strcasecmp (shp_path, filename) == 0)
+			{
+			    dbf = 1;
+			    len = strlen (filename);
+			    mem_shp->dbf.path = malloc (len + 1);
+			    strcpy (mem_shp->dbf.path, filename);
+			}
+		  }
+	    }
+	  else
+	    {
+		/* searching for a Shapefile */
+		if (!shp)
+		  {
+		      path = sqlite3_mprintf ("%s.shp", shp_path);
+		      if (strcasecmp (path, filename) == 0)
+			{
+			    shp = 1;
+			    len = strlen (filename);
+			    mem_shp->shp.path = malloc (len + 1);
+			    strcpy (mem_shp->shp.path, filename);
+			}
+		      sqlite3_free (path);
+		  }
+		if (!shx)
+		  {
+		      path = sqlite3_mprintf ("%s.shx", shp_path);
+		      if (strcasecmp (path, filename) == 0)
+			{
+			    shx = 1;
+			    len = strlen (filename);
+			    mem_shp->shx.path = malloc (len + 1);
+			    strcpy (mem_shp->shx.path, filename);
+			}
+		      sqlite3_free (path);
+		  }
+		if (!dbf)
+		  {
+		      path = sqlite3_mprintf ("%s.dbf", shp_path);
+		      if (strcasecmp (path, filename) == 0)
+			{
+			    dbf = 1;
+			    len = strlen (filename);
+			    mem_shp->dbf.path = malloc (len + 1);
+			    strcpy (mem_shp->dbf.path, filename);
+			}
+		      sqlite3_free (path);
+		  }
+		if (!prj)
+		  {
+		      path = sqlite3_mprintf ("%s.prj", shp_path);
+		      if (strcasecmp (path, filename) == 0)
+			{
+			    prj = 1;
+			    len = strlen (filename);
+			    mem_shp->prj.path = malloc (len + 1);
+			    strcpy (mem_shp->prj.path, filename);
+			}
+		      sqlite3_free (path);
+		  }
+	    }
+
+	  if (i + 1 == gi.number_entry)
+	      break;
+	  ret = unzGoToNextFile (uf);
+	  if (ret != UNZ_OK)
+	    {
+		spatialite_e ("Error %d with zipfile in unzGoToNextFile\n",
+			      ret);
+		goto error;
+	    }
+      }
+    if (dbf_mode && dbf)
+	return mem_shp;
+    if (shp && shx && dbf)
+	return mem_shp;
+
+  error:
+    destroy_zip_mem_shapefile (mem_shp);
+    return NULL;
+}
+
+static int
+do_read_zipfile_file (unzFile uf, struct zip_mem_shapefile *mem_shape, int wich)
+{
+//
+// impo
+    int is_open = 0;
+    int retval = 1;
+    uint32_t size_buf;
+    void *buf = NULL;
+    char filename[256];
+    gaiaMemFilePtr mem_file;
+    unz_file_info64 file_info;
+    int err;
+
+    switch (wich)
+      {
+      case GAIA_ZIPFILE_SHP:
+	  mem_file = &(mem_shape->shp);
+	  break;
+      case GAIA_ZIPFILE_SHX:
+	  mem_file = &(mem_shape->shx);
+	  break;
+      case GAIA_ZIPFILE_DBF:
+	  mem_file = &(mem_shape->dbf);
+	  break;
+      case GAIA_ZIPFILE_PRJ:
+	  mem_file = &(mem_shape->prj);
+	  break;
+      default:
+	  mem_file = NULL;
+      };
+    if (mem_file == NULL)
+	return 0;
+    if (mem_file->path == NULL)
+	return 0;
+
+    err = unzLocateFile (uf, mem_file->path, 0);
+    if (err != UNZ_OK)
+      {
+	  spatialite_e ("File %s not found within zipfile\n", mem_file->path);
+	  retval = 0;
+	  goto skip;
+      }
+    err =
+	unzGetCurrentFileInfo64 (uf, &file_info, filename, 256, NULL, 0, NULL,
+				 0);
+    if (err != UNZ_OK)
+      {
+	  spatialite_e ("Error %d with zipfile in unzGetCurrentFileInfo\n",
+			err);
+	  retval = 0;
+	  goto skip;
+      }
+    size_buf = file_info.uncompressed_size;
+    buf = malloc (size_buf);
+    err = unzOpenCurrentFile (uf);
+    if (err != UNZ_OK)
+      {
+	  spatialite_e ("Error %d with zipfile in unzGetCurrentFileInfo\n",
+			err);
+	  retval = 0;
+	  goto skip;
+      }
+    is_open = 1;
+    err = unzReadCurrentFile (uf, buf, size_buf);
+    if (err < 0)
+      {
+	  spatialite_e ("Error %d with zipfile in unzReadCurrentFile\n", err);
+	  retval = 0;
+	  goto skip;
+      }
+    mem_file->buf = buf;
+    mem_file->size = size_buf;
+
+  skip:
+    if (buf != NULL && !retval)
+	free (buf);
+    if (is_open)
+	unzCloseCurrentFile (uf);
+    return retval;
+}
+
+SPATIALITE_DECLARE int
+load_zip_shapefile (sqlite3 * sqlite, const char *zip_path,
+		    const char *shp_path, const char *table,
+		    const char *charset, int srid, const char *g_column,
+		    const char *gtype, const char *pk_column, int coerce2d,
+		    int compressed, int verbose, int spatial_index,
+		    int text_dates, int *rows, int colname_case, char *err_msg)
+{
+/* loading a Shapefile from within a Zipfile */
+    unzFile uf = NULL;
+    int retval = 0;
+    struct zip_mem_shapefile *mem_shape = NULL;
+
+    if (zip_path == NULL)
+      {
+	  spatialite_e ("load zip shapefile error: <%s>\n",
+			"NULL zipfile path");
+	  return 0;
+      }
+/* opening the Zipfile expected to contain the Shapefile */
+    uf = unzOpen64 (zip_path);
+    if (uf == NULL)
+      {
+	  spatialite_e ("Unable to Open %s\n", zip_path);
+	  return 0;
+      }
+/* parsing the Zipfile directory */
+    mem_shape = do_list_zipfile_dir (uf, shp_path, 0);
+    if (mem_shape == NULL)
+      {
+	  spatialite_e ("No SHP %s with Zipfile\n", shp_path);
+	  goto stop;
+      }
+/* unzipping the SHP member */
+    if (!do_read_zipfile_file (uf, mem_shape, GAIA_ZIPFILE_SHP))
+	goto stop;
+/* unzipping the SHX member */
+    if (!do_read_zipfile_file (uf, mem_shape, GAIA_ZIPFILE_SHX))
+	goto stop;
+/* unzipping the DBF member */
+    if (!do_read_zipfile_file (uf, mem_shape, GAIA_ZIPFILE_DBF))
+	goto stop;
+/* unzipping the PRJ member */
+    if (!do_read_zipfile_file (uf, mem_shape, GAIA_ZIPFILE_PRJ))
+	goto stop;
+
+/* doing the hard work */
+    if (load_shapefile_common
+	(mem_shape, sqlite, shp_path, table, charset, srid, g_column, gtype,
+	 pk_column, coerce2d, compressed, verbose, spatial_index, text_dates,
+	 rows, colname_case, err_msg))
+	retval = 1;
+
+  stop:
+    unzClose (uf);
+    if (mem_shape != NULL)
+	destroy_zip_mem_shapefile (mem_shape);
+    return retval;
+}
+
+static int
+do_check_dbf_unique_pk_values (sqlite3 * sqlite, gaiaDbfPtr dbf, int text_dates,
+			       const char *pk_name, int pk_type)
+{
+/* checking for duplicate PK values */
+    char *sql;
+    sqlite3_stmt *stmt = NULL;
+    gaiaDbfFieldPtr dbf_field;
+    int ret;
+    int deleted;
+    int duplicates = 0;
+    int current_row = 0;
+
+    sql = "CREATE TABLE TEMP.check_unique_pk (pkey ANYVALUE)";
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    if (ret != SQLITE_OK)
+	return 0;
+
+    sql = "INSERT INTO TEMP.check_unique_pk (pkey) VALUES (?)";
+    ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
+    if (ret != SQLITE_OK)
+	goto error;
+
+    sqlite3_exec (sqlite, "BEGIN", NULL, NULL, NULL);
+
+    while (1)
+      {
+	  /* reading rows from shapefile */
+	  int ok_insert = 0;
+	  ret = gaiaReadDbfEntity_ex (dbf, current_row, &deleted, text_dates);
+	  if (!ret)
+	      break;
+	  current_row++;
+	  if (deleted)
+	    {
+		/* skipping DBF deleted row */
+		continue;
+	    }
+	  /* binding query params */
+	  sqlite3_reset (stmt);
+	  sqlite3_clear_bindings (stmt);
+	  dbf_field = dbf->Dbf->First;
+	  while (dbf_field)
+	    {
+		/* Primary Key value */
+		if (strcasecmp (pk_name, dbf_field->Name) == 0)
+		  {
+		      if (pk_type == SQLITE_TEXT)
+			{
+			    ok_insert = 1;
+			    sqlite3_bind_text (stmt, 1,
+					       dbf_field->Value->TxtValue,
+					       strlen (dbf_field->
+						       Value->TxtValue),
+					       SQLITE_STATIC);
+			}
+		      else if (pk_type == SQLITE_FLOAT)
+			{
+			    ok_insert = 1;
+			    sqlite3_bind_double (stmt, 1,
+						 dbf_field->Value->DblValue);
+			}
+		      else
+			{
+			    ok_insert = 1;
+			    sqlite3_bind_int64 (stmt, 1,
+						dbf_field->Value->IntValue);
+			}
+		  }
+		dbf_field = dbf_field->Next;
+	    }
+	  if (ok_insert)
+	    {
+		ret = sqlite3_step (stmt);
+		if (ret == SQLITE_DONE || ret == SQLITE_ROW)
+		    ;
+		else
+		    goto error;
+	    }
+      }
+    sqlite3_finalize (stmt);
+    stmt = NULL;
+    sqlite3_exec (sqlite, "COMMIT", NULL, NULL, NULL);
+
+    sql = "SELECT Count(*) FROM TEMP.check_unique_pk GROUP BY pkey";
+    ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
+    if (ret != SQLITE_OK)
+	goto error;
+
+    while (1)
+      {
+	  /* scrolling the result set rows */
+	  ret = sqlite3_step (stmt);
+	  if (ret == SQLITE_DONE)
+	      break;		/* end of result set */
+	  if (ret == SQLITE_ROW)
+	    {
+		if (sqlite3_column_int (stmt, 0) > 1)
+		    duplicates = 1;
+	    }
+      }
+    sqlite3_finalize (stmt);
+
+    sqlite3_exec (sqlite, "DROP TABLE TEMP.check_unique_pk", NULL, NULL, NULL);
+    if (duplicates)
+	return 0;
+    else
+	return 1;
+
+  error:
+    if (stmt != NULL)
+	sqlite3_finalize (stmt);
+    sqlite3_exec (sqlite, "COMMIT", NULL, NULL, NULL);
+    sqlite3_exec (sqlite, "DROP TABLE TEMP.check_unique_pk", NULL, NULL, NULL);
+    return 0;
+}
+
+SPATIALITE_DECLARE int
+load_dbf_common (struct zip_mem_shapefile *mem_shape, sqlite3 * sqlite,
+		 const char *dbf_path, const char *table, const char *pk_column,
+		 const char *charset, int verbose, int text_dates, int *rows,
+		 int colname_case, char *err_msg)
+{
+    sqlite3_stmt *stmt;
+    int ret;
+    char *errMsg = NULL;
+    char *sql;
+    char *dummy;
+    char *xname;
+    int already_exists = 0;
+    int sqlError = 0;
+    gaiaDbfPtr dbf = NULL;
+    gaiaDbfFieldPtr dbf_field;
+    int cnt;
+    int col_cnt;
+    int seed;
+    int len;
+    int dup;
+    int idup;
+    int current_row = 0;
+    char **col_name = NULL;
+    int deleted;
+    char *qtable = NULL;
+    char *qpk_name = NULL;
+    const char *pk_name = NULL;
+    char *casename;
+    int pk_autoincr = 1;
+    gaiaOutBuffer sql_statement;
+    int pk_type = SQLITE_INTEGER;
+    int pk_set;
+    const char *alt_pk[10] =
+	{ "PK_ALT0", "PK_ALT1", "PK_ALT2", "PK_ALT3", "PK_ALT4", "PK_ALT5",
+	"PK_ALT6", "PK_ALT7", "PK_ALT8", "PK_ALT9"
+    };
+    qtable = gaiaDoubleQuotedSql (table);
+    if (rows)
+	*rows = -1;
+/* checking if TABLE already exists */
+    sql = sqlite3_mprintf ("SELECT name FROM sqlite_master WHERE "
+			   "type = 'table' AND Lower(name) = Lower(%Q)", table);
+    ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+      {
+	  if (!err_msg)
+	      spatialite_e ("load DBF error: <%s>\n", sqlite3_errmsg (sqlite));
+	  else
+	      sprintf (err_msg, "load DBF error: <%s>\n",
+		       sqlite3_errmsg (sqlite));
+	  if (qtable)
+	      free (qtable);
+	  if (qpk_name)
+	      free (qpk_name);
+	  return 0;
+      }
+    while (1)
+      {
+	  /* scrolling the result set */
+	  ret = sqlite3_step (stmt);
+	  if (ret == SQLITE_DONE)
+	      break;		/* end of result set */
+	  if (ret == SQLITE_ROW)
+	      already_exists = 1;
+	  else
+	    {
+		spatialite_e ("load DBF error: <%s>\n",
+			      sqlite3_errmsg (sqlite));
+		break;
+	    }
+      }
+    sqlite3_finalize (stmt);
+    if (already_exists)
+      {
+	  if (!err_msg)
+	      spatialite_e ("load DBF error: table '%s' already exists\n",
+			    table);
+	  else
+	      sprintf (err_msg, "load DBF error: table '%s' already exists\n",
+		       table);
+	  if (qtable)
+	      free (qtable);
+	  if (qpk_name)
+	      free (qpk_name);
+	  return 0;
+      }
+    dbf = gaiaAllocDbf ();
+    if (mem_shape != NULL)
+      {
+	  /* initializing Memory based files */
+	  dbf->memDbf = &(mem_shape->dbf);
+      }
+    gaiaOpenDbfRead (dbf, dbf_path, charset, "UTF-8");
+    if (!(dbf->Valid))
+      {
+	  if (!err_msg)
+	    {
+		spatialite_e ("load DBF error: cannot open '%s'\n", dbf_path);
+		if (dbf->LastError)
+		    spatialite_e ("\tcause: %s\n", dbf->LastError);
+	    }
+	  else
+	    {
+		char extra[512];
+		*extra = '\0';
+		if (dbf->LastError)
+		    sprintf (extra, "\n\tcause: %s", dbf->LastError);
+		sprintf (err_msg, "load DBF error: cannot open '%s'%s",
+			 dbf_path, extra);
+	    }
+	  gaiaFreeDbf (dbf);
+	  if (qtable)
+	      free (qtable);
+	  if (qpk_name)
+	      free (qpk_name);
+	  return 0;
+      }
+/* checking for duplicate / illegal column names and antialising them */
+    col_cnt = 0;
+    dbf_field = dbf->Dbf->First;
+    while (dbf_field)
+      {
+	  /* counting DBF fields */
+	  col_cnt++;
+	  dbf_field = dbf_field->Next;
+      }
+    col_name = malloc (sizeof (char *) * col_cnt);
+    cnt = 0;
+    seed = 0;
+    if (pk_column != NULL)
+      {
+	  /* validating the Primary Key column */
+	  dbf_field = dbf->Dbf->First;
+	  while (dbf_field)
+	    {
+		if (strcasecmp (pk_column, dbf_field->Name) == 0)
+		  {
+		      /* ok, using this field as Primary Key */
+		      pk_name = pk_column;
+		      pk_autoincr = 0;
+		      switch (dbf_field->Type)
+			{
+			case 'C':
+			    pk_type = SQLITE_TEXT;
+			    break;
+			case 'N':
+			    if (dbf_field->Decimals)
+				pk_type = SQLITE_FLOAT;
+			    else
+			      {
+				  if (dbf_field->Length <= 18)
+				      pk_type = SQLITE_INTEGER;
+				  else
+				      pk_type = SQLITE_FLOAT;
+			      }
+			    break;
+			case 'D':
+			    if (text_dates)
+				pk_type = SQLITE_TEXT;
+			    else
+				pk_type = SQLITE_FLOAT;
+			    break;
+			case 'F':
+			    pk_type = SQLITE_FLOAT;
+			    break;
+			case 'L':
+			    pk_type = SQLITE_INTEGER;
+			    break;
+			};
+		  }
+		dbf_field = dbf_field->Next;
+	    }
+      }
+    if (pk_name == NULL)
+      {
+	  if (pk_column != NULL)
+	      pk_name = pk_column;
+	  else
+	      pk_name = "PK_UID";
+      }
+    if (!do_check_dbf_unique_pk_values
+	(sqlite, dbf, text_dates, pk_name, pk_type))
+      {
+	  const char *old_pk = pk_name;
+	  int antialias;
+	  for (antialias = 0; antialias < 10; antialias++)
+	    {
+		/* searching an alternative Primary Key column name */
+		int found = 0;
+		pk_name = alt_pk[antialias];
+		dbf_field = dbf->Dbf->First;
+		while (dbf_field)
+		  {
+		      if (strcasecmp (pk_name, dbf_field->Name) == 0)
+			  found = 1;
+		      dbf_field = dbf_field->Next;
+		  }
+		if (!found)
+		  {
+		      pk_autoincr = 1;
+		      goto ok_pk;
+		  }
+	    }
+	  pk_name = old_pk;
+      }
+  ok_pk:
+    casename = convert_dbf_colname_case (pk_name, colname_case);
+    qpk_name = gaiaDoubleQuotedSql (casename);
+    free (casename);
+    dbf_field = dbf->Dbf->First;
+    while (dbf_field)
+      {
+	  /* preparing column names */
+	  char *xdummy = NULL;
+	  if (strcasecmp (pk_name, dbf_field->Name) == 0)
+	    {
+		/* skipping the Primary Key field */
+		dummy = dbf_field->Name;
+		len = strlen (dummy);
+		*(col_name + cnt) = malloc (len + 1);
+		strcpy (*(col_name + cnt), dummy);
+		cnt++;
+		dbf_field = dbf_field->Next;
+		continue;
+	    }
+	  dummy = dbf_field->Name;
+	  dup = 0;
+	  for (idup = 0; idup < cnt; idup++)
+	    {
+		if (strcasecmp (dummy, *(col_name + idup)) == 0)
+		    dup = 1;
+	    }
+	  if (dup)
+	    {
+		xdummy = sqlite3_mprintf ("COL_%d", seed++);
+		dummy = xdummy;
+	    }
+	  len = strlen (dummy);
+	  *(col_name + cnt) = malloc (len + 1);
+	  strcpy (*(col_name + cnt), dummy);
+	  if (xdummy)
+	      free (xdummy);
+	  cnt++;
+	  dbf_field = dbf_field->Next;
+      }
+    if (verbose)
+	spatialite_e ("========\nLoading DBF at '%s' into SQLite table '%s'\n",
+		      dbf_path, table);
+/* starting a transaction */
+    if (verbose)
+	spatialite_e ("\nBEGIN;\n");
+    ret = sqlite3_exec (sqlite, "BEGIN", NULL, 0, &errMsg);
+    if (ret != SQLITE_OK)
+      {
+	  if (!err_msg)
+	      spatialite_e ("load DBF error: <%s>\n", errMsg);
+	  else
+	      sprintf (err_msg, "load DBF error: <%s>\n", errMsg);
+	  sqlite3_free (errMsg);
+	  sqlError = 1;
+	  goto clean_up;
+      }
+/* creating the Table */
+    gaiaOutBufferInitialize (&sql_statement);
+    if (pk_type == SQLITE_TEXT)
+      {
+	  sql = sqlite3_mprintf ("CREATE TABLE \"%s\" (\n\"%s\" "
+				 "TEXT PRIMARY KEY NOT NULL", qtable, qpk_name);
+      }
+    else if (pk_type == SQLITE_FLOAT)
+      {
+	  sql = sqlite3_mprintf ("CREATE TABLE \"%s\" (\n\"%s\" "
+				 "DOUBLE PRIMARY KEY NOT NULL", qtable,
+				 qpk_name);
+      }
+    else
+      {
+	  if (pk_autoincr)
+	      sql = sqlite3_mprintf ("CREATE TABLE \"%s\" (\n\"%s\" "
+				     "INTEGER PRIMARY KEY AUTOINCREMENT",
+				     qtable, qpk_name);
+	  else
+	      sql = sqlite3_mprintf ("CREATE TABLE \"%s\" (\n\"%s\" "
+				     "INTEGER NOT NULL PRIMARY KEY", qtable,
+				     qpk_name);
+      }
+    gaiaAppendToOutBuffer (&sql_statement, sql);
+    sqlite3_free (sql);
+    cnt = 0;
+    dbf_field = dbf->Dbf->First;
+    while (dbf_field)
+      {
+	  if (strcasecmp (pk_name, dbf_field->Name) == 0)
+	    {
+		/* skipping the Primary Key field */
+		dbf_field = dbf_field->Next;
+		cnt++;
+		continue;
+	    }
+	  casename = convert_dbf_colname_case (*(col_name + cnt), colname_case);
+	  xname = gaiaDoubleQuotedSql (casename);
+	  free (casename);
+	  sql = sqlite3_mprintf (",\n\"%s\"", xname);
+	  free (xname);
+	  gaiaAppendToOutBuffer (&sql_statement, sql);
+	  sqlite3_free (sql);
+	  cnt++;
+	  switch (dbf_field->Type)
+	    {
+	    case 'C':
+		gaiaAppendToOutBuffer (&sql_statement, " TEXT");
+		break;
+	    case 'N':
+		if (dbf_field->Decimals)
+		    gaiaAppendToOutBuffer (&sql_statement, " DOUBLE");
+		else
+		  {
+		      if (dbf_field->Length <= 18)
+			  gaiaAppendToOutBuffer (&sql_statement, " INTEGER");
+		      else
+			  gaiaAppendToOutBuffer (&sql_statement, " DOUBLE");
+		  }
+		break;
+	    case 'D':
+		if (text_dates)
+		    gaiaAppendToOutBuffer (&sql_statement, " TEXT");
+		else
+		    gaiaAppendToOutBuffer (&sql_statement, " DOUBLE");
+		break;
+	    case 'F':
+		gaiaAppendToOutBuffer (&sql_statement, " DOUBLE");
+		break;
+	    case 'L':
+		gaiaAppendToOutBuffer (&sql_statement, " INTEGER");
+		break;
+	    };
+	  dbf_field = dbf_field->Next;
+      }
+    gaiaAppendToOutBuffer (&sql_statement, ")");
+    if (sql_statement.Error == 0 && sql_statement.Buffer != NULL)
+      {
+	  if (verbose)
+	      spatialite_e ("%s;\n", sql_statement.Buffer);
+	  ret = sqlite3_exec (sqlite, sql_statement.Buffer, NULL, 0, &errMsg);
+      }
+    else
+	ret = SQLITE_ERROR;
+    gaiaOutBufferReset (&sql_statement);
+    if (ret != SQLITE_OK)
+      {
+	  if (!err_msg)
+	      spatialite_e ("load DBF error: <%s>\n", errMsg);
+	  else
+	      sprintf (err_msg, "load DBF error: <%s>\n", errMsg);
+	  sqlite3_free (errMsg);
+	  sqlError = 1;
+	  goto clean_up;
+      }
+    /* preparing the INSERT INTO parametrerized statement */
+    sql = sqlite3_mprintf ("INSERT INTO \"%s\" (\"%s\"", qtable, qpk_name);
+    gaiaAppendToOutBuffer (&sql_statement, sql);
+    sqlite3_free (sql);
+    cnt = 0;
+    dbf_field = dbf->Dbf->First;
+    while (dbf_field)
+      {
+	  /* columns corresponding to some DBF attribute */
+	  if (strcasecmp (pk_name, dbf_field->Name) == 0)
+	    {
+		/* skipping the Primary Key field */
+		dbf_field = dbf_field->Next;
+		cnt++;
+		continue;
+	    }
+	  xname = gaiaDoubleQuotedSql (*(col_name + cnt++));
+	  sql = sqlite3_mprintf (",\"%s\"", xname);
+	  free (xname);
+	  gaiaAppendToOutBuffer (&sql_statement, sql);
+	  sqlite3_free (sql);
+	  dbf_field = dbf_field->Next;
+      }
+    gaiaAppendToOutBuffer (&sql_statement, ")\nVALUES (?");
+    dbf_field = dbf->Dbf->First;
+    while (dbf_field)
+      {
+	  /* column values */
+	  if (strcasecmp (pk_name, dbf_field->Name) == 0)
+	    {
+		/* skipping the Primary Key field */
+		dbf_field = dbf_field->Next;
+		continue;
+	    }
+	  gaiaAppendToOutBuffer (&sql_statement, ", ?");
+	  dbf_field = dbf_field->Next;
+      }
+    gaiaAppendToOutBuffer (&sql_statement, ")");
+    if (sql_statement.Error == 0 && sql_statement.Buffer != NULL)
+	ret =
+	    sqlite3_prepare_v2 (sqlite, sql_statement.Buffer,
+				strlen (sql_statement.Buffer), &stmt, NULL);
+    else
+	ret = SQLITE_ERROR;
+    gaiaOutBufferReset (&sql_statement);
+    if (ret != SQLITE_OK)
+      {
+	  if (!err_msg)
+	      spatialite_e ("load DBF error: <%s>\n", sqlite3_errmsg (sqlite));
+	  else
+	      sprintf (err_msg, "load DBF error: <%s>\n",
+		       sqlite3_errmsg (sqlite));
+	  sqlError = 1;
+	  goto clean_up;
+      }
+    current_row = 0;
+    while (1)
+      {
+	  /* inserting rows from DBF */
+	  ret = gaiaReadDbfEntity_ex (dbf, current_row, &deleted, text_dates);
+	  if (!ret)
+	    {
+		if (!(dbf->LastError))	/* normal DBF EOF */
+		    break;
+		if (!err_msg)
+		    spatialite_e ("%s\n", dbf->LastError);
+		else
+		    sprintf (err_msg, "%s\n", dbf->LastError);
+		sqlError = 1;
+		goto clean_up;
+	    }
+	  current_row++;
+	  if (deleted)
+	    {
+		/* skipping DBF deleted row */
+		continue;
+	    }
+	  /* binding query params */
+	  sqlite3_reset (stmt);
+	  sqlite3_clear_bindings (stmt);
+	  pk_set = 0;
+	  cnt = 0;
+	  dbf_field = dbf->Dbf->First;
+	  while (dbf_field)
+	    {
+		/* Primary Key value */
+		if (strcasecmp (pk_name, dbf_field->Name) == 0)
+		  {
+		      if (pk_type == SQLITE_TEXT)
+			  sqlite3_bind_text (stmt, 1,
+					     dbf_field->Value->TxtValue,
+					     strlen (dbf_field->
+						     Value->TxtValue),
+					     SQLITE_STATIC);
+		      else if (pk_type == SQLITE_FLOAT)
+			  sqlite3_bind_double (stmt, 1,
+					       dbf_field->Value->DblValue);
+		      else
+			  sqlite3_bind_int64 (stmt, 1,
+					      dbf_field->Value->IntValue);
+		      pk_set = 1;
+		  }
+		dbf_field = dbf_field->Next;
+	    }
+	  if (!pk_set)
+	      sqlite3_bind_int (stmt, 1, current_row);
+	  cnt = 0;
+	  dbf_field = dbf->Dbf->First;
+	  while (dbf_field)
+	    {
+		/* column values */
+		if (strcasecmp (pk_name, dbf_field->Name) == 0)
+		  {
+		      /* skipping the Primary Key field */
+		      dbf_field = dbf_field->Next;
+		      continue;
+		  }
+		if (!(dbf_field->Value))
+		    sqlite3_bind_null (stmt, cnt + 2);
+		else
+		  {
+		      switch (dbf_field->Value->Type)
+			{
+			case GAIA_INT_VALUE:
+			    sqlite3_bind_int64 (stmt, cnt + 2,
+						dbf_field->Value->IntValue);
+			    break;
+			case GAIA_DOUBLE_VALUE:
+			    sqlite3_bind_double (stmt, cnt + 2,
+						 dbf_field->Value->DblValue);
+			    break;
+			case GAIA_TEXT_VALUE:
+			    sqlite3_bind_text (stmt, cnt + 2,
+					       dbf_field->Value->TxtValue,
+					       strlen (dbf_field->
+						       Value->TxtValue),
+					       SQLITE_STATIC);
+			    break;
+			default:
+			    sqlite3_bind_null (stmt, cnt + 2);
+			    break;
+			}
+		  }
+		cnt++;
+		dbf_field = dbf_field->Next;
+	    }
+	  ret = sqlite3_step (stmt);
+	  if (ret == SQLITE_DONE || ret == SQLITE_ROW)
+	      ;
+	  else
+	    {
+		if (!err_msg)
+		    spatialite_e ("load DBF error: <%s>\n",
+				  sqlite3_errmsg (sqlite));
+		else
+		    sprintf (err_msg, "load DBF error: <%s>\n",
+			     sqlite3_errmsg (sqlite));
+		sqlite3_finalize (stmt);
+		sqlError = 1;
+		goto clean_up;
+	    }
+      }
+    sqlite3_finalize (stmt);
+  clean_up:
+    if (qtable)
+	free (qtable);
+    qtable = NULL;
+    if (qpk_name)
+	free (qpk_name);
+    qpk_name = NULL;
+    gaiaFreeDbf (dbf);
+    if (col_name)
+      {
+	  /* releasing memory allocation for column names */
+	  for (cnt = 0; cnt < col_cnt; cnt++)
+	      free (*(col_name + cnt));
+	  free (col_name);
+      }
+    if (sqlError)
+      {
+	  /* some error occurred - ROLLBACK */
+	  if (verbose)
+	      spatialite_e ("ROLLBACK;\n");
+	  ret = sqlite3_exec (sqlite, "ROLLBACK", NULL, 0, &errMsg);
+	  if (ret != SQLITE_OK)
+	    {
+		spatialite_e ("load DBF error: <%s>\n", errMsg);
+		sqlite3_free (errMsg);
+	    };
+	  if (qtable)
+	      free (qtable);
+	  if (qpk_name)
+	      free (qpk_name);
+	  return 0;
+      }
+    else
+      {
+	  /* ok - confirming pending transaction - COMMIT */
+	  if (verbose)
+	      spatialite_e ("COMMIT;\n");
+	  ret = sqlite3_exec (sqlite, "COMMIT", NULL, 0, &errMsg);
+	  if (ret != SQLITE_OK)
+	    {
+		spatialite_e ("load DBF error: <%s>\n", errMsg);
+		sqlite3_free (errMsg);
+		return 0;
+	    }
+	  if (rows)
+	      *rows = current_row;
+	  if (verbose)
+	      spatialite_e ("\nInserted %d rows into '%s' from DBF\n========\n",
+			    current_row, table);
+	  if (err_msg)
+	      sprintf (err_msg, "Inserted %d rows into '%s' from DBF",
+		       current_row, table);
+	  return 1;
+      }
+}
+
+GAIAGEO_DECLARE gaiaDbfPtr 
+gaiaOpenZipDbf (const char *zip_path, const char *filename, const char *charFrom, const char *charTo)
+{
+/* creating a DBF object (just for checking its fields) */
+    unzFile uf = NULL;
+    struct zip_mem_shapefile *mem_shape = NULL;
+  gaiaDbfPtr dbf = NULL;
+
+    if (zip_path == NULL)
+      {
+	  spatialite_e ("open zip dbf error: <%s>\n",
+			"NULL zipfile path");
+	  return 0;
+      }
+/* opening the Zipfile expected to contain the Shapefile */
+    uf = unzOpen64 (zip_path);
+    if (uf == NULL)
+      {
+	  spatialite_e ("Unable to Open %s\n", zip_path);
+	  return 0;
+      }
+/* parsing the Zipfile directory */
+    mem_shape = do_list_zipfile_dir (uf, filename, 1);
+    if (mem_shape == NULL)
+      {
+	  spatialite_e ("No DBF %s with Zipfile\n", filename);
+	  goto stop;
+      }
+/* unzipping the DBF member */
+    if (!do_read_zipfile_file (uf, mem_shape, GAIA_ZIPFILE_DBF))
+	goto stop; 
+/* attempting to create and initialize the DBF object */
+	dbf = gaiaAllocDbf();
+	  dbf->memDbf = &(mem_shape->dbf);
+  gaiaOpenDbfRead(dbf, filename, charFrom, charTo);
+
+  stop:
+    unzClose (uf);
+	destroy_zip_mem_shapefile (mem_shape);
+    return dbf;
+}
+
+SPATIALITE_DECLARE int
+load_zip_dbf (sqlite3 * sqlite, const char *zip_path, const char *dbf_path,
+	      const char *table, const char *pk_column, const char *charset,
+	      int verbose, int text_dates, int *rows,
+	      int colname_case, char *err_msg)
+{
+/* loading a DBF file from within a Zipfile */
+    unzFile uf = NULL;
+    int retval = 0;
+    struct zip_mem_shapefile *mem_shape = NULL;
+
+    if (zip_path == NULL)
+      {
+	  spatialite_e ("load zip shapefile error: <%s>\n",
+			"NULL zipfile path");
+	  return 0;
+      }
+/* opening the Zipfile expected to contain the Shapefile */
+    uf = unzOpen64 (zip_path);
+    if (uf == NULL)
+      {
+	  spatialite_e ("Unable to Open %s\n", zip_path);
+	  return 0;
+      }
+/* parsing the Zipfile directory */
+    mem_shape = do_list_zipfile_dir (uf, dbf_path, 1);
+    if (mem_shape == NULL)
+      {
+	  spatialite_e ("No DBF %s with Zipfile\n", dbf_path);
+	  goto stop;
+      }
+/* unzipping the DBF member */
+    if (!do_read_zipfile_file (uf, mem_shape, GAIA_ZIPFILE_DBF))
+	goto stop;
+
+/* doing the hard work */
+    if (load_dbf_common
+	(mem_shape, sqlite, dbf_path, table, pk_column, charset, verbose,
+	 text_dates, rows, colname_case, err_msg))
+	retval = 1;
+
+  stop:
+    unzClose (uf);
+    if (mem_shape != NULL)
+	destroy_zip_mem_shapefile (mem_shape);
+    return retval;
+}
+
+#endif /* end MINIZIP */
 
 #endif /* end ICONV (SHP) */
 
@@ -3659,123 +5041,6 @@ dump_shapefile_ex2 (sqlite3 * sqlite, void *proj_ctx, char *table, char *column,
     return 0;
 }
 
-static int
-do_check_dbf_unique_pk_values (sqlite3 * sqlite, gaiaDbfPtr dbf, int text_dates,
-			       const char *pk_name, int pk_type)
-{
-/* checking for duplicate PK values */
-    char *sql;
-    sqlite3_stmt *stmt = NULL;
-    gaiaDbfFieldPtr dbf_field;
-    int ret;
-    int deleted;
-    int duplicates = 0;
-    int current_row = 0;
-
-    sql = "CREATE TABLE TEMP.check_unique_pk (pkey ANYVALUE)";
-    ret = sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
-    if (ret != SQLITE_OK)
-	return 0;
-
-    sql = "INSERT INTO TEMP.check_unique_pk (pkey) VALUES (?)";
-    ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
-    if (ret != SQLITE_OK)
-	goto error;
-
-    sqlite3_exec (sqlite, "BEGIN", NULL, NULL, NULL);
-
-    while (1)
-      {
-	  /* reading rows from shapefile */
-	  int ok_insert = 0;
-	  ret = gaiaReadDbfEntity_ex (dbf, current_row, &deleted, text_dates);
-	  if (!ret)
-	      break;
-	  current_row++;
-	  if (deleted)
-	    {
-		/* skipping DBF deleted row */
-		continue;
-	    }
-	  /* binding query params */
-	  sqlite3_reset (stmt);
-	  sqlite3_clear_bindings (stmt);
-	  dbf_field = dbf->Dbf->First;
-	  while (dbf_field)
-	    {
-		/* Primary Key value */
-		if (strcasecmp (pk_name, dbf_field->Name) == 0)
-		  {
-		      if (pk_type == SQLITE_TEXT)
-			{
-			    ok_insert = 1;
-			    sqlite3_bind_text (stmt, 1,
-					       dbf_field->Value->TxtValue,
-					       strlen (dbf_field->
-						       Value->TxtValue),
-					       SQLITE_STATIC);
-			}
-		      else if (pk_type == SQLITE_FLOAT)
-			{
-			    ok_insert = 1;
-			    sqlite3_bind_double (stmt, 1,
-						 dbf_field->Value->DblValue);
-			}
-		      else
-			{
-			    ok_insert = 1;
-			    sqlite3_bind_int64 (stmt, 1,
-						dbf_field->Value->IntValue);
-			}
-		  }
-		dbf_field = dbf_field->Next;
-	    }
-	  if (ok_insert)
-	    {
-		ret = sqlite3_step (stmt);
-		if (ret == SQLITE_DONE || ret == SQLITE_ROW)
-		    ;
-		else
-		    goto error;
-	    }
-      }
-    sqlite3_finalize (stmt);
-    stmt = NULL;
-    sqlite3_exec (sqlite, "COMMIT", NULL, NULL, NULL);
-
-    sql = "SELECT Count(*) FROM TEMP.check_unique_pk GROUP BY pkey";
-    ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
-    if (ret != SQLITE_OK)
-	goto error;
-
-    while (1)
-      {
-	  /* scrolling the result set rows */
-	  ret = sqlite3_step (stmt);
-	  if (ret == SQLITE_DONE)
-	      break;		/* end of result set */
-	  if (ret == SQLITE_ROW)
-	    {
-		if (sqlite3_column_int (stmt, 0) > 1)
-		    duplicates = 1;
-	    }
-      }
-    sqlite3_finalize (stmt);
-
-    sqlite3_exec (sqlite, "DROP TABLE TEMP.check_unique_pk", NULL, NULL, NULL);
-    if (duplicates)
-	return 0;
-    else
-	return 1;
-
-  error:
-    if (stmt != NULL)
-	sqlite3_finalize (stmt);
-    sqlite3_exec (sqlite, "COMMIT", NULL, NULL, NULL);
-    sqlite3_exec (sqlite, "DROP TABLE TEMP.check_unique_pk", NULL, NULL, NULL);
-    return 0;
-}
-
 SPATIALITE_DECLARE int
 load_dbf (sqlite3 * sqlite, char *dbf_path, char *table, char *charset,
 	  int verbose, int *rows, char *err_msg)
@@ -3802,576 +5067,12 @@ load_dbf_ex2 (sqlite3 * sqlite, char *dbf_path, char *table, char *pk_column,
 }
 
 SPATIALITE_DECLARE int
-load_dbf_ex3 (sqlite3 * sqlite, char *dbf_path, char *table, char *pk_column,
-	      char *charset, int verbose, int text_dates, int *rows,
-	      int colname_case, char *err_msg)
+load_dbf_ex3 (sqlite3 * sqlite, const char *dbf_path, const char *table,
+	      const char *pk_column, const char *charset, int verbose,
+	      int text_dates, int *rows, int colname_case, char *err_msg)
 {
-    sqlite3_stmt *stmt;
-    int ret;
-    char *errMsg = NULL;
-    char *sql;
-    char *dummy;
-    char *xname;
-    int already_exists = 0;
-    int sqlError = 0;
-    gaiaDbfPtr dbf = NULL;
-    gaiaDbfFieldPtr dbf_field;
-    int cnt;
-    int col_cnt;
-    int seed;
-    int len;
-    int dup;
-    int idup;
-    int current_row = 0;
-    char **col_name = NULL;
-    int deleted;
-    char *qtable = NULL;
-    char *qpk_name = NULL;
-    const char *pk_name = NULL;
-    char *casename;
-    int pk_autoincr = 1;
-    gaiaOutBuffer sql_statement;
-    int pk_type = SQLITE_INTEGER;
-    int pk_set;
-    const char *alt_pk[10] =
-	{ "PK_ALT0", "PK_ALT1", "PK_ALT2", "PK_ALT3", "PK_ALT4", "PK_ALT5",
-	"PK_ALT6", "PK_ALT7", "PK_ALT8", "PK_ALT9"
-    };
-    qtable = gaiaDoubleQuotedSql (table);
-    if (rows)
-	*rows = -1;
-/* checking if TABLE already exists */
-    sql = sqlite3_mprintf ("SELECT name FROM sqlite_master WHERE "
-			   "type = 'table' AND Lower(name) = Lower(%Q)", table);
-    ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
-    sqlite3_free (sql);
-    if (ret != SQLITE_OK)
-      {
-	  if (!err_msg)
-	      spatialite_e ("load DBF error: <%s>\n", sqlite3_errmsg (sqlite));
-	  else
-	      sprintf (err_msg, "load DBF error: <%s>\n",
-		       sqlite3_errmsg (sqlite));
-	  if (qtable)
-	      free (qtable);
-	  if (qpk_name)
-	      free (qpk_name);
-	  return 0;
-      }
-    while (1)
-      {
-	  /* scrolling the result set */
-	  ret = sqlite3_step (stmt);
-	  if (ret == SQLITE_DONE)
-	      break;		/* end of result set */
-	  if (ret == SQLITE_ROW)
-	      already_exists = 1;
-	  else
-	    {
-		spatialite_e ("load DBF error: <%s>\n",
-			      sqlite3_errmsg (sqlite));
-		break;
-	    }
-      }
-    sqlite3_finalize (stmt);
-    if (already_exists)
-      {
-	  if (!err_msg)
-	      spatialite_e ("load DBF error: table '%s' already exists\n",
-			    table);
-	  else
-	      sprintf (err_msg, "load DBF error: table '%s' already exists\n",
-		       table);
-	  if (qtable)
-	      free (qtable);
-	  if (qpk_name)
-	      free (qpk_name);
-	  return 0;
-      }
-    dbf = gaiaAllocDbf ();
-    gaiaOpenDbfRead (dbf, dbf_path, charset, "UTF-8");
-    if (!(dbf->Valid))
-      {
-	  if (!err_msg)
-	    {
-		spatialite_e ("load DBF error: cannot open '%s'\n", dbf_path);
-		if (dbf->LastError)
-		    spatialite_e ("\tcause: %s\n", dbf->LastError);
-	    }
-	  else
-	    {
-		char extra[512];
-		*extra = '\0';
-		if (dbf->LastError)
-		    sprintf (extra, "\n\tcause: %s", dbf->LastError);
-		sprintf (err_msg, "load DBF error: cannot open '%s'%s",
-			 dbf_path, extra);
-	    }
-	  gaiaFreeDbf (dbf);
-	  if (qtable)
-	      free (qtable);
-	  if (qpk_name)
-	      free (qpk_name);
-	  return 0;
-      }
-/* checking for duplicate / illegal column names and antialising them */
-    col_cnt = 0;
-    dbf_field = dbf->Dbf->First;
-    while (dbf_field)
-      {
-	  /* counting DBF fields */
-	  col_cnt++;
-	  dbf_field = dbf_field->Next;
-      }
-    col_name = malloc (sizeof (char *) * col_cnt);
-    cnt = 0;
-    seed = 0;
-    if (pk_column != NULL)
-      {
-	  /* validating the Primary Key column */
-	  dbf_field = dbf->Dbf->First;
-	  while (dbf_field)
-	    {
-		if (strcasecmp (pk_column, dbf_field->Name) == 0)
-		  {
-		      /* ok, using this field as Primary Key */
-		      pk_name = pk_column;
-		      pk_autoincr = 0;
-		      switch (dbf_field->Type)
-			{
-			case 'C':
-			    pk_type = SQLITE_TEXT;
-			    break;
-			case 'N':
-			    if (dbf_field->Decimals)
-				pk_type = SQLITE_FLOAT;
-			    else
-			      {
-				  if (dbf_field->Length <= 18)
-				      pk_type = SQLITE_INTEGER;
-				  else
-				      pk_type = SQLITE_FLOAT;
-			      }
-			    break;
-			case 'D':
-			    if (text_dates)
-				pk_type = SQLITE_TEXT;
-			    else
-				pk_type = SQLITE_FLOAT;
-			    break;
-			case 'F':
-			    pk_type = SQLITE_FLOAT;
-			    break;
-			case 'L':
-			    pk_type = SQLITE_INTEGER;
-			    break;
-			};
-		  }
-		dbf_field = dbf_field->Next;
-	    }
-      }
-    if (pk_name == NULL)
-      {
-	  if (pk_column != NULL)
-	      pk_name = pk_column;
-	  else
-	      pk_name = "PK_UID";
-      }
-    if (!do_check_dbf_unique_pk_values
-	(sqlite, dbf, text_dates, pk_name, pk_type))
-      {
-	  const char *old_pk = pk_name;
-	  int antialias;
-	  for (antialias = 0; antialias < 10; antialias++)
-	    {
-		/* searching an alternative Primary Key column name */
-		int found = 0;
-		pk_name = alt_pk[antialias];
-		dbf_field = dbf->Dbf->First;
-		while (dbf_field)
-		  {
-		      if (strcasecmp (pk_name, dbf_field->Name) == 0)
-			  found = 1;
-		      dbf_field = dbf_field->Next;
-		  }
-		if (!found)
-		  {
-		      pk_autoincr = 1;
-		      goto ok_pk;
-		  }
-	    }
-	  pk_name = old_pk;
-      }
-  ok_pk:
-    casename = convert_dbf_colname_case (pk_name, colname_case);
-    qpk_name = gaiaDoubleQuotedSql (casename);
-    free (casename);
-    dbf_field = dbf->Dbf->First;
-    while (dbf_field)
-      {
-	  /* preparing column names */
-	  char *xdummy = NULL;
-	  if (strcasecmp (pk_name, dbf_field->Name) == 0)
-	    {
-		/* skipping the Primary Key field */
-		dummy = dbf_field->Name;
-		len = strlen (dummy);
-		*(col_name + cnt) = malloc (len + 1);
-		strcpy (*(col_name + cnt), dummy);
-		cnt++;
-		dbf_field = dbf_field->Next;
-		continue;
-	    }
-	  dummy = dbf_field->Name;
-	  dup = 0;
-	  for (idup = 0; idup < cnt; idup++)
-	    {
-		if (strcasecmp (dummy, *(col_name + idup)) == 0)
-		    dup = 1;
-	    }
-	  if (dup)
-	    {
-		xdummy = sqlite3_mprintf ("COL_%d", seed++);
-		dummy = xdummy;
-	    }
-	  len = strlen (dummy);
-	  *(col_name + cnt) = malloc (len + 1);
-	  strcpy (*(col_name + cnt), dummy);
-	  if (xdummy)
-	      free (xdummy);
-	  cnt++;
-	  dbf_field = dbf_field->Next;
-      }
-    if (verbose)
-	spatialite_e ("========\nLoading DBF at '%s' into SQLite table '%s'\n",
-		      dbf_path, table);
-/* starting a transaction */
-    if (verbose)
-	spatialite_e ("\nBEGIN;\n");
-    ret = sqlite3_exec (sqlite, "BEGIN", NULL, 0, &errMsg);
-    if (ret != SQLITE_OK)
-      {
-	  if (!err_msg)
-	      spatialite_e ("load DBF error: <%s>\n", errMsg);
-	  else
-	      sprintf (err_msg, "load DBF error: <%s>\n", errMsg);
-	  sqlite3_free (errMsg);
-	  sqlError = 1;
-	  goto clean_up;
-      }
-/* creating the Table */
-    gaiaOutBufferInitialize (&sql_statement);
-    if (pk_type == SQLITE_TEXT)
-      {
-	  sql = sqlite3_mprintf ("CREATE TABLE \"%s\" (\n\"%s\" "
-				 "TEXT PRIMARY KEY NOT NULL", qtable, qpk_name);
-      }
-    else if (pk_type == SQLITE_FLOAT)
-      {
-	  sql = sqlite3_mprintf ("CREATE TABLE \"%s\" (\n\"%s\" "
-				 "DOUBLE PRIMARY KEY NOT NULL", qtable,
-				 qpk_name);
-      }
-    else
-      {
-	  if (pk_autoincr)
-	      sql = sqlite3_mprintf ("CREATE TABLE \"%s\" (\n\"%s\" "
-				     "INTEGER PRIMARY KEY AUTOINCREMENT",
-				     qtable, qpk_name);
-	  else
-	      sql = sqlite3_mprintf ("CREATE TABLE \"%s\" (\n\"%s\" "
-				     "INTEGER NOT NULL PRIMARY KEY", qtable,
-				     qpk_name);
-      }
-    gaiaAppendToOutBuffer (&sql_statement, sql);
-    sqlite3_free (sql);
-    cnt = 0;
-    dbf_field = dbf->Dbf->First;
-    while (dbf_field)
-      {
-	  if (strcasecmp (pk_name, dbf_field->Name) == 0)
-	    {
-		/* skipping the Primary Key field */
-		dbf_field = dbf_field->Next;
-		cnt++;
-		continue;
-	    }
-	  casename = convert_dbf_colname_case (*(col_name + cnt), colname_case);
-	  xname = gaiaDoubleQuotedSql (casename);
-	  free (casename);
-	  sql = sqlite3_mprintf (",\n\"%s\"", xname);
-	  free (xname);
-	  gaiaAppendToOutBuffer (&sql_statement, sql);
-	  sqlite3_free (sql);
-	  cnt++;
-	  switch (dbf_field->Type)
-	    {
-	    case 'C':
-		gaiaAppendToOutBuffer (&sql_statement, " TEXT");
-		break;
-	    case 'N':
-		if (dbf_field->Decimals)
-		    gaiaAppendToOutBuffer (&sql_statement, " DOUBLE");
-		else
-		  {
-		      if (dbf_field->Length <= 18)
-			  gaiaAppendToOutBuffer (&sql_statement, " INTEGER");
-		      else
-			  gaiaAppendToOutBuffer (&sql_statement, " DOUBLE");
-		  }
-		break;
-	    case 'D':
-		if (text_dates)
-		    gaiaAppendToOutBuffer (&sql_statement, " TEXT");
-		else
-		    gaiaAppendToOutBuffer (&sql_statement, " DOUBLE");
-		break;
-	    case 'F':
-		gaiaAppendToOutBuffer (&sql_statement, " DOUBLE");
-		break;
-	    case 'L':
-		gaiaAppendToOutBuffer (&sql_statement, " INTEGER");
-		break;
-	    };
-	  dbf_field = dbf_field->Next;
-      }
-    gaiaAppendToOutBuffer (&sql_statement, ")");
-    if (sql_statement.Error == 0 && sql_statement.Buffer != NULL)
-      {
-	  if (verbose)
-	      spatialite_e ("%s;\n", sql_statement.Buffer);
-	  ret = sqlite3_exec (sqlite, sql_statement.Buffer, NULL, 0, &errMsg);
-      }
-    else
-	ret = SQLITE_ERROR;
-    gaiaOutBufferReset (&sql_statement);
-    if (ret != SQLITE_OK)
-      {
-	  if (!err_msg)
-	      spatialite_e ("load DBF error: <%s>\n", errMsg);
-	  else
-	      sprintf (err_msg, "load DBF error: <%s>\n", errMsg);
-	  sqlite3_free (errMsg);
-	  sqlError = 1;
-	  goto clean_up;
-      }
-    /* preparing the INSERT INTO parametrerized statement */
-    sql = sqlite3_mprintf ("INSERT INTO \"%s\" (\"%s\"", qtable, qpk_name);
-    gaiaAppendToOutBuffer (&sql_statement, sql);
-    sqlite3_free (sql);
-    cnt = 0;
-    dbf_field = dbf->Dbf->First;
-    while (dbf_field)
-      {
-	  /* columns corresponding to some DBF attribute */
-	  if (strcasecmp (pk_name, dbf_field->Name) == 0)
-	    {
-		/* skipping the Primary Key field */
-		dbf_field = dbf_field->Next;
-		cnt++;
-		continue;
-	    }
-	  xname = gaiaDoubleQuotedSql (*(col_name + cnt++));
-	  sql = sqlite3_mprintf (",\"%s\"", xname);
-	  free (xname);
-	  gaiaAppendToOutBuffer (&sql_statement, sql);
-	  sqlite3_free (sql);
-	  dbf_field = dbf_field->Next;
-      }
-    gaiaAppendToOutBuffer (&sql_statement, ")\nVALUES (?");
-    dbf_field = dbf->Dbf->First;
-    while (dbf_field)
-      {
-	  /* column values */
-	  if (strcasecmp (pk_name, dbf_field->Name) == 0)
-	    {
-		/* skipping the Primary Key field */
-		dbf_field = dbf_field->Next;
-		continue;
-	    }
-	  gaiaAppendToOutBuffer (&sql_statement, ", ?");
-	  dbf_field = dbf_field->Next;
-      }
-    gaiaAppendToOutBuffer (&sql_statement, ")");
-    if (sql_statement.Error == 0 && sql_statement.Buffer != NULL)
-	ret =
-	    sqlite3_prepare_v2 (sqlite, sql_statement.Buffer,
-				strlen (sql_statement.Buffer), &stmt, NULL);
-    else
-	ret = SQLITE_ERROR;
-    gaiaOutBufferReset (&sql_statement);
-    if (ret != SQLITE_OK)
-      {
-	  if (!err_msg)
-	      spatialite_e ("load DBF error: <%s>\n", sqlite3_errmsg (sqlite));
-	  else
-	      sprintf (err_msg, "load DBF error: <%s>\n",
-		       sqlite3_errmsg (sqlite));
-	  sqlError = 1;
-	  goto clean_up;
-      }
-    current_row = 0;
-    while (1)
-      {
-	  /* inserting rows from DBF */
-	  ret = gaiaReadDbfEntity_ex (dbf, current_row, &deleted, text_dates);
-	  if (!ret)
-	    {
-		if (!(dbf->LastError))	/* normal DBF EOF */
-		    break;
-		if (!err_msg)
-		    spatialite_e ("%s\n", dbf->LastError);
-		else
-		    sprintf (err_msg, "%s\n", dbf->LastError);
-		sqlError = 1;
-		goto clean_up;
-	    }
-	  current_row++;
-	  if (deleted)
-	    {
-		/* skipping DBF deleted row */
-		continue;
-	    }
-	  /* binding query params */
-	  sqlite3_reset (stmt);
-	  sqlite3_clear_bindings (stmt);
-	  pk_set = 0;
-	  cnt = 0;
-	  dbf_field = dbf->Dbf->First;
-	  while (dbf_field)
-	    {
-		/* Primary Key value */
-		if (strcasecmp (pk_name, dbf_field->Name) == 0)
-		  {
-		      if (pk_type == SQLITE_TEXT)
-			  sqlite3_bind_text (stmt, 1,
-					     dbf_field->Value->TxtValue,
-					     strlen (dbf_field->
-						     Value->TxtValue),
-					     SQLITE_STATIC);
-		      else if (pk_type == SQLITE_FLOAT)
-			  sqlite3_bind_double (stmt, 1,
-					       dbf_field->Value->DblValue);
-		      else
-			  sqlite3_bind_int64 (stmt, 1,
-					      dbf_field->Value->IntValue);
-		      pk_set = 1;
-		  }
-		dbf_field = dbf_field->Next;
-	    }
-	  if (!pk_set)
-	      sqlite3_bind_int (stmt, 1, current_row);
-	  cnt = 0;
-	  dbf_field = dbf->Dbf->First;
-	  while (dbf_field)
-	    {
-		/* column values */
-		if (strcasecmp (pk_name, dbf_field->Name) == 0)
-		  {
-		      /* skipping the Primary Key field */
-		      dbf_field = dbf_field->Next;
-		      continue;
-		  }
-		if (!(dbf_field->Value))
-		    sqlite3_bind_null (stmt, cnt + 2);
-		else
-		  {
-		      switch (dbf_field->Value->Type)
-			{
-			case GAIA_INT_VALUE:
-			    sqlite3_bind_int64 (stmt, cnt + 2,
-						dbf_field->Value->IntValue);
-			    break;
-			case GAIA_DOUBLE_VALUE:
-			    sqlite3_bind_double (stmt, cnt + 2,
-						 dbf_field->Value->DblValue);
-			    break;
-			case GAIA_TEXT_VALUE:
-			    sqlite3_bind_text (stmt, cnt + 2,
-					       dbf_field->Value->TxtValue,
-					       strlen (dbf_field->
-						       Value->TxtValue),
-					       SQLITE_STATIC);
-			    break;
-			default:
-			    sqlite3_bind_null (stmt, cnt + 2);
-			    break;
-			}
-		  }
-		cnt++;
-		dbf_field = dbf_field->Next;
-	    }
-	  ret = sqlite3_step (stmt);
-	  if (ret == SQLITE_DONE || ret == SQLITE_ROW)
-	      ;
-	  else
-	    {
-		if (!err_msg)
-		    spatialite_e ("load DBF error: <%s>\n",
-				  sqlite3_errmsg (sqlite));
-		else
-		    sprintf (err_msg, "load DBF error: <%s>\n",
-			     sqlite3_errmsg (sqlite));
-		sqlite3_finalize (stmt);
-		sqlError = 1;
-		goto clean_up;
-	    }
-      }
-    sqlite3_finalize (stmt);
-  clean_up:
-    if (qtable)
-	free (qtable);
-    qtable = NULL;
-    if (qpk_name)
-	free (qpk_name);
-    qpk_name = NULL;
-    gaiaFreeDbf (dbf);
-    if (col_name)
-      {
-	  /* releasing memory allocation for column names */
-	  for (cnt = 0; cnt < col_cnt; cnt++)
-	      free (*(col_name + cnt));
-	  free (col_name);
-      }
-    if (sqlError)
-      {
-	  /* some error occurred - ROLLBACK */
-	  if (verbose)
-	      spatialite_e ("ROLLBACK;\n");
-	  ret = sqlite3_exec (sqlite, "ROLLBACK", NULL, 0, &errMsg);
-	  if (ret != SQLITE_OK)
-	    {
-		spatialite_e ("load DBF error: <%s>\n", errMsg);
-		sqlite3_free (errMsg);
-	    };
-	  if (qtable)
-	      free (qtable);
-	  if (qpk_name)
-	      free (qpk_name);
-	  return 0;
-      }
-    else
-      {
-	  /* ok - confirming pending transaction - COMMIT */
-	  if (verbose)
-	      spatialite_e ("COMMIT;\n");
-	  ret = sqlite3_exec (sqlite, "COMMIT", NULL, 0, &errMsg);
-	  if (ret != SQLITE_OK)
-	    {
-		spatialite_e ("load DBF error: <%s>\n", errMsg);
-		sqlite3_free (errMsg);
-		return 0;
-	    }
-	  if (rows)
-	      *rows = current_row;
-	  if (verbose)
-	      spatialite_e ("\nInserted %d rows into '%s' from DBF\n========\n",
-			    current_row, table);
-	  if (err_msg)
-	      sprintf (err_msg, "Inserted %d rows into '%s' from DBF",
-		       current_row, table);
-	  return 1;
-      }
+    return load_dbf_common (NULL, sqlite, dbf_path, table, pk_column, charset,
+			    verbose, text_dates, rows, colname_case, err_msg);
 }
 
 SPATIALITE_DECLARE int
@@ -6865,7 +7566,6 @@ dump_geojson_ex (sqlite3 * sqlite, char *table, char *geom_col,
 	 xgeom_col, precision, option, xtable, xgeom_col);
     free (xtable);
     free (xgeom_col);
-fprintf(stderr, "%s\n", sql);
     ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
     sqlite3_free (sql);
     if (ret != SQLITE_OK)
@@ -7775,3 +8475,241 @@ gaiaElemGeomOptionsAdd (const void *opts, const char *option)
     if (strncasecmp (option, "::ignore::", 10) == 0)
 	ignore_column (options, option + 10);
 }
+
+#ifdef ENABLE_MINIZIP		/* MINIZIP is enabled */
+
+GAIAGEO_DECLARE char *
+gaiaReadWktFromZipShp (const char *zip_path, const char *basename)
+{
+/* attempting to read the .PRJ member of some zipped Shapefile */
+    char *wkt = NULL;
+    unzFile uf = NULL;
+    struct zip_mem_shapefile *mem_shape = NULL;
+
+    if (zip_path == NULL)
+      {
+	  spatialite_e ("read_wkt_from_zipshp error: <%s>\n",
+			"NULL zipfile path");
+	  return NULL;
+      }
+/* opening the Zipfile expected to contain the Shapefile */
+    uf = unzOpen64 (zip_path);
+    if (uf == NULL)
+      {
+	  spatialite_e ("Unable to Open %s\n", zip_path);
+	  return NULL;
+      }
+/* parsing the Zipfile directory */
+    mem_shape = do_list_zipfile_dir (uf, basename, 0);
+    if (mem_shape == NULL)
+      {
+	  spatialite_e ("No SHP %s with Zipfile\n", basename);
+	  goto stop;
+      }
+/* unzipping the PRJ member (if any) */
+    do_read_zipfile_file (uf, mem_shape, GAIA_ZIPFILE_PRJ);
+    if (mem_shape->prj.buf != NULL)
+      {
+	  wkt = malloc (mem_shape->prj.size + 1);
+	  memcpy (wkt, mem_shape->prj.buf, mem_shape->prj.size);
+	  *(wkt + mem_shape->prj.size) = '\0';
+      }
+
+  stop:
+    unzClose (uf);
+    if (mem_shape != NULL)
+	destroy_zip_mem_shapefile (mem_shape);
+    return wkt;
+}
+
+GAIAGEO_DECLARE int
+gaiaZipfileNumSHP (const char *zip_path, int *count)
+{
+/* attempting to count how many Shapefiles are within a given Zipfile */
+    int ret;
+    int retval = 1;
+    struct zip_mem_shp_item *item;
+    struct zip_mem_shp_list *list = alloc_zip_mem_shp_list ();
+    unzFile uf = NULL;
+
+    *count = 0;
+    if (zip_path == NULL)
+      {
+	  spatialite_e ("zipfile NumSHP error: <%s>\n", "NULL zipfile path");
+	  retval = 0;
+	  goto stop;
+      }
+/* opening the Zipfile expected to contain the Shapefile */
+    uf = unzOpen64 (zip_path);
+    if (uf == NULL)
+      {
+	  spatialite_e ("Unable to Open %s\n", zip_path);
+	  retval = 0;
+	  goto stop;
+      }
+/* sniffing the Zipfile */
+    ret = do_sniff_zipfile_dir (uf, list, 0);
+    if (!ret)
+      {
+	  retval = 0;
+	  goto stop;
+      }
+    item = list->first;
+    while (item != NULL)
+      {
+	  /* counting how many Shapefiles are there */
+	  if (item->shp && item->shx && item->dbf)
+	      *count += 1;
+	  item = item->next;
+      }
+  stop:
+    unzClose (uf);
+    destroy_zip_mem_shp_list (list);
+    return retval;
+}
+
+GAIAGEO_DECLARE char *
+gaiaZipfileShpN (const char *zip_path, int idx)
+{
+/* attempting to return the Nth Shapefile's basename fromt within a given Zipfile */
+    int ret;
+    int count = 0;
+    char *basename = NULL;
+    struct zip_mem_shp_item *item;
+    struct zip_mem_shp_list *list = alloc_zip_mem_shp_list ();
+    unzFile uf = NULL;
+
+    count = 0;
+    if (zip_path == NULL)
+      {
+	  spatialite_e ("zipfile NumSHP error: <%s>\n", "NULL zipfile path");
+	  goto stop;
+      }
+/* opening the Zipfile expected to contain the Shapefile */
+    uf = unzOpen64 (zip_path);
+    if (uf == NULL)
+      {
+	  spatialite_e ("Unable to Open %s\n", zip_path);
+	  goto stop;
+      }
+/* sniffing the Zipfile */
+    ret = do_sniff_zipfile_dir (uf, list, 0);
+    if (!ret)
+	goto stop;
+    item = list->first;
+    while (item != NULL)
+      {
+	  /* counting how many Shapefiles are there */
+	  if (item->shp && item->shx && item->dbf)
+	      count++;
+	  if (count == idx)
+	    {
+		int len = strlen (item->basename);
+		basename = malloc (len + 1);
+		strcpy (basename, item->basename);
+		break;
+	    }
+	  item = item->next;
+      }
+  stop:
+    unzClose (uf);
+    destroy_zip_mem_shp_list (list);
+    return basename;
+}
+
+GAIAGEO_DECLARE int
+gaiaZipfileNumDBF (const char *zip_path, int *count)
+{
+/* attempting to count how many DBF files are within a given Zipfile */
+    int ret;
+    int retval = 1;
+    struct zip_mem_shp_item *item;
+    struct zip_mem_shp_list *list = alloc_zip_mem_shp_list ();
+    unzFile uf = NULL;
+
+    *count = 0;
+    if (zip_path == NULL)
+      {
+	  spatialite_e ("zipfile NumDBF error: <%s>\n", "NULL zipfile path");
+	  retval = 0;
+	  goto stop;
+      }
+/* opening the Zipfile expected to contain the DBF file */
+    uf = unzOpen64 (zip_path);
+    if (uf == NULL)
+      {
+	  spatialite_e ("Unable to Open %s\n", zip_path);
+	  retval = 0;
+	  goto stop;
+      }
+/* sniffing the Zipfile */
+    ret = do_sniff_zipfile_dir (uf, list, 1);
+    if (!ret)
+      {
+	  retval = 0;
+	  goto stop;
+      }
+    item = list->first;
+    while (item != NULL)
+      {
+	  /* counting how many DBF files are there */
+	  if (item->dbf)
+	      *count += 1;
+	  item = item->next;
+      }
+  stop:
+    unzClose (uf);
+    destroy_zip_mem_shp_list (list);
+    return retval;
+}
+
+GAIAGEO_DECLARE char *
+gaiaZipfileDbfN (const char *zip_path, int idx)
+{
+/* attempting to return the Nth DBF filename fromt within a given Zipfile */
+    int ret;
+    int count = 0;
+    char *filename = NULL;
+    struct zip_mem_shp_item *item;
+    struct zip_mem_shp_list *list = alloc_zip_mem_shp_list ();
+    unzFile uf = NULL;
+
+    count = 0;
+    if (zip_path == NULL)
+      {
+	  spatialite_e ("zipfile NumDBF error: <%s>\n", "NULL zipfile path");
+	  goto stop;
+      }
+/* opening the Zipfile expected to contain the DBF file */
+    uf = unzOpen64 (zip_path);
+    if (uf == NULL)
+      {
+	  spatialite_e ("Unable to Open %s\n", zip_path);
+	  goto stop;
+      }
+/* sniffing the Zipfile */
+    ret = do_sniff_zipfile_dir (uf, list, 1);
+    if (!ret)
+	goto stop;
+    item = list->first;
+    while (item != NULL)
+      {
+	  /* counting how many DBF files are there */
+	  if (item->dbf)
+	      count++;
+	  if (count == idx)
+	    {
+		int len = strlen (item->basename);
+		filename = malloc (len + 1);
+		strcpy (filename, item->basename);
+		break;
+	    }
+	  item = item->next;
+      }
+  stop:
+    unzClose (uf);
+    destroy_zip_mem_shp_list (list);
+    return filename;
+}
+
+#endif /* end MINIZIP */

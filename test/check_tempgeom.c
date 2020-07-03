@@ -86,9 +86,6 @@ main (int argc, char *argv[])
     const char *sql;
     sqlite3_stmt *stmt = NULL;
     char *err_msg = NULL;
-    char **results;
-    int rows;
-    int columns;
     void *cache = spatialite_alloc_connection ();
 
     if (argc > 1 || argv[0] == NULL)

@@ -125,7 +125,8 @@ check_PROGRAMS = check_endian$(EXEEXT) check_version$(EXEEXT) \
 	check_network_log$(EXEEXT) check_virtualknn$(EXEEXT) \
 	check_sequence$(EXEEXT) check_stored_proc$(EXEEXT) \
 	check_wms$(EXEEXT) check_drop_rename$(EXEEXT) \
-	routing_test$(EXEEXT) geojson_test$(EXEEXT) $(am__EXEEXT_1)
+	routing_test$(EXEEXT) geojson_test$(EXEEXT) \
+	check_zipshp$(EXEEXT) $(am__EXEEXT_1)
 @ENABLE_GEOPACKAGE_TRUE@am__append_1 = \
 @ENABLE_GEOPACKAGE_TRUE@		check_createBaseTables \
 @ENABLE_GEOPACKAGE_TRUE@		check_gpkgCreateTilesTable \
@@ -534,6 +535,9 @@ check_wms_LDADD = $(LDADD)
 check_xls_load_SOURCES = check_xls_load.c
 check_xls_load_OBJECTS = check_xls_load.$(OBJEXT)
 check_xls_load_LDADD = $(LDADD)
+check_zipshp_SOURCES = check_zipshp.c
+check_zipshp_OBJECTS = check_zipshp.$(OBJEXT)
+check_zipshp_LDADD = $(LDADD)
 geojson_test_SOURCES = geojson_test.c
 geojson_test_OBJECTS = geojson_test.$(OBJEXT)
 geojson_test_LDADD = $(LDADD)
@@ -651,10 +655,11 @@ am__depfiles_remade = ./$(DEPDIR)/check_add_tile_triggers.Po \
 	./$(DEPDIR)/check_virtualtable6.Po \
 	./$(DEPDIR)/check_virtualxpath.Po ./$(DEPDIR)/check_wfsin.Po \
 	./$(DEPDIR)/check_wms.Po ./$(DEPDIR)/check_xls_load.Po \
-	./$(DEPDIR)/geojson_test.Po ./$(DEPDIR)/routing_test.Po \
-	./$(DEPDIR)/shape_3d.Po ./$(DEPDIR)/shape_cp1252.Po \
-	./$(DEPDIR)/shape_primitives.Po ./$(DEPDIR)/shape_utf8_1.Po \
-	./$(DEPDIR)/shape_utf8_1ex.Po ./$(DEPDIR)/shape_utf8_2.Po
+	./$(DEPDIR)/check_zipshp.Po ./$(DEPDIR)/geojson_test.Po \
+	./$(DEPDIR)/routing_test.Po ./$(DEPDIR)/shape_3d.Po \
+	./$(DEPDIR)/shape_cp1252.Po ./$(DEPDIR)/shape_primitives.Po \
+	./$(DEPDIR)/shape_utf8_1.Po ./$(DEPDIR)/shape_utf8_1ex.Po \
+	./$(DEPDIR)/shape_utf8_2.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -717,9 +722,9 @@ SOURCES = check_add_tile_triggers.c \
 	check_virtualtable2.c check_virtualtable3.c \
 	check_virtualtable4.c check_virtualtable5.c \
 	check_virtualtable6.c check_virtualxpath.c check_wfsin.c \
-	check_wms.c check_xls_load.c geojson_test.c routing_test.c \
-	shape_3d.c shape_cp1252.c shape_primitives.c shape_utf8_1.c \
-	shape_utf8_1ex.c shape_utf8_2.c
+	check_wms.c check_xls_load.c check_zipshp.c geojson_test.c \
+	routing_test.c shape_3d.c shape_cp1252.c shape_primitives.c \
+	shape_utf8_1.c shape_utf8_1ex.c shape_utf8_2.c
 DIST_SOURCES = check_add_tile_triggers.c \
 	check_add_tile_triggers_bad_table_name.c check_bufovflw.c \
 	check_clone_table.c check_control_points.c check_create.c \
@@ -763,9 +768,9 @@ DIST_SOURCES = check_add_tile_triggers.c \
 	check_virtualtable2.c check_virtualtable3.c \
 	check_virtualtable4.c check_virtualtable5.c \
 	check_virtualtable6.c check_virtualxpath.c check_wfsin.c \
-	check_wms.c check_xls_load.c geojson_test.c routing_test.c \
-	shape_3d.c shape_cp1252.c shape_primitives.c shape_utf8_1.c \
-	shape_utf8_1ex.c shape_utf8_2.c
+	check_wms.c check_xls_load.c check_zipshp.c geojson_test.c \
+	routing_test.c shape_3d.c shape_cp1252.c shape_primitives.c \
+	shape_utf8_1.c shape_utf8_1ex.c shape_utf8_2.c
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -1260,7 +1265,7 @@ EXTRA_DIST = fnmatch_impl4win.h \
 	symbol.dxf gpkg_test.sqlite gpkg_test.gpkg \
 	gpkg_test_broken.gpkg gpkg_test_extrasrid.gpkg \
 	elba-pg.shp elba-pg.shx elba-pg.dbf \
-	elba-ln.shp elba-ln.shx elba-ln.dbf \
+	elba-ln.shp elba-ln.shx elba-ln.dbf elba.zip \
 	Gpx-sample.gpx 000323485.gpx \
 	sqlproc_sample.txt sqlproc_logfile.txt \
 	sqlproc_error.txt orbetello.sqlite \
@@ -1272,6 +1277,7 @@ SUBDIRS = sql_stmt_geosadvanced_tests sql_stmt_geos_tests \
 	sql_stmt_mathsql_tests sql_stmt_proj_tests \
 	sql_stmt_proj492_tests sql_stmt_proj493_tests \
 	sql_stmt_proj600security_tests \
+	sql_stmt_zip_proj6 sql_stmt_minizip \
 	sql_stmt_proj600_tests sql_stmt_security_tests \
 	sql_stmt_tests sql_stmt_xmlsec_tests \
 	sql_stmt_geopackage_tests sql_stmt_freexl_tests \
@@ -1723,6 +1729,10 @@ check_xls_load$(EXEEXT): $(check_xls_load_OBJECTS) $(check_xls_load_DEPENDENCIES
 	@rm -f check_xls_load$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(check_xls_load_OBJECTS) $(check_xls_load_LDADD) $(LIBS)
 
+check_zipshp$(EXEEXT): $(check_zipshp_OBJECTS) $(check_zipshp_DEPENDENCIES) $(EXTRA_check_zipshp_DEPENDENCIES) 
+	@rm -f check_zipshp$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(check_zipshp_OBJECTS) $(check_zipshp_LDADD) $(LIBS)
+
 geojson_test$(EXEEXT): $(geojson_test_OBJECTS) $(geojson_test_DEPENDENCIES) $(EXTRA_geojson_test_DEPENDENCIES) 
 	@rm -f geojson_test$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(geojson_test_OBJECTS) $(geojson_test_LDADD) $(LIBS)
@@ -1859,6 +1869,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_wfsin.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_wms.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_xls_load.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_zipshp.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/geojson_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/routing_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shape_3d.Po@am__quote@ # am--include-marker
@@ -2680,6 +2691,13 @@ geojson_test.log: geojson_test$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+check_zipshp.log: check_zipshp$(EXEEXT)
+	@p='check_zipshp$(EXEEXT)'; \
+	b='check_zipshp'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 check_createBaseTables.log: check_createBaseTables$(EXEEXT)
 	@p='check_createBaseTables$(EXEEXT)'; \
 	b='check_createBaseTables'; \
@@ -3101,6 +3119,7 @@ distclean: distclean-recursive
 	-rm -f ./$(DEPDIR)/check_wfsin.Po
 	-rm -f ./$(DEPDIR)/check_wms.Po
 	-rm -f ./$(DEPDIR)/check_xls_load.Po
+	-rm -f ./$(DEPDIR)/check_zipshp.Po
 	-rm -f ./$(DEPDIR)/geojson_test.Po
 	-rm -f ./$(DEPDIR)/routing_test.Po
 	-rm -f ./$(DEPDIR)/shape_3d.Po
@@ -3252,6 +3271,7 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -f ./$(DEPDIR)/check_wfsin.Po
 	-rm -f ./$(DEPDIR)/check_wms.Po
 	-rm -f ./$(DEPDIR)/check_xls_load.Po
+	-rm -f ./$(DEPDIR)/check_zipshp.Po
 	-rm -f ./$(DEPDIR)/geojson_test.Po
 	-rm -f ./$(DEPDIR)/routing_test.Po
 	-rm -f ./$(DEPDIR)/shape_3d.Po
