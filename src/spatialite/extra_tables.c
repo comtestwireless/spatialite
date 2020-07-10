@@ -3255,8 +3255,7 @@ drop_styling_triggers (sqlite3 * sqlite)
     sql =
 	"SELECT name FROM sqlite_master WHERE type = 'trigger' AND tbl_name "
 	"IN ('SE_external_graphics', 'SE_fonts', 'SE_vector_styles', 'SE_raster_styles', "
-	"'SE_group_styles', 'SE_vector_styled_layers', 'SE_raster_styled_layers', "
-	"'SE_styled_groups', 'SE_styled_group_refs', 'SE_styled_group_styles')";
+	"'SE_vector_styled_layers', 'SE_raster_styled_layers', 'rl2map_configurations')";
     ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, &err_msg);
     if (ret != SQLITE_OK)
       {
@@ -4189,6 +4188,26 @@ create_vector_styled_layers_view (sqlite3 * sqlite)
 }
 
 static int
+auto_register_standard_brushes (sqlite3 * sqlite)
+{
+/* AutoRegistering all Graphic Standard Brushes reguired by RasterLite2 */
+    char *sql_statement;
+    int ret;
+    char *err_msg = NULL;
+    sql_statement = sqlite3_mprintf ("SELECT SE_AutoRegisterStandardBrushes()");
+    ret = sqlite3_exec (sqlite, sql_statement, NULL, NULL, &err_msg);
+    sqlite3_free (sql_statement);
+    if (ret != SQLITE_OK)
+      {
+	  spatialite_e
+	      ("SELECT SE_AutoRegisterStandardBrushes() error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  return 0;
+      }
+    return 1;
+}
+
+static int
 create_raster_styled_layers_view (sqlite3 * sqlite)
 {
 /* creating the SE_raster_styled_layers_view view */
@@ -4311,6 +4330,8 @@ createStylingTables_ex (void *p_sqlite, int relaxed, int transaction)
     if (!create_raster_styled_layers (sqlite))
 	goto error;
     if (!create_external_graphics_view (sqlite))
+	goto error;
+    if (!auto_register_standard_brushes (sqlite))
 	goto error;
     if (!create_fonts_view (sqlite))
 	goto error;

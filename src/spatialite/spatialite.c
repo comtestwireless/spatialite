@@ -25002,10 +25002,11 @@ length_common (const void *p_cache, sqlite3_context * context, int argc,
 					l = gaiaGeodesicTotalLength (a,
 								     b,
 								     rf,
+								     line->DimensionModel,
 								     line->
-								     DimensionModel,
-								     line->Coords,
-								     line->Points);
+								     Coords,
+								     line->
+								     Points);
 					if (l < 0.0)
 					  {
 					      length = -1.0;
@@ -25028,9 +25029,12 @@ length_common (const void *p_cache, sqlite3_context * context, int argc,
 					      l = gaiaGeodesicTotalLength (a,
 									   b,
 									   rf,
-									   ring->DimensionModel,
-									   ring->Coords,
-									   ring->Points);
+									   ring->
+									   DimensionModel,
+									   ring->
+									   Coords,
+									   ring->
+									   Points);
 					      if (l < 0.0)
 						{
 						    length = -1.0;
@@ -26190,11 +26194,11 @@ fnct_Circularity (sqlite3_context * context, int argc, sqlite3_value ** argv)
 		  {
 #ifdef ENABLE_RTTOPO		/* only if RTTOPO is enabled */
 		      perimeter = gaiaGeodesicTotalLength (a, b, rf,
-							   pg->
-							   Exterior->DimensionModel,
+							   pg->Exterior->
+							   DimensionModel,
 							   pg->Exterior->Coords,
-							   pg->
-							   Exterior->Points);
+							   pg->Exterior->
+							   Points);
 		      if (perimeter < 0.0)
 			  ret = 0;
 		      else
@@ -40641,7 +40645,8 @@ fnct_GeodesicLength (sqlite3_context * context, int argc, sqlite3_value ** argv)
 				  /* interior Rings */
 				  ring = polyg->Interiors + ib;
 				  l = gaiaGeodesicTotalLength (a, b, rf,
-							       ring->DimensionModel,
+							       ring->
+							       DimensionModel,
 							       ring->Coords,
 							       ring->Points);
 				  if (l < 0.0)
@@ -40735,7 +40740,8 @@ fnct_GreatCircleLength (sqlite3_context * context, int argc,
 			    ring = polyg->Exterior;
 			    length +=
 				gaiaGreatCircleTotalLength (a, b,
-							    ring->DimensionModel,
+							    ring->
+							    DimensionModel,
 							    ring->Coords,
 							    ring->Points);
 			    for (ib = 0; ib < polyg->NumInteriors; ib++)
@@ -40744,7 +40750,8 @@ fnct_GreatCircleLength (sqlite3_context * context, int argc,
 				  ring = polyg->Interiors + ib;
 				  length +=
 				      gaiaGreatCircleTotalLength (a, b,
-								  ring->DimensionModel,
+								  ring->
+								  DimensionModel,
 								  ring->Coords,
 								  ring->Points);
 			      }
@@ -41735,6 +41742,85 @@ fnct_ReCreateStylingTriggers (sqlite3_context * context, int argc,
   error:
     sqlite3_result_int (context, 0);
     return;
+}
+
+static void
+fnct_AutoRegisterStandardBrushes (sqlite3_context * context, int argc,
+				  sqlite3_value ** argv)
+{
+/* SQL function:
+/ AutoRegisterStandardBrushes()
+/
+/ insert all Standard Brushes
+/ returns NULL
+*/
+    char *sql;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+/* standard HORZ brush */
+    sql = sqlite3_mprintf ("INSERT OR IGNORE INTO main.SE_external_graphics "
+			   "(xlink_href, title, abstract, resource, file_name) VALUES (%Q, %Q, %Q, %s, %Q)",
+			   "http://www.utopia.gov/stdbrush_horz.png",
+			   "stdbrush_horz", "PNG icon: 16 X 16",
+			   "x'89504E470D0A1A0A0000000D4948445200000010000000100103000000253D6D2200000006504C5445000000000000A567B9CF0000000174524E530040E6D86600000001624B47440088051D48000000097048597300000B1300000B1301009A9C180000000774494D4507E2071F052A0AA4776C2D0000001D69545874436F6D6D656E7400000000004372656174656420776974682047494D50642E6507000000114944415408D76360C006FEFF07216C00005FD003FD0222B80F0000000049454E44AE426082'",
+			   "stdbrush_horz.png");
+    sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    sqlite3_free (sql);
+/* standard VERT brush */
+    sql = sqlite3_mprintf ("INSERT OR IGNORE INTO main.SE_external_graphics "
+			   "(xlink_href, title, abstract, resource, file_name) VALUES (%Q, %Q, %Q, %s, %Q)",
+			   "http://www.utopia.gov/stdbrush_vert.png",
+			   "stdbrush_vert", "PNG icon: 16 X 16",
+			   "x'89504E470D0A1A0A0000000D4948445200000010000000100103000000253D6D2200000006504C5445000000000000A567B9CF0000000174524E530040E6D86600000001624B47440088051D48000000097048597300000B1300000B1301009A9C180000000774494D4507E2071F052C140822F6C80000001D69545874436F6D6D656E7400000000004372656174656420776974682047494D50642E65070000000E4944415408D763606C6020050100BDB80811166C49120000000049454E44AE426082'",
+			   "stdbrush_vert.png");
+    sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    sqlite3_free (sql);
+/* standard CROSS brush */
+    sql = sqlite3_mprintf ("INSERT OR IGNORE INTO main.SE_external_graphics "
+			   "(xlink_href, title, abstract, resource, file_name) VALUES (%Q, %Q, %Q, %s, %Q)",
+			   "http://www.utopia.gov/stdbrush_cross.png",
+			   "stdbrush_cross", "PNG icon: 16 X 16",
+			   "x'89504E470D0A1A0A0000000D4948445200000010000000100103000000253D6D2200000006504C5445000000000000A567B9CF0000000174524E530040E6D86600000001624B47440088051D48000000097048597300000B1300000B1301009A9C180000000774494D4507E2071F052B2111D0A42C0000001D69545874436F6D6D656E7400000000004372656174656420776974682047494D50642E6507000000134944415408D763606C60C044FFFF831036290005B60B0B55E3F2160000000049454E44AE426082'",
+			   "stdbrush_horz.png");
+    sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    sqlite3_free (sql);
+/* standard DIAG1 brush */
+    sql = sqlite3_mprintf ("INSERT OR IGNORE INTO main.SE_external_graphics "
+			   "(xlink_href, title, abstract, resource, file_name) VALUES (%Q, %Q, %Q, %s, %Q)",
+			   "http://www.utopia.gov/stdbrush_diag1.png",
+			   "stdbrush_diag1", "PNG icon: 16 X 16",
+			   "x'89504E470D0A1A0A0000000D4948445200000010000000100103000000253D6D2200000006504C5445000000000000A567B9CF0000000174524E530040E6D86600000001624B47440088051D48000000097048597300000B1300000B1301009A9C180000000774494D4507E2071F053A2AD5DB5EB40000001D69545874436F6D6D656E7400000000004372656174656420776974682047494D50642E6507000000284944415408D76338C0C8F08081A18081C18281418681818F81819D8181B98181F10003A644033300A53305FB13D67A660000000049454E44AE426082'",
+			   "stdbrush_diag1.png");
+    sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    sqlite3_free (sql);
+/* standard DIAG2 brush */
+    sql = sqlite3_mprintf ("INSERT OR IGNORE INTO main.SE_external_graphics "
+			   "(xlink_href, title, abstract, resource, file_name) VALUES (%Q, %Q, %Q, %s, %Q)",
+			   "http://www.utopia.gov/stdbrush_diag2.png",
+			   "stdbrush_diag2", "PNG icon: 16 X 16",
+			   "x'89504E470D0A1A0A0000000D4948445200000010000000100103000000253D6D2200000006504C5445000000000000A567B9CF0000000174524E530040E6D86600000001624B47440088051D48000000097048597300000B1300000B1301009A9C180000000774494D4507E2071F060413C95D73980000001D69545874436F6D6D656E7400000000004372656174656420776974682047494D50642E6507000000284944415408D76368606660606760E06360906160B0606028606078C0C0788081B9015398E10023007A0D05FB2ED2A2EB0000000049454E44AE426082'",
+			   "stdbrush_diag2.png");
+    sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    sqlite3_free (sql);
+/* standard CROSSDIAG brush */
+    sql = sqlite3_mprintf ("INSERT OR IGNORE INTO main.SE_external_graphics "
+			   "(xlink_href, title, abstract, resource, file_name) VALUES (%Q, %Q, %Q, %s, %Q)",
+			   "http://www.utopia.gov/stdbrush_crossdiag.png",
+			   "stdbrush_crossdiag", "PNG icon: 16 X 16",
+			   "x'89504E470D0A1A0A0000000D4948445200000010000000100103000000253D6D2200000006504C5445000000000000A567B9CF0000000174524E530040E6D86600000001624B47440088051D48000000097048597300000B1300000B1301009A9C180000000774494D4507E2071F060233A469F4D60000001D69545874436F6D6D656E7400000000004372656174656420776974682047494D50642E65070000002F4944415408D76338C0CCF0809DA1808FC1428641C68281AF8081FD0103F301100232805CA020500AA800A8EC003300EEB009F1542AF56B0000000049454E44AE426082'",
+			   "stdbrush_crossdiag.png");
+    sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    sqlite3_free (sql);
+// standard DOTS brush
+    sql = sqlite3_mprintf ("INSERT OR IGNORE INTO main.SE_external_graphics "
+			   "(xlink_href, title, abstract, resource, file_name) VALUES (%Q, %Q, %Q, %s, %Q)",
+			   "http://www.utopia.gov/stdbrush_dots.png",
+			   "stdbrush_dots", "PNG icon: 16 X 16",
+			   "x'89504E470D0A1A0A0000000D4948445200000010000000100103000000253D6D2200000006504C5445000000000000A567B9CF0000000174524E530040E6D86600000001624B47440088051D48000000097048597300000B1300000B1301009A9C180000000774494D4507E2071F061A20A2CC2D510000001D69545874436F6D6D656E7400000000004372656174656420776974682047494D50642E65070000001F4944415408D76338C0CCD0C0C8800C181B18980F801090810C80CA0E30030079B00511EB64F1C50000000049454E44AE426082'",
+			   "stdbrush_dots.png");
+    sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    sqlite3_free (sql);
+    sqlite3_result_null (context);
 }
 
 static void
@@ -52288,6 +52374,9 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function (db, "SE_UpdateVectorCoverageExtent", 2,
 			     SQLITE_ANY, 0, fnct_UpdateVectorCoverageExtent,
 			     0, 0);
+    sqlite3_create_function_v2 (db, "SE_AutoRegisterStandardBrushes", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_AutoRegisterStandardBrushes, 0, 0, 0);
     sqlite3_create_function_v2 (db, "SE_RegisterExternalGraphic", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_RegisterExternalGraphic, 0, 0, 0);

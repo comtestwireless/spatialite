@@ -5320,7 +5320,7 @@ static int
 check_spatialite_table (const char *table)
 {
 /*
-// Note: sqlite3 prevents 'sqlite_master' from being droped [will not list itsself, returns 'not existing table']
+// Note: sqlite3 prevents 'sqlite_master' from being droped [will not list itself, returns 'not existing table']
 // checking for SpatiaLite / RasterLite2 internal tables 
 */
     if (strcasecmp (table, "data_licenses") == 0)
@@ -5403,11 +5403,9 @@ check_spatialite_table (const char *table)
 	return 1;
     if (strcasecmp (table, "SE_fonts") == 0)
 	return 1;
-    if (strcasecmp (table, "SE_group_styles") == 0)
+    if (strcasecmp (table, "rl2map_configurations") == 0)
 	return 1;
     if (strcasecmp (table, "SE_raster_styled_layers") == 0)
-	return 1;
-    if (strcasecmp (table, "SE_styled_group_refs") == 0)
 	return 1;
     if (strcasecmp (table, "SE_vector_styled_layers") == 0)
 	return 1;
