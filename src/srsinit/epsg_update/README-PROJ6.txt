@@ -1,6 +1,6 @@
 HOW-TO: UPDATE spatial_ref_sys SELF-INITIALIZING C CODE
 ============================================================================
-this procedure is specifically intended to support PROJ.6
+this procedure is specifically intended to support PROJ.6 / 7
 ============================================================================
 
 STEP #0: building GDAL

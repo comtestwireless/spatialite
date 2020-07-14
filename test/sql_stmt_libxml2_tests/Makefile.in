@@ -381,29 +381,6 @@ EXTRA_DIST = addfileid1.testcase \
 	registerGraphic7.testcase \
 	registerGraphic8.testcase \
 	registerGraphic9.testcase \
-	registerGroupRaster1.testcase \
-	registerGroupRaster2.testcase \
-	registerGroupRaster3.testcase \
-	registerGroupRaster4.testcase \
-	registerGroupRaster5.testcase \
-	registerGroupRaster6.testcase \
-	registerGroupRaster7.testcase \
-	registerGroupRaster8.testcase \
-	registerGroupRaster9.testcase \
-	registerGroupVector1.testcase \
-	registerGroupVector2.testcase \
-	registerGroupVector3.testcase \
-	registerGroupVector4.testcase \
-	registerGroupVector5.testcase \
-	registerGroupVector6.testcase \
-	registerGroupVector7.testcase \
-	registerGroupVector8.testcase \
-	registerGroupVector9.testcase \
-	registerGroupStyle1.testcase \
-	registerGroupStyle2.testcase \
-	registerGroupStyle3.testcase \
-	registerGroupStyle4.testcase \
-	registerGroupStyle5.testcase \
 	registerIsoMeta10.testcase \
 	registerIsoMeta11.testcase \
 	registerIsoMeta12.testcase \
@@ -455,15 +432,6 @@ EXTRA_DIST = addfileid1.testcase \
 	registerRasterStyle3.testcase \
 	registerRasterStyle4.testcase \
 	registerRasterStyle5.testcase \
-	registerStllGroupStyle1.testcase \
-	registerStllGroupStyle3.testcase \
-	registerStllGroupStyle3.testcase \
-	registerStllGroupStyle4.testcase \
-	registerStllGroupStyle5.testcase \
-	registerStllGroupStyle6.testcase \
-	registerStllGroupStyle7.testcase \
-	registerStllGroupStyle8.testcase \
-	registerStllGroupStyle9.testcase \
 	registerVector1.testcase \
 	registerVector10.testcase \
 	registerVector11.testcase \
@@ -639,16 +607,6 @@ EXTRA_DIST = addfileid1.testcase \
 	registerVectorStyle3.testcase \
 	registerVectorStyle4.testcase \
 	registerVectorStyle5.testcase \
-	reloadGroupStyle1.testcase \
-	reloadGroupStyle2.testcase \
-	reloadGroupStyle3.testcase \
-	reloadGroupStyle4.testcase \
-	reloadGroupStyle5.testcase \
-	reloadGroupStyle6.testcase \
-	reloadGroupStyle7.testcase \
-	reloadGroupStyle8.testcase \
-	reloadGroupStyle9.testcase \
-	reloadGroupStyle10.testcase \
 	reloadMapConfig1.testcase \
 	reloadMapConfig2.testcase \
 	reloadMapConfig3.testcase \
@@ -681,53 +639,6 @@ EXTRA_DIST = addfileid1.testcase \
 	setfileid3.testcase \
 	setfileid4.testcase \
 	setfileid5.testcase \
-	setGroupInfos10.testcase \
-	setGroupInfos11.testcase \
-	setGroupInfos12.testcase \
-	setGroupInfos13.testcase \
-	setGroupInfos1.testcase \
-	setGroupInfos2.testcase \
-	setGroupInfos3.testcase \
-	setGroupInfos4.testcase \
-	setGroupInfos5.testcase \
-	setGroupInfos6.testcase \
-	setGroupInfos7.testcase \
-	setGroupInfos8.testcase \
-	setGroupInfos9.testcase \
-	setPaintOrder1.testcase \
-	setPaintOrder2.testcase \
-	setPaintOrder3.testcase \
-	setPaintOrder4.testcase \
-	setPaintOrder5.testcase \
-	setPaintOrder6.testcase \
-	setPaintOrder7.testcase \
-	setPaintOrder8.testcase \
-	setRasterPaintOrder1.testcase \
-	setRasterPaintOrder2.testcase \
-	setRasterPaintOrder3.testcase \
-	setRasterPaintOrder4.testcase \
-	setRasterPaintOrder5.testcase \
-	setRasterPaintOrder6.testcase \
-	setRasterPaintOrder7.testcase \
-	setRasterPaintOrder8.testcase \
-	setRasterPaintOrder9.testcase \
-	setRasterPaintOrder10.testcase \
-	setRasterPaintOrder11.testcase \
-	setRasterPaintOrder12.testcase \
-	setRasterPaintOrder13.testcase \
-	setVectorPaintOrder1.testcase \
-	setVectorPaintOrder2.testcase \
-	setVectorPaintOrder3.testcase \
-	setVectorPaintOrder4.testcase \
-	setVectorPaintOrder5.testcase \
-	setVectorPaintOrder6.testcase \
-	setVectorPaintOrder7.testcase \
-	setVectorPaintOrder8.testcase \
-	setVectorPaintOrder9.testcase \
-	setVectorPaintOrder10.testcase \
-	setVectorPaintOrder11.testcase \
-	setVectorPaintOrder12.testcase \
-	setVectorPaintOrder13.testcase \
 	setparentid1.testcase \
 	setparentid2.testcase \
 	setparentid3.testcase \
@@ -776,44 +687,6 @@ EXTRA_DIST = addfileid1.testcase \
 	unregisterGraphic3.testcase \
 	unregisterGraphic4.testcase \
 	unregisterGraphic5.testcase \
-	unregisterGroup1.testcase \
-	unregisterGroup2.testcase \
-	unregisterGroup3.testcase \
-	unregisterGroup4.testcase \
-	unregisterGroup5.testcase \
-	unregisterGroupStyle1.testcase \
-	unregisterGroupStyle2.testcase \
-	unregisterGroupStyle3.testcase \
-	unregisterGroupStyle4.testcase \
-	unregisterGroupStyle5.testcase \
-	unregisterGroupStyle6.testcase \
-	unregisterGroupStyle7.testcase \
-	unregisterGroupStyle8.testcase \
-	unregisterGroupStyle9.testcase \
-	unregisterGroupStyle10.testcase \
-	unregisterGroupLayer1.testcase \
-	unregisterGroupLayer2.testcase \
-	unregisterGroupLayer3.testcase \
-	unregisterGroupLayer4.testcase \
-	unregisterGroupLayer5.testcase \
-	unregisterGroupRaster1.testcase \
-	unregisterGroupRaster2.testcase \
-	unregisterGroupRaster3.testcase \
-	unregisterGroupRaster4.testcase \
-	unregisterGroupRaster5.testcase \
-	unregisterGroupRaster6.testcase \
-	unregisterGroupRaster7.testcase \
-	unregisterGroupRaster8.testcase \
-	unregisterGroupRaster9.testcase \
-	unregisterGroupVector1.testcase \
-	unregisterGroupVector2.testcase \
-	unregisterGroupVector3.testcase \
-	unregisterGroupVector4.testcase \
-	unregisterGroupVector5.testcase \
-	unregisterGroupVector6.testcase \
-	unregisterGroupVector7.testcase \
-	unregisterGroupVector8.testcase \
-	unregisterGroupVector9.testcase \
 	unregisterMapConfig1.testcase \
 	unregisterMapConfig2.testcase \
 	unregisterMapConfig3.testcase \
@@ -856,15 +729,6 @@ EXTRA_DIST = addfileid1.testcase \
 	unregisterRasterStyle8.testcase \
 	unregisterRasterStyle9.testcase \
 	unregisterRasterStyle10.testcase \
-	unregisterStllGroupStyle1.testcase \
-	unregisterStllGroupStyle3.testcase \
-	unregisterStllGroupStyle3.testcase \
-	unregisterStllGroupStyle4.testcase \
-	unregisterStllGroupStyle5.testcase \
-	unregisterStllGroupStyle6.testcase \
-	unregisterStllGroupStyle7.testcase \
-	unregisterStllGroupStyle8.testcase \
-	unregisterStllGroupStyle9.testcase \
 	unregisterVector1.testcase \
 	unregisterVector2.testcase \
 	unregisterVector3.testcase \
