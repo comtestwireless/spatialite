@@ -1263,7 +1263,7 @@ gaia_stored_proc_create_tables (sqlite3 * handle, const void *cache)
 
 /* creating Triggers supporting STORED_PROCEDURES */
     sprintf (sql,
-	     "CREATE TRIGGER storproc_ins BEFORE INSERT ON stored_procedures\n"
+	     "CREATE TRIGGER IF NOT EXISTS storproc_ins BEFORE INSERT ON stored_procedures\n"
 	     "FOR EACH ROW BEGIN\n"
 	     "SELECT RAISE(ROLLBACK, 'Invalid \"sql_proc\": not a BLOB of the SQL Procedure type')\n"
 	     "WHERE SqlProc_IsValid(NEW.sql_proc) <> 1;\nEND");
@@ -1278,7 +1278,7 @@ gaia_stored_proc_create_tables (sqlite3 * handle, const void *cache)
 	  return 0;
       }
     sprintf (sql,
-	     "CREATE TRIGGER storproc_upd BEFORE UPDATE OF sql_proc ON stored_procedures\n"
+	     "CREATE TRIGGER IF NOT EXISTS storproc_upd BEFORE UPDATE OF sql_proc ON stored_procedures\n"
 	     "FOR EACH ROW BEGIN\n"
 	     "SELECT RAISE(ROLLBACK, 'Invalid \"sql_proc\": not a BLOB of the SQL Procedure type')\n"
 	     "WHERE SqlProc_IsValid(NEW.sql_proc) <> 1;\nEND");

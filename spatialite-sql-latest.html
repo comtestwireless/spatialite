@@ -3337,6 +3337,24 @@ the return type is Integer, with a return value of 1 for TRUE or 0 for FALSE<hr>
 					<li><i>CreateVectorCoveragesTables()</i></li>
 					<li><i>CreateStylingTables()</i></li>
 				</ul>the return type is Integer, with a return value of 1 for TRUE or 0 for FALSE</td></tr>
+			<tr><td><b>CreateMissingSystemTables</b></td>
+				<td>CreateMissingSystemTables( void ) : <i>Integer</i><hr>
+					CreateMissingSystemTables( relaxed <i>Integer</i> ) : <i>Integer</i><hr>
+					CreateMissingSystemTables( relaxed <i>Integer</i> , transaction <i>Integer</i> ) : <i>Integer</i>
+				<td></td>
+				<td align="center" bgcolor="#d0f0d0">base</td>
+				<td>This function will create any missing ancillary metadata table required by <b>libspatialite v.5</b> and subsequent versions.</v><br>
+				<ul>
+					<li>the <i>optional</i> argument <b>relaxed</b> has the same interpretation as in <b>CreateStylingTables()</b>:
+					if it is explicitly set as <b>TRUE</b> then
+					a <i>relaxed</i> version of the validating Triggers will be installed (not checking for strict <i><u>XSD schema validation</u></i>).</li>
+					<li>if the <i>optional</i> argument <b>transaction</b> is explicitly set as <b>TRUE</b> then 
+					the whole operation will be atomically confined within a monolithic SQL transaction</li>
+				</ul>
+				The return type is Integer, with a return value of 1 on success.<br>
+				An exception will be raised on invalid arguments or on failure.<hr>
+				<b>Note</b>: this SQL function is intended for safely upgrading
+				old databases created by earlier versions; it's absolutely harmless because any existing MetaTable will be left untouched.</td></tr>
 			<tr><td><b>InsertEpsgSrid</b></td>
 				<td>InsertEpsgSrid( srid <i>Integer</i> ) : <i>Integer</i></td>
 				<td></td>

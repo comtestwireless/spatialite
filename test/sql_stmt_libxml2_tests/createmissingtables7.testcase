@@ -1,0 +1,7 @@
+CreateMissingSystemTables - INTEGER relaxed, TEXT transaction
+:memory: #use in-memory database
+SELECT CreateMissingSystemTables(0, 'no');
+1 # rows (not including the header row)
+1 # columns
+CreateMissingSystemTables(0, 'no')
+CreateMissingSystemTables exception - second argument (transaction) expected to be an INTEGER.

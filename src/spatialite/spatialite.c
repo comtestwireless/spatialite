@@ -323,6 +323,85 @@ fnct_EvalFunc (sqlite3_context * context, int argc, sqlite3_value ** argv)
 }
 
 static void
+fnct_createMissingSystemTables (sqlite3_context * context, int argc,
+				sqlite3_value ** argv)
+{
+/* SQL function:
+/ CreateMissingSystemTables()
+/  or
+/ CreateMissingSystemTables(bool relaxed)
+/  or
+/ CreateMissingSystemTables(bool relaxed, bool transaction)
+/
+/ creates all missing system tables required by version 5
+/ returns 1 on success
+/ RAISES AN EXCEPTION on failure or on invalid arguments
+*/
+    int relaxed = 0;
+    int transaction = 0;
+    int ret;
+    char *err_msg = NULL;
+    char *msg = NULL;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (argc >= 1)
+      {
+	  if (sqlite3_value_type (argv[0]) != SQLITE_INTEGER)
+	      goto invalid_arg1;
+	  relaxed = sqlite3_value_int (argv[0]);
+      }
+    if (argc >= 2)
+      {
+	  if (sqlite3_value_type (argv[1]) != SQLITE_INTEGER)
+	      goto invalid_arg2;
+	  transaction = sqlite3_value_int (argv[1]);
+      }
+
+    ret =
+	createMissingSystemTables (sqlite, cache, relaxed, transaction,
+				   &err_msg);
+    if (ret <= 0)
+	goto error;
+    msg =
+	sqlite3_mprintf ("successfully executed (%d Table%s been created)", ret,
+			 (ret == 1) ? " has" : "s have");
+    updateSpatiaLiteHistory (sqlite, "*** CreateMissingSystemTables ***", NULL,
+			     msg);
+    sqlite3_free (msg);
+    sqlite3_result_int (context, ret);
+    return;
+
+  invalid_arg1:
+    msg =
+	"CreateMissingSystemTables exception - first argument (relaxed) expected to be an INTEGER.";
+    sqlite3_result_error (context, msg, -1);
+    return;
+
+  invalid_arg2:
+    msg =
+	"CreateMissingSystemTables exception - second argument (transaction) expected to be an INTEGER.";
+    sqlite3_result_error (context, msg, -1);
+    return;
+
+  error:
+    if (err_msg == NULL)
+	msg =
+	    sqlite3_mprintf
+	    ("CreateMissingSystemTables exception - Unknown failure reason.");
+    else
+      {
+	  msg =
+	      sqlite3_mprintf ("CreateMissingSystemTables exception - %s.",
+			       err_msg);
+	  sqlite3_free (err_msg);
+      }
+    sqlite3_result_error (context, msg, -1);
+    sqlite3_free (msg);
+    return;
+}
+
+static void
 fnct_spatialite_version (sqlite3_context * context, int argc,
 			 sqlite3_value ** argv)
 {
@@ -2865,6 +2944,7 @@ fnct_InitSpatialMetaDataFull (sqlite3_context * context, int argc,
     const char *xmode = NULL;
     int retval;
     char *sql;
+    int ok_isometa = 0;
     sqlite3 *sqlite = sqlite3_context_db_handle (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (argc == 1)
@@ -2924,20 +3004,21 @@ fnct_InitSpatialMetaDataFull (sqlite3_context * context, int argc,
 	goto error;
 
 #ifdef ENABLE_LIBXML2		/* only if LibXML2 support is available */
+    ok_isometa = 1;
     if (xmode != NULL)
       {
 	  if (strcasecmp (xmode, "NONE") == 0
 	      || strcasecmp (xmode, "EMPTY") == 0)
-	      ;
-	  else
-	    {
-		/* executing CreateIsoMetadataTables() */
-		sql = sqlite3_mprintf ("SELECT CreateIsoMetadataTables()");
-		retval = do_execute_sql_with_retval (sqlite, sql, &errMsg);
-		sqlite3_free (sql);
-		if (retval != 1)
-		    goto error;
-	    }
+	      ok_isometa = 0;
+      }
+    if (ok_isometa)
+      {
+	  /* executing CreateIsoMetadataTables() */
+	  sql = sqlite3_mprintf ("SELECT CreateIsoMetadataTables()");
+	  retval = do_execute_sql_with_retval (sqlite, sql, &errMsg);
+	  sqlite3_free (sql);
+	  if (retval != 1)
+	      goto error;
       }
 #endif
 
@@ -48009,6 +48090,16 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_spatialite_version, 0, 0, 0);
 #endif
+
+    sqlite3_create_function_v2 (db, "CreateMissingSystemTables", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_createMissingSystemTables, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "CreateMissingSystemTables", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_createMissingSystemTables, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "CreateMissingSystemTables", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_createMissingSystemTables, 0, 0, 0);
 
     sqlite3_create_function_v2 (db, "spatialite_target_cpu", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,

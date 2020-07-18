@@ -133,7 +133,7 @@ AUTOMAKE = automake-1.16
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -Wall -Wextra -Wunused -pedantic -g -O0 -I/home/sandro/Scaricati/gdal/include -fprofile-arcs -ftest-coverage -g
+CFLAGS = -Wall -Wextra -Wunused -pedantic -g -O0 -fprofile-arcs -ftest-coverage -g
 CPP = gcc -E
 CPPFLAGS = 
 CXX = g++
@@ -162,7 +162,7 @@ INSTALL_PROGRAM = ${INSTALL}
 INSTALL_SCRIPT = ${INSTALL}
 INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
 LD = /usr/bin/ld -m elf_x86_64
-LDFLAGS = -L/home/sandro/Scaricati/gdal/lib
+LDFLAGS = 
 LIBOBJS = 
 LIBS = -lminizip -lrttopo -lfreexl -lproj -lsqlite3 -lz -lsqlite3  -L/usr/lib64 -lgeos_c
 LIBTOOL = $(SHELL) $(top_builddir)/libtool

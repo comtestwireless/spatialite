@@ -1560,8 +1560,8 @@ create_virts_geometry_columns_field_infos (sqlite3 * sqlite)
     return 1;
 }
 
-static int
-create_geometry_columns_times (sqlite3 * sqlite)
+SPATIALITE_PRIVATE int
+create_geometry_columns_time (sqlite3 * sqlite)
 {
     char sql[4186];
     char *errMsg = NULL;
@@ -2296,7 +2296,7 @@ create_geometry_columns_views (sqlite3 * sqlite)
     return 1;
 }
 
-static int
+SPATIALITE_PRIVATE int
 create_data_licenses (sqlite3 * sqlite)
 {
     char sql[4186];
@@ -2777,7 +2777,7 @@ createAdvancedMetaData (void *p_sqlite)
 	return 0;
     if (!create_virts_geometry_columns_field_infos (sqlite))
 	return 0;
-    if (!create_geometry_columns_times (sqlite))
+    if (!create_geometry_columns_time (sqlite))
 	return 0;
     if (!create_geometry_columns_auth (sqlite))
 	return 0;

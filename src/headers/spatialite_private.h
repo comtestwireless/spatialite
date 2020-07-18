@@ -1477,6 +1477,59 @@ extern "C"
 
     SPATIALITE_PRIVATE void finalize_topologies (const void *p_cache);
 
+    SPATIALITE_PRIVATE int create_data_licenses (sqlite3 * sqlite);
+
+    SPATIALITE_PRIVATE int create_geometry_columns_time (sqlite3 * sqlite);
+
+    SPATIALITE_PRIVATE int create_spatial_ref_sys_aux (sqlite3 * handle);
+
+    SPATIALITE_PRIVATE int create_raster_coverages (sqlite3 * sqlite);
+
+    SPATIALITE_PRIVATE int create_vector_coverages (sqlite3 * sqlite);
+
+    SPATIALITE_PRIVATE int create_wms_tables (sqlite3 * sqlite);
+
+    SPATIALITE_PRIVATE int create_external_graphics (sqlite3 * sqlite);
+
+    SPATIALITE_PRIVATE int create_fonts (sqlite3 * sqlite);
+
+    SPATIALITE_PRIVATE int create_raster_styles (sqlite3 * sqlite, int relaxed);
+
+    SPATIALITE_PRIVATE int create_raster_styled_layers (sqlite3 * sqlite);
+
+    SPATIALITE_PRIVATE int create_vector_styles (sqlite3 * sqlite, int relaxed);
+
+    SPATIALITE_PRIVATE int create_vector_styled_layers (sqlite3 * sqlite);
+
+    SPATIALITE_PRIVATE int create_iso_metadata (sqlite3 * sqlite, int relaxed);
+
+    SPATIALITE_PRIVATE int create_iso_metadata_reference (sqlite3 * sqlite);
+
+    SPATIALITE_PRIVATE int create_iso_metadata_view (sqlite3 * sqlite);
+
+    SPATIALITE_PRIVATE int create_rl2map_configurations (sqlite3 * sqlite,
+							 int relaxed);
+
+    SPATIALITE_PRIVATE int create_rl2map_configurations_view (sqlite3 * sqlite);
+
+    SPATIALITE_PRIVATE int create_external_graphics_view (sqlite3 * sqlite);
+
+    SPATIALITE_PRIVATE int create_fonts_view (sqlite3 * sqlite);
+
+    SPATIALITE_PRIVATE int create_raster_styled_layers_view (sqlite3 * sqlite);
+
+    SPATIALITE_PRIVATE int create_raster_styles_view (sqlite3 * sqlite);
+
+    SPATIALITE_PRIVATE int create_vector_styles_view (sqlite3 * sqlite);
+
+    SPATIALITE_PRIVATE int create_vector_styled_layers_view (sqlite3 * sqlite);
+
+    SPATIALITE_PRIVATE int createMissingSystemTables (sqlite3 * sqlite,
+						      const void *cache,
+						      int relaxed,
+						      int transaction,
+						      char **err_msg);
+
 #ifdef __cplusplus
 }
 #endif

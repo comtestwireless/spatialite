@@ -2260,7 +2260,7 @@ scope_is_internal_view (const char *tbl_name, char **sys_scope)
       }
     if (strcasecmp (tbl_name, "spatial_ref_sys_all") == 0)
       {
-	  *sys_scope = sqlite3_mprintf ("Spatial Tables Catalog");
+	  *sys_scope = sqlite3_mprintf ("CRS Catalog");
 	  return 1;
       }
     if (strcasecmp (tbl_name, "raster_coverages_ref_sys") == 0)
@@ -2291,7 +2291,8 @@ scope_is_internal_view (const char *tbl_name, char **sys_scope)
 	|| strcasecmp (tbl_name, "SE_raster_styles_view") == 0
 	|| strcasecmp (tbl_name, "SE_vector_styled_layers_view") == 0
 	|| strcasecmp (tbl_name, "SE_raster_styled_layers_view") == 0
-	|| strcasecmp (tbl_name, "rl2map_configurations") == 0)
+	|| strcasecmp (tbl_name, "rl2map_configurations") == 0
+	|| strcasecmp (tbl_name, "rl2map_configurations_view") == 0)
       {
 	  *sys_scope = sqlite3_mprintf ("SLD/SE Styling");
 	  return 1;
