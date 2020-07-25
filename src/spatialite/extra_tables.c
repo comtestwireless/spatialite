@@ -1067,10 +1067,10 @@ create_raster_coverages_triggers (sqlite3 * sqlite)
 	      "compression must be one of ''NONE'' | ''DEFLATE'' | ''DEFLATE_NO'' | "
 	      "''LZMA'' | ''LZMA_NO'' | ''LZ4'' | ''LZ4_NO'' | ''ZSTD'' | ''ZSTD_NO'' | "
 	      "''PNG'' | ''JPEG'' | ''LOSSY_WEBP'' | ''LOSSLESS_WEBP'' | ''CCITTFAX4'' | "
-	      "''CHARLS'' | ''LOSSY_JP2'' | ''LOSSLESS_JP2''')\n"
+	      "''LOSSY_JP2'' | ''LOSSLESS_JP2''')\n"
 	      "WHERE NEW.compression NOT IN ('NONE', 'DEFLATE',  'DEFLATE_NO', "
 	      "'LZMA', 'LZMA_NO', 'LZ4', 'LZ4_NO', 'ZSTD', 'ZSTD_NO', 'PNG', "
-	      "'JPEG', 'LOSSY_WEBP', 'LOSSLESS_WEBP', 'CCITTFAX4', 'CHARLS', "
+	      "'JPEG', 'LOSSY_WEBP', 'LOSSLESS_WEBP', 'CCITTFAX4', "
 	      "'LOSSY_JP2', 'LOSSLESS_JP2');\nEND";
 	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &err_msg);
 	  if (ret != SQLITE_OK)
@@ -1087,10 +1087,10 @@ create_raster_coverages_triggers (sqlite3 * sqlite)
 	      "compression must be one of ''NONE'' | ''DEFLATE'' | ''DEFLATE_NO'' | "
 	      "''LZMA'' | ''LZMA_NO'' | ''LZ4'' | ''LZ4_NO'' | ''ZSTD'' | ''ZSTD_NO'' | "
 	      "''PNG'' | ''JPEG'' | ''LOSSY_WEBP'' | ''LOSSLESS_WEBP'' | ''CCITTFAX4'' | "
-	      "''CHARLS'' | ''LOSSY_JP2'' | ''LOSSLESS_JP2''')\n"
+	      "''LOSSY_JP2'' | ''LOSSLESS_JP2''')\n"
 	      "WHERE NEW.compression NOT IN ('NONE', 'DEFLATE', 'DEFLATE_NO', "
 	      "'LZMA', 'LZMA_NO', 'LZ4', 'LZ4_NO', 'ZSTD', 'ZSTD_NO', 'PNG', "
-	      "'JPEG', 'LOSSY_WEBP', 'LOSSLESS_WEBP', 'CCITTFAX4', 'CHARLS', "
+	      "'JPEG', 'LOSSY_WEBP', 'LOSSLESS_WEBP', 'CCITTFAX4', "
 	      "'LOSSY_JP2', 'LOSSLESS_JP2');\nEND";
 	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &err_msg);
 	  if (ret != SQLITE_OK)
@@ -1531,7 +1531,7 @@ create_raster_coverages_triggers (sqlite3 * sqlite)
 	      "inconsistent GRAYSCALE compression')\nWHERE NEW.pixel_type = "
 	      "'GRAYSCALE' AND NEW.compression NOT IN ('NONE', 'DEFLATE', 'DEFLATE_NO', "
 	      "'LZMA', 'LZMA_NO', 'LZ4', 'LZ4_NO', 'ZSTD', 'ZSTD_NO', 'PNG', "
-	      "'JPEG', 'LOSSY_WEBP', 'LOSSLESS_WEBP', 'CHARLS', 'LOSSY_JP2', "
+	      "'JPEG', 'LOSSY_WEBP', 'LOSSLESS_WEBP', 'LOSSY_JP2', "
 	      "'LOSSLESS_JP2');\nEND";
 	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &err_msg);
 	  if (ret != SQLITE_OK)
@@ -1547,7 +1547,7 @@ create_raster_coverages_triggers (sqlite3 * sqlite)
 	      "inconsistent GRAYSCALE compression')\nWHERE NEW.pixel_type = "
 	      "'GRAYSCALE' AND NEW.compression NOT IN ('NONE', 'DEFLATE', 'DEFLATE_NO', "
 	      "'LZMA', 'LZMA_NO', 'LZ4', 'LZ4_NO', 'ZSTD', 'ZSTD_NO', 'PNG', "
-	      "'JPEG', 'LOSSY_WEBP', 'LOSSLESS_WEBP', 'CHARLS', 'LOSSY_JP2', "
+	      "'JPEG', 'LOSSY_WEBP', 'LOSSLESS_WEBP', 'LOSSY_JP2', "
 	      "'LOSSLESS_JP2');\nEND";
 	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &err_msg);
 	  if (ret != SQLITE_OK)
@@ -1590,10 +1590,10 @@ create_raster_coverages_triggers (sqlite3 * sqlite)
 	      "AND ((NEW.sample_type = 'UINT8' AND NEW.compression NOT IN ("
 	      "'NONE', 'DEFLATE', 'DEFLATE_NO', 'LZMA', 'LZMA_NO', 'LZ4', 'LZ4_NO', "
 	      "'ZSTD', 'ZSTD_NO', 'PNG', 'JPEG', 'LOSSY_WEBP', 'LOSSLESS_WEBP', "
-	      "'CHARLS', 'LOSSY_JP2', 'LOSSLESS_JP2') OR (NEW.sample_type = "
+	      "'LOSSY_JP2', 'LOSSLESS_JP2') OR (NEW.sample_type = "
 	      "'UINT16' AND NEW.compression NOT IN ('NONE', 'DEFLATE', 'DEFLATE_NO', "
 	      "'LZMA', 'LZMA_NO', 'LZ4', 'LZ4_NO', 'ZSTD', 'ZSTD_NO', 'PNG', "
-	      "'CHARLS', 'LOSSY_JP2', 'LOSSLESS_JP2'))));\nEND";
+	      "'LOSSY_JP2', 'LOSSLESS_JP2'))));\nEND";
 	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &err_msg);
 	  if (ret != SQLITE_OK)
 	    {
@@ -1609,10 +1609,10 @@ create_raster_coverages_triggers (sqlite3 * sqlite)
 	      "AND ((NEW.sample_type = 'UINT8' AND NEW.compression NOT IN ("
 	      "'NONE', 'DEFLATE', 'DEFLATE_NO', 'LZMA', 'LZMA_NO', 'LZ4', 'LZ4_NO', "
 	      "'ZSTD', 'ZSTD_NO', 'PNG', 'JPEG', 'LOSSY_WEBP', 'LOSSLESS_WEBP', "
-	      "'CHARLS', 'LOSSY_JP2', 'LOSSLESS_JP2') OR (NEW.sample_type = "
+	      "'LOSSY_JP2', 'LOSSLESS_JP2') OR (NEW.sample_type = "
 	      "'UINT16' AND NEW.compression NOT IN ('NONE', 'DEFLATE', 'DEFLATE_NO', "
 	      "'LZMA', 'LZMA_NO', 'LZ4', 'LZ4_NO', 'ZSTD', 'ZSTD_NO', 'PNG', "
-	      "'CHARLS', 'LOSSY_JP2', 'LOSSLESS_JP2'))));\nEND";
+	      "'LOSSY_JP2', 'LOSSLESS_JP2'))));\nEND";
 	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &err_msg);
 	  if (ret != SQLITE_OK)
 	    {
@@ -1682,12 +1682,12 @@ create_raster_coverages_triggers (sqlite3 * sqlite)
 	      "'LZMA_NO', 'LZ4', 'LZ4_NO', 'ZSTD', 'ZSTD_NO')) OR	"
 	      "(NEW.sample_type <> 'UINT16' AND NEW.num_bands IN (3, 4) AND "
 	      "NEW.compression NOT IN ('NONE', 'DEFLATE', 'DEFLATE_NO', 'LZMA', "
-	      "'LZMA_NO', 'LZ4', 'LZ4_NO', 'ZSTD', 'ZSTD_NO', 'PNG', 'CHARLS', "
+	      "'LZMA_NO', 'LZ4', 'LZ4_NO', 'ZSTD', 'ZSTD_NO', 'PNG', "
 	      "'LOSSY_WEBP', 'LOSSLESS_WEBP', 'LOSSY_JP2', 'LOSSLESS_JP2')) OR "
 	      "(NEW.sample_type = 'UINT16' AND NEW.num_bands IN (3, 4) AND "
 	      "NEW.compression NOT IN ('NONE', 'DEFLATE', 'DEFLATE_NO', 'LZMA', "
 	      "'LZMA_NO', 'LZ4', 'LZ4_NO', 'ZSTD', 'ZSTD_NO', 'PNG', "
-	      "'CHARLS', 'LOSSY_JP2', 'LOSSLESS_JP2')));\nEND";
+	      "'LOSSY_JP2', 'LOSSLESS_JP2')));\nEND";
 	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &err_msg);
 	  if (ret != SQLITE_OK)
 	    {
@@ -1705,12 +1705,12 @@ create_raster_coverages_triggers (sqlite3 * sqlite)
 	      "'LZMA_NO', 'LZ4', 'LZ4_NO', 'ZSTD', 'ZSTD_NO')) OR	"
 	      "(NEW.sample_type <> 'UINT16' AND NEW.num_bands IN (3, 4) AND "
 	      "NEW.compression NOT IN ('NONE', 'DEFLATE', 'DEFLATE_NO', 'LZMA', "
-	      "'LZMA_NO', 'LZ4', 'LZ4_NO', 'ZSTD', 'ZSTD_NO', 'PNG', 'CHARLS', "
+	      "'LZMA_NO', 'LZ4', 'LZ4_NO', 'ZSTD', 'ZSTD_NO', 'PNG', "
 	      "'LOSSY_WEBP', 'LOSSLESS_WEBP', 'LOSSY_JP2', 'LOSSLESS_JP2')) OR "
 	      "(NEW.sample_type = 'UINT16' AND NEW.num_bands IN (3, 4) AND "
 	      "NEW.compression NOT IN ('NONE', 'DEFLATE', 'DEFLATE_NO', 'LZMA', "
 	      "'LZMA_NO', 'LZ4', 'LZ4_NO', 'ZSTD', 'ZSTD_NO', 'PNG', "
-	      "'CHARLS', 'LOSSY_JP2', 'LOSSLESS_JP2')));\nEND";
+	      "'LOSSY_JP2', 'LOSSLESS_JP2')));\nEND";
 	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &err_msg);
 	  if (ret != SQLITE_OK)
 	    {
@@ -1781,7 +1781,7 @@ create_raster_coverages_triggers (sqlite3 * sqlite)
 	      "NOT IN ('NONE', 'DEFLATE', 'DEFLATE_NO', 'LZMA', 'LZMA_NO', 'LZ4', "
 	      "'LZ4_NO', 'ZSTD', 'ZSTD_NO')) OR ((NEW.sample_type IN ('UINT8', 'UINT16')) "
 	      "AND NEW.compression NOT IN ('NONE', 'DEFLATE', 'DEFLATE_NO', 'LZMA', "
-	      "'LZMA_NO', 'LZ4', 'LZ4_NO', 'ZSTD', 'ZSTD_NO', 'PNG', 'CHARLS', "
+	      "'LZMA_NO', 'LZ4', 'LZ4_NO', 'ZSTD', 'ZSTD_NO', 'PNG', "
 	      "'LOSSY_JP2', 'LOSSLESS_JP2')));\nEND";
 	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &err_msg);
 	  if (ret != SQLITE_OK)
@@ -1799,7 +1799,7 @@ create_raster_coverages_triggers (sqlite3 * sqlite)
 	      "NOT IN ('NONE', 'DEFLATE', 'DEFLATE_NO', 'LZMA', 'LZMA_NO', 'LZ4', "
 	      "'LZ4_NO', 'ZSTD', 'ZSTD_NO')) OR ((NEW.sample_type IN ('UINT8', 'UINT16')) "
 	      "AND NEW.compression NOT IN ('NONE', 'DEFLATE', 'DEFLATE_NO', 'LZMA', "
-	      "'LZMA_NO', 'LZ4', 'LZ4_NO', 'ZSTD', 'ZSTD_NO', 'PNG', 'CHARLS', "
+	      "'LZMA_NO', 'LZ4', 'LZ4_NO', 'ZSTD', 'ZSTD_NO', 'PNG', "
 	      "'LOSSY_JP2', 'LOSSLESS_JP2')));\nEND";
 	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, &err_msg);
 	  if (ret != SQLITE_OK)
