@@ -2,7 +2,7 @@
 
  gaia_cutter.c -- implementation of the Cutter module
     
- version 4.3, 2015 July 2
+ version 5.0, 2020 August 1
 
  Author: Sandro Furieri a.furieri@lqt.it
 

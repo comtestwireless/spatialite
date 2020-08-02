@@ -2,7 +2,7 @@
 
  se_helpers.c -- SLD/SE helper functions 
 
- version 4.3, 2015 June 29
+ version 5.0, 2020 August 1
 
  Author: Sandro Furieri a.furieri@lqt.it
 
@@ -24,7 +24,7 @@ The Original Code is the SpatiaLite library
 
 The Initial Developer of the Original Code is Alessandro Furieri
  
-Portions created by the Initial Developer are Copyright (C) 2008-2015
+Portions created by the Initial Developer are Copyright (C) 2008-2020
 the Initial Developer. All Rights Reserved.
 
 Contributor(s):
@@ -1999,7 +1999,7 @@ do_delete_raster_style_layer (sqlite3 * sqlite, const char *coverage_name,
 }
 
 SPATIALITE_PRIVATE int
-unregister_raster_styled_layer (void *p_sqlite, const char *coverage_name, 
+unregister_raster_styled_layer (void *p_sqlite, const char *coverage_name,
 				int style_id, const char *style_name)
 {
 /* auxiliary function: removes a Raster Styled Layer definition */

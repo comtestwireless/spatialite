@@ -3,7 +3,7 @@
  gaia_auxtopo_table.c -- implementation of the Topology module
                          methods processing a whole GeoTable
     
- version 4.3, 2015 July 15
+ version 5.0, 2020 August 1
 
  Author: Sandro Furieri a.furieri@lqt.it
 
@@ -25,7 +25,7 @@ The Original Code is the SpatiaLite library
 
 The Initial Developer of the Original Code is Alessandro Furieri
  
-Portions created by the Initial Developer are Copyright (C) 2015
+Portions created by the Initial Developer are Copyright (C) 2015-2020
 the Initial Developer. All Rights Reserved.
 
 Contributor(s): 
@@ -4539,7 +4539,7 @@ auxtopo_polygonize_face_edges (struct face_edges *list, const void *cache)
 }
 
 TOPOLOGY_PRIVATE gaiaGeomCollPtr
-auxtopo_polygonize_face_edges_generalize (struct face_edges * list,
+auxtopo_polygonize_face_edges_generalize (struct face_edges *list,
 					  const void *cache)
 {
 /* attempting to reaggregrate Polygons from valid Edges */

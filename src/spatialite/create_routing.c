@@ -2,7 +2,7 @@
 
  create_routing.c -- Creating a VirtualRouting from an input table
 
- version 4.5, 2017 December 15
+ version 5.0, 2020 August 1
 
  Author: Sandro Furieri a.furieri@lqt.it
 
@@ -24,7 +24,7 @@ The Original Code is the SpatiaLite library
 
 The Initial Developer of the Original Code is Alessandro Furieri
  
-Portions created by the Initial Developer are Copyright (C) 2017
+Portions created by the Initial Developer are Copyright (C) 2017-2020
 the Initial Developer. All Rights Reserved.
 
 Contributor(s):
@@ -423,13 +423,13 @@ do_search_srid (sqlite3 * handle, const char *table, const char *geom,
 	  *is_geographic = geographic;
 	  return 1;
       }
-      
-      if (count == 0)
+
+    if (count == 0)
       {
-		  /* testing for a possible Spatial View */
-		  if (do_search_view (handle, table, geom, srid, dims, is_geographic))
-		  return 1;
-	  }
+	  /* testing for a possible Spatial View */
+	  if (do_search_view (handle, table, geom, srid, dims, is_geographic))
+	      return 1;
+      }
     return 0;
 }
 
@@ -2507,7 +2507,7 @@ do_check_spatial_table (sqlite3 * db_handle, const void *cache,
 		  ("%Q.%Q is not a valid Spatial Table (LINESTRING)", table,
 		   geom_column);
 	  gaia_create_routing_set_error (cache, msg);
-	  sqlite3_free(msg);
+	  sqlite3_free (msg);
 	  return 0;
       }
 

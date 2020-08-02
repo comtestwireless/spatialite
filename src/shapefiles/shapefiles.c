@@ -2,7 +2,7 @@
 
  shapefiles.c -- implements shapefile support [import - export]
 
- version 4.3, 2015 June 29
+ version 5.0, 2020 August 1
 
  Author: Sandro Furieri a.furieri@lqt.it
 
@@ -24,7 +24,7 @@ The Original Code is the SpatiaLite library
 
 The Initial Developer of the Original Code is Alessandro Furieri
  
-Portions created by the Initial Developer are Copyright (C) 2008-2015
+Portions created by the Initial Developer are Copyright (C) 2008-2020
 the Initial Developer. All Rights Reserved.
 
 Contributor(s): Brad Hards <bradh@frogmouth.net>
@@ -175,202 +175,74 @@ struct zip_mem_shp_list
     struct zip_mem_shp_item *last;
 };
 
-static struct zip_mem_shp_item *
-alloc_zip_mem_shp_item (const char *basename, int wich, int dbf_only)
+SPATIALITE_PRIVATE const void *
+gaiaElemGeomOptionsCreate ()
 {
-/* creating a Shapefile within a Zipfile */
-    struct zip_mem_shp_item *item = malloc (sizeof (struct zip_mem_shp_item));
-    if (basename == NULL)
-	item->basename = NULL;
-    else
+/* creating an Elementary Geometries Options object */
+    struct aux_elemgeom_options *options =
+	malloc (sizeof (struct aux_elemgeom_options));
+    options->first = NULL;
+    options->last = NULL;
+    options->cast2multi = 0;
+    return options;
+}
+
+SPATIALITE_PRIVATE void
+gaiaElemGeomOptionsDestroy (const void *opts)
+{
+/* destroying an Elementary Geometries Options object */
+    struct aux_elemgeom_ignore *ign;
+    struct aux_elemgeom_ignore *ign2;
+    struct aux_elemgeom_options *options = (struct aux_elemgeom_options *) opts;
+    if (options == NULL)
+	return;
+
+    ign = options->first;
+    while (ign != NULL)
       {
-	  int len = strlen (basename);
-	  item->basename = malloc (len + 1);
-	  strcpy (item->basename, basename);
-	  if (!dbf_only)
-	    {
-		if (*(item->basename + len - 4) == '.')
-		    *(item->basename + len - 4) = '\0';
-	    }
+	  ign2 = ign->next;
+	  if (ign->column != NULL)
+	      free (ign->column);
+	  free (ign);
+	  ign = ign2;
       }
-    item->shp = 0;
-    item->shx = 0;
-    item->dbf = 0;
-    item->prj = 0;
-    switch (wich)
-      {
-      case GAIA_ZIPFILE_SHP:
-	  item->shp = 1;
-	  break;
-      case GAIA_ZIPFILE_SHX:
-	  item->shx = 1;
-	  break;
-      case GAIA_ZIPFILE_DBF:
-	  item->dbf = 1;
-	  break;
-      case GAIA_ZIPFILE_PRJ:
-	  item->prj = 1;
-	  break;
-      };
-    item->next = NULL;
-    return item;
+    free (options);
 }
 
 static void
-add_item_into_zip_mem_shp_list (struct zip_mem_shp_list *list,
-				const char *filename, int wich, int dbf_only)
+ignore_column (struct aux_elemgeom_options *options, const char *column)
 {
-/* populating the list of Zipfile Shapefiles */
-    struct zip_mem_shp_item *item;
-
-    if (list == NULL)
+/* marking a Column to be ignored */
+    int len;
+    struct aux_elemgeom_ignore *ign;
+    if (options == NULL)
 	return;
 
-    item = list->first;
-    while (item != NULL)
-      {
-	  /* verifying an already existing basename */
-	  char *name = NULL;
-	  switch (wich)
-	    {
-	    case GAIA_ZIPFILE_SHP:
-		name = sqlite3_mprintf ("%s.shp", item->basename);
-		break;
-	    case GAIA_ZIPFILE_SHX:
-		name = sqlite3_mprintf ("%s.shx", item->basename);
-		break;
-	    case GAIA_ZIPFILE_DBF:
-		name = sqlite3_mprintf ("%s.dbf", item->basename);
-		break;
-	    case GAIA_ZIPFILE_PRJ:
-		name = sqlite3_mprintf ("%s.prj", item->basename);
-		break;
-	    };
-	  if (name != NULL)
-	    {
-		if (strcasecmp (name, filename) == 0)
-		  {
-		      /* found a mathcing basename */
-		      sqlite3_free (name);
-		      switch (wich)
-			{
-			case GAIA_ZIPFILE_SHP:
-			    item->shp = 1;
-			    break;
-			case GAIA_ZIPFILE_SHX:
-			    item->shx = 1;
-			    break;
-			case GAIA_ZIPFILE_DBF:
-			    item->dbf = 1;
-			    break;
-			case GAIA_ZIPFILE_PRJ:
-			    item->prj = 1;
-			    break;
-			};
-		      return;
-		  }
-		sqlite3_free (name);
-	    }
-	  item = item->next;
-      }
+    ign = malloc (sizeof (struct aux_elemgeom_ignore));
+    len = strlen (column);
+    ign->column = malloc (len + 1);
+    strcpy (ign->column, column);
+    ign->next = NULL;
 
-/* inserting a new basename into the list */
-    item = alloc_zip_mem_shp_item (filename, wich, dbf_only);
-    if (list->first == NULL)
-	list->first = item;
-    if (list->last != NULL)
-	list->last->next = item;
-    list->last = item;
+    if (options->first == NULL)
+	options->first = ign;
+    if (options->last != NULL)
+	options->last->next = ign;
+    options->last = ign;
 }
 
-static struct zip_mem_shapefile *
-alloc_zip_mem_shapefile ()
+SPATIALITE_PRIVATE void
+gaiaElemGeomOptionsAdd (const void *opts, const char *option)
 {
-/* allocating a Memory Zip Shapefile */
-    struct zip_mem_shapefile *mem_shp =
-	malloc (sizeof (struct zip_mem_shapefile));
-    mem_shp->shp.path = NULL;
-    mem_shp->shp.buf = NULL;
-    mem_shp->shp.size = 0;
-    mem_shp->shp.offset = 0;
-    mem_shp->shx.path = NULL;
-    mem_shp->shx.buf = NULL;
-    mem_shp->shx.size = 0;
-    mem_shp->shx.offset = 0;
-    mem_shp->dbf.path = NULL;
-    mem_shp->dbf.buf = NULL;
-    mem_shp->dbf.size = 0;
-    mem_shp->dbf.offset = 0;
-    mem_shp->prj.path = NULL;
-    mem_shp->prj.buf = NULL;
-    mem_shp->prj.size = 0;
-    mem_shp->prj.offset = 0;
-    return mem_shp;
-}
-
-static void
-destroy_zip_mem_file (gaiaMemFilePtr mem)
-{
-/* memory cleanup: destroying a Memoroy Zip File */
-    if (mem == NULL)
+/* adding an Elementary Geometries Option */
+    struct aux_elemgeom_options *options = (struct aux_elemgeom_options *) opts;
+    if (options == NULL)
 	return;
-    if (mem->path != NULL)
-	free (mem->path);
-    if (mem->buf != NULL)
-	free (mem->buf);
-}
 
-static void
-destroy_zip_mem_shapefile (struct zip_mem_shapefile *mem_shp)
-{
-/* memory cleanup: destroying a Memory Zip Shapefile */
-    if (mem_shp == NULL)
-	return;
-    destroy_zip_mem_file (&(mem_shp->shp));
-    destroy_zip_mem_file (&(mem_shp->shx));
-    destroy_zip_mem_file (&(mem_shp->dbf));
-    destroy_zip_mem_file (&(mem_shp->prj));
-    free (mem_shp);
-}
-
-static void
-destroy_zip_mem_shp_item (struct zip_mem_shp_item *item)
-{
-/* destroying a Shapefile item */
-    if (item == NULL)
-	return;
-    if (item->basename != NULL)
-	free (item->basename);
-    free (item);
-}
-
-static struct zip_mem_shp_list *
-alloc_zip_mem_shp_list ()
-{
-/* creating a list of Shapefiles within a Shapefile */
-    struct zip_mem_shp_list *list = malloc (sizeof (struct zip_mem_shp_list));
-    list->first = NULL;
-    list->last = NULL;
-    return list;
-}
-
-static void
-destroy_zip_mem_shp_list (struct zip_mem_shp_list *list)
-{
-/* memory cleanup: destroying a list of Shapefiles within a Shapefile */
-    struct zip_mem_shp_item *item;
-    struct zip_mem_shp_item *item_n;
-
-    if (list == NULL)
-	return;
-    item = list->first;
-    while (item != NULL)
-      {
-	  item_n = item->next;
-	  destroy_zip_mem_shp_item (item);
-	  item = item_n;
-      }
-    free (list);
+    if (strncasecmp (option, "::cast2multi::", 14) == 0)
+	options->cast2multi = 1;
+    if (strncasecmp (option, "::ignore::", 10) == 0)
+	ignore_column (options, option + 10);
 }
 
 static struct resultset_comparator *
@@ -553,6 +425,8 @@ swap_resultset_rows (struct resultset_comparator *ptr)
       }
 }
 
+#ifndef OMIT_ICONV		/* ICONV enabled: supporting SHP */
+
 static struct auxdbf_list *
 alloc_auxdbf (gaiaDbfListPtr dbf_list)
 {
@@ -625,8 +499,6 @@ getDbfField (struct auxdbf_list *aux, char *name)
       }
     return NULL;
 }
-
-#ifndef OMIT_ICONV		/* ICONV enabled: supporting SHP */
 
 static int
 do_check_shp_unique_pk_values (sqlite3 * sqlite, gaiaShapefilePtr shp, int srid,
@@ -1790,346 +1662,6 @@ load_shapefile_ex3 (sqlite3 * sqlite, const char *shp_path, const char *table,
 				  text_dates, rows, colname_case, err_msg);
 }
 
-#ifdef ENABLE_MINIZIP		/* MINIZIP is enabled */
-
-static int
-do_sniff_zipfile_dir (unzFile uf, struct zip_mem_shp_list *list, int dbf_only)
-{
-/* sniffing a Zipfile directory */
-    int retval = 1;
-    unz_global_info64 gi;
-    int ret;
-    unsigned int i;
-
-    ret = unzGetGlobalInfo64 (uf, &gi);
-    if (ret != UNZ_OK)
-      {
-	  spatialite_e ("Error %d within zipfile in unzGetGlobalInfo\n", ret);
-	  return 0;
-      }
-
-    for (i = 0; i < gi.number_entry; i++)
-      {
-	  unsigned int len;
-	  char suffix[6];
-	  char filename[256];
-	  unz_file_info64 file_info;
-
-	  ret =
-	      unzGetCurrentFileInfo64 (uf, &file_info, filename, 256, NULL, 0,
-				       NULL, 0);
-	  if (ret != UNZ_OK)
-	    {
-		spatialite_e
-		    ("Error %d with zipfile in unzGetCurrentFileInfo\n", ret);
-		retval = 0;
-		goto stop;
-	    }
-
-	  suffix[0] = '\0';
-	  len = strlen (filename);
-	  if (len >= 5)
-	    {
-		suffix[0] = *(filename + len - 4);
-		suffix[1] = *(filename + len - 3);
-		suffix[2] = *(filename + len - 2);
-		suffix[3] = *(filename + len - 1);
-		suffix[4] = '\0';
-	    }
-	  if (strcasecmp (suffix, ".shp") == 0)
-	      add_item_into_zip_mem_shp_list (list, filename, GAIA_ZIPFILE_SHP,
-					      0);
-	  if (strcasecmp (suffix, ".shx") == 0)
-	      add_item_into_zip_mem_shp_list (list, filename, GAIA_ZIPFILE_SHX,
-					      0);
-	  if (strcasecmp (suffix, ".dbf") == 0)
-	      add_item_into_zip_mem_shp_list (list, filename, GAIA_ZIPFILE_DBF,
-					      dbf_only);
-	  if (strcasecmp (suffix, ".prj") == 0)
-	      add_item_into_zip_mem_shp_list (list, filename, GAIA_ZIPFILE_PRJ,
-					      0);
-
-	  if (i + 1 == gi.number_entry)
-	      break;
-	  ret = unzGoToNextFile (uf);
-	  if (ret != UNZ_OK)
-	    {
-		spatialite_e ("Error %d with zipfile in unzGoToNextFile\n",
-			      ret);
-		retval = 0;
-		goto stop;
-	    }
-      }
-  stop:
-    return retval;
-}
-
-static struct zip_mem_shapefile *
-do_list_zipfile_dir (unzFile uf, const char *shp_path, int dbf_mode)
-{
-/* parsing a Zipfile directory */
-    unz_global_info64 gi;
-    int ret;
-    unsigned int i;
-    int len;
-    int shp = 0;
-    int dbf = 0;
-    int shx = 0;
-    int prj = 0;
-    struct zip_mem_shapefile *mem_shp = NULL;
-
-    ret = unzGetGlobalInfo64 (uf, &gi);
-    if (ret != UNZ_OK)
-      {
-	  spatialite_e ("Error %d within zipfile in unzGetGlobalInfo\n", ret);
-	  return 0;
-      }
-
-    mem_shp = alloc_zip_mem_shapefile ();
-    for (i = 0; i < gi.number_entry; i++)
-      {
-	  char *path;
-	  char filename[256];
-	  unz_file_info64 file_info;
-
-	  ret =
-	      unzGetCurrentFileInfo64 (uf, &file_info, filename, 256, NULL, 0,
-				       NULL, 0);
-	  if (ret != UNZ_OK)
-	    {
-		spatialite_e
-		    ("Error %d with zipfile in unzGetCurrentFileInfo\n", ret);
-		goto error;
-	    }
-	  if (dbf_mode)
-	    {
-		/* searching for just a bare DBF */
-		if (!dbf)
-		  {
-		      if (strcasecmp (shp_path, filename) == 0)
-			{
-			    dbf = 1;
-			    len = strlen (filename);
-			    mem_shp->dbf.path = malloc (len + 1);
-			    strcpy (mem_shp->dbf.path, filename);
-			}
-		  }
-	    }
-	  else
-	    {
-		/* searching for a Shapefile */
-		if (!shp)
-		  {
-		      path = sqlite3_mprintf ("%s.shp", shp_path);
-		      if (strcasecmp (path, filename) == 0)
-			{
-			    shp = 1;
-			    len = strlen (filename);
-			    mem_shp->shp.path = malloc (len + 1);
-			    strcpy (mem_shp->shp.path, filename);
-			}
-		      sqlite3_free (path);
-		  }
-		if (!shx)
-		  {
-		      path = sqlite3_mprintf ("%s.shx", shp_path);
-		      if (strcasecmp (path, filename) == 0)
-			{
-			    shx = 1;
-			    len = strlen (filename);
-			    mem_shp->shx.path = malloc (len + 1);
-			    strcpy (mem_shp->shx.path, filename);
-			}
-		      sqlite3_free (path);
-		  }
-		if (!dbf)
-		  {
-		      path = sqlite3_mprintf ("%s.dbf", shp_path);
-		      if (strcasecmp (path, filename) == 0)
-			{
-			    dbf = 1;
-			    len = strlen (filename);
-			    mem_shp->dbf.path = malloc (len + 1);
-			    strcpy (mem_shp->dbf.path, filename);
-			}
-		      sqlite3_free (path);
-		  }
-		if (!prj)
-		  {
-		      path = sqlite3_mprintf ("%s.prj", shp_path);
-		      if (strcasecmp (path, filename) == 0)
-			{
-			    prj = 1;
-			    len = strlen (filename);
-			    mem_shp->prj.path = malloc (len + 1);
-			    strcpy (mem_shp->prj.path, filename);
-			}
-		      sqlite3_free (path);
-		  }
-	    }
-
-	  if (i + 1 == gi.number_entry)
-	      break;
-	  ret = unzGoToNextFile (uf);
-	  if (ret != UNZ_OK)
-	    {
-		spatialite_e ("Error %d with zipfile in unzGoToNextFile\n",
-			      ret);
-		goto error;
-	    }
-      }
-    if (dbf_mode && dbf)
-	return mem_shp;
-    if (shp && shx && dbf)
-	return mem_shp;
-
-  error:
-    destroy_zip_mem_shapefile (mem_shp);
-    return NULL;
-}
-
-static int
-do_read_zipfile_file (unzFile uf, struct zip_mem_shapefile *mem_shape, int wich)
-{
-//
-// impo
-    int is_open = 0;
-    int retval = 1;
-    uint32_t size_buf;
-    void *buf = NULL;
-    char filename[256];
-    gaiaMemFilePtr mem_file;
-    unz_file_info64 file_info;
-    int err;
-
-    switch (wich)
-      {
-      case GAIA_ZIPFILE_SHP:
-	  mem_file = &(mem_shape->shp);
-	  break;
-      case GAIA_ZIPFILE_SHX:
-	  mem_file = &(mem_shape->shx);
-	  break;
-      case GAIA_ZIPFILE_DBF:
-	  mem_file = &(mem_shape->dbf);
-	  break;
-      case GAIA_ZIPFILE_PRJ:
-	  mem_file = &(mem_shape->prj);
-	  break;
-      default:
-	  mem_file = NULL;
-      };
-    if (mem_file == NULL)
-	return 0;
-    if (mem_file->path == NULL)
-	return 0;
-
-    err = unzLocateFile (uf, mem_file->path, 0);
-    if (err != UNZ_OK)
-      {
-	  spatialite_e ("File %s not found within zipfile\n", mem_file->path);
-	  retval = 0;
-	  goto skip;
-      }
-    err =
-	unzGetCurrentFileInfo64 (uf, &file_info, filename, 256, NULL, 0, NULL,
-				 0);
-    if (err != UNZ_OK)
-      {
-	  spatialite_e ("Error %d with zipfile in unzGetCurrentFileInfo\n",
-			err);
-	  retval = 0;
-	  goto skip;
-      }
-    size_buf = file_info.uncompressed_size;
-    buf = malloc (size_buf);
-    err = unzOpenCurrentFile (uf);
-    if (err != UNZ_OK)
-      {
-	  spatialite_e ("Error %d with zipfile in unzGetCurrentFileInfo\n",
-			err);
-	  retval = 0;
-	  goto skip;
-      }
-    is_open = 1;
-    err = unzReadCurrentFile (uf, buf, size_buf);
-    if (err < 0)
-      {
-	  spatialite_e ("Error %d with zipfile in unzReadCurrentFile\n", err);
-	  retval = 0;
-	  goto skip;
-      }
-    mem_file->buf = buf;
-    mem_file->size = size_buf;
-
-  skip:
-    if (buf != NULL && !retval)
-	free (buf);
-    if (is_open)
-	unzCloseCurrentFile (uf);
-    return retval;
-}
-
-SPATIALITE_DECLARE int
-load_zip_shapefile (sqlite3 * sqlite, const char *zip_path,
-		    const char *shp_path, const char *table,
-		    const char *charset, int srid, const char *g_column,
-		    const char *gtype, const char *pk_column, int coerce2d,
-		    int compressed, int verbose, int spatial_index,
-		    int text_dates, int *rows, int colname_case, char *err_msg)
-{
-/* loading a Shapefile from within a Zipfile */
-    unzFile uf = NULL;
-    int retval = 0;
-    struct zip_mem_shapefile *mem_shape = NULL;
-
-    if (zip_path == NULL)
-      {
-	  spatialite_e ("load zip shapefile error: <%s>\n",
-			"NULL zipfile path");
-	  return 0;
-      }
-/* opening the Zipfile expected to contain the Shapefile */
-    uf = unzOpen64 (zip_path);
-    if (uf == NULL)
-      {
-	  spatialite_e ("Unable to Open %s\n", zip_path);
-	  return 0;
-      }
-/* parsing the Zipfile directory */
-    mem_shape = do_list_zipfile_dir (uf, shp_path, 0);
-    if (mem_shape == NULL)
-      {
-	  spatialite_e ("No SHP %s with Zipfile\n", shp_path);
-	  goto stop;
-      }
-/* unzipping the SHP member */
-    if (!do_read_zipfile_file (uf, mem_shape, GAIA_ZIPFILE_SHP))
-	goto stop;
-/* unzipping the SHX member */
-    if (!do_read_zipfile_file (uf, mem_shape, GAIA_ZIPFILE_SHX))
-	goto stop;
-/* unzipping the DBF member */
-    if (!do_read_zipfile_file (uf, mem_shape, GAIA_ZIPFILE_DBF))
-	goto stop;
-/* unzipping the PRJ member */
-    if (!do_read_zipfile_file (uf, mem_shape, GAIA_ZIPFILE_PRJ))
-	goto stop;
-
-/* doing the hard work */
-    if (load_shapefile_common
-	(mem_shape, sqlite, shp_path, table, charset, srid, g_column, gtype,
-	 pk_column, coerce2d, compressed, verbose, spatial_index, text_dates,
-	 rows, colname_case, err_msg))
-	retval = 1;
-
-  stop:
-    unzClose (uf);
-    if (mem_shape != NULL)
-	destroy_zip_mem_shapefile (mem_shape);
-    return retval;
-}
-
 static int
 do_check_dbf_unique_pk_values (sqlite3 * sqlite, gaiaDbfPtr dbf, int text_dates,
 			       const char *pk_name, int pk_type)
@@ -2826,18 +2358,556 @@ load_dbf_common (struct zip_mem_shapefile *mem_shape, sqlite3 * sqlite,
       }
 }
 
-GAIAGEO_DECLARE gaiaDbfPtr 
-gaiaOpenZipDbf (const char *zip_path, const char *filename, const char *charFrom, const char *charTo)
+#ifdef ENABLE_MINIZIP		/* MINIZIP is enabled */
+
+static struct zip_mem_shp_item *
+alloc_zip_mem_shp_item (const char *basename, int wich, int dbf_only)
+{
+/* creating a Shapefile within a Zipfile */
+    struct zip_mem_shp_item *item = malloc (sizeof (struct zip_mem_shp_item));
+    if (basename == NULL)
+	item->basename = NULL;
+    else
+      {
+	  int len = strlen (basename);
+	  item->basename = malloc (len + 1);
+	  strcpy (item->basename, basename);
+	  if (!dbf_only)
+	    {
+		if (*(item->basename + len - 4) == '.')
+		    *(item->basename + len - 4) = '\0';
+	    }
+      }
+    item->shp = 0;
+    item->shx = 0;
+    item->dbf = 0;
+    item->prj = 0;
+    switch (wich)
+      {
+      case GAIA_ZIPFILE_SHP:
+	  item->shp = 1;
+	  break;
+      case GAIA_ZIPFILE_SHX:
+	  item->shx = 1;
+	  break;
+      case GAIA_ZIPFILE_DBF:
+	  item->dbf = 1;
+	  break;
+      case GAIA_ZIPFILE_PRJ:
+	  item->prj = 1;
+	  break;
+      };
+    item->next = NULL;
+    return item;
+}
+
+static void
+add_item_into_zip_mem_shp_list (struct zip_mem_shp_list *list,
+				const char *filename, int wich, int dbf_only)
+{
+/* populating the list of Zipfile Shapefiles */
+    struct zip_mem_shp_item *item;
+
+    if (list == NULL)
+	return;
+
+    item = list->first;
+    while (item != NULL)
+      {
+	  /* verifying an already existing basename */
+	  char *name = NULL;
+	  switch (wich)
+	    {
+	    case GAIA_ZIPFILE_SHP:
+		name = sqlite3_mprintf ("%s.shp", item->basename);
+		break;
+	    case GAIA_ZIPFILE_SHX:
+		name = sqlite3_mprintf ("%s.shx", item->basename);
+		break;
+	    case GAIA_ZIPFILE_DBF:
+		name = sqlite3_mprintf ("%s.dbf", item->basename);
+		break;
+	    case GAIA_ZIPFILE_PRJ:
+		name = sqlite3_mprintf ("%s.prj", item->basename);
+		break;
+	    };
+	  if (name != NULL)
+	    {
+		if (strcasecmp (name, filename) == 0)
+		  {
+		      /* found a mathcing basename */
+		      sqlite3_free (name);
+		      switch (wich)
+			{
+			case GAIA_ZIPFILE_SHP:
+			    item->shp = 1;
+			    break;
+			case GAIA_ZIPFILE_SHX:
+			    item->shx = 1;
+			    break;
+			case GAIA_ZIPFILE_DBF:
+			    item->dbf = 1;
+			    break;
+			case GAIA_ZIPFILE_PRJ:
+			    item->prj = 1;
+			    break;
+			};
+		      return;
+		  }
+		sqlite3_free (name);
+	    }
+	  item = item->next;
+      }
+
+/* inserting a new basename into the list */
+    item = alloc_zip_mem_shp_item (filename, wich, dbf_only);
+    if (list->first == NULL)
+	list->first = item;
+    if (list->last != NULL)
+	list->last->next = item;
+    list->last = item;
+}
+
+static struct zip_mem_shapefile *
+alloc_zip_mem_shapefile ()
+{
+/* allocating a Memory Zip Shapefile */
+    struct zip_mem_shapefile *mem_shp =
+	malloc (sizeof (struct zip_mem_shapefile));
+    mem_shp->shp.path = NULL;
+    mem_shp->shp.buf = NULL;
+    mem_shp->shp.size = 0;
+    mem_shp->shp.offset = 0;
+    mem_shp->shx.path = NULL;
+    mem_shp->shx.buf = NULL;
+    mem_shp->shx.size = 0;
+    mem_shp->shx.offset = 0;
+    mem_shp->dbf.path = NULL;
+    mem_shp->dbf.buf = NULL;
+    mem_shp->dbf.size = 0;
+    mem_shp->dbf.offset = 0;
+    mem_shp->prj.path = NULL;
+    mem_shp->prj.buf = NULL;
+    mem_shp->prj.size = 0;
+    mem_shp->prj.offset = 0;
+    return mem_shp;
+}
+
+static void
+destroy_zip_mem_file (gaiaMemFilePtr mem)
+{
+/* memory cleanup: destroying a Memoroy Zip File */
+    if (mem == NULL)
+	return;
+    if (mem->path != NULL)
+	free (mem->path);
+    if (mem->buf != NULL)
+	free (mem->buf);
+}
+
+static void
+destroy_zip_mem_shapefile (struct zip_mem_shapefile *mem_shp)
+{
+/* memory cleanup: destroying a Memory Zip Shapefile */
+    if (mem_shp == NULL)
+	return;
+    destroy_zip_mem_file (&(mem_shp->shp));
+    destroy_zip_mem_file (&(mem_shp->shx));
+    destroy_zip_mem_file (&(mem_shp->dbf));
+    destroy_zip_mem_file (&(mem_shp->prj));
+    free (mem_shp);
+}
+
+static void
+destroy_zip_mem_shp_item (struct zip_mem_shp_item *item)
+{
+/* destroying a Shapefile item */
+    if (item == NULL)
+	return;
+    if (item->basename != NULL)
+	free (item->basename);
+    free (item);
+}
+
+static struct zip_mem_shp_list *
+alloc_zip_mem_shp_list ()
+{
+/* creating a list of Shapefiles within a Shapefile */
+    struct zip_mem_shp_list *list = malloc (sizeof (struct zip_mem_shp_list));
+    list->first = NULL;
+    list->last = NULL;
+    return list;
+}
+
+static void
+destroy_zip_mem_shp_list (struct zip_mem_shp_list *list)
+{
+/* memory cleanup: destroying a list of Shapefiles within a Shapefile */
+    struct zip_mem_shp_item *item;
+    struct zip_mem_shp_item *item_n;
+
+    if (list == NULL)
+	return;
+    item = list->first;
+    while (item != NULL)
+      {
+	  item_n = item->next;
+	  destroy_zip_mem_shp_item (item);
+	  item = item_n;
+      }
+    free (list);
+}
+
+static int
+do_sniff_zipfile_dir (unzFile uf, struct zip_mem_shp_list *list, int dbf_only)
+{
+/* sniffing a Zipfile directory */
+    int retval = 1;
+    unz_global_info64 gi;
+    int ret;
+    unsigned int i;
+
+    ret = unzGetGlobalInfo64 (uf, &gi);
+    if (ret != UNZ_OK)
+      {
+	  spatialite_e ("Error %d within zipfile in unzGetGlobalInfo\n", ret);
+	  return 0;
+      }
+
+    for (i = 0; i < gi.number_entry; i++)
+      {
+	  unsigned int len;
+	  char suffix[6];
+	  char filename[256];
+	  unz_file_info64 file_info;
+
+	  ret =
+	      unzGetCurrentFileInfo64 (uf, &file_info, filename, 256, NULL, 0,
+				       NULL, 0);
+	  if (ret != UNZ_OK)
+	    {
+		spatialite_e
+		    ("Error %d with zipfile in unzGetCurrentFileInfo\n", ret);
+		retval = 0;
+		goto stop;
+	    }
+
+	  suffix[0] = '\0';
+	  len = strlen (filename);
+	  if (len >= 5)
+	    {
+		suffix[0] = *(filename + len - 4);
+		suffix[1] = *(filename + len - 3);
+		suffix[2] = *(filename + len - 2);
+		suffix[3] = *(filename + len - 1);
+		suffix[4] = '\0';
+	    }
+	  if (strcasecmp (suffix, ".shp") == 0)
+	      add_item_into_zip_mem_shp_list (list, filename, GAIA_ZIPFILE_SHP,
+					      0);
+	  if (strcasecmp (suffix, ".shx") == 0)
+	      add_item_into_zip_mem_shp_list (list, filename, GAIA_ZIPFILE_SHX,
+					      0);
+	  if (strcasecmp (suffix, ".dbf") == 0)
+	      add_item_into_zip_mem_shp_list (list, filename, GAIA_ZIPFILE_DBF,
+					      dbf_only);
+	  if (strcasecmp (suffix, ".prj") == 0)
+	      add_item_into_zip_mem_shp_list (list, filename, GAIA_ZIPFILE_PRJ,
+					      0);
+
+	  if (i + 1 == gi.number_entry)
+	      break;
+	  ret = unzGoToNextFile (uf);
+	  if (ret != UNZ_OK)
+	    {
+		spatialite_e ("Error %d with zipfile in unzGoToNextFile\n",
+			      ret);
+		retval = 0;
+		goto stop;
+	    }
+      }
+  stop:
+    return retval;
+}
+
+static struct zip_mem_shapefile *
+do_list_zipfile_dir (unzFile uf, const char *shp_path, int dbf_mode)
+{
+/* parsing a Zipfile directory */
+    unz_global_info64 gi;
+    int ret;
+    unsigned int i;
+    int len;
+    int shp = 0;
+    int dbf = 0;
+    int shx = 0;
+    int prj = 0;
+    struct zip_mem_shapefile *mem_shp = NULL;
+
+    ret = unzGetGlobalInfo64 (uf, &gi);
+    if (ret != UNZ_OK)
+      {
+	  spatialite_e ("Error %d within zipfile in unzGetGlobalInfo\n", ret);
+	  return 0;
+      }
+
+    mem_shp = alloc_zip_mem_shapefile ();
+    for (i = 0; i < gi.number_entry; i++)
+      {
+	  char *path;
+	  char filename[256];
+	  unz_file_info64 file_info;
+
+	  ret =
+	      unzGetCurrentFileInfo64 (uf, &file_info, filename, 256, NULL, 0,
+				       NULL, 0);
+	  if (ret != UNZ_OK)
+	    {
+		spatialite_e
+		    ("Error %d with zipfile in unzGetCurrentFileInfo\n", ret);
+		goto error;
+	    }
+	  if (dbf_mode)
+	    {
+		/* searching for just a bare DBF */
+		if (!dbf)
+		  {
+		      if (strcasecmp (shp_path, filename) == 0)
+			{
+			    dbf = 1;
+			    len = strlen (filename);
+			    mem_shp->dbf.path = malloc (len + 1);
+			    strcpy (mem_shp->dbf.path, filename);
+			}
+		  }
+	    }
+	  else
+	    {
+		/* searching for a Shapefile */
+		if (!shp)
+		  {
+		      path = sqlite3_mprintf ("%s.shp", shp_path);
+		      if (strcasecmp (path, filename) == 0)
+			{
+			    shp = 1;
+			    len = strlen (filename);
+			    mem_shp->shp.path = malloc (len + 1);
+			    strcpy (mem_shp->shp.path, filename);
+			}
+		      sqlite3_free (path);
+		  }
+		if (!shx)
+		  {
+		      path = sqlite3_mprintf ("%s.shx", shp_path);
+		      if (strcasecmp (path, filename) == 0)
+			{
+			    shx = 1;
+			    len = strlen (filename);
+			    mem_shp->shx.path = malloc (len + 1);
+			    strcpy (mem_shp->shx.path, filename);
+			}
+		      sqlite3_free (path);
+		  }
+		if (!dbf)
+		  {
+		      path = sqlite3_mprintf ("%s.dbf", shp_path);
+		      if (strcasecmp (path, filename) == 0)
+			{
+			    dbf = 1;
+			    len = strlen (filename);
+			    mem_shp->dbf.path = malloc (len + 1);
+			    strcpy (mem_shp->dbf.path, filename);
+			}
+		      sqlite3_free (path);
+		  }
+		if (!prj)
+		  {
+		      path = sqlite3_mprintf ("%s.prj", shp_path);
+		      if (strcasecmp (path, filename) == 0)
+			{
+			    prj = 1;
+			    len = strlen (filename);
+			    mem_shp->prj.path = malloc (len + 1);
+			    strcpy (mem_shp->prj.path, filename);
+			}
+		      sqlite3_free (path);
+		  }
+	    }
+
+	  if (i + 1 == gi.number_entry)
+	      break;
+	  ret = unzGoToNextFile (uf);
+	  if (ret != UNZ_OK)
+	    {
+		spatialite_e ("Error %d with zipfile in unzGoToNextFile\n",
+			      ret);
+		goto error;
+	    }
+      }
+    if (dbf_mode && dbf)
+	return mem_shp;
+    if (shp && shx && dbf)
+	return mem_shp;
+
+  error:
+    destroy_zip_mem_shapefile (mem_shp);
+    return NULL;
+}
+
+static int
+do_read_zipfile_file (unzFile uf, struct zip_mem_shapefile *mem_shape, int wich)
+{
+//
+// impo
+    int is_open = 0;
+    int retval = 1;
+    uint32_t size_buf;
+    void *buf = NULL;
+    char filename[256];
+    gaiaMemFilePtr mem_file;
+    unz_file_info64 file_info;
+    int err;
+
+    switch (wich)
+      {
+      case GAIA_ZIPFILE_SHP:
+	  mem_file = &(mem_shape->shp);
+	  break;
+      case GAIA_ZIPFILE_SHX:
+	  mem_file = &(mem_shape->shx);
+	  break;
+      case GAIA_ZIPFILE_DBF:
+	  mem_file = &(mem_shape->dbf);
+	  break;
+      case GAIA_ZIPFILE_PRJ:
+	  mem_file = &(mem_shape->prj);
+	  break;
+      default:
+	  mem_file = NULL;
+      };
+    if (mem_file == NULL)
+	return 0;
+    if (mem_file->path == NULL)
+	return 0;
+
+    err = unzLocateFile (uf, mem_file->path, 0);
+    if (err != UNZ_OK)
+      {
+	  spatialite_e ("File %s not found within zipfile\n", mem_file->path);
+	  retval = 0;
+	  goto skip;
+      }
+    err =
+	unzGetCurrentFileInfo64 (uf, &file_info, filename, 256, NULL, 0, NULL,
+				 0);
+    if (err != UNZ_OK)
+      {
+	  spatialite_e ("Error %d with zipfile in unzGetCurrentFileInfo\n",
+			err);
+	  retval = 0;
+	  goto skip;
+      }
+    size_buf = file_info.uncompressed_size;
+    buf = malloc (size_buf);
+    err = unzOpenCurrentFile (uf);
+    if (err != UNZ_OK)
+      {
+	  spatialite_e ("Error %d with zipfile in unzGetCurrentFileInfo\n",
+			err);
+	  retval = 0;
+	  goto skip;
+      }
+    is_open = 1;
+    err = unzReadCurrentFile (uf, buf, size_buf);
+    if (err < 0)
+      {
+	  spatialite_e ("Error %d with zipfile in unzReadCurrentFile\n", err);
+	  retval = 0;
+	  goto skip;
+      }
+    mem_file->buf = buf;
+    mem_file->size = size_buf;
+
+  skip:
+    if (buf != NULL && !retval)
+	free (buf);
+    if (is_open)
+	unzCloseCurrentFile (uf);
+    return retval;
+}
+
+SPATIALITE_DECLARE int
+load_zip_shapefile (sqlite3 * sqlite, const char *zip_path,
+		    const char *shp_path, const char *table,
+		    const char *charset, int srid, const char *g_column,
+		    const char *gtype, const char *pk_column, int coerce2d,
+		    int compressed, int verbose, int spatial_index,
+		    int text_dates, int *rows, int colname_case, char *err_msg)
+{
+/* loading a Shapefile from within a Zipfile */
+    unzFile uf = NULL;
+    int retval = 0;
+    struct zip_mem_shapefile *mem_shape = NULL;
+
+    if (zip_path == NULL)
+      {
+	  spatialite_e ("load zip shapefile error: <%s>\n",
+			"NULL zipfile path");
+	  return 0;
+      }
+/* opening the Zipfile expected to contain the Shapefile */
+    uf = unzOpen64 (zip_path);
+    if (uf == NULL)
+      {
+	  spatialite_e ("Unable to Open %s\n", zip_path);
+	  return 0;
+      }
+/* parsing the Zipfile directory */
+    mem_shape = do_list_zipfile_dir (uf, shp_path, 0);
+    if (mem_shape == NULL)
+      {
+	  spatialite_e ("No SHP %s with Zipfile\n", shp_path);
+	  goto stop;
+      }
+/* unzipping the SHP member */
+    if (!do_read_zipfile_file (uf, mem_shape, GAIA_ZIPFILE_SHP))
+	goto stop;
+/* unzipping the SHX member */
+    if (!do_read_zipfile_file (uf, mem_shape, GAIA_ZIPFILE_SHX))
+	goto stop;
+/* unzipping the DBF member */
+    if (!do_read_zipfile_file (uf, mem_shape, GAIA_ZIPFILE_DBF))
+	goto stop;
+/* unzipping the PRJ member */
+    if (!do_read_zipfile_file (uf, mem_shape, GAIA_ZIPFILE_PRJ))
+	goto stop;
+
+/* doing the hard work */
+    if (load_shapefile_common
+	(mem_shape, sqlite, shp_path, table, charset, srid, g_column, gtype,
+	 pk_column, coerce2d, compressed, verbose, spatial_index, text_dates,
+	 rows, colname_case, err_msg))
+	retval = 1;
+
+  stop:
+    unzClose (uf);
+    if (mem_shape != NULL)
+	destroy_zip_mem_shapefile (mem_shape);
+    return retval;
+}
+
+GAIAGEO_DECLARE gaiaDbfPtr
+gaiaOpenZipDbf (const char *zip_path, const char *filename,
+		const char *charFrom, const char *charTo)
 {
 /* creating a DBF object (just for checking its fields) */
     unzFile uf = NULL;
     struct zip_mem_shapefile *mem_shape = NULL;
-  gaiaDbfPtr dbf = NULL;
+    gaiaDbfPtr dbf = NULL;
 
     if (zip_path == NULL)
       {
-	  spatialite_e ("open zip dbf error: <%s>\n",
-			"NULL zipfile path");
+	  spatialite_e ("open zip dbf error: <%s>\n", "NULL zipfile path");
 	  return 0;
       }
 /* opening the Zipfile expected to contain the Shapefile */
@@ -2856,15 +2926,15 @@ gaiaOpenZipDbf (const char *zip_path, const char *filename, const char *charFrom
       }
 /* unzipping the DBF member */
     if (!do_read_zipfile_file (uf, mem_shape, GAIA_ZIPFILE_DBF))
-	goto stop; 
+	goto stop;
 /* attempting to create and initialize the DBF object */
-	dbf = gaiaAllocDbf();
-	  dbf->memDbf = &(mem_shape->dbf);
-  gaiaOpenDbfRead(dbf, filename, charFrom, charTo);
+    dbf = gaiaAllocDbf ();
+    dbf->memDbf = &(mem_shape->dbf);
+    gaiaOpenDbfRead (dbf, filename, charFrom, charTo);
 
   stop:
     unzClose (uf);
-	destroy_zip_mem_shapefile (mem_shape);
+    destroy_zip_mem_shapefile (mem_shape);
     return dbf;
 }
 
@@ -2917,8 +2987,6 @@ load_zip_dbf (sqlite3 * sqlite, const char *zip_path, const char *dbf_path,
 }
 
 #endif /* end MINIZIP */
-
-#endif /* end ICONV (SHP) */
 
 #ifndef OMIT_PROJ		/* including PROJ */
 #ifdef PROJ_NEW			/* only if new PROJ.6 is supported */
@@ -3142,8 +3210,6 @@ output_prj_file (sqlite3 * sqlite, char *path, char *table, char *column,
 	free (srsWkt);
     return;
 }
-
-#ifndef OMIT_ICONV		/* ICONV enabled: supporting SHAPEFILE and DBF */
 
 static int
 get_default_dbf_fields (sqlite3 * sqlite, const char *xtable,
@@ -5430,8 +5496,6 @@ dump_dbf_ex2 (sqlite3 * sqlite, char *table, char *dbf_path, char *charset,
     return 0;
 }
 
-#endif /* end ICONV (SHP and DBF) */
-
 SPATIALITE_DECLARE int
 is_kml_constant (sqlite3 * sqlite, char *table, char *column)
 {
@@ -5606,6 +5670,1124 @@ dump_kml_ex (sqlite3 * sqlite, char *table, char *geom_col, char *kml_path,
 	("The SQL SELECT returned an empty result set\n... there is nothing to export ...\n");
     return 0;
 }
+
+SPATIALITE_DECLARE int
+dump_geojson (sqlite3 * sqlite, char *table, char *geom_col,
+	      char *outfile_path, int precision, int option)
+{
+    int rows;
+    return dump_geojson_ex (sqlite, table, geom_col, outfile_path, precision,
+			    option, &rows);
+}
+
+SPATIALITE_DECLARE int
+dump_geojson_ex (sqlite3 * sqlite, char *table, char *geom_col,
+		 char *outfile_path, int precision, int option, int *xrows)
+{
+/* dumping a  geometry table as GeoJSON - Brad Hards 2011-11-09 */
+/* sandro furieri 2014-08-30: adding the "int *xrows" argument */
+    char *sql;
+    char *xgeom_col;
+    char *xtable;
+    sqlite3_stmt *stmt = NULL;
+    FILE *out = NULL;
+    int ret;
+    int rows = 0;
+
+    *xrows = -1;
+/* opening/creating the GeoJSON output file */
+    out = fopen (outfile_path, "wb");
+    if (!out)
+	goto no_file;
+
+/* preparing SQL statement */
+    xtable = gaiaDoubleQuotedSql (table);
+    xgeom_col = gaiaDoubleQuotedSql (geom_col);
+    sql =
+	sqlite3_mprintf
+	("SELECT AsGeoJSON(\"%s\", %d, %d) FROM \"%s\" WHERE \"%s\" IS NOT NULL",
+	 xgeom_col, precision, option, xtable, xgeom_col);
+    free (xtable);
+    free (xgeom_col);
+    ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+	goto sql_error;
+
+    while (1)
+      {
+	  /* scrolling the result set */
+	  ret = sqlite3_step (stmt);
+	  if (ret == SQLITE_DONE)
+	    {
+		break;		/* end of result set */
+	    }
+	  if (ret == SQLITE_ROW)
+	    {
+		rows++;
+		fprintf (out, "%s\r\n", sqlite3_column_text (stmt, 0));
+	    }
+	  else
+	    {
+		goto sql_error;
+	    }
+      }
+    if (rows == 0)
+      {
+	  goto empty_result_set;
+      }
+
+    sqlite3_finalize (stmt);
+    fclose (out);
+    *xrows = rows;
+    return 1;
+
+  sql_error:
+/* an SQL error occurred */
+    if (stmt)
+      {
+	  sqlite3_finalize (stmt);
+      }
+    if (out)
+      {
+	  fclose (out);
+      }
+    spatialite_e ("Dump GeoJSON error: %s\n", sqlite3_errmsg (sqlite));
+    return 0;
+
+  no_file:
+/* Output file could not be created / opened */
+    if (stmt)
+      {
+	  sqlite3_finalize (stmt);
+      }
+    if (out)
+      {
+	  fclose (out);
+      }
+    spatialite_e ("ERROR: unable to open '%s' for writing\n", outfile_path);
+    return 0;
+
+  empty_result_set:
+/* the result set is empty - nothing to do */
+    if (stmt)
+      {
+	  sqlite3_finalize (stmt);
+      }
+    if (out)
+      {
+	  fclose (out);
+      }
+    spatialite_e ("The SQL SELECT returned no data to export...\n");
+    return 0;
+}
+
+static int
+do_check_geometry (sqlite3 * sqlite, const char *table, const char *geom_col,
+		   char **geoname, int *srid, int *dims)
+{
+/* checking Geometry Column, SRID and Dimensions */
+    char *sql;
+    int ret;
+    char **results;
+    int rows;
+    int columns;
+    int i;
+    char *errMsg = NULL;
+
+    if (geom_col == NULL)
+	sql = sqlite3_mprintf ("SELECT f_geometry_column, srid, geometry_type "
+			       "FROM geometry_columns WHERE Lower(f_table_name) = Lower(%Q)",
+			       table);
+    else
+	sql = sqlite3_mprintf ("SELECT f_geometry_column, srid, geometry_type "
+			       "FROM geometry_columns WHERE Lower(f_table_name) = Lower(%Q) AND "
+			       "Lower(f_geometry_column) = Lower(%Q)",
+			       table, geom_col);
+    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, &errMsg);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+      {
+	  spatialite_e ("dump GeoJSON2 MetaData error: <%s>\n", errMsg);
+	  sqlite3_free (errMsg);
+	  return 0;
+      }
+    if (rows != 1)
+	goto error;
+    for (i = 1; i <= rows; i++)
+      {
+	  int gtype;
+	  const char *x = results[(i * columns) + 0];
+	  int len = strlen (x);
+	  *geoname = malloc (len + 1);
+	  strcpy (*geoname, x);
+	  *srid = atoi (results[(i * columns) + 1]);
+	  gtype = atoi (results[(i * columns) + 2]);
+	  switch (gtype)
+	    {
+	    case GAIA_POINT:
+	    case GAIA_LINESTRING:
+	    case GAIA_POLYGON:
+	    case GAIA_MULTIPOINT:
+	    case GAIA_MULTILINESTRING:
+	    case GAIA_MULTIPOLYGON:
+	    case GAIA_GEOMETRYCOLLECTION:
+		*dims = GAIA_XY;
+		break;
+	    case GAIA_POINTZ:
+	    case GAIA_LINESTRINGZ:
+	    case GAIA_POLYGONZ:
+	    case GAIA_MULTIPOINTZ:
+	    case GAIA_MULTILINESTRINGZ:
+	    case GAIA_MULTIPOLYGONZ:
+	    case GAIA_GEOMETRYCOLLECTIONZ:
+		*dims = GAIA_XY_Z;
+		break;
+	    case GAIA_POINTM:
+	    case GAIA_LINESTRINGM:
+	    case GAIA_POLYGONM:
+	    case GAIA_MULTIPOINTM:
+	    case GAIA_MULTILINESTRINGM:
+	    case GAIA_MULTIPOLYGONM:
+	    case GAIA_GEOMETRYCOLLECTIONM:
+		*dims = GAIA_XY_M;
+		break;
+	    case GAIA_POINTZM:
+	    case GAIA_LINESTRINGZM:
+	    case GAIA_POLYGONZM:
+	    case GAIA_MULTIPOINTZM:
+	    case GAIA_MULTILINESTRINGZM:
+	    case GAIA_MULTIPOLYGONZM:
+	    case GAIA_GEOMETRYCOLLECTIONZM:
+		*dims = GAIA_XY_Z_M;
+		break;
+	    default:
+		goto error;
+	    };
+      }
+    sqlite3_free_table (results);
+    return 1;
+
+  error:
+    sqlite3_free_table (results);
+    return 0;
+}
+
+static char *
+do_prepare_sql (sqlite3 * sqlite, const char *table, const char *geom_col,
+		int srid, int dims, int precision, int lon_lat, int m_coords)
+{
+/* preparing the SQL statement */
+    char *sql;
+    char *prev;
+    char *xtable;
+    char *x_col;
+    int ret;
+    char **results;
+    int rows;
+    int columns;
+    int i;
+    char *errMsg = NULL;
+
+    xtable = gaiaDoubleQuotedSql (table);
+    sql = sqlite3_mprintf ("PRAGMA table_info(\"%s\")", table);
+    free (xtable);
+    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, &errMsg);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+      {
+	  spatialite_e ("dump GeoJSON2 PRAGMA error: <%s>\n", errMsg);
+	  sqlite3_free (errMsg);
+	  return 0;
+      }
+
+/* defining the Geometry first */
+    x_col = gaiaDoubleQuotedSql (geom_col);
+    if (lon_lat)
+      {
+	  /* exporting Geographic coordinates (lon-lat) */
+	  if (srid == 0 || srid == 4326)
+	    {
+		/* already lon-lan, no transformation is required */
+		if (m_coords)
+		  {
+		      /* exporting eventual M-Values */
+		      sql =
+			  sqlite3_mprintf ("SELECT AsGeoJSON(%Q, %d)",
+					   x_col, precision);
+		  }
+		else
+		  {
+		      if (dims == GAIA_XY_M)
+			{
+			    /* exporting XYM as XY */
+			    sql =
+				sqlite3_mprintf
+				("SELECT AsGeoJSON(CastToXY(%Q), %d)",
+				 x_col, precision);
+			}
+		      else if (dims == GAIA_XY_Z_M)
+			{
+			    /* exporting XYZM as XYZ */
+			    sql =
+				sqlite3_mprintf
+				("SELECT AsGeoJSON(CastToXYZ(%Q), %d)",
+				 x_col, precision);
+			}
+		      else
+			{
+			    /* unchanged dimensions */
+			    sql =
+				sqlite3_mprintf ("SELECT AsGeoJSON(%Q, %d)",
+						 x_col, precision);
+			}
+		  }
+	    }
+	  else
+	    {
+		/* converting to lon-lat WGS84 */
+		if (m_coords)
+		  {
+		      /* exporting eventual M-Values */
+		      sql =
+			  sqlite3_mprintf
+			  ("SELECT AsGeoJSON(ST_Transform(%Q, 4326), %d)",
+			   x_col, precision);
+		  }
+		else
+		  {
+		      if (dims == GAIA_XY_M)
+			{
+			    /* exporting XYM as XY */
+			    sql =
+				sqlite3_mprintf
+				("SELECT AsGeoJSON(ST_Transform(CastToXY(%Q), 4326), %d)",
+				 x_col, precision);
+			}
+		      else if (dims == GAIA_XY_Z_M)
+			{
+			    /* exporting XYZM as XYZ */
+			    sql =
+				sqlite3_mprintf
+				("SELECT AsGeoJSON(ST_TransformCastToXYZ(%Q), 4326), %d)",
+				 x_col, precision);
+			}
+		      else
+			{
+			    /* unchanged dimensions */
+			    sql =
+				sqlite3_mprintf
+				("SELECT AsGeoJSON(ST_Transform(%Q, 4326), %d)",
+				 x_col, precision);
+			}
+		  }
+	    }
+      }
+    else
+      {
+	  /* exporting coordinates as they are without any transformation */
+	  if (m_coords)
+	    {
+		/* exporting eventual M-Values */
+		sql =
+		    sqlite3_mprintf ("SELECT AsGeoJSON(%Q, %d)", x_col,
+				     precision);
+	    }
+	  else
+	    {
+		if (dims == GAIA_XY_M)
+		  {
+		      /* exporting XYM as XY */
+		      sql =
+			  sqlite3_mprintf
+			  ("SELECT AsGeoJSON(CastToXY(%Q), %d)", x_col,
+			   precision);
+		  }
+		else if (dims == GAIA_XY_Z_M)
+		  {
+		      /* exporting XYZM as XYZ */
+		      sql =
+			  sqlite3_mprintf
+			  ("SELECT AsGeoJSON(CastToXYZ(%Q), %d)", x_col,
+			   precision);
+		  }
+		else
+		  {
+		      /* unchanged dimensions */
+		      sql =
+			  sqlite3_mprintf ("SELECT AsGeoJSON(%Q, %d)",
+					   x_col, precision);
+		  }
+	    }
+      }
+    free (x_col);
+
+    for (i = 1; i <= rows; i++)
+      {
+	  /* then adding all Properties */
+	  const char *col = results[(i * columns) + 1];
+	  if (strcasecmp (col, geom_col) == 0)
+	      continue;		/* skipping the Geometry itself */
+	  x_col = gaiaDoubleQuotedSql (col);
+	  prev = sql;
+	  sql = sqlite3_mprintf ("%s, %Q", prev, x_col);
+	  free (x_col);
+	  sqlite3_free (prev);
+      }
+    sqlite3_free_table (results);
+    prev = sql;
+    xtable = gaiaDoubleQuotedSql (table);
+    sql = sqlite3_mprintf ("%s FROM \"%s\"", prev, xtable);
+    free (xtable);
+    sqlite3_free (prev);
+    return sql;
+}
+
+static char *
+do_normalize_case (const char *name, int colname_case)
+{
+/* transforming a name in full lower- or upper-case */
+    int len = strlen (name);
+    char *clean = malloc (len + 1);
+    char *p = clean;
+    strcpy (clean, name);
+    while (*p != '\0')
+      {
+	  if (colname_case == GAIA_DBF_COLNAME_LOWERCASE)
+	    {
+		if (*p >= 'A' && *p <= 'Z')
+		    *p = *p - 'A' + 'a';
+	    }
+	  if (colname_case == GAIA_DBF_COLNAME_UPPERCASE)
+	    {
+		if (*p >= 'a' && *p <= 'z')
+		    *p = *p - 'a' + 'A';
+	    }
+	  p++;
+      }
+    return clean;
+}
+
+SPATIALITE_DECLARE int
+dump_geojson2 (sqlite3 * sqlite, char *table, char *geom_col,
+	       char *outfile_path, int precision, int lon_lat,
+	       int m_coords, int indented, int colname_case, int *xrows,
+	       char **error_message)
+{
+/* dumping a  geometry table as GeoJSON FeatureCollection (RFC 7946) */
+/* sandro furieri 2018-11-25 */
+    char *sql;
+    sqlite3_stmt *stmt = NULL;
+    FILE *out = NULL;
+    int ret;
+    int rows = 0;
+    char *geoname = NULL;
+    int srid;
+    int dims;
+    int first_feature = 1;
+    sqlite3_int64 ival;
+    double dval;
+    const char *tval;
+    char *xtval;
+    *error_message = NULL;
+
+/* checking Geometry Column, SRID and Dimensions */
+    if (!do_check_geometry (sqlite, table, geom_col, &geoname, &srid, &dims))
+	goto no_geom;
+
+    *xrows = -1;
+/* opening/creating the GeoJSON output file */
+    out = fopen (outfile_path, "wb");
+    if (!out)
+	goto no_file;
+
+/* preparing SQL statement */
+    sql =
+	do_prepare_sql (sqlite, table, geoname, srid, dims, precision, lon_lat,
+			m_coords);
+    if (sql == NULL)
+	goto no_sql;
+    free (geoname);
+
+    ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+	goto sql_error;
+
+    while (1)
+      {
+	  /* scrolling the result set */
+	  ret = sqlite3_step (stmt);
+	  if (ret == SQLITE_DONE)
+	    {
+		break;		/* end of result set */
+	    }
+	  if (ret == SQLITE_ROW)
+	    {
+		int c;
+		int cols = sqlite3_column_count (stmt);
+		if (first_feature)
+		  {
+		      /* FeatureCollection */
+		      if (indented)
+			  fprintf (out,
+				   "{\r\n\t\"type\" : \"FeatureCollection\",\r\n\t\"features\" : [{\r\n");
+		      else
+			  fprintf (out,
+				   "{\"type\":\"FeatureCollection\",\"features\":[{");
+		      first_feature = 0;
+		  }
+		/* Feature */
+		if (rows == 0)
+		  {
+		      /* first Feature */
+		      if (indented)
+			  fprintf (out,
+				   "\t\t\"type\" : \"Feature\",\r\n\t\t\"properties\" : ");
+		      else
+			  fprintf (out, "\"type\":\"Feature\",\"properties\":");
+		  }
+		else
+		  {
+		      /* any other Feature except the first one */
+		      if (indented)
+			  fprintf (out,
+				   ", {\r\n\t\t\"type\" : \"Feature\",\r\n\t\t\"properties\" : ");
+		      else
+			  fprintf (out,
+				   ",{\"type\":\"Feature\",\"properties\":");
+		  }
+		for (c = 1; c < cols; c++)
+		  {
+		      /* Properties */
+		      const char *col_name = sqlite3_column_name (stmt, c);
+		      char *norm_name =
+			  do_normalize_case (col_name, colname_case);
+		      char *xcol_name = gaiaDoubleQuotedSql (norm_name);
+		      free (norm_name);
+		      if (c == 1)
+			{
+			    if (indented)
+				fprintf (out, "{\r\n\t\t\t\"%s\" : ",
+					 xcol_name);
+			    else
+				fprintf (out, "{\"%s\":", xcol_name);
+			}
+		      else
+			{
+			    if (indented)
+				fprintf (out, ",\r\n\t\t\t\"%s\" : ",
+					 xcol_name);
+			    else
+				fprintf (out, ",\"%s\":", xcol_name);
+			}
+		      free (xcol_name);
+		      switch (sqlite3_column_type (stmt, c))
+			{
+			case SQLITE_INTEGER:
+			    ival = sqlite3_column_int64 (stmt, c);
+			    fprintf (out, "%lld", ival);
+			    break;
+			case SQLITE_FLOAT:
+			    dval = sqlite3_column_double (stmt, c);
+			    fprintf (out, "%f", dval);
+			    break;
+			case SQLITE_TEXT:
+			    tval = (const char *) sqlite3_column_text (stmt, c);
+			    xtval = gaiaDoubleQuotedSql (tval);
+			    fprintf (out, "\"%s\"", xtval);
+			    free (xtval);
+			    break;
+			case SQLITE_BLOB:
+			    fprintf (out, "\"BLOB value\"");
+			    break;
+			case SQLITE_NULL:
+			default:
+			    fprintf (out, "null");
+			    break;
+			};
+		  }
+		/* geometry */
+		if (indented)
+		    fprintf (out, "\r\n\t\t},\r\n\t\t\"geometry\" : ");
+		else
+		    fprintf (out, "},\"geomety\":");
+		switch (sqlite3_column_type (stmt, 0))
+		  {
+		  case SQLITE_NULL:
+		      fprintf (out, "null");
+		      break;
+		  default:
+		      tval = (const char *) sqlite3_column_text (stmt, 0);
+		      fprintf (out, "%s", tval);
+		      break;
+		  };
+		/* end Feature */
+		if (indented)
+		    fprintf (out, "\r\n\t}");
+		else
+		    fprintf (out, "}");
+		rows++;
+	    }
+	  else
+	    {
+		goto sql_error;
+	    }
+      }
+    if (rows == 0)
+      {
+	  goto empty_result_set;
+      }
+    if (indented)
+	fprintf (out, "]\r\n}\r\n");
+    else
+	fprintf (out, "]}");
+
+    sqlite3_finalize (stmt);
+    fclose (out);
+    *xrows = rows;
+    return 1;
+
+  sql_error:
+/* an SQL error occurred */
+    if (stmt)
+      {
+	  sqlite3_finalize (stmt);
+      }
+    if (out)
+      {
+	  fclose (out);
+      }
+    *error_message =
+	sqlite3_mprintf ("Dump GeoJSON2 error: %s\n", sqlite3_errmsg (sqlite));
+    return 0;
+
+  no_file:
+/* Output file could not be created / opened */
+    if (stmt)
+      {
+	  sqlite3_finalize (stmt);
+      }
+    if (out)
+      {
+	  fclose (out);
+      }
+    if (geoname != NULL)
+	free (geoname);
+    *error_message =
+	sqlite3_mprintf ("ERROR: unable to open '%s' for writing\n",
+			 outfile_path);
+    return 0;
+
+  empty_result_set:
+/* the result set is empty - nothing to do */
+    if (stmt)
+      {
+	  sqlite3_finalize (stmt);
+      }
+    if (out)
+      {
+	  fclose (out);
+      }
+    *error_message =
+	sqlite3_mprintf ("The SQL SELECT returned no data to export...\n");
+    return 0;
+
+  no_geom:
+/* not a valid Geometry Column */
+    if (out)
+      {
+	  fclose (out);
+      }
+    *error_message = sqlite3_mprintf ("Not a valid Geometry Column.\n");
+    return 0;
+
+  no_sql:
+/* unable to create a valid SQL query */
+    if (out)
+      {
+	  fclose (out);
+      }
+    *error_message = sqlite3_mprintf ("Unable to create a valid SQL query.\n");
+    return 0;
+}
+
+SPATIALITE_DECLARE int
+load_geojson (sqlite3 * sqlite, char *path, char *table, char *geom_col,
+	      int spatial_index, int srid, int colname_case, int *rows,
+	      char **error_message)
+{
+/* Loads an external GeoJSON file into a newly created table */
+    FILE *in = NULL;
+    sqlite3_stmt *stmt = NULL;
+    geojson_parser_ptr parser = NULL;
+    geojson_feature_ptr ft;
+    int i;
+    int ret;
+    int pending = 0;
+    char *sql;
+    int ins_rows = 0;
+    *error_message = NULL;
+
+/* attempting to open the GeoJSON file for reading */
+    in = fopen (path, "rb");
+    if (in == NULL)
+      {
+	  *error_message =
+	      sqlite3_mprintf
+	      ("GeoJSON parser: unable to open %s for reading\n", path);
+	  return 0;
+      }
+
+/* creating the GeoJSON parser */
+    parser = geojson_create_parser (in);
+    if (!geojson_parser_init (parser, error_message))
+	goto err;
+    if (!geojson_create_features_index (parser, error_message))
+	goto err;
+    if (!geojson_check_features (parser, error_message))
+	goto err;
+
+/* creating the output table */
+    sql = geojson_sql_create_table (parser, table, colname_case);
+    if (sql == NULL)
+	goto err;
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+      {
+	  *error_message =
+	      sqlite3_mprintf
+	      ("GeoJSON import: unable to create the output table (%s)\n",
+	       sqlite3_errmsg (sqlite));
+	  goto err;
+      }
+
+/* adding the Geometry Column */
+    sql =
+	geojson_sql_add_geometry (parser, table, geom_col, colname_case, srid);
+    if (sql == NULL)
+	goto err;
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+      {
+	  *error_message =
+	      sqlite3_mprintf
+	      ("GeoJSON import: unable to create the Geometry column (%s)\n",
+	       sqlite3_errmsg (sqlite));
+	  goto err;
+      }
+
+    if (spatial_index)
+      {
+	  /* creating the Spatial Index */
+	  sql = geojson_sql_create_rtree (table, geom_col, colname_case);
+	  if (sql == NULL)
+	      goto err;
+	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+	  sqlite3_free (sql);
+	  if (ret != SQLITE_OK)
+	    {
+		*error_message =
+		    sqlite3_mprintf
+		    ("GeoJSON import: unable to create the SpatialIndex (%s)\n",
+		     sqlite3_errmsg (sqlite));
+		goto err;
+	    }
+      }
+
+/* the whole import will be enclosed in a single Transaction */
+    ret = sqlite3_exec (sqlite, "SAVEPOINT import_geo_json", NULL, NULL, NULL);
+    if (ret != SQLITE_OK)
+      {
+	  *error_message =
+	      sqlite3_mprintf ("GeoJSON import: SAVEPOINT error (%s)\n",
+			       sqlite3_errmsg (sqlite));
+	  goto err;
+      }
+    pending = 1;
+
+    sql = geojson_sql_insert_into (parser, table);
+    ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+      {
+	  *error_message =
+	      sqlite3_mprintf ("GeoJSON import: INSERT INTO error (%s)\n",
+			       sqlite3_errmsg (sqlite));
+	  goto err;
+      }
+
+    for (i = 0; i < parser->count; i++)
+      {
+	  /* inserting all features into the output table */
+	  ft = parser->features + i;
+	  if (geojson_init_feature (parser, ft, error_message))
+	    {
+		/* inserting a single Feature */
+		geojson_column_ptr col;
+		int cnt = 1;
+		sqlite3_reset (stmt);
+		sqlite3_clear_bindings (stmt);
+		col = parser->first_col;
+		while (col != NULL)
+		  {
+		      /* binding column values */
+		      geojson_property_ptr prop =
+			  geojson_get_property_by_name (ft, col->name);
+		      if (prop == NULL)
+			  sqlite3_bind_null (stmt, cnt++);
+		      else
+			{
+			    switch (prop->type)
+			      {
+			      case GEOJSON_TEXT:
+				  sqlite3_bind_text (stmt, cnt++,
+						     prop->txt_value,
+						     strlen (prop->txt_value),
+						     SQLITE_STATIC);
+				  break;
+			      case GEOJSON_INTEGER:
+				  sqlite3_bind_int64 (stmt, cnt++,
+						      prop->int_value);
+				  break;
+			      case GEOJSON_DOUBLE:
+				  sqlite3_bind_double (stmt, cnt++,
+						       prop->dbl_value);
+				  break;
+			      case GEOJSON_FALSE:
+				  sqlite3_bind_int (stmt, cnt++, 0);
+				  break;
+			      case GEOJSON_TRUE:
+				  sqlite3_bind_int (stmt, cnt++, 0);
+				  break;
+			      case GEOJSON_NULL:
+			      default:
+				  sqlite3_bind_null (stmt, cnt++);
+				  break;
+			      };
+			}
+		      col = col->next;
+		  }
+		if (ft->geometry == NULL)
+		    sqlite3_bind_null (stmt, cnt++);
+		else
+		  {
+		      gaiaGeomCollPtr geo =
+			  gaiaParseGeoJSON ((const unsigned char
+					     *) (ft->geometry));
+		      if (geo != NULL)
+			{
+			    /* binding the Geometry BLOB */
+			    unsigned char *blob;
+			    int blob_size;
+			    geo->Srid = srid;
+			    gaiaToSpatiaLiteBlobWkb (geo, &blob, &blob_size);
+			    sqlite3_bind_blob (stmt, cnt, blob, blob_size,
+					       free);
+			    gaiaFreeGeomColl (geo);
+			}
+		      else
+			{
+			    *error_message =
+				sqlite3_mprintf
+				("GeoJSON import: invalid Geometry (fid=%d)\n",
+				 ft->fid);
+			    goto err;
+			}
+		  }
+		/* inserting the Feature into the DB Table */
+		ret = sqlite3_step (stmt);
+		if (ret == SQLITE_DONE || ret == SQLITE_ROW)
+		    ins_rows++;
+		else
+		  {
+		      *error_message =
+			  sqlite3_mprintf
+			  ("GeoJSON import: INSERT INTO failure (fid=%d) %s\n",
+			   ft->fid, sqlite3_errmsg (sqlite));
+		      goto err;
+		  }
+		geojson_reset_feature (ft);
+	    }
+	  else
+	      goto err;
+      }
+    sqlite3_finalize (stmt);
+    stmt = NULL;
+
+/* Committing the still pending Transaction */
+    ret =
+	sqlite3_exec (sqlite, "RELEASE SAVEPOINT import_geo_json", NULL, NULL,
+		      NULL);
+    if (ret != SQLITE_OK)
+      {
+	  *error_message =
+	      sqlite3_mprintf ("GeoJSON import: RELEASE SAVEPOINT error (%s)\n",
+			       sqlite3_errmsg (sqlite));
+	  goto err;
+      }
+
+    geojson_destroy_parser (parser);
+    *rows = ins_rows;
+    return 1;
+
+  err:
+    if (stmt != NULL)
+	sqlite3_finalize (stmt);
+    if (pending)
+      {
+	  /* Rolling back the Transaction */
+	  sqlite3_exec (sqlite, "ROLLBAKC TO SAVEPOINT import_geo_json", NULL,
+			NULL, NULL);
+	  sqlite3_exec (sqlite, "RELEASE SAVEPOINT import_geo_json", NULL, NULL,
+			NULL);
+      }
+    geojson_destroy_parser (parser);
+    *rows = 0;
+    return 0;
+}
+
+#ifdef ENABLE_MINIZIP		/* MINIZIP is enabled */
+
+GAIAGEO_DECLARE char *
+gaiaReadWktFromZipShp (const char *zip_path, const char *basename)
+{
+/* attempting to read the .PRJ member of some zipped Shapefile */
+    char *wkt = NULL;
+    unzFile uf = NULL;
+    struct zip_mem_shapefile *mem_shape = NULL;
+
+    if (zip_path == NULL)
+      {
+	  spatialite_e ("read_wkt_from_zipshp error: <%s>\n",
+			"NULL zipfile path");
+	  return NULL;
+      }
+/* opening the Zipfile expected to contain the Shapefile */
+    uf = unzOpen64 (zip_path);
+    if (uf == NULL)
+      {
+	  spatialite_e ("Unable to Open %s\n", zip_path);
+	  return NULL;
+      }
+/* parsing the Zipfile directory */
+    mem_shape = do_list_zipfile_dir (uf, basename, 0);
+    if (mem_shape == NULL)
+      {
+	  spatialite_e ("No SHP %s with Zipfile\n", basename);
+	  goto stop;
+      }
+/* unzipping the PRJ member (if any) */
+    do_read_zipfile_file (uf, mem_shape, GAIA_ZIPFILE_PRJ);
+    if (mem_shape->prj.buf != NULL)
+      {
+	  wkt = malloc (mem_shape->prj.size + 1);
+	  memcpy (wkt, mem_shape->prj.buf, mem_shape->prj.size);
+	  *(wkt + mem_shape->prj.size) = '\0';
+      }
+
+  stop:
+    unzClose (uf);
+    if (mem_shape != NULL)
+	destroy_zip_mem_shapefile (mem_shape);
+    return wkt;
+}
+
+GAIAGEO_DECLARE int
+gaiaZipfileNumSHP (const char *zip_path, int *count)
+{
+/* attempting to count how many Shapefiles are within a given Zipfile */
+    int ret;
+    int retval = 1;
+    struct zip_mem_shp_item *item;
+    struct zip_mem_shp_list *list = alloc_zip_mem_shp_list ();
+    unzFile uf = NULL;
+
+    *count = 0;
+    if (zip_path == NULL)
+      {
+	  spatialite_e ("zipfile NumSHP error: <%s>\n", "NULL zipfile path");
+	  retval = 0;
+	  goto stop;
+      }
+/* opening the Zipfile expected to contain the Shapefile */
+    uf = unzOpen64 (zip_path);
+    if (uf == NULL)
+      {
+	  spatialite_e ("Unable to Open %s\n", zip_path);
+	  retval = 0;
+	  goto stop;
+      }
+/* sniffing the Zipfile */
+    ret = do_sniff_zipfile_dir (uf, list, 0);
+    if (!ret)
+      {
+	  retval = 0;
+	  goto stop;
+      }
+    item = list->first;
+    while (item != NULL)
+      {
+	  /* counting how many Shapefiles are there */
+	  if (item->shp && item->shx && item->dbf)
+	      *count += 1;
+	  item = item->next;
+      }
+  stop:
+    unzClose (uf);
+    destroy_zip_mem_shp_list (list);
+    return retval;
+}
+
+GAIAGEO_DECLARE char *
+gaiaZipfileShpN (const char *zip_path, int idx)
+{
+/* attempting to return the Nth Shapefile's basename fromt within a given Zipfile */
+    int ret;
+    int count = 0;
+    char *basename = NULL;
+    struct zip_mem_shp_item *item;
+    struct zip_mem_shp_list *list = alloc_zip_mem_shp_list ();
+    unzFile uf = NULL;
+
+    count = 0;
+    if (zip_path == NULL)
+      {
+	  spatialite_e ("zipfile NumSHP error: <%s>\n", "NULL zipfile path");
+	  goto stop;
+      }
+/* opening the Zipfile expected to contain the Shapefile */
+    uf = unzOpen64 (zip_path);
+    if (uf == NULL)
+      {
+	  spatialite_e ("Unable to Open %s\n", zip_path);
+	  goto stop;
+      }
+/* sniffing the Zipfile */
+    ret = do_sniff_zipfile_dir (uf, list, 0);
+    if (!ret)
+	goto stop;
+    item = list->first;
+    while (item != NULL)
+      {
+	  /* counting how many Shapefiles are there */
+	  if (item->shp && item->shx && item->dbf)
+	      count++;
+	  if (count == idx)
+	    {
+		int len = strlen (item->basename);
+		basename = malloc (len + 1);
+		strcpy (basename, item->basename);
+		break;
+	    }
+	  item = item->next;
+      }
+  stop:
+    unzClose (uf);
+    destroy_zip_mem_shp_list (list);
+    return basename;
+}
+
+GAIAGEO_DECLARE int
+gaiaZipfileNumDBF (const char *zip_path, int *count)
+{
+/* attempting to count how many DBF files are within a given Zipfile */
+    int ret;
+    int retval = 1;
+    struct zip_mem_shp_item *item;
+    struct zip_mem_shp_list *list = alloc_zip_mem_shp_list ();
+    unzFile uf = NULL;
+
+    *count = 0;
+    if (zip_path == NULL)
+      {
+	  spatialite_e ("zipfile NumDBF error: <%s>\n", "NULL zipfile path");
+	  retval = 0;
+	  goto stop;
+      }
+/* opening the Zipfile expected to contain the DBF file */
+    uf = unzOpen64 (zip_path);
+    if (uf == NULL)
+      {
+	  spatialite_e ("Unable to Open %s\n", zip_path);
+	  retval = 0;
+	  goto stop;
+      }
+/* sniffing the Zipfile */
+    ret = do_sniff_zipfile_dir (uf, list, 1);
+    if (!ret)
+      {
+	  retval = 0;
+	  goto stop;
+      }
+    item = list->first;
+    while (item != NULL)
+      {
+	  /* counting how many DBF files are there */
+	  if (item->dbf)
+	      *count += 1;
+	  item = item->next;
+      }
+  stop:
+    unzClose (uf);
+    destroy_zip_mem_shp_list (list);
+    return retval;
+}
+
+GAIAGEO_DECLARE char *
+gaiaZipfileDbfN (const char *zip_path, int idx)
+{
+/* attempting to return the Nth DBF filename fromt within a given Zipfile */
+    int ret;
+    int count = 0;
+    char *filename = NULL;
+    struct zip_mem_shp_item *item;
+    struct zip_mem_shp_list *list = alloc_zip_mem_shp_list ();
+    unzFile uf = NULL;
+
+    count = 0;
+    if (zip_path == NULL)
+      {
+	  spatialite_e ("zipfile NumDBF error: <%s>\n", "NULL zipfile path");
+	  goto stop;
+      }
+/* opening the Zipfile expected to contain the DBF file */
+    uf = unzOpen64 (zip_path);
+    if (uf == NULL)
+      {
+	  spatialite_e ("Unable to Open %s\n", zip_path);
+	  goto stop;
+      }
+/* sniffing the Zipfile */
+    ret = do_sniff_zipfile_dir (uf, list, 1);
+    if (!ret)
+	goto stop;
+    item = list->first;
+    while (item != NULL)
+      {
+	  /* counting how many DBF files are there */
+	  if (item->dbf)
+	      count++;
+	  if (count == idx)
+	    {
+		int len = strlen (item->basename);
+		filename = malloc (len + 1);
+		strcpy (filename, item->basename);
+		break;
+	    }
+	  item = item->next;
+      }
+  stop:
+    unzClose (uf);
+    destroy_zip_mem_shp_list (list);
+    return filename;
+}
+
+#endif /* end MINIZIP */
+
+#endif /* end ICONV (SHP) */
 
 static int
 is_table (sqlite3 * sqlite, const char *table)
@@ -7527,1189 +8709,3 @@ load_XL (sqlite3 * sqlite, const char *path, const char *table,
 }
 
 #endif /* FreeXL enabled/disabled */
-
-SPATIALITE_DECLARE int
-dump_geojson (sqlite3 * sqlite, char *table, char *geom_col,
-	      char *outfile_path, int precision, int option)
-{
-    int rows;
-    return dump_geojson_ex (sqlite, table, geom_col, outfile_path, precision,
-			    option, &rows);
-}
-
-SPATIALITE_DECLARE int
-dump_geojson_ex (sqlite3 * sqlite, char *table, char *geom_col,
-		 char *outfile_path, int precision, int option, int *xrows)
-{
-/* dumping a  geometry table as GeoJSON - Brad Hards 2011-11-09 */
-/* sandro furieri 2014-08-30: adding the "int *xrows" argument */
-    char *sql;
-    char *xgeom_col;
-    char *xtable;
-    sqlite3_stmt *stmt = NULL;
-    FILE *out = NULL;
-    int ret;
-    int rows = 0;
-
-    *xrows = -1;
-/* opening/creating the GeoJSON output file */
-    out = fopen (outfile_path, "wb");
-    if (!out)
-	goto no_file;
-
-/* preparing SQL statement */
-    xtable = gaiaDoubleQuotedSql (table);
-    xgeom_col = gaiaDoubleQuotedSql (geom_col);
-    sql =
-	sqlite3_mprintf
-	("SELECT AsGeoJSON(\"%s\", %d, %d) FROM \"%s\" WHERE \"%s\" IS NOT NULL",
-	 xgeom_col, precision, option, xtable, xgeom_col);
-    free (xtable);
-    free (xgeom_col);
-    ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
-    sqlite3_free (sql);
-    if (ret != SQLITE_OK)
-	goto sql_error;
-
-    while (1)
-      {
-	  /* scrolling the result set */
-	  ret = sqlite3_step (stmt);
-	  if (ret == SQLITE_DONE)
-	    {
-		break;		/* end of result set */
-	    }
-	  if (ret == SQLITE_ROW)
-	    {
-		rows++;
-		fprintf (out, "%s\r\n", sqlite3_column_text (stmt, 0));
-	    }
-	  else
-	    {
-		goto sql_error;
-	    }
-      }
-    if (rows == 0)
-      {
-	  goto empty_result_set;
-      }
-
-    sqlite3_finalize (stmt);
-    fclose (out);
-    *xrows = rows;
-    return 1;
-
-  sql_error:
-/* an SQL error occurred */
-    if (stmt)
-      {
-	  sqlite3_finalize (stmt);
-      }
-    if (out)
-      {
-	  fclose (out);
-      }
-    spatialite_e ("Dump GeoJSON error: %s\n", sqlite3_errmsg (sqlite));
-    return 0;
-
-  no_file:
-/* Output file could not be created / opened */
-    if (stmt)
-      {
-	  sqlite3_finalize (stmt);
-      }
-    if (out)
-      {
-	  fclose (out);
-      }
-    spatialite_e ("ERROR: unable to open '%s' for writing\n", outfile_path);
-    return 0;
-
-  empty_result_set:
-/* the result set is empty - nothing to do */
-    if (stmt)
-      {
-	  sqlite3_finalize (stmt);
-      }
-    if (out)
-      {
-	  fclose (out);
-      }
-    spatialite_e ("The SQL SELECT returned no data to export...\n");
-    return 0;
-}
-
-static int
-do_check_geometry (sqlite3 * sqlite, const char *table, const char *geom_col,
-		   char **geoname, int *srid, int *dims)
-{
-/* checking Geometry Column, SRID and Dimensions */
-    char *sql;
-    int ret;
-    char **results;
-    int rows;
-    int columns;
-    int i;
-    char *errMsg = NULL;
-
-    if (geom_col == NULL)
-	sql = sqlite3_mprintf ("SELECT f_geometry_column, srid, geometry_type "
-			       "FROM geometry_columns WHERE Lower(f_table_name) = Lower(%Q)",
-			       table);
-    else
-	sql = sqlite3_mprintf ("SELECT f_geometry_column, srid, geometry_type "
-			       "FROM geometry_columns WHERE Lower(f_table_name) = Lower(%Q) AND "
-			       "Lower(f_geometry_column) = Lower(%Q)",
-			       table, geom_col);
-    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, &errMsg);
-    sqlite3_free (sql);
-    if (ret != SQLITE_OK)
-      {
-	  spatialite_e ("dump GeoJSON2 MetaData error: <%s>\n", errMsg);
-	  sqlite3_free (errMsg);
-	  return 0;
-      }
-    if (rows != 1)
-	goto error;
-    for (i = 1; i <= rows; i++)
-      {
-	  int gtype;
-	  const char *x = results[(i * columns) + 0];
-	  int len = strlen (x);
-	  *geoname = malloc (len + 1);
-	  strcpy (*geoname, x);
-	  *srid = atoi (results[(i * columns) + 1]);
-	  gtype = atoi (results[(i * columns) + 2]);
-	  switch (gtype)
-	    {
-	    case GAIA_POINT:
-	    case GAIA_LINESTRING:
-	    case GAIA_POLYGON:
-	    case GAIA_MULTIPOINT:
-	    case GAIA_MULTILINESTRING:
-	    case GAIA_MULTIPOLYGON:
-	    case GAIA_GEOMETRYCOLLECTION:
-		*dims = GAIA_XY;
-		break;
-	    case GAIA_POINTZ:
-	    case GAIA_LINESTRINGZ:
-	    case GAIA_POLYGONZ:
-	    case GAIA_MULTIPOINTZ:
-	    case GAIA_MULTILINESTRINGZ:
-	    case GAIA_MULTIPOLYGONZ:
-	    case GAIA_GEOMETRYCOLLECTIONZ:
-		*dims = GAIA_XY_Z;
-		break;
-	    case GAIA_POINTM:
-	    case GAIA_LINESTRINGM:
-	    case GAIA_POLYGONM:
-	    case GAIA_MULTIPOINTM:
-	    case GAIA_MULTILINESTRINGM:
-	    case GAIA_MULTIPOLYGONM:
-	    case GAIA_GEOMETRYCOLLECTIONM:
-		*dims = GAIA_XY_M;
-		break;
-	    case GAIA_POINTZM:
-	    case GAIA_LINESTRINGZM:
-	    case GAIA_POLYGONZM:
-	    case GAIA_MULTIPOINTZM:
-	    case GAIA_MULTILINESTRINGZM:
-	    case GAIA_MULTIPOLYGONZM:
-	    case GAIA_GEOMETRYCOLLECTIONZM:
-		*dims = GAIA_XY_Z_M;
-		break;
-	    default:
-		goto error;
-	    };
-      }
-    sqlite3_free_table (results);
-    return 1;
-
-  error:
-    sqlite3_free_table (results);
-    return 0;
-}
-
-static char *
-do_prepare_sql (sqlite3 * sqlite, const char *table, const char *geom_col,
-		int srid, int dims, int precision, int lon_lat, int m_coords)
-{
-/* preparing the SQL statement */
-    char *sql;
-    char *prev;
-    char *xtable;
-    char *x_col;
-    int ret;
-    char **results;
-    int rows;
-    int columns;
-    int i;
-    char *errMsg = NULL;
-
-    xtable = gaiaDoubleQuotedSql (table);
-    sql = sqlite3_mprintf ("PRAGMA table_info(\"%s\")", table);
-    free (xtable);
-    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, &errMsg);
-    sqlite3_free (sql);
-    if (ret != SQLITE_OK)
-      {
-	  spatialite_e ("dump GeoJSON2 PRAGMA error: <%s>\n", errMsg);
-	  sqlite3_free (errMsg);
-	  return 0;
-      }
-
-/* defining the Geometry first */
-    x_col = gaiaDoubleQuotedSql (geom_col);
-    if (lon_lat)
-      {
-	  /* exporting Geographic coordinates (lon-lat) */
-	  if (srid == 0 || srid == 4326)
-	    {
-		/* already lon-lan, no transformation is required */
-		if (m_coords)
-		  {
-		      /* exporting eventual M-Values */
-		      sql =
-			  sqlite3_mprintf ("SELECT AsGeoJSON(%Q, %d)",
-					   x_col, precision);
-		  }
-		else
-		  {
-		      if (dims == GAIA_XY_M)
-			{
-			    /* exporting XYM as XY */
-			    sql =
-				sqlite3_mprintf
-				("SELECT AsGeoJSON(CastToXY(%Q), %d)",
-				 x_col, precision);
-			}
-		      else if (dims == GAIA_XY_Z_M)
-			{
-			    /* exporting XYZM as XYZ */
-			    sql =
-				sqlite3_mprintf
-				("SELECT AsGeoJSON(CastToXYZ(%Q), %d)",
-				 x_col, precision);
-			}
-		      else
-			{
-			    /* unchanged dimensions */
-			    sql =
-				sqlite3_mprintf ("SELECT AsGeoJSON(%Q, %d)",
-						 x_col, precision);
-			}
-		  }
-	    }
-	  else
-	    {
-		/* converting to lon-lat WGS84 */
-		if (m_coords)
-		  {
-		      /* exporting eventual M-Values */
-		      sql =
-			  sqlite3_mprintf
-			  ("SELECT AsGeoJSON(ST_Transform(%Q, 4326), %d)",
-			   x_col, precision);
-		  }
-		else
-		  {
-		      if (dims == GAIA_XY_M)
-			{
-			    /* exporting XYM as XY */
-			    sql =
-				sqlite3_mprintf
-				("SELECT AsGeoJSON(ST_Transform(CastToXY(%Q), 4326), %d)",
-				 x_col, precision);
-			}
-		      else if (dims == GAIA_XY_Z_M)
-			{
-			    /* exporting XYZM as XYZ */
-			    sql =
-				sqlite3_mprintf
-				("SELECT AsGeoJSON(ST_TransformCastToXYZ(%Q), 4326), %d)",
-				 x_col, precision);
-			}
-		      else
-			{
-			    /* unchanged dimensions */
-			    sql =
-				sqlite3_mprintf
-				("SELECT AsGeoJSON(ST_Transform(%Q, 4326), %d)",
-				 x_col, precision);
-			}
-		  }
-	    }
-      }
-    else
-      {
-	  /* exporting coordinates as they are without any transformation */
-	  if (m_coords)
-	    {
-		/* exporting eventual M-Values */
-		sql =
-		    sqlite3_mprintf ("SELECT AsGeoJSON(%Q, %d)", x_col,
-				     precision);
-	    }
-	  else
-	    {
-		if (dims == GAIA_XY_M)
-		  {
-		      /* exporting XYM as XY */
-		      sql =
-			  sqlite3_mprintf
-			  ("SELECT AsGeoJSON(CastToXY(%Q), %d)", x_col,
-			   precision);
-		  }
-		else if (dims == GAIA_XY_Z_M)
-		  {
-		      /* exporting XYZM as XYZ */
-		      sql =
-			  sqlite3_mprintf
-			  ("SELECT AsGeoJSON(CastToXYZ(%Q), %d)", x_col,
-			   precision);
-		  }
-		else
-		  {
-		      /* unchanged dimensions */
-		      sql =
-			  sqlite3_mprintf ("SELECT AsGeoJSON(%Q, %d)",
-					   x_col, precision);
-		  }
-	    }
-      }
-    free (x_col);
-
-    for (i = 1; i <= rows; i++)
-      {
-	  /* then adding all Properties */
-	  const char *col = results[(i * columns) + 1];
-	  if (strcasecmp (col, geom_col) == 0)
-	      continue;		/* skipping the Geometry itself */
-	  x_col = gaiaDoubleQuotedSql (col);
-	  prev = sql;
-	  sql = sqlite3_mprintf ("%s, %Q", prev, x_col);
-	  free (x_col);
-	  sqlite3_free (prev);
-      }
-    sqlite3_free_table (results);
-    prev = sql;
-    xtable = gaiaDoubleQuotedSql (table);
-    sql = sqlite3_mprintf ("%s FROM \"%s\"", prev, xtable);
-    free (xtable);
-    sqlite3_free (prev);
-    return sql;
-}
-
-static char *
-do_normalize_case (const char *name, int colname_case)
-{
-/* transforming a name in full lower- or upper-case */
-    int len = strlen (name);
-    char *clean = malloc (len + 1);
-    char *p = clean;
-    strcpy (clean, name);
-    while (*p != '\0')
-      {
-	  if (colname_case == GAIA_DBF_COLNAME_LOWERCASE)
-	    {
-		if (*p >= 'A' && *p <= 'Z')
-		    *p = *p - 'A' + 'a';
-	    }
-	  if (colname_case == GAIA_DBF_COLNAME_UPPERCASE)
-	    {
-		if (*p >= 'a' && *p <= 'z')
-		    *p = *p - 'a' + 'A';
-	    }
-	  p++;
-      }
-    return clean;
-}
-
-SPATIALITE_DECLARE int
-dump_geojson2 (sqlite3 * sqlite, char *table, char *geom_col,
-	       char *outfile_path, int precision, int lon_lat,
-	       int m_coords, int indented, int colname_case, int *xrows,
-	       char **error_message)
-{
-/* dumping a  geometry table as GeoJSON FeatureCollection (RFC 7946) */
-/* sandro furieri 2018-11-25 */
-    char *sql;
-    sqlite3_stmt *stmt = NULL;
-    FILE *out = NULL;
-    int ret;
-    int rows = 0;
-    char *geoname = NULL;
-    int srid;
-    int dims;
-    int first_feature = 1;
-    sqlite3_int64 ival;
-    double dval;
-    const char *tval;
-    char *xtval;
-    *error_message = NULL;
-
-/* checking Geometry Column, SRID and Dimensions */
-    if (!do_check_geometry (sqlite, table, geom_col, &geoname, &srid, &dims))
-	goto no_geom;
-
-    *xrows = -1;
-/* opening/creating the GeoJSON output file */
-    out = fopen (outfile_path, "wb");
-    if (!out)
-	goto no_file;
-
-/* preparing SQL statement */
-    sql =
-	do_prepare_sql (sqlite, table, geoname, srid, dims, precision, lon_lat,
-			m_coords);
-    if (sql == NULL)
-	goto no_sql;
-    free (geoname);
-
-    ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
-    sqlite3_free (sql);
-    if (ret != SQLITE_OK)
-	goto sql_error;
-
-    while (1)
-      {
-	  /* scrolling the result set */
-	  ret = sqlite3_step (stmt);
-	  if (ret == SQLITE_DONE)
-	    {
-		break;		/* end of result set */
-	    }
-	  if (ret == SQLITE_ROW)
-	    {
-		int c;
-		int cols = sqlite3_column_count (stmt);
-		if (first_feature)
-		  {
-		      /* FeatureCollection */
-		      if (indented)
-			  fprintf (out,
-				   "{\r\n\t\"type\" : \"FeatureCollection\",\r\n\t\"features\" : [{\r\n");
-		      else
-			  fprintf (out,
-				   "{\"type\":\"FeatureCollection\",\"features\":[{");
-		      first_feature = 0;
-		  }
-		/* Feature */
-		if (rows == 0)
-		  {
-		      /* first Feature */
-		      if (indented)
-			  fprintf (out,
-				   "\t\t\"type\" : \"Feature\",\r\n\t\t\"properties\" : ");
-		      else
-			  fprintf (out, "\"type\":\"Feature\",\"properties\":");
-		  }
-		else
-		  {
-		      /* any other Feature except the first one */
-		      if (indented)
-			  fprintf (out,
-				   ", {\r\n\t\t\"type\" : \"Feature\",\r\n\t\t\"properties\" : ");
-		      else
-			  fprintf (out,
-				   ",{\"type\":\"Feature\",\"properties\":");
-		  }
-		for (c = 1; c < cols; c++)
-		  {
-		      /* Properties */
-		      const char *col_name = sqlite3_column_name (stmt, c);
-		      char *norm_name =
-			  do_normalize_case (col_name, colname_case);
-		      char *xcol_name = gaiaDoubleQuotedSql (norm_name);
-		      free (norm_name);
-		      if (c == 1)
-			{
-			    if (indented)
-				fprintf (out, "{\r\n\t\t\t\"%s\" : ",
-					 xcol_name);
-			    else
-				fprintf (out, "{\"%s\":", xcol_name);
-			}
-		      else
-			{
-			    if (indented)
-				fprintf (out, ",\r\n\t\t\t\"%s\" : ",
-					 xcol_name);
-			    else
-				fprintf (out, ",\"%s\":", xcol_name);
-			}
-		      free (xcol_name);
-		      switch (sqlite3_column_type (stmt, c))
-			{
-			case SQLITE_INTEGER:
-			    ival = sqlite3_column_int64 (stmt, c);
-			    fprintf (out, "%lld", ival);
-			    break;
-			case SQLITE_FLOAT:
-			    dval = sqlite3_column_double (stmt, c);
-			    fprintf (out, "%f", dval);
-			    break;
-			case SQLITE_TEXT:
-			    tval = (const char *) sqlite3_column_text (stmt, c);
-			    xtval = gaiaDoubleQuotedSql (tval);
-			    fprintf (out, "\"%s\"", xtval);
-			    free (xtval);
-			    break;
-			case SQLITE_BLOB:
-			    fprintf (out, "\"BLOB value\"");
-			    break;
-			case SQLITE_NULL:
-			default:
-			    fprintf (out, "null");
-			    break;
-			};
-		  }
-		/* geometry */
-		if (indented)
-		    fprintf (out, "\r\n\t\t},\r\n\t\t\"geometry\" : ");
-		else
-		    fprintf (out, "},\"geomety\":");
-		switch (sqlite3_column_type (stmt, 0))
-		  {
-		  case SQLITE_NULL:
-		      fprintf (out, "null");
-		      break;
-		  default:
-		      tval = (const char *) sqlite3_column_text (stmt, 0);
-		      fprintf (out, "%s", tval);
-		      break;
-		  };
-		/* end Feature */
-		if (indented)
-		    fprintf (out, "\r\n\t}");
-		else
-		    fprintf (out, "}");
-		rows++;
-	    }
-	  else
-	    {
-		goto sql_error;
-	    }
-      }
-    if (rows == 0)
-      {
-	  goto empty_result_set;
-      }
-    if (indented)
-	fprintf (out, "]\r\n}\r\n");
-    else
-	fprintf (out, "]}");
-
-    sqlite3_finalize (stmt);
-    fclose (out);
-    *xrows = rows;
-    return 1;
-
-  sql_error:
-/* an SQL error occurred */
-    if (stmt)
-      {
-	  sqlite3_finalize (stmt);
-      }
-    if (out)
-      {
-	  fclose (out);
-      }
-    *error_message =
-	sqlite3_mprintf ("Dump GeoJSON2 error: %s\n", sqlite3_errmsg (sqlite));
-    return 0;
-
-  no_file:
-/* Output file could not be created / opened */
-    if (stmt)
-      {
-	  sqlite3_finalize (stmt);
-      }
-    if (out)
-      {
-	  fclose (out);
-      }
-    if (geoname != NULL)
-	free (geoname);
-    *error_message =
-	sqlite3_mprintf ("ERROR: unable to open '%s' for writing\n",
-			 outfile_path);
-    return 0;
-
-  empty_result_set:
-/* the result set is empty - nothing to do */
-    if (stmt)
-      {
-	  sqlite3_finalize (stmt);
-      }
-    if (out)
-      {
-	  fclose (out);
-      }
-    *error_message =
-	sqlite3_mprintf ("The SQL SELECT returned no data to export...\n");
-    return 0;
-
-  no_geom:
-/* not a valid Geometry Column */
-    if (out)
-      {
-	  fclose (out);
-      }
-    *error_message = sqlite3_mprintf ("Not a valid Geometry Column.\n");
-    return 0;
-
-  no_sql:
-/* unable to create a valid SQL query */
-    if (out)
-      {
-	  fclose (out);
-      }
-    *error_message = sqlite3_mprintf ("Unable to create a valid SQL query.\n");
-    return 0;
-}
-
-SPATIALITE_DECLARE int
-load_geojson (sqlite3 * sqlite, char *path, char *table, char *geom_col,
-	      int spatial_index, int srid, int colname_case, int *rows,
-	      char **error_message)
-{
-/* Loads an external GeoJSON file into a newly created table */
-    FILE *in = NULL;
-    sqlite3_stmt *stmt = NULL;
-    geojson_parser_ptr parser = NULL;
-    geojson_feature_ptr ft;
-    int i;
-    int ret;
-    int pending = 0;
-    char *sql;
-    int ins_rows = 0;
-    *error_message = NULL;
-
-/* attempting to open the GeoJSON file for reading */
-    in = fopen (path, "rb");
-    if (in == NULL)
-      {
-	  *error_message =
-	      sqlite3_mprintf
-	      ("GeoJSON parser: unable to open %s for reading\n", path);
-	  return 0;
-      }
-
-/* creating the GeoJSON parser */
-    parser = geojson_create_parser (in);
-    if (!geojson_parser_init (parser, error_message))
-	goto err;
-    if (!geojson_create_features_index (parser, error_message))
-	goto err;
-    if (!geojson_check_features (parser, error_message))
-	goto err;
-
-/* creating the output table */
-    sql = geojson_sql_create_table (parser, table, colname_case);
-    if (sql == NULL)
-	goto err;
-    ret = sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
-    sqlite3_free (sql);
-    if (ret != SQLITE_OK)
-      {
-	  *error_message =
-	      sqlite3_mprintf
-	      ("GeoJSON import: unable to create the output table (%s)\n",
-	       sqlite3_errmsg (sqlite));
-	  goto err;
-      }
-
-/* adding the Geometry Column */
-    sql =
-	geojson_sql_add_geometry (parser, table, geom_col, colname_case, srid);
-    if (sql == NULL)
-	goto err;
-    ret = sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
-    sqlite3_free (sql);
-    if (ret != SQLITE_OK)
-      {
-	  *error_message =
-	      sqlite3_mprintf
-	      ("GeoJSON import: unable to create the Geometry column (%s)\n",
-	       sqlite3_errmsg (sqlite));
-	  goto err;
-      }
-
-    if (spatial_index)
-      {
-	  /* creating the Spatial Index */
-	  sql = geojson_sql_create_rtree (table, geom_col, colname_case);
-	  if (sql == NULL)
-	      goto err;
-	  ret = sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
-	  sqlite3_free (sql);
-	  if (ret != SQLITE_OK)
-	    {
-		*error_message =
-		    sqlite3_mprintf
-		    ("GeoJSON import: unable to create the SpatialIndex (%s)\n",
-		     sqlite3_errmsg (sqlite));
-		goto err;
-	    }
-      }
-
-/* the whole import will be enclosed in a single Transaction */
-    ret = sqlite3_exec (sqlite, "SAVEPOINT import_geo_json", NULL, NULL, NULL);
-    if (ret != SQLITE_OK)
-      {
-	  *error_message =
-	      sqlite3_mprintf ("GeoJSON import: SAVEPOINT error (%s)\n",
-			       sqlite3_errmsg (sqlite));
-	  goto err;
-      }
-    pending = 1;
-
-    sql = geojson_sql_insert_into (parser, table);
-    ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
-    sqlite3_free (sql);
-    if (ret != SQLITE_OK)
-      {
-	  *error_message =
-	      sqlite3_mprintf ("GeoJSON import: INSERT INTO error (%s)\n",
-			       sqlite3_errmsg (sqlite));
-	  goto err;
-      }
-
-    for (i = 0; i < parser->count; i++)
-      {
-	  /* inserting all features into the output table */
-	  ft = parser->features + i;
-	  if (geojson_init_feature (parser, ft, error_message))
-	    {
-		/* inserting a single Feature */
-		geojson_column_ptr col;
-		int cnt = 1;
-		sqlite3_reset (stmt);
-		sqlite3_clear_bindings (stmt);
-		col = parser->first_col;
-		while (col != NULL)
-		  {
-		      /* binding column values */
-		      geojson_property_ptr prop =
-			  geojson_get_property_by_name (ft, col->name);
-		      if (prop == NULL)
-			  sqlite3_bind_null (stmt, cnt++);
-		      else
-			{
-			    switch (prop->type)
-			      {
-			      case GEOJSON_TEXT:
-				  sqlite3_bind_text (stmt, cnt++,
-						     prop->txt_value,
-						     strlen (prop->txt_value),
-						     SQLITE_STATIC);
-				  break;
-			      case GEOJSON_INTEGER:
-				  sqlite3_bind_int64 (stmt, cnt++,
-						      prop->int_value);
-				  break;
-			      case GEOJSON_DOUBLE:
-				  sqlite3_bind_double (stmt, cnt++,
-						       prop->dbl_value);
-				  break;
-			      case GEOJSON_FALSE:
-				  sqlite3_bind_int (stmt, cnt++, 0);
-				  break;
-			      case GEOJSON_TRUE:
-				  sqlite3_bind_int (stmt, cnt++, 0);
-				  break;
-			      case GEOJSON_NULL:
-			      default:
-				  sqlite3_bind_null (stmt, cnt++);
-				  break;
-			      };
-			}
-		      col = col->next;
-		  }
-		if (ft->geometry == NULL)
-		    sqlite3_bind_null (stmt, cnt++);
-		else
-		  {
-		      gaiaGeomCollPtr geo =
-			  gaiaParseGeoJSON ((const unsigned char
-					     *) (ft->geometry));
-		      if (geo != NULL)
-			{
-			    /* binding the Geometry BLOB */
-			    unsigned char *blob;
-			    int blob_size;
-			    geo->Srid = srid;
-			    gaiaToSpatiaLiteBlobWkb (geo, &blob, &blob_size);
-			    sqlite3_bind_blob (stmt, cnt, blob, blob_size,
-					       free);
-			    gaiaFreeGeomColl (geo);
-			}
-		      else
-			{
-			    *error_message =
-				sqlite3_mprintf
-				("GeoJSON import: invalid Geometry (fid=%d)\n",
-				 ft->fid);
-			    goto err;
-			}
-		  }
-		/* inserting the Feature into the DB Table */
-		ret = sqlite3_step (stmt);
-		if (ret == SQLITE_DONE || ret == SQLITE_ROW)
-		    ins_rows++;
-		else
-		  {
-		      *error_message =
-			  sqlite3_mprintf
-			  ("GeoJSON import: INSERT INTO failure (fid=%d) %s\n",
-			   ft->fid, sqlite3_errmsg (sqlite));
-		      goto err;
-		  }
-		geojson_reset_feature (ft);
-	    }
-	  else
-	      goto err;
-      }
-    sqlite3_finalize (stmt);
-    stmt = NULL;
-
-/* Committing the still pending Transaction */
-    ret =
-	sqlite3_exec (sqlite, "RELEASE SAVEPOINT import_geo_json", NULL, NULL,
-		      NULL);
-    if (ret != SQLITE_OK)
-      {
-	  *error_message =
-	      sqlite3_mprintf ("GeoJSON import: RELEASE SAVEPOINT error (%s)\n",
-			       sqlite3_errmsg (sqlite));
-	  goto err;
-      }
-
-    geojson_destroy_parser (parser);
-    *rows = ins_rows;
-    return 1;
-
-  err:
-    if (stmt != NULL)
-	sqlite3_finalize (stmt);
-    if (pending)
-      {
-	  /* Rolling back the Transaction */
-	  sqlite3_exec (sqlite, "ROLLBAKC TO SAVEPOINT import_geo_json", NULL,
-			NULL, NULL);
-	  sqlite3_exec (sqlite, "RELEASE SAVEPOINT import_geo_json", NULL, NULL,
-			NULL);
-      }
-    geojson_destroy_parser (parser);
-    *rows = 0;
-    return 0;
-}
-
-SPATIALITE_PRIVATE const void *
-gaiaElemGeomOptionsCreate ()
-{
-/* creating an Elementary Geometries Options object */
-    struct aux_elemgeom_options *options =
-	malloc (sizeof (struct aux_elemgeom_options));
-    options->first = NULL;
-    options->last = NULL;
-    options->cast2multi = 0;
-    return options;
-}
-
-SPATIALITE_PRIVATE void
-gaiaElemGeomOptionsDestroy (const void *opts)
-{
-/* destroying an Elementary Geometries Options object */
-    struct aux_elemgeom_ignore *ign;
-    struct aux_elemgeom_ignore *ign2;
-    struct aux_elemgeom_options *options = (struct aux_elemgeom_options *) opts;
-    if (options == NULL)
-	return;
-
-    ign = options->first;
-    while (ign != NULL)
-      {
-	  ign2 = ign->next;
-	  if (ign->column != NULL)
-	      free (ign->column);
-	  free (ign);
-	  ign = ign2;
-      }
-    free (options);
-}
-
-static void
-ignore_column (struct aux_elemgeom_options *options, const char *column)
-{
-/* marking a Column to be ignored */
-    int len;
-    struct aux_elemgeom_ignore *ign;
-    if (options == NULL)
-	return;
-
-    ign = malloc (sizeof (struct aux_elemgeom_ignore));
-    len = strlen (column);
-    ign->column = malloc (len + 1);
-    strcpy (ign->column, column);
-    ign->next = NULL;
-
-    if (options->first == NULL)
-	options->first = ign;
-    if (options->last != NULL)
-	options->last->next = ign;
-    options->last = ign;
-}
-
-SPATIALITE_PRIVATE void
-gaiaElemGeomOptionsAdd (const void *opts, const char *option)
-{
-/* adding an Elementary Geometries Option */
-    struct aux_elemgeom_options *options = (struct aux_elemgeom_options *) opts;
-    if (options == NULL)
-	return;
-
-    if (strncasecmp (option, "::cast2multi::", 14) == 0)
-	options->cast2multi = 1;
-    if (strncasecmp (option, "::ignore::", 10) == 0)
-	ignore_column (options, option + 10);
-}
-
-#ifdef ENABLE_MINIZIP		/* MINIZIP is enabled */
-
-GAIAGEO_DECLARE char *
-gaiaReadWktFromZipShp (const char *zip_path, const char *basename)
-{
-/* attempting to read the .PRJ member of some zipped Shapefile */
-    char *wkt = NULL;
-    unzFile uf = NULL;
-    struct zip_mem_shapefile *mem_shape = NULL;
-
-    if (zip_path == NULL)
-      {
-	  spatialite_e ("read_wkt_from_zipshp error: <%s>\n",
-			"NULL zipfile path");
-	  return NULL;
-      }
-/* opening the Zipfile expected to contain the Shapefile */
-    uf = unzOpen64 (zip_path);
-    if (uf == NULL)
-      {
-	  spatialite_e ("Unable to Open %s\n", zip_path);
-	  return NULL;
-      }
-/* parsing the Zipfile directory */
-    mem_shape = do_list_zipfile_dir (uf, basename, 0);
-    if (mem_shape == NULL)
-      {
-	  spatialite_e ("No SHP %s with Zipfile\n", basename);
-	  goto stop;
-      }
-/* unzipping the PRJ member (if any) */
-    do_read_zipfile_file (uf, mem_shape, GAIA_ZIPFILE_PRJ);
-    if (mem_shape->prj.buf != NULL)
-      {
-	  wkt = malloc (mem_shape->prj.size + 1);
-	  memcpy (wkt, mem_shape->prj.buf, mem_shape->prj.size);
-	  *(wkt + mem_shape->prj.size) = '\0';
-      }
-
-  stop:
-    unzClose (uf);
-    if (mem_shape != NULL)
-	destroy_zip_mem_shapefile (mem_shape);
-    return wkt;
-}
-
-GAIAGEO_DECLARE int
-gaiaZipfileNumSHP (const char *zip_path, int *count)
-{
-/* attempting to count how many Shapefiles are within a given Zipfile */
-    int ret;
-    int retval = 1;
-    struct zip_mem_shp_item *item;
-    struct zip_mem_shp_list *list = alloc_zip_mem_shp_list ();
-    unzFile uf = NULL;
-
-    *count = 0;
-    if (zip_path == NULL)
-      {
-	  spatialite_e ("zipfile NumSHP error: <%s>\n", "NULL zipfile path");
-	  retval = 0;
-	  goto stop;
-      }
-/* opening the Zipfile expected to contain the Shapefile */
-    uf = unzOpen64 (zip_path);
-    if (uf == NULL)
-      {
-	  spatialite_e ("Unable to Open %s\n", zip_path);
-	  retval = 0;
-	  goto stop;
-      }
-/* sniffing the Zipfile */
-    ret = do_sniff_zipfile_dir (uf, list, 0);
-    if (!ret)
-      {
-	  retval = 0;
-	  goto stop;
-      }
-    item = list->first;
-    while (item != NULL)
-      {
-	  /* counting how many Shapefiles are there */
-	  if (item->shp && item->shx && item->dbf)
-	      *count += 1;
-	  item = item->next;
-      }
-  stop:
-    unzClose (uf);
-    destroy_zip_mem_shp_list (list);
-    return retval;
-}
-
-GAIAGEO_DECLARE char *
-gaiaZipfileShpN (const char *zip_path, int idx)
-{
-/* attempting to return the Nth Shapefile's basename fromt within a given Zipfile */
-    int ret;
-    int count = 0;
-    char *basename = NULL;
-    struct zip_mem_shp_item *item;
-    struct zip_mem_shp_list *list = alloc_zip_mem_shp_list ();
-    unzFile uf = NULL;
-
-    count = 0;
-    if (zip_path == NULL)
-      {
-	  spatialite_e ("zipfile NumSHP error: <%s>\n", "NULL zipfile path");
-	  goto stop;
-      }
-/* opening the Zipfile expected to contain the Shapefile */
-    uf = unzOpen64 (zip_path);
-    if (uf == NULL)
-      {
-	  spatialite_e ("Unable to Open %s\n", zip_path);
-	  goto stop;
-      }
-/* sniffing the Zipfile */
-    ret = do_sniff_zipfile_dir (uf, list, 0);
-    if (!ret)
-	goto stop;
-    item = list->first;
-    while (item != NULL)
-      {
-	  /* counting how many Shapefiles are there */
-	  if (item->shp && item->shx && item->dbf)
-	      count++;
-	  if (count == idx)
-	    {
-		int len = strlen (item->basename);
-		basename = malloc (len + 1);
-		strcpy (basename, item->basename);
-		break;
-	    }
-	  item = item->next;
-      }
-  stop:
-    unzClose (uf);
-    destroy_zip_mem_shp_list (list);
-    return basename;
-}
-
-GAIAGEO_DECLARE int
-gaiaZipfileNumDBF (const char *zip_path, int *count)
-{
-/* attempting to count how many DBF files are within a given Zipfile */
-    int ret;
-    int retval = 1;
-    struct zip_mem_shp_item *item;
-    struct zip_mem_shp_list *list = alloc_zip_mem_shp_list ();
-    unzFile uf = NULL;
-
-    *count = 0;
-    if (zip_path == NULL)
-      {
-	  spatialite_e ("zipfile NumDBF error: <%s>\n", "NULL zipfile path");
-	  retval = 0;
-	  goto stop;
-      }
-/* opening the Zipfile expected to contain the DBF file */
-    uf = unzOpen64 (zip_path);
-    if (uf == NULL)
-      {
-	  spatialite_e ("Unable to Open %s\n", zip_path);
-	  retval = 0;
-	  goto stop;
-      }
-/* sniffing the Zipfile */
-    ret = do_sniff_zipfile_dir (uf, list, 1);
-    if (!ret)
-      {
-	  retval = 0;
-	  goto stop;
-      }
-    item = list->first;
-    while (item != NULL)
-      {
-	  /* counting how many DBF files are there */
-	  if (item->dbf)
-	      *count += 1;
-	  item = item->next;
-      }
-  stop:
-    unzClose (uf);
-    destroy_zip_mem_shp_list (list);
-    return retval;
-}
-
-GAIAGEO_DECLARE char *
-gaiaZipfileDbfN (const char *zip_path, int idx)
-{
-/* attempting to return the Nth DBF filename fromt within a given Zipfile */
-    int ret;
-    int count = 0;
-    char *filename = NULL;
-    struct zip_mem_shp_item *item;
-    struct zip_mem_shp_list *list = alloc_zip_mem_shp_list ();
-    unzFile uf = NULL;
-
-    count = 0;
-    if (zip_path == NULL)
-      {
-	  spatialite_e ("zipfile NumDBF error: <%s>\n", "NULL zipfile path");
-	  goto stop;
-      }
-/* opening the Zipfile expected to contain the DBF file */
-    uf = unzOpen64 (zip_path);
-    if (uf == NULL)
-      {
-	  spatialite_e ("Unable to Open %s\n", zip_path);
-	  goto stop;
-      }
-/* sniffing the Zipfile */
-    ret = do_sniff_zipfile_dir (uf, list, 1);
-    if (!ret)
-	goto stop;
-    item = list->first;
-    while (item != NULL)
-      {
-	  /* counting how many DBF files are there */
-	  if (item->dbf)
-	      count++;
-	  if (count == idx)
-	    {
-		int len = strlen (item->basename);
-		filename = malloc (len + 1);
-		strcpy (filename, item->basename);
-		break;
-	    }
-	  item = item->next;
-      }
-  stop:
-    unzClose (uf);
-    destroy_zip_mem_shp_list (list);
-    return filename;
-}
-
-#endif /* end MINIZIP */

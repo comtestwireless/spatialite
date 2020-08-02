@@ -134,6 +134,10 @@ do_test (sqlite3 * handle)
 int
 main (int argc, char *argv[])
 {
+#ifdef OMIT_ICONV		/* ICONV is not supported: quitting */
+	return 0;
+#endif
+
     int ret;
     sqlite3 *handle;
     void *cache = spatialite_alloc_connection ();

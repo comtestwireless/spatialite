@@ -2,7 +2,7 @@
 
  metatables.c -- creating the metadata tables and related triggers
 
- version 4.3, 2015 June 29
+ version 5.0, 2020 August 1
 
  Author: Sandro Furieri a.furieri@lqt.it
 
@@ -24,7 +24,7 @@ The Original Code is the SpatiaLite library
 
 The Initial Developer of the Original Code is Alessandro Furieri
  
-Portions created by the Initial Developer are Copyright (C) 2008-2015
+Portions created by the Initial Developer are Copyright (C) 2008-2020
 the Initial Developer. All Rights Reserved.
 
 Contributor(s):
@@ -3075,7 +3075,7 @@ createTemporarySpatialRefSys (void *p_sqlite, const char *db_prefix)
 				     prefix);
     free (prefix);
     ret = sqlite3_exec (sqlite, sql_statement, NULL, NULL, &errMsg);
-    sqlite3_free(sql_statement);
+    sqlite3_free (sql_statement);
     if (ret != SQLITE_OK)
 	goto error;
     prefix = gaiaDoubleQuotedSql (db_prefix);
@@ -3248,7 +3248,7 @@ createTemporaryGeometryColumns (void *p_sqlite, const char *db_prefix)
 	 "f_geometry_column value must be lower case')\n"
 	 "WHERE NEW.f_geometry_column <> lower(NEW.f_geometry_column);\n" "END",
 	 prefix);
-	 free(prefix);
+    free (prefix);
     ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
     sqlite3_free (sql);
     if (ret != SQLITE_OK)

@@ -2,7 +2,7 @@
 
  gg_xml.c -- XML Document implementation
     
- version 4.3, 2015 June 29
+ version 5.0, 2020 August 1
 
  Author: Sandro Furieri a.furieri@lqt.it
 
@@ -24,7 +24,7 @@ The Original Code is the SpatiaLite library
 
 The Initial Developer of the Original Code is Alessandro Furieri
  
-Portions created by the Initial Developer are Copyright (C) 2008-2015
+Portions created by the Initial Developer are Copyright (C) 2008-2020
 the Initial Developer. All Rights Reserved.
 
 Contributor(s):
@@ -1557,7 +1557,7 @@ find_map_config_abstract (xmlNodePtr node, char **string)
 
 static void
 retrieve_map_config_identifiers (xmlDocPtr xml_doc, char **name, char **title,
-			  char **abstract)
+				 char **abstract)
 {
 /*
 / attempting to retrieve the Name, Title and Abstract items 
@@ -1765,8 +1765,8 @@ gaiaXmlToBlob (const void *p_cache, const unsigned char *xml, int xml_len,
 	retrieve_sld_identifiers (xml_doc, &name, &title, &abstract);
     else if (is_sld_se_vector_style || is_sld_se_raster_style)
 	retrieve_sld_se_identifiers (xml_doc, &name, &title, &abstract);
-	else if (is_map_config)
-	retrieve_map_config_identifiers(xml_doc, &name, &title, &abstract);
+    else if (is_map_config)
+	retrieve_map_config_identifiers (xml_doc, &name, &title, &abstract);
     xmlFreeDoc (xml_doc);
 
     if (compressed)
@@ -3136,7 +3136,8 @@ gaiaIsIsoMetadataXmlBlob (const unsigned char *blob, int blob_size)
     if (!gaiaIsValidXmlBlob (blob, blob_size))
 	return -1;		/* cannot be an XmlBLOB */
     flag = *(blob + 1);
-    if (((flag & GAIA_XML_ISO_METADATA) == GAIA_XML_ISO_METADATA) && ((flag & GAIA_XML_MAP_CONFIG) != GAIA_XML_MAP_CONFIG))
+    if (((flag & GAIA_XML_ISO_METADATA) == GAIA_XML_ISO_METADATA)
+	&& ((flag & GAIA_XML_MAP_CONFIG) != GAIA_XML_MAP_CONFIG))
 	iso_metadata = 1;
     return iso_metadata;
 }
@@ -3152,7 +3153,8 @@ gaiaIsSldSeVectorStyleXmlBlob (const unsigned char *blob, int blob_size)
     if (!gaiaIsValidXmlBlob (blob, blob_size))
 	return -1;		/* cannot be an XmlBLOB */
     flag = *(blob + 1);
-    if (((flag & GAIA_XML_SLD_SE_VECTOR_STYLE) == GAIA_XML_SLD_SE_VECTOR_STYLE) && ((flag & GAIA_XML_SLD_STYLE) != GAIA_XML_SLD_STYLE))
+    if (((flag & GAIA_XML_SLD_SE_VECTOR_STYLE) == GAIA_XML_SLD_SE_VECTOR_STYLE)
+	&& ((flag & GAIA_XML_SLD_STYLE) != GAIA_XML_SLD_STYLE))
 	sld_se_style = 1;
     return sld_se_style;
 }
@@ -3232,7 +3234,8 @@ gaiaIsGpxXmlBlob (const unsigned char *blob, int blob_size)
     if (!gaiaIsValidXmlBlob (blob, blob_size))
 	return -1;		/* cannot be an XmlBLOB */
     flag = *(blob + 1);
-    if (((flag & GAIA_XML_GPX) == GAIA_XML_GPX) && ((flag & GAIA_XML_MAP_CONFIG) != GAIA_XML_MAP_CONFIG))
+    if (((flag & GAIA_XML_GPX) == GAIA_XML_GPX)
+	&& ((flag & GAIA_XML_MAP_CONFIG) != GAIA_XML_MAP_CONFIG))
 	gpx = 1;
     return gpx;
 }

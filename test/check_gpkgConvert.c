@@ -210,6 +210,9 @@ main (int argc, char *argv[])
     if (argc > 1 || argv[0] == NULL)
 	argc = 1;		/* silencing stupid compiler warnings */
 
+#ifdef _WIN32
+/* this test is disabled on Windows because it takes too long */
+#else
     do_unlink_all ();
 
 /* converting from SpatiaLite v4 to GPKG */
@@ -301,6 +304,7 @@ main (int argc, char *argv[])
     spatialite_cleanup_ex (cache_out);
 
     do_unlink_all ();
+#endif /* not WIN32 */
     return 0;
 }
 

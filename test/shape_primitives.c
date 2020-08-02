@@ -872,6 +872,9 @@ do_test (sqlite3 * handle)
     return 0;
 }
 
+
+#ifndef OMIT_ICONV		/* only if ICONV is supported */
+#ifdef ENABLE_RTTOPO		/* only if RTTOPO is supported */
 static int
 do_check_tiny_point_enabled (sqlite3 * handle, int tiny_point)
 {
@@ -900,7 +903,6 @@ do_check_tiny_point_enabled (sqlite3 * handle, int tiny_point)
 	return 0;
     return -1;
 }
-
 static int
 do_test_400 (int tiny_point)
 {
@@ -973,6 +975,8 @@ do_test_400 (int tiny_point)
 
     return 0;
 }
+#endif /* end RTTOPO conditionals */
+#endif /* end ICONV conditional */
 
 int
 main (int argc, char *argv[])

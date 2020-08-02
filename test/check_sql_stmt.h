@@ -876,9 +876,9 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
       {
 	  return result;
       }
-#endif /* end ICONV */
 
   skip_sql_proc:
+#endif /* end ICONV */
 
 #ifdef ENABLE_LIBXML2		/* only if LIBXML2 is supported */
 #ifndef OMIT_ICONV		/* only if ICONV is supported */
@@ -903,6 +903,17 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
 	    }
       }
 
+#endif
+#endif /* end LIBXML2 conditional */
+
+#ifdef ENABLE_LIBXML2		/* only if LIBXML2 is supported */
+#ifdef ENABLE_RTTOPO		/* only if RTTOPO is supported */
+    result =
+	run_subdir_test ("sql_stmt_libxml2_rttopo_tests", conn, load_extension, 0);
+    if (result != 0)
+      {
+	  return result;
+      }
 #endif
 #endif /* end LIBXML2 conditional */
 

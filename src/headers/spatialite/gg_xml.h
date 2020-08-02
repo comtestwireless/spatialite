@@ -1,7 +1,7 @@
 /*
  gg_xml.h -- Gaia common support for XML documents
   
- version 4.3, 2015 June 29
+ version 5.0, 2020 August 1
 
  Author: Sandro Furieri a.furieri@lqt.it
 
@@ -23,7 +23,7 @@ The Original Code is the SpatiaLite library
 
 The Initial Developer of the Original Code is Alessandro Furieri
  
-Portions created by the Initial Developer are Copyright (C) 2008-2015
+Portions created by the Initial Developer are Copyright (C) 2008-2020
 the Initial Developer. All Rights Reserved.
 
 Contributor(s):
@@ -324,7 +324,7 @@ extern "C"
  gaiaIsSvgXmlBlob, gaiaIsGpxXmlBlob, gaiaIsSldStyleXmlBlob
  */
     GAIAGEO_DECLARE int gaiaIsMapConfigXmlBlob (const unsigned char
-					       *blob, int size);
+						*blob, int size);
 
 /**
  Checks if a valid XmlBLOB buffer does contain an SVG Symbol or not

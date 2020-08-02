@@ -80,6 +80,10 @@ sql_test (sqlite3 * handle, const char *sql)
 int
 main (int argc, char *argv[])
 {
+#ifndef ENABLE_RTTOPO		/* RTTOPO is not supported: quitting */
+	return 0;
+#endif
+
     int retval = 0;
     int ret;
     sqlite3 *handle;
