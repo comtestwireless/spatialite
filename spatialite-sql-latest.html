@@ -10,7 +10,7 @@
 			i {color:navy;}
 		</style>
 	</head><body bgcolor="#fffff0">
-		<h2>SpatiaLite 5.0.0-RC1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SQL functions reference list</h2>
+		<h2>SpatiaLite 5.0.0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SQL functions reference list</h2>
 		<a href="https://www.gaia-gis.it/fossil/libspatialite">back</a>
 		<ul>
 			<li><a href="#version">SQL Version Info [and build options testing] functions</a></li>
@@ -2439,11 +2439,11 @@ This function only supports Long/Lat coordinates, and will return NULL for any p
 				<td></td>
 				<td align="center" bgcolor="#f0d0d0">GEOS</td>
 				<td>return the Hausdorff distance between geom1 and geom2<br>
-				<a href="http://en.wikipedia.org/wiki/Frechet_distance">learn more</a><hr>
+				<a href="http://en.wikipedia.org/wiki/Hausdorff_distance">learn more</a><hr>
 				the optional argument <b>densify_fract</b> is the fraction (in the range <b>0.0 / 1.0</b>) by which to densify
 				each segment. Each segment will be split into a number of equal-lenght subsegments, whose fraction of the total
 				length is closest to the given fraction.<br>
-				The smaller <b>densify_fract</b> we specify, the more acurate Fréchet distance we get. 
+				The smaller <b>densify_fract</b> we specify, the more acurate Hausdorff distance we get. 
 				But, the computation time and the memory usage increase with the square of the number of subsegments.<hr>
 				The second form of this SQL function (supporting <b>densify_fract</b>) is only available when using <b>GEOS 3.7.0</b> (or any subsequent version).</td></tr>
 			<tr><td><b>FrechetDistance</b></td>

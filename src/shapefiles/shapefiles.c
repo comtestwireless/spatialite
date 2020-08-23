@@ -79,7 +79,9 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #endif
 #endif
 
+#ifdef ENABLE_MINIZIP		/* MINIZIP is enabled */
 #include <minizip/unzip.h>
+#endif
 
 #if defined(_WIN32) && !defined(__MINGW32__)
 #define strcasecmp	_stricmp

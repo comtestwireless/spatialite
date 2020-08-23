@@ -62,6 +62,7 @@ LIBOBJ = src\gaiaaux\gg_sqlaux.obj src\gaiaaux\gg_utf8.obj \
 	src\srsinit\epsg_inlined_52.obj src\srsinit\epsg_inlined_53.obj \
 	src\srsinit\epsg_inlined_54.obj src\srsinit\epsg_inlined_55.obj \
 	src\srsinit\epsg_inlined_56.obj src\srsinit\epsg_inlined_57.obj \
+	src\srsinit\epsg_inlined_58.obj src\srsinit\epsg_inlined_59.obj \
 	src\srsinit\epsg_inlined_extra.obj src\srsinit\epsg_inlined_prussian.obj \
 	src\srsinit\epsg_inlined_wgs84_00.obj src\srsinit\epsg_inlined_wgs84_01.obj \
 	src\versioninfo\version.obj src\virtualtext\virtualtext.obj \
@@ -106,7 +107,7 @@ mod_spatialite.lib:	$(LIBOBJ)
 $(MOD_SPATIALITE_DLL):	mod_spatialite_i.lib
 
 mod_spatialite_i.lib:     $(LIBOBJ)
-	link /debug /dll /out:$(MOD_SPATIALITE_DLL) \
+	link /dll /out:$(MOD_SPATIALITE_DLL) \
 		/implib:mod_spatialite_i.lib $(LIBOBJ) \
 		C:\OSGeo4W\lib\proj_i.lib C:\OSGeo4W\lib\geos_c.lib \
 		C:\OSGeo4w\lib\freexl_i.lib C:\OSGeo4w\lib\iconv.lib \
