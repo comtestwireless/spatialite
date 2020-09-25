@@ -2024,7 +2024,7 @@ load_dbf_common (struct zip_mem_shapefile *mem_shape, sqlite3 * sqlite,
 	  *(col_name + cnt) = malloc (len + 1);
 	  strcpy (*(col_name + cnt), dummy);
 	  if (xdummy)
-	      free (xdummy);
+	      sqlite3_free (xdummy);
 	  cnt++;
 	  dbf_field = dbf_field->Next;
       }
@@ -3030,7 +3030,11 @@ output_prj_file_proj_new (int srid, const char *path, void *proj_ctx)
 	    {
 		/* generating the .PRJ file */
 		prj_path = sqlite3_mprintf ("%s.prj", path);
+#ifdef _WIN32
+		out = gaia_win_fopen (prj_path, "wb");
+#else
 		out = fopen (prj_path, "wb");
+#endif
 		sqlite3_free (prj_path);
 		if (out)
 		  {
@@ -3201,7 +3205,11 @@ output_prj_file (sqlite3 * sqlite, char *path, char *table, char *column,
 
 /* step IV: generating the .PRJ file */
     sql = sqlite3_mprintf ("%s.prj", path);
+#ifdef _WIN32
+    out = gaia_win_fopen (sql, "wb");
+#else
     out = fopen (sql, "wb");
+#endif
     sqlite3_free (sql);
     if (!out)
 	goto end;
@@ -5562,7 +5570,11 @@ dump_kml_ex (sqlite3 * sqlite, char *table, char *geom_col, char *kml_path,
 
     *xrows = -1;
 /* opening/creating the KML file */
+#ifdef _WIN32
+    out = gaia_win_fopen (kml_path, "wb");
+#else
     out = fopen (kml_path, "wb");
+#endif
     if (!out)
 	goto no_file;
 
@@ -5698,7 +5710,11 @@ dump_geojson_ex (sqlite3 * sqlite, char *table, char *geom_col,
 
     *xrows = -1;
 /* opening/creating the GeoJSON output file */
+#ifdef _WIN32
+    out = gaia_win_fopen (outfile_path, "wb");
+#else
     out = fopen (outfile_path, "wb");
+#endif
     if (!out)
 	goto no_file;
 
@@ -6099,7 +6115,11 @@ dump_geojson2 (sqlite3 * sqlite, char *table, char *geom_col,
 
     *xrows = -1;
 /* opening/creating the GeoJSON output file */
+#ifdef _WIN32
+    out = gaia_win_fopen (outfile_path, "wb");
+#else
     out = fopen (outfile_path, "wb");
+#endif
     if (!out)
 	goto no_file;
 
@@ -6332,7 +6352,11 @@ load_geojson (sqlite3 * sqlite, char *path, char *table, char *geom_col,
     *error_message = NULL;
 
 /* attempting to open the GeoJSON file for reading */
+#ifdef _WIN32
+    in = gaia_win_fopen (path, "rb");
+#else
     in = fopen (path, "rb");
+#endif
     if (in == NULL)
       {
 	  *error_message =

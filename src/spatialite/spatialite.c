@@ -24190,7 +24190,11 @@ fnct_PROJ_GuessSridFromSHP (sqlite3_context * context, int argc,
       }
 /* loocking for an eventual .PRJ file */
     path = sqlite3_mprintf ("%s.prj", basepath);
+#ifdef _WIN32
+    in = gaia_win_fopen (path, "rb");
+#else
     in = fopen (path, "rb");
+#endif
     if (in != NULL)
       {
 	  /* reading the WKT expression from the PRJ file */
@@ -35988,7 +35992,11 @@ fnct_BlobFromFile (sqlite3_context * context, int argc, sqlite3_value ** argv)
       }
     p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
     n_bytes = sqlite3_value_bytes (argv[0]);
+#ifdef _WIN32
+    in = gaia_win_fopen (path, "rb");
+#else
     in = fopen (path, "rb");
+#endif
     if (in == NULL)
       {
 	  sqlite3_result_null (context);
@@ -36058,7 +36066,11 @@ fnct_BlobToFile (sqlite3_context * context, int argc, sqlite3_value ** argv)
       }
     p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
     n_bytes = sqlite3_value_bytes (argv[0]);
+#ifdef _WIN32
+    out = gaia_win_fopen (path, "wb");
+#else
     out = fopen (path, "wb");
+#endif
     if (out == NULL)
 	ret = 0;
     else
@@ -36518,7 +36530,11 @@ fnct_ExportDXF (sqlite3_context * context, int argc, sqlite3_value ** argv)
       }
 
     path = sqlite3_mprintf ("%s/%s.dxf", dir_path, filename);
+#ifdef _WIN32
+    out = gaia_win_fopen (path, "wb");
+#else
     out = fopen (path, "wb");
+#endif
     if (out == NULL)
       {
 	  ret = 0;
@@ -53311,7 +53327,8 @@ spatialite_splash_screen (int verbose)
 		    ("\t- 'VirtualShape'\t[direct Shapefile access]\n");
 		spatialite_i ("\t- 'VirtualDbf'\t\t[direct DBF access]\n");
 		spatialite_i ("\t- 'VirtualText'\t\t[direct CSV/TXT access]\n");
-		spatialite_i ("\t- 'VirtualGeoJSON'\t\t[direct GeoJSON access]\n");
+		spatialite_i
+		    ("\t- 'VirtualGeoJSON'\t\t[direct GeoJSON access]\n");
 #ifndef OMIT_FREEXL
 		spatialite_i ("\t- 'VirtualXL'\t\t[direct XLS access]\n");
 #endif /* end FreeXL conditional */
@@ -53328,13 +53345,13 @@ spatialite_splash_screen (int verbose)
 		    ("\t- 'VirtualSpatialIndex'\t[R*Tree metahandler]\n");
 		spatialite_i
 		    ("\t- 'VirtualElementary'\t[ElemGeoms metahandler]\n");
-		    
+
 #ifndef OMIT_GEOS		/* only if GEOS is supported */
 /* initializing the VirtualRouting  extension */
 		spatialite_i
 		    ("\t- 'VirtualRouting'\t[Dijkstra shortest path - advanced]\n");
 #ifndef OMIT_KNN		/* only if KNN is enabled */
-/* initializing the VirtualKNN  extension */spatialite_i
+/* initializing the VirtualKNN  extension */ spatialite_i
 		    ("\t- 'VirtualKNN'\t[K-Nearest Neighbors metahandler]\n");
 #endif /* end KNN conditional */
 #endif /* end GEOS conditional */
@@ -53343,13 +53360,13 @@ spatialite_splash_screen (int verbose)
 		spatialite_i
 		    ("\t- 'VirtualGPKG'\t[OGC GeoPackage interoperability]\n");
 #endif
-		spatialite_i ("\t- 'SpatiaLite'\t\t[Spatial SQL - OGC]\n");
-	    }
-
 #ifdef ENABLE_LIBXML2		/* VirtualXPath is supported */
 		spatialite_i
 		    ("\t- 'VirtualXPath'\t[XML Path Language - XPath]\n");
 #endif /* end including LIBXML2 */
+		spatialite_i ("\t- 'SpatiaLite'\t\t[Spatial SQL - OGC]\n");
+	    }
+
 
 #ifndef OMIT_PROJ		/* PROJ.4 version */
 	  if (verbose)

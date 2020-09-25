@@ -3511,7 +3511,11 @@ gaiaParseDxfFileCommon (const void *p_cache, gaiaDxfParserPtr dxf,
 	return 0;
 
 /* attempting to open the input file */
+#ifdef _WIN32
+    fl = gaia_win_fopen (path, "rb");
+#else
     fl = fopen (path, "rb");
+#endif
     if (fl == NULL)
 	return 0;
 

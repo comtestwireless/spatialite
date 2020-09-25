@@ -2349,7 +2349,11 @@ vgeojson_create (sqlite3 * db, void *pAux, int argc, const char *const *argv,
     p_vt->MaxY = -DBL_MAX;
 
 /* attempting to open the GeoJSON file for reading */
+#ifdef _WIN32
+    in = gaia_win_fopen (path, "rb");
+#else
     in = fopen (path, "rb");
+#endif
     if (in == NULL)
       {
 	  error_message =

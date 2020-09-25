@@ -2274,6 +2274,10 @@ extern "C"
  */
     GAIAGEO_DECLARE void gaiaUpDownHeight (gaiaLinestringPtr line, double *up,
 					   double *down);
+	
+#ifdef _WIN32				      
+	GAIAGEO_DECLARE FILE * gaia_win_fopen(const char *path, const char *mode);
+#endif
 
 #ifdef __cplusplus
 }

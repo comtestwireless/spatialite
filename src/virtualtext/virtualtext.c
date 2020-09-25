@@ -1054,7 +1054,11 @@ gaiaTextReaderAlloc (const char *path, char field_separator,
 /* allocating the main TXT-Reader */
     int col;
     gaiaTextReaderPtr reader;
+#ifdef _WIN32
+    FILE *in = gaia_win_fopen (path, "rb");	/* opening the input file */
+#else
     FILE *in = fopen (path, "rb");	/* opening the input file */
+#endif
     if (in == NULL)
 	return NULL;
 

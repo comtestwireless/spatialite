@@ -500,7 +500,7 @@ spatialite_alloc_reentrant ()
 /* initializing GEOS and PROJ.4 handles */
 
 #ifndef OMIT_GEOS		/* initializing GEOS */
-    cache->GEOS_handle = GEOS_init_r (NULL, NULL);
+    cache->GEOS_handle = GEOS_init_r ();
     GEOSContext_setNoticeMessageHandler_r (cache->GEOS_handle,
 					   conn_geos_warning, cache);
     GEOSContext_setErrorMessageHandler_r (cache->GEOS_handle, conn_geos_error,
