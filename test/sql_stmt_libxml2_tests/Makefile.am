@@ -96,6 +96,22 @@ EXTRA_DIST = addfileid1.testcase \
 	isvalidxmlblob4.testcase \
 	isvalidxmlblob5.testcase \
 	isvalidxmlblob6.testcase \
+	mapconfigabstract1.testcase \
+	mapconfigabstract2.testcase \
+	mapconfigabstract3.testcase \
+	mapconfigabstract4.testcase \
+	mapconfigabstract5.testcase \
+	mapconfigname1.testcase \
+	mapconfigname2.testcase \
+	mapconfigname3.testcase \
+	mapconfigname4.testcase \
+	mapconfigname5.testcase \
+	mapconfigtitle1.testcase \
+	mapconfigtitle2.testcase \
+	mapconfigtitle3.testcase \
+	mapconfigtitle4.testcase \
+	mapconfigtitle5.testcase \
+	nummapconfig1.testcase \
 	recreatestyling1.testcase \
 	recreatestyling2.testcase \
 	recreatestyling3.testcase \
