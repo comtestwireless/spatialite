@@ -625,6 +625,17 @@ extern "C"
 						     const unsigned char
 						     *p_blob, int n_bytes);
 
+    SPATIALITE_PRIVATE int count_map_configurations (void *p_sqlite);
+
+    SPATIALITE_PRIVATE char *get_map_configuration_name (void *p_sqlite,
+							 int ind);
+
+    SPATIALITE_PRIVATE char *get_map_configuration_title (void *p_sqlite,
+							  int ind);
+
+    SPATIALITE_PRIVATE char *get_map_configuration_abstract (void *p_sqlite,
+							     int ind);
+
     SPATIALITE_PRIVATE int createIsoMetadataTables (void *p_sqlite,
 						    int relaxed);
 

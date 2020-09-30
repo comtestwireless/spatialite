@@ -61,11 +61,11 @@ do_test (sqlite3 * handle, const void *p_cache)
     int row_count;
 
     ret =
-	sqlite3_exec (handle, "SELECT InitSpatialMetadata(1)", NULL, NULL,
+	sqlite3_exec (handle, "SELECT InitSpatialMetadataFull(1)", NULL, NULL,
 		      &err_msg);
     if (ret != SQLITE_OK)
       {
-	  fprintf (stderr, "InitSpatialMetadata() error: %s\n", err_msg);
+	  fprintf (stderr, "InitSpatialMetadataFull() error: %s\n", err_msg);
 	  sqlite3_free (err_msg);
 	  sqlite3_close (handle);
 	  return -2;

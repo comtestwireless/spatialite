@@ -162,11 +162,11 @@ open_connection (struct db_conn *conn)
     spatialite_init_ex (db_handle, conn->cache, 0);
 
     ret =
-	sqlite3_exec (db_handle, "SELECT InitSpatialMetadata(1)", NULL, NULL,
+	sqlite3_exec (db_handle, "SELECT InitSpatialMetadataFull(1)", NULL, NULL,
 		      &err_msg);
     if (ret != SQLITE_OK)
       {
-	  fprintf (stderr, "InitSpatialMetadata() error: %s\n", err_msg);
+	  fprintf (stderr, "InitSpatialMetadataFull() error: %s\n", err_msg);
 	  sqlite3_free (err_msg);
 	  sqlite3_close (db_handle);
 	  return;

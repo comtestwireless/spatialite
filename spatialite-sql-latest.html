@@ -10,7 +10,7 @@
 			i {color:navy;}
 		</style>
 	</head><body bgcolor="#fffff0">
-		<h2>SpatiaLite 5.0.0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SQL functions reference list</h2>
+		<h2>SpatiaLite 5.0.1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SQL functions reference list</h2>
 		<a href="https://www.gaia-gis.it/fossil/libspatialite">back</a>
 		<ul>
 			<li><a href="#version">SQL Version Info [and build options testing] functions</a></li>
@@ -4116,7 +4116,32 @@ the return type is Integer, with a return value of 1 for TRUE (success) or 0 for
 					The updated Map Configuration will continue to be identified by its current unique <b>Config ID</b> but the <b>Config Name</b> will be automatically updated accordingly to XML.</li>
 				</ul><hr>
 the return type is Integer, with a return value of 1 for TRUE (success) or 0 for FALSE (failure): -1 will be
-				returned on invalid arguments.</td></tr>
+				returned on error.</td></tr>
+		<tr><td><b>RL2_NumMapConfigurations</b></td>
+				<td>RL2_NumMapConfigurations() : <i>Integer</i></td>
+				<td></td>
+				<td align="center" bgcolor="#99d099">libxml2</td>
+				<td>Will return the total number of registered <b>RL2 Map Configuration</b> objects.<hr>
+				The return type is Integer; 0 will be returned if no registered Map Configuration exists, -1 will be
+				returned on error.</td></tr>
+		<tr><td><b>RL2_MapConfigurationNameN</b></td>
+				<td>RL2_MapConfigurationNameN( index <i>Integer</i> ) : <i>Text</i></td>
+				<td></td>
+				<td align="center" bgcolor="#99d099">libxml2</td>
+				<td>Will return the <b>name</b> of the registered <b>RL2 Map Configuration</b> object corresponding to the <b>index</b> (1-based).<hr>
+				<b>NULL</b> will be returned on invalid argument or on error.</td></tr>
+		<tr><td><b>RL2_MapConfigurationTitleN</b></td>
+				<td>RL2_MapConfigurationTitleN( index <i>Integer</i> ) : <i>Text</i></td>
+				<td></td>
+				<td align="center" bgcolor="#99d099">libxml2</td>
+				<td>Will return the <b>title</b> of the registered <b>RL2 Map Configuration</b> object corresponding to the <b>index</b> (1-based).<hr>
+				<b>NULL</b> will be returned on invalid argument or on error.</td></tr>
+		<tr><td><b>RL2_MapConfigurationAbstractN</b></td>
+				<td>RL2_MapConfigurationAbstractN( index <i>Integer</i> ) : <i>Text</i></td>
+				<td></td>
+				<td align="center" bgcolor="#99d099">libxml2</td>
+				<td>Will return the <b>abstract</b> of the registered <b>RL2 Map Configuration</b> object corresponding to the <b>index</b> (1-based).<hr>
+				<b>NULL</b> will be returned on invalid argument or on error.</td></tr>
 			<tr><td colspan="5" align="center" bgcolor="#f0f0c0">
 				<h3><a name="p16isometa">SQL functions supporting ISO Metadata</a></h3></td></tr>
 			<tr><th bgcolor="#d0d0d0">Function</th>

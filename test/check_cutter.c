@@ -2526,11 +2526,11 @@ check_cutter_attached (int *retcode)
     spatialite_init_ex (handle, cache, 0);
 
     ret =
-	sqlite3_exec (handle, "SELECT InitSpatialMetadata(1)", NULL, NULL,
+	sqlite3_exec (handle, "SELECT InitSpatialMetadataFull(1)", NULL, NULL,
 		      &err_msg);
     if (ret != SQLITE_OK)
       {
-	  fprintf (stderr, "InitSpatialMetadata() error: %s\n", err_msg);
+	  fprintf (stderr, "InitSpatialMetadataFull() error: %s\n", err_msg);
 	  sqlite3_free (err_msg);
 	  sqlite3_close (handle);
 	  *retcode -= 2;
@@ -2630,11 +2630,11 @@ main (int argc, char *argv[])
     spatialite_init_ex (handle, cache, 0);
 
     ret =
-	sqlite3_exec (handle, "SELECT InitSpatialMetadata(1)", NULL, NULL,
+	sqlite3_exec (handle, "SELECT InitSpatialMetadataFull(1)", NULL, NULL,
 		      &err_msg);
     if (ret != SQLITE_OK)
       {
-	  fprintf (stderr, "InitSpatialMetadata() error: %s\n", err_msg);
+	  fprintf (stderr, "InitSpatialMetadataFull() error: %s\n", err_msg);
 	  sqlite3_free (err_msg);
 	  sqlite3_close (handle);
 	  return -2;

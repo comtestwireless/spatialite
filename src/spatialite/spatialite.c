@@ -24951,11 +24951,10 @@ length_common (const void *p_cache, sqlite3_context * context, int argc,
 					l = gaiaGeodesicTotalLength (a,
 								     b,
 								     rf,
-								     line->DimensionModel,
 								     line->
-								     Coords,
-								     line->
-								     Points);
+								     DimensionModel,
+								     line->Coords,
+								     line->Points);
 					if (l < 0.0)
 					  {
 					      length = -1.0;
@@ -24978,12 +24977,9 @@ length_common (const void *p_cache, sqlite3_context * context, int argc,
 					      l = gaiaGeodesicTotalLength (a,
 									   b,
 									   rf,
-									   ring->
-									   DimensionModel,
-									   ring->
-									   Coords,
-									   ring->
-									   Points);
+									   ring->DimensionModel,
+									   ring->Coords,
+									   ring->Points);
 					      if (l < 0.0)
 						{
 						    length = -1.0;
@@ -26143,11 +26139,11 @@ fnct_Circularity (sqlite3_context * context, int argc, sqlite3_value ** argv)
 		  {
 #ifdef ENABLE_RTTOPO		/* only if RTTOPO is enabled */
 		      perimeter = gaiaGeodesicTotalLength (a, b, rf,
-							   pg->Exterior->
-							   DimensionModel,
+							   pg->
+							   Exterior->DimensionModel,
 							   pg->Exterior->Coords,
-							   pg->Exterior->
-							   Points);
+							   pg->
+							   Exterior->Points);
 		      if (perimeter < 0.0)
 			  ret = 0;
 		      else
@@ -40742,8 +40738,7 @@ fnct_GeodesicLength (sqlite3_context * context, int argc, sqlite3_value ** argv)
 				  /* interior Rings */
 				  ring = polyg->Interiors + ib;
 				  l = gaiaGeodesicTotalLength (a, b, rf,
-							       ring->
-							       DimensionModel,
+							       ring->DimensionModel,
 							       ring->Coords,
 							       ring->Points);
 				  if (l < 0.0)
@@ -40837,8 +40832,7 @@ fnct_GreatCircleLength (sqlite3_context * context, int argc,
 			    ring = polyg->Exterior;
 			    length +=
 				gaiaGreatCircleTotalLength (a, b,
-							    ring->
-							    DimensionModel,
+							    ring->DimensionModel,
 							    ring->Coords,
 							    ring->Points);
 			    for (ib = 0; ib < polyg->NumInteriors; ib++)
@@ -40847,8 +40841,7 @@ fnct_GreatCircleLength (sqlite3_context * context, int argc,
 				  ring = polyg->Interiors + ib;
 				  length +=
 				      gaiaGreatCircleTotalLength (a, b,
-								  ring->
-								  DimensionModel,
+								  ring->DimensionModel,
 								  ring->Coords,
 								  ring->Points);
 			      }
@@ -42738,6 +42731,108 @@ fnct_ReloadMapConfiguration (sqlite3_context * context, int argc,
     n_bytes = sqlite3_value_bytes (argv[1]);
     ret = reload_map_configuration (sqlite, id, name, p_blob, n_bytes);
     sqlite3_result_int (context, ret);
+}
+
+static void
+fnct_NumMapConfigurations (sqlite3_context * context, int argc,
+			   sqlite3_value ** argv)
+{
+/* SQL function:
+/ RL2_NumMapConfigurations()
+/
+/ returns the total number of registered MapConfigurations
+/ >= 1 on success
+/ 0 if no MapConfiguration is registered, -1 on error
+*/
+    int ret;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    ret = count_map_configurations (sqlite);
+    sqlite3_result_int (context, ret);
+}
+
+static void
+fnct_MapConfigurationNameN (sqlite3_context * context, int argc,
+			       sqlite3_value ** argv)
+{
+/* SQL function:
+/ MapConfigurationNameN(Integer ind)
+/
+/ returns the Name of the Nth  Map Configuration (first Index is ZERO)
+/ NULL on failure or on invalid arguments
+*/
+    int ind = -1;
+    char *name = NULL;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) == SQLITE_INTEGER)
+	ind = sqlite3_value_int (argv[0]);
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    name = get_map_configuration_name (sqlite, ind);
+    if (name == NULL)
+	sqlite3_result_null (context);
+    else
+	sqlite3_result_text (context, name, strlen (name), free);
+}
+
+static void
+fnct_MapConfigurationTitleN (sqlite3_context * context, int argc,
+				sqlite3_value ** argv)
+{
+/* SQL function:
+/ MapConfigurationTitleN(Integer ind)
+/
+/ returns the Title of the Nth  Map Configuration (first Index is ZERO)
+/ NULL on failure or on invalid arguments
+*/
+    int ind = -1;
+    char *name = NULL;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) == SQLITE_INTEGER)
+	ind = sqlite3_value_int (argv[0]);
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    name = get_map_configuration_title (sqlite, ind);
+    if (name == NULL)
+	sqlite3_result_null (context);
+    else
+	sqlite3_result_text (context, name, strlen (name), free);
+}
+
+static void
+fnct_MapConfigurationAbstractN (sqlite3_context * context, int argc,
+				   sqlite3_value ** argv)
+{
+/* SQL function:
+/ MapConfigurationAbstractN(Integer ind)
+/
+/ returns the Name of the Nth  Map Configuration (first Index is ZERO)
+/ NULL on failure or on invalid arguments
+*/
+    int ind = -1;
+    char *name = NULL;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) == SQLITE_INTEGER)
+	ind = sqlite3_value_int (argv[0]);
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    name = get_map_configuration_abstract (sqlite, ind);
+    if (name == NULL)
+	sqlite3_result_null (context);
+    else
+	sqlite3_result_text (context, name, strlen (name), free);
 }
 
 static void
@@ -52560,6 +52655,18 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "RL2_ReloadMapConfiguration", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_ReloadMapConfiguration, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "RL2_NumMapConfigurations", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_NumMapConfigurations, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "RL2_MapConfigurationNameN", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_MapConfigurationNameN, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "RL2_MapConfigurationTitleN", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_MapConfigurationTitleN, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "RL2_MapConfigurationAbstractN", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_MapConfigurationAbstractN, 0, 0, 0);
 
     sqlite3_create_function_v2 (db, "CreateIsoMetadataTables", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,

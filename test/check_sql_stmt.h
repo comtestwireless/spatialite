@@ -274,11 +274,11 @@ do_one_case (struct db_conn *conn, const struct test_data *data,
     if (read_only || not_memory_db)
 	goto skip_init;
     ret =
-	sqlite3_exec (db_handle, "SELECT InitSpatialMetadata(1)", NULL, NULL,
+	sqlite3_exec (db_handle, "SELECT InitSpatialMetadataFull(1)", NULL, NULL,
 		      &err_msg);
     if (ret != SQLITE_OK)
       {
-	  fprintf (stderr, "InitSpatialMetadata() error: %s\n", err_msg);
+	  fprintf (stderr, "InitSpatialMetadataFull() error: %s\n", err_msg);
 	  sqlite3_free (err_msg);
 	  return -2;
       }
