@@ -689,6 +689,7 @@ get_map_configuration_name (void *p_sqlite, int ind)
     for (i = 1; i <= rows; i++)
       {
 	  const char *str = results[(i * columns) + 0];
+	  count++;
 	  if (count == ind)
 	    {
 		if (str != NULL)
@@ -698,7 +699,6 @@ get_map_configuration_name (void *p_sqlite, int ind)
 		      strcpy (name, str);
 		  }
 	    }
-	  count++;
       }
     sqlite3_free_table (results);
     return name;
@@ -729,6 +729,7 @@ get_map_configuration_title (void *p_sqlite, int ind)
     for (i = 1; i <= rows; i++)
       {
 	  const char *str = results[(i * columns) + 0];
+	  count++;
 	  if (count == ind)
 	    {
 		if (str != NULL)
@@ -738,7 +739,6 @@ get_map_configuration_title (void *p_sqlite, int ind)
 		      strcpy (title, str);
 		  }
 	    }
-	  count++;
       }
     sqlite3_free_table (results);
     return title;
@@ -769,6 +769,7 @@ get_map_configuration_abstract (void *p_sqlite, int ind)
     for (i = 1; i <= rows; i++)
       {
 	  const char *str = results[(i * columns) + 0];
+	  count++;
 	  if (count == ind)
 	    {
 		if (str != NULL)
@@ -778,7 +779,6 @@ get_map_configuration_abstract (void *p_sqlite, int ind)
 		      strcpy (abstract, str);
 		  }
 	    }
-	  count++;
       }
     sqlite3_free_table (results);
     return abstract;

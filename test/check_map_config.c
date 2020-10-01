@@ -336,7 +336,7 @@ check_map_config (sqlite3 * handle, void *cache)
 	  return -27;
       }
 
-    sql = sqlite3_mprintf ("SELECT RL2_MapConfigurationNameN(1)");
+    sql = sqlite3_mprintf ("SELECT RL2_MapConfigurationNameN(2)");
     txtval = execute_check_text (handle, sql);
     if (txtval == NULL)
       {
@@ -354,7 +354,7 @@ check_map_config (sqlite3 * handle, void *cache)
       }
     free (txtval);
 
-    sql = sqlite3_mprintf ("SELECT RL2_MapConfigurationTitleN(1)");
+    sql = sqlite3_mprintf ("SELECT RL2_MapConfigurationTitleN(2)");
     txtval = execute_check_text (handle, sql);
     if (txtval == NULL)
       {
@@ -372,7 +372,7 @@ check_map_config (sqlite3 * handle, void *cache)
       }
     free (txtval);
 
-    sql = sqlite3_mprintf ("SELECT RL2_MapConfigurationAbstractN(1)");
+    sql = sqlite3_mprintf ("SELECT RL2_MapConfigurationAbstractN(2)");
     txtval = execute_check_text (handle, sql);
     if (txtval == NULL)
       {
