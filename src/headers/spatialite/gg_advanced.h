@@ -82,9 +82,13 @@ extern "C"
 {
 #endif
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS
-#ifndef OMIT_PROJ		/* including PROJ */
+#if defined(_WIN32) && !defined(__MINGW32__)
+#include "config-msvc.h"
+#else
+#include "config.h"
 #endif
+
+#ifndef OMIT_PROJ		/* including PROJ */
 
 /**
  Resets the PROJ error messages to an empty state

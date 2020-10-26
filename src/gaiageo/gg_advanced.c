@@ -309,6 +309,7 @@ GAIAGEO_DECLARE double
 gaiaCurvosityIndex (const void *p_cache, gaiaLinestringPtr ln, int extra_points)
 {
 /* calculates the Curvosity Index of some Linestring */
+#ifndef OMIT_GEOS		/* including GEOS */
     double x;
     double y;
     double z;
@@ -413,7 +414,8 @@ gaiaCurvosityIndex (const void *p_cache, gaiaLinestringPtr ln, int extra_points)
 	  geo->FirstLinestring = NULL;	/* releasing ownership on Line */
 	  geo->LastLinestring = NULL;
 	  gaiaFreeGeomColl (geo);
-      }
+      }	      
+#endif /* end including GEOS */
     return -1.0;
 }
 

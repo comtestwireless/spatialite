@@ -2761,8 +2761,10 @@ do_read_zipfile_file (unzFile uf, struct zip_mem_shapefile *mem_shape, int wich)
 // impo
     int is_open = 0;
     int retval = 1;
-    uint32_t size_buf;
-    void *buf = NULL;
+    uint64_t size_buf;
+    uint64_t rd_cnt;
+    uint64_t unrd_cnt;
+    unsigned char *buf = NULL;
     char filename[256];
     gaiaMemFilePtr mem_file;
     unz_file_info64 file_info;
@@ -2818,13 +2820,26 @@ do_read_zipfile_file (unzFile uf, struct zip_mem_shapefile *mem_shape, int wich)
 	  goto skip;
       }
     is_open = 1;
-    err = unzReadCurrentFile (uf, buf, size_buf);
-    if (err < 0)
-      {
-	  spatialite_e ("Error %d with zipfile in unzReadCurrentFile\n", err);
-	  retval = 0;
-	  goto skip;
-      }
+    rd_cnt = 0;
+    while (rd_cnt < size_buf)
+    {
+		/* reading big chunks so to avoid large file issues */
+		uint32_t max = 1000000000;	/* max chunk size */
+		uint32_t len;
+		unrd_cnt = size_buf - rd_cnt;
+		if (unrd_cnt < max)
+			len = unrd_cnt;
+		else
+			len = max;
+		err = unzReadCurrentFile (uf, buf+rd_cnt, len);
+		if (err < 0)
+		  {
+		  spatialite_e ("Error %d with zipfile in unzReadCurrentFile\n", err);
+		  retval = 0;
+		  goto skip;
+		  }
+		  rd_cnt += len;
+	}
     mem_file->buf = buf;
     mem_file->size = size_buf;
 

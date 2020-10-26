@@ -413,10 +413,12 @@ init_splite_internal_cache (struct splite_internal_cache *cache)
     else if (atoi (tinyPoint) != 0)
 	cache->tinyPointEnabled = 1;
     cache->lastPostgreSqlError = NULL;
+#ifndef OMIT_GEOS		/* including GEOS */
     cache->buffer_end_cap_style = GEOSBUF_CAP_ROUND;
     cache->buffer_join_style = GEOSBUF_JOIN_ROUND;
     cache->buffer_mitre_limit = 5.0;
     cache->buffer_quadrant_segments = 30;
+#endif /* end including GEOS */
 /* initializing an empty linked list of Topologies */
     cache->firstTopology = NULL;
     cache->lastTopology = NULL;

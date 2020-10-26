@@ -368,8 +368,8 @@ extern "C"
 /* Memory File Type */
 	char *path;
 	void *buf;
-	uint32_t size;
-	uint32_t offset;
+	uint64_t size;
+	uint64_t offset;
     } gaiaMemFile;
 /** 
  Typedef for Memory File structure

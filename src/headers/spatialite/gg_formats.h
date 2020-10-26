@@ -1867,7 +1867,7 @@ extern "C"
 
  \sa gaiaFseek
  */
-    GAIAGEO_DECLARE int gaiaMemFseek (gaiaMemFilePtr mem, long offset);
+    GAIAGEO_DECLARE int gaiaMemFseek (gaiaMemFilePtr mem, off_t offset);
 
 /**
  Attempting to get a WKT from the .PRJ member of a given zipped Shapefile

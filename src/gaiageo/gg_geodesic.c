@@ -539,7 +539,7 @@ gaiaGeodesicArcLength (sqlite3 * sqlite, const void *data,
 	|| geom2->FirstLinestring != NULL || geom2->FirstPolygon != NULL)
 	return 0;
     if (geom1->FirstPoint == NULL || geom1->FirstPoint != geom1->LastPoint ||
-	geom2->FirstPoint == NULL || geom->FirstPoint != geom2->LastPoint)
+	geom2->FirstPoint == NULL || geom2->FirstPoint != geom2->LastPoint)
 	return 0;
 #endif
 

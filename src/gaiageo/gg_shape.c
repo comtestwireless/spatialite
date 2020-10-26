@@ -180,7 +180,7 @@ gaiaSetStrValue (gaiaDbfFieldPtr field, char *str)
 }
 
 GAIAGEO_DECLARE int
-gaiaMemFseek (gaiaMemFilePtr mem, long offset)
+gaiaMemFseek (gaiaMemFilePtr mem, off_t offset)
 {
 /* repositioning a Memory File */
     if (mem == NULL)

@@ -60,6 +60,12 @@ extern "C"
 {
 #endif
 
+#if defined(_WIN32) && !defined(__MINGW32__)
+#include "config-msvc.h"
+#else
+#include "config.h"
+#endif
+
 /* constant values for gaiaGeodesicArcLength return_type */
 
 /** Arc Length measured in Degrees */
@@ -1652,7 +1658,8 @@ extern "C"
  */
     GAIAGEO_DECLARE gaiaGeomCollPtr
 	gaiaAddMeasure (gaiaGeomCollPtr geom, double m_start, double m_end);
-
+	
+#ifndef OMIT_GEOS		/* including GEOS */
 /**
  Will interpolate the M-value for a LinestringM at the point closest to the 
  given Point.
@@ -1668,7 +1675,8 @@ extern "C"
  */
     GAIAGEO_DECLARE int
 	gaiaInterpolatePoint (const void *p_cache, gaiaGeomCollPtr line,
-			      gaiaGeomCollPtr point, double *m_value);
+			      gaiaGeomCollPtr point, double *m_value);		      
+#endif /* end including GEOS */
 
 /**
  Return a GeometryCollection containing elements matching the specified range of measures

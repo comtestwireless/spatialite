@@ -3657,6 +3657,8 @@ do_update_vector_coverage_extents (sqlite3 * sqlite, const void *cache,
     gaiaGeomCollPtr in;
     gaiaGeomCollPtr out;
     gaiaPointPtr pt;
+    
+#ifndef OMIT_PROJ		/* including PROJ.4 */
 
     getProjParams (sqlite, natural_srid, &proj_from);
     if (proj_from == NULL)
@@ -3852,6 +3854,7 @@ do_update_vector_coverage_extents (sqlite3 * sqlite, const void *cache,
 	free (proj_from);
     if (proj_to)
 	free (proj_to);
+#endif /* end including PROJ.4 */
     return 0;
 }
 
@@ -4688,6 +4691,8 @@ do_update_raster_coverage_extents (sqlite3 * sqlite, const void *cache,
     gaiaGeomCollPtr in;
     gaiaGeomCollPtr out;
     gaiaPointPtr pt;
+    
+#ifndef OMIT_PROJ		/* including PROJ.4 */
 
     getProjParams (sqlite, natural_srid, &proj_from);
     if (proj_from == NULL)
@@ -4883,6 +4888,7 @@ do_update_raster_coverage_extents (sqlite3 * sqlite, const void *cache,
 	free (proj_from);
     if (proj_to)
 	free (proj_to);
+#endif /* end including PROJ.4 */
     return 0;
 }
 

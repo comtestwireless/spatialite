@@ -47064,6 +47064,7 @@ fnct_bufferoptions_reset (sqlite3_context * context, int argc,
 /
 / returns: 1 on success, 0 on failure
 */
+#ifndef OMIT_GEOS		/* including GEOS */
     struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (cache == NULL)
@@ -47076,6 +47077,9 @@ fnct_bufferoptions_reset (sqlite3_context * context, int argc,
     cache->buffer_mitre_limit = 5.0;
     cache->buffer_quadrant_segments = 30;
     sqlite3_result_int (context, 1);
+#else /* GEOS is disabled */
+	sqlite3_result_int (context, 0);
+#endif /* end including GEOS */
 }
 
 static void
@@ -47087,6 +47091,7 @@ fnct_bufferoptions_set_endcap (sqlite3_context * context, int argc,
 /
 / returns: 1 on success, 0 on failure
 */
+#ifndef OMIT_GEOS		/* including GEOS */
     const char *value;
     int val = -1;
     struct splite_internal_cache *cache = sqlite3_user_data (context);
@@ -47116,6 +47121,9 @@ fnct_bufferoptions_set_endcap (sqlite3_context * context, int argc,
       }
     else
 	sqlite3_result_int (context, 0);
+#else /* GEOS is disabled */
+	sqlite3_result_int (context, 0);
+#endif /* end including GEOS */
 }
 
 static void
@@ -47127,6 +47135,7 @@ fnct_bufferoptions_set_join (sqlite3_context * context, int argc,
 /
 / returns: 1 on success, 0 on failure
 */
+#ifndef OMIT_GEOS		/* including GEOS */
     const char *value;
     int val = -1;
     struct splite_internal_cache *cache = sqlite3_user_data (context);
@@ -47158,6 +47167,9 @@ fnct_bufferoptions_set_join (sqlite3_context * context, int argc,
       }
     else
 	sqlite3_result_int (context, 0);
+#else /* GEOS is disabled */
+	sqlite3_result_int (context, 0);
+#endif /* end including GEOS */
 }
 
 static void
@@ -47169,6 +47181,7 @@ fnct_bufferoptions_set_mitrelimit (sqlite3_context * context, int argc,
 /
 / returns: 1 on success, 0 on failure
 */
+#ifndef OMIT_GEOS		/* including GEOS */
     double value;
     struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
@@ -47191,6 +47204,9 @@ fnct_bufferoptions_set_mitrelimit (sqlite3_context * context, int argc,
       }
     cache->buffer_mitre_limit = value;
     sqlite3_result_int (context, 1);
+#else /* GEOS is disabled */
+	sqlite3_result_int (context, 0);
+#endif /* end including GEOS */
 }
 
 static void
@@ -47202,6 +47218,7 @@ fnct_bufferoptions_set_quadsegs (sqlite3_context * context, int argc,
 /
 / returns: 1 on success, 0 on failure
 */
+#ifndef OMIT_GEOS		/* including GEOS */
     int value;
     struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
@@ -47221,6 +47238,9 @@ fnct_bufferoptions_set_quadsegs (sqlite3_context * context, int argc,
 	value = 1;
     cache->buffer_quadrant_segments = value;
     sqlite3_result_int (context, 1);
+#else /* GEOS is disabled */
+	sqlite3_result_int (context, 0);
+#endif /* end including GEOS */
 }
 
 static void
@@ -47232,6 +47252,7 @@ fnct_bufferoptions_get_endcap (sqlite3_context * context, int argc,
 /
 / returns: a Text string on success, NULL on failure
 */
+#ifndef OMIT_GEOS		/* including GEOS */
     struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (cache == NULL)
@@ -47256,6 +47277,9 @@ fnct_bufferoptions_get_endcap (sqlite3_context * context, int argc,
       default:
 	  sqlite3_result_null (context);
       };
+#else /* GEOS is disabled */
+	  sqlite3_result_null (context);
+#endif /* end including GEOS */
 }
 
 static void
@@ -47267,6 +47291,7 @@ fnct_bufferoptions_get_join (sqlite3_context * context, int argc,
 /
 / returns: a Text string on success, NULL on failure
 */
+#ifndef OMIT_GEOS		/* including GEOS */
     struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (cache == NULL)
@@ -47291,6 +47316,9 @@ fnct_bufferoptions_get_join (sqlite3_context * context, int argc,
       default:
 	  sqlite3_result_null (context);
       };
+#else /* GEOS is disabled */
+	  sqlite3_result_null (context);
+#endif /* end including GEOS */
 }
 
 static void
@@ -47302,6 +47330,7 @@ fnct_bufferoptions_get_mitrelimit (sqlite3_context * context, int argc,
 /
 / returns: a Double on success, NULL on failure
 */
+#ifndef OMIT_GEOS		/* including GEOS */
     struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (cache == NULL)
@@ -47310,6 +47339,9 @@ fnct_bufferoptions_get_mitrelimit (sqlite3_context * context, int argc,
 	  return;
       }
     sqlite3_result_double (context, cache->buffer_mitre_limit);
+#else /* GEOS is disabled */
+	  sqlite3_result_null (context);
+#endif /* end including GEOS */
 }
 
 static void
@@ -47321,6 +47353,7 @@ fnct_bufferoptions_get_quadsegs (sqlite3_context * context, int argc,
 /
 / returns: an Integer on success, NULL on failure
 */
+#ifndef OMIT_GEOS		/* including GEOS */
     struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (cache == NULL)
@@ -47329,6 +47362,9 @@ fnct_bufferoptions_get_quadsegs (sqlite3_context * context, int argc,
 	  return;
       }
     sqlite3_result_int (context, cache->buffer_quadrant_segments);
+#else /* GEOS is disabled */
+	  sqlite3_result_null (context);
+#endif /* end including GEOS */
 }
 
 static void
