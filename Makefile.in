@@ -101,7 +101,7 @@ DIST_COMMON = $(srcdir)/Makefile.am $(top_srcdir)/configure \
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
-CONFIG_HEADER = config.h
+CONFIG_HEADER = $(top_builddir)/./src/headers/spatialite/gaiaconfig.h
 CONFIG_CLEAN_FILES = Doxyfile spatialite.pc
 CONFIG_CLEAN_VPATH_FILES =
 AM_V_P = $(am__v_P_@AM_V@)
@@ -168,8 +168,7 @@ am__recursive_targets = \
   $(am__extra_recursive_targets)
 AM_RECURSIVE_TARGETS = $(am__recursive_targets:-recursive=) TAGS CTAGS \
 	cscope distdir distdir-am dist dist-all distcheck
-am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) \
-	$(LISP)config.h.in
+am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 # Read a list of newline-separated strings from the standard input,
 # and print each of them once, without duplicates.  Input order is
 # *not* preserved.
@@ -191,7 +190,8 @@ CTAGS = ctags
 CSCOPE = cscope
 DIST_SUBDIRS = src test examples
 am__DIST_COMMON = $(srcdir)/Doxyfile.in $(srcdir)/Makefile.in \
-	$(srcdir)/config.h.in $(srcdir)/spatialite.pc.in AUTHORS \
+	$(srcdir)/spatialite.pc.in \
+	$(top_srcdir)/./src/headers/spatialite/gaiaconfig.h.in AUTHORS \
 	COPYING INSTALL README compile config.guess config.sub depcomp \
 	install-sh ltmain.sh missing
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -373,16 +373,14 @@ EXTRA_DIST = makefile.vc nmake.opt \
 	makefile_mod64.vc nmake_mod64.opt \
 	Android_3.0.2.mk Android_4.3.0.mk \
 	spatialite-4.3.0.mk Android_4.4.0.mk spatialite-4.4.0.mk \
-	mainpage.doxy README.coverage spatialite-sql-latest.html \
-	config-msvc.h
+	mainpage.doxy README.coverage spatialite-sql-latest.html 
 
 @ENABLE_EXAMPLES_TRUE@EXAMPLES = examples
 SUBDIRS = src test $(EXAMPLES)
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = spatialite.pc
 MOSTLYCLEANFILES = libspatialite_cov.info
-all: config.h
-	$(MAKE) $(AM_MAKEFLAGS) all-recursive
+all: all-recursive
 
 .SUFFIXES:
 am--refresh: Makefile
@@ -419,20 +417,20 @@ $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	$(am__cd) $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
 $(am__aclocal_m4_deps):
 
-config.h: stamp-h1
-	@test -f $@ || rm -f stamp-h1
-	@test -f $@ || $(MAKE) $(AM_MAKEFLAGS) stamp-h1
+./src/headers/spatialite/gaiaconfig.h: ./src/headers/spatialite/stamp-h1
+	@test -f $@ || rm -f ./src/headers/spatialite/stamp-h1
+	@test -f $@ || $(MAKE) $(AM_MAKEFLAGS) ./src/headers/spatialite/stamp-h1
 
-stamp-h1: $(srcdir)/config.h.in $(top_builddir)/config.status
-	@rm -f stamp-h1
-	cd $(top_builddir) && $(SHELL) ./config.status config.h
-$(srcdir)/config.h.in: @MAINTAINER_MODE_TRUE@ $(am__configure_deps) 
+./src/headers/spatialite/stamp-h1: $(top_srcdir)/./src/headers/spatialite/gaiaconfig.h.in $(top_builddir)/config.status
+	@rm -f ./src/headers/spatialite/stamp-h1
+	cd $(top_builddir) && $(SHELL) ./config.status ./src/headers/spatialite/gaiaconfig.h
+$(top_srcdir)/./src/headers/spatialite/gaiaconfig.h.in: @MAINTAINER_MODE_TRUE@ $(am__configure_deps) 
 	($(am__cd) $(top_srcdir) && $(AUTOHEADER))
-	rm -f stamp-h1
+	rm -f ./src/headers/spatialite/stamp-h1
 	touch $@
 
 distclean-hdr:
-	-rm -f config.h stamp-h1
+	-rm -f ./src/headers/spatialite/gaiaconfig.h ./src/headers/spatialite/stamp-h1
 Doxyfile: $(top_builddir)/config.status $(srcdir)/Doxyfile.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 spatialite.pc: $(top_builddir)/config.status $(srcdir)/spatialite.pc.in
@@ -766,7 +764,7 @@ distcleancheck: distclean
 	       exit 1; } >&2
 check-am: all-am
 check: check-recursive
-all-am: Makefile $(DATA) config.h
+all-am: Makefile $(DATA)
 installdirs: installdirs-recursive
 installdirs-am:
 	for dir in "$(DESTDIR)$(pkgconfigdir)"; do \
@@ -873,7 +871,7 @@ ps-am:
 
 uninstall-am: uninstall-pkgconfigDATA
 
-.MAKE: $(am__recursive_targets) all install-am install-strip
+.MAKE: $(am__recursive_targets) install-am install-strip
 
 .PHONY: $(am__recursive_targets) CTAGS GTAGS TAGS all all-am \
 	am--refresh check check-am clean clean-cscope clean-generic \

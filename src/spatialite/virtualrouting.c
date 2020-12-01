@@ -53,9 +53,9 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #include <ctype.h>
 
 #if defined(_WIN32) && !defined(__MINGW32__)
-#include "config-msvc.h"
+#include <spatialite/gaiaconfig-msvc.h>
 #else
-#include "config.h"
+#include <spatialite/gaiaconfig.h>
 #endif
 
 #ifndef OMIT_GEOS		/* GEOS is supported */
@@ -63,7 +63,7 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #include <spatialite/sqlite.h>
 
 #include <spatialite.h>
-#include <spatialite/spatialite.h>
+#include <spatialite/spatialite_ext.h>
 #include <spatialite/gaiaaux.h>
 #include <spatialite/gaiageo.h>
 

@@ -73,9 +73,9 @@ Regione Toscana - Settore Sistema Informativo Territoriale ed Ambientale
 #endif
 
 #if defined(_WIN32) && !defined(__MINGW32__)
-#include "config-msvc.h"
+#include <spatialite/gaiaconfig-msvc.h>
 #else
-#include "config.h"
+#include <spatialite/gaiaconfig.h>
 #endif
 
 #if defined(_WIN32) || defined(WIN32)
@@ -93,7 +93,7 @@ Regione Toscana - Settore Sistema Informativo Territoriale ed Ambientale
 #include <spatialite/gaiageo.h>
 #include <spatialite/gaiaexif.h>
 #include <spatialite/geopackage.h>
-#include <spatialite/spatialite.h>
+#include <spatialite/spatialite_ext.h>
 #include <spatialite/gg_advanced.h>
 #include <spatialite/gg_dxf.h>
 #include <spatialite/gaiamatrix.h>

@@ -1856,8 +1856,8 @@ do_header (FILE * out, int macro)
     fprintf (out,
 	     "the terms of any one of the MPL, the GPL or the LGPL.\n\n*/\n\n");
     fprintf (out, "#if defined(_WIN32) && !defined(__MINGW32__)\n");
-    fprintf (out, "#include \"config-msvc.h\"\n#else\n");
-    fprintf (out, "#include \"config.h\"\n#endif\n\n");
+    fprintf (out, "#include <spatialite/gaiaconfig-msvc.h>\n#else\n");
+    fprintf (out, "#include <spatialite/gaiaconfig.h>\n#endif\n\n");
     fprintf (out, "#include <spatialite_private.h>\n\n");
 
     if (macro)

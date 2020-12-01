@@ -60,14 +60,14 @@ Regione Toscana - Settore Sistema Informativo Territoriale ed Ambientale
 #include <locale.h>
 
 #if defined(_WIN32) && !defined(__MINGW32__)
-#include "config-msvc.h"
+#include <spatialite/gaiaconfig-msvc.h>
 #else
-#include "config.h"
+#include <spatialite/gaiaconfig.h>
 #endif
 
 #include <spatialite/sqlite.h>
 
-#include <spatialite/spatialite.h>
+#include <spatialite/spatialite_ext.h>
 #include <spatialite.h>
 #include <spatialite_private.h>
 

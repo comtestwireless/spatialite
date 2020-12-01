@@ -49,7 +49,7 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #include <string.h>
 #include <math.h>
 
-#include "config.h"
+#include <spatialite/gaiaconfig.h>
 
 #include "sqlite3.h"
 #include "spatialite.h"

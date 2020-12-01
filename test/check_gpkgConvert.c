@@ -48,7 +48,7 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #include <string.h>
 #include <errno.h>
 
-#include "config.h"
+#include <spatialite/gaiaconfig.h>
 
 #ifdef ENABLE_GEOPACKAGE	/* only if GEOPACKAGE is enabled */
 

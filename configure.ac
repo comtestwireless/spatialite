@@ -8,7 +8,7 @@ AC_CONFIG_MACRO_DIR([m4])
 
 AM_INIT_AUTOMAKE([foreign])
 AM_MAINTAINER_MODE
-AM_CONFIG_HEADER(config.h)
+AM_CONFIG_HEADER(./src/headers/spatialite/gaiaconfig.h)
 
 # enabling huge-file support (64 bit file pointers)
 AH_TEMPLATE([_LARGE_FILE],
@@ -154,6 +154,7 @@ AC_CONFIG_FILES([Makefile \
 		test/sql_stmt_proj492_tests/Makefile \
 		test/sql_stmt_proj493_tests/Makefile \
 		test/sql_stmt_proj600_tests/Makefile \
+		test/sql_stmt_proj720_tests/Makefile \
 		test/sql_stmt_proj600security_tests/Makefile \
 		test/sql_stmt_mathsql_tests/Makefile \
 		test/sql_stmt_rtgeom_tests/Makefile \

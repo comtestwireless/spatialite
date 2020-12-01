@@ -99,7 +99,7 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 DIST_COMMON = $(srcdir)/Makefile.am $(am__nobase_include_HEADERS_DIST) \
 	$(am__noinst_HEADERS_DIST) $(am__DIST_COMMON)
 mkinstalldirs = $(install_sh) -d
-CONFIG_HEADER = $(top_builddir)/config.h
+CONFIG_HEADER = $(top_builddir)/./src/headers/spatialite/gaiaconfig.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 AM_V_P = $(am__v_P_@AM_V@)
@@ -121,18 +121,19 @@ am__can_run_installinfo = \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
-am__nobase_include_HEADERS_DIST = spatialite.h spatialite/gaiaexif.h \
+am__nobase_include_HEADERS_DIST = spatialite.h spatialite/gaiaconfig.h \
+	spatialite/gaiaconfig-msvc.h spatialite/gaiaexif.h \
 	spatialite/gaiaaux.h spatialite/gaiamatrix.h \
 	spatialite/gaiageo.h spatialite/gg_const.h \
 	spatialite/gg_structs.h spatialite/gg_core.h \
 	spatialite/gg_mbr.h spatialite/gg_formats.h \
 	spatialite/gg_dynamic.h spatialite/gg_advanced.h \
 	spatialite/gg_xml.h spatialite/gg_wfs.h spatialite/gg_dxf.h \
-	spatialite/spatialite.h spatialite/sqlite.h spatialite/debug.h \
-	spatialite/geopackage.h spatialite/control_points.h \
-	spatialite/gaia_topology.h spatialite/gaia_network.h \
-	spatialite/gg_sequence.h spatialite/stored_procedures.h \
-	spatialite/geojson.h
+	spatialite/spatialite_ext.h spatialite/sqlite.h \
+	spatialite/debug.h spatialite/geopackage.h \
+	spatialite/control_points.h spatialite/gaia_topology.h \
+	spatialite/gaia_network.h spatialite/gg_sequence.h \
+	spatialite/stored_procedures.h spatialite/geojson.h
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -316,6 +317,8 @@ top_srcdir = @top_srcdir@
 @MODULE_ONLY_FALSE@noinst_HEADERS = spatialite_private.h
 @MODULE_ONLY_TRUE@noinst_HEADERS = 
 @MODULE_ONLY_FALSE@nobase_include_HEADERS = spatialite.h \
+@MODULE_ONLY_FALSE@	spatialite/gaiaconfig.h \
+@MODULE_ONLY_FALSE@	spatialite/gaiaconfig-msvc.h \
 @MODULE_ONLY_FALSE@	spatialite/gaiaexif.h \
 @MODULE_ONLY_FALSE@	spatialite/gaiaaux.h \
 @MODULE_ONLY_FALSE@	spatialite/gaiamatrix.h \
@@ -330,7 +333,7 @@ top_srcdir = @top_srcdir@
 @MODULE_ONLY_FALSE@	spatialite/gg_xml.h \
 @MODULE_ONLY_FALSE@	spatialite/gg_wfs.h \
 @MODULE_ONLY_FALSE@	spatialite/gg_dxf.h \
-@MODULE_ONLY_FALSE@	spatialite/spatialite.h \
+@MODULE_ONLY_FALSE@	spatialite/spatialite_ext.h \
 @MODULE_ONLY_FALSE@	spatialite/sqlite.h \
 @MODULE_ONLY_FALSE@	spatialite/debug.h \
 @MODULE_ONLY_FALSE@	spatialite/geopackage.h \

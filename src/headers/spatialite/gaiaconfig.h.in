@@ -1,4 +1,4 @@
-/* config.h.in.  Generated from configure.ac by autoheader.  */
+/* ./src/headers/spatialite/gaiaconfig.h.in.  Generated from configure.ac by autoheader.  */
 
 /* Should be defined in order to enable GCP support. */
 #undef ENABLE_GCP

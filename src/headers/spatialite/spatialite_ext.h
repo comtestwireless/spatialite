@@ -1,5 +1,5 @@
 /* 
- spatialite.h -- Gaia support for SQLite extensions
+ spatialite_ext.h -- Gaia support for SQLite extensions
   
  version 5.0, 2020 August 1
 

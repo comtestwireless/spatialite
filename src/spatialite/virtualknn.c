@@ -118,9 +118,9 @@ nearest features will be found.
 #include <float.h>
 
 #if defined(_WIN32) && !defined(__MINGW32__)
-#include "config-msvc.h"
+#include <spatialite/gaiaconfig-msvc.h>
 #else
-#include "config.h"
+#include <spatialite/gaiaconfig.h>
 #endif
 
 #ifndef OMIT_GEOS		/* GEOS is supported */
@@ -128,7 +128,7 @@ nearest features will be found.
 
 #include <spatialite/sqlite.h>
 
-#include <spatialite/spatialite.h>
+#include <spatialite/spatialite_ext.h>
 #include <spatialite/gaiaaux.h>
 #include <spatialite/gaiageo.h>
 

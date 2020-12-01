@@ -83,9 +83,9 @@ extern "C"
 #endif
 
 #if defined(_WIN32) && !defined(__MINGW32__)
-#include "config-msvc.h"
+#include <spatialite/gaiaconfig-msvc.h>
 #else
-#include "config.h"
+#include <spatialite/gaiaconfig.h>
 #endif
 
 #ifndef OMIT_PROJ		/* including PROJ */

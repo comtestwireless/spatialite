@@ -65,7 +65,7 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #include <fnmatch.h>
 #endif
 
-#include "config.h"
+#include <spatialite/gaiaconfig.h>
 
 #include <sqlite3.h>
 #include <spatialite.h>

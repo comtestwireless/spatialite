@@ -52,7 +52,7 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #include <fnmatch.h>
 #endif
 
-#include "config.h"
+#include <spatialite/gaiaconfig.h>
 
 #include "sqlite3.h"
 #include "spatialite.h"
@@ -274,8 +274,8 @@ do_one_case (struct db_conn *conn, const struct test_data *data,
     if (read_only || not_memory_db)
 	goto skip_init;
     ret =
-	sqlite3_exec (db_handle, "SELECT InitSpatialMetadataFull(1)", NULL, NULL,
-		      &err_msg);
+	sqlite3_exec (db_handle, "SELECT InitSpatialMetadataFull(1)", NULL,
+		      NULL, &err_msg);
     if (ret != SQLITE_OK)
       {
 	  fprintf (stderr, "InitSpatialMetadataFull() error: %s\n", err_msg);
@@ -604,7 +604,7 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
 		  {
 		      return result;
 		  }
-#ifdef ENABLE_MINIZIP	/* only if MINIZIP is enabled */
+#ifdef ENABLE_MINIZIP		/* only if MINIZIP is enabled */
 		result =
 		    run_subdir_test ("sql_stmt_minizip", conn,
 				     load_extension, 0);
@@ -614,7 +614,7 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
 		  }
 #endif
 
-#ifdef PROJ_NEW			/* only id PROJ.6 is supported */
+#ifdef PROJ_NEW			/* only if PROJ.6 or later is supported */
 		result =
 		    run_subdir_test ("sql_stmt_proj600security_tests", conn,
 				     load_extension, 0);
@@ -622,7 +622,7 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
 		  {
 		      return result;
 		  }
-#ifdef ENABLE_MINIZIP	/* only if MINIZIP is enabled */
+#ifdef ENABLE_MINIZIP		/* only if MINIZIP is enabled */
 		result =
 		    run_subdir_test ("sql_stmt_zip_proj6", conn,
 				     load_extension, 0);
@@ -630,8 +630,8 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
 		  {
 		      return result;
 		  }
-#endif	/* end MINIZIP */
-#endif	/* end PROJ.6 */
+#endif /* end MINIZIP */
+#endif /* end PROJ.6 */
 	    }
       }
 
@@ -697,8 +697,21 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
     result = run_subdir_test ("sql_stmt_proj_tests", conn, load_extension, 0);
 #ifdef PROJ_NEW			/* supporting new PROJ.6 */
     if (!legacy)
-	result =
-	    run_subdir_test ("sql_stmt_proj600_tests", conn, load_extension, 0);
+      {
+	  int is_720_or_later = 0;
+	  if (PROJ_VERSION_MAJOR > 7)
+	      is_720_or_later = 1;
+	  else if (PROJ_VERSION_MAJOR == 7 && PROJ_VERSION_MINOR >= 2)
+	      is_720_or_later = 1;
+	  if (is_720_or_later)
+	      result =
+		  run_subdir_test ("sql_stmt_proj720_tests", conn,
+				   load_extension, 0);
+	  else
+	      result =
+		  run_subdir_test ("sql_stmt_proj600_tests", conn,
+				   load_extension, 0);
+      }
     else
 	result = 0;
 #else /* supporting old PROJ.4 */
@@ -909,7 +922,8 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
 #ifdef ENABLE_LIBXML2		/* only if LIBXML2 is supported */
 #ifdef ENABLE_RTTOPO		/* only if RTTOPO is supported */
     result =
-	run_subdir_test ("sql_stmt_libxml2_rttopo_tests", conn, load_extension, 0);
+	run_subdir_test ("sql_stmt_libxml2_rttopo_tests", conn, load_extension,
+			 0);
     if (result != 0)
       {
 	  return result;

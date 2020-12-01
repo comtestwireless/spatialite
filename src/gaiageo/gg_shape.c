@@ -52,9 +52,9 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #include <errno.h>
 
 #if defined(_WIN32) && !defined(__MINGW32__)
-#include "config-msvc.h"
+#include <spatialite/gaiaconfig-msvc.h>
 #else
-#include "config.h"
+#include <spatialite/gaiaconfig.h>
 #endif
 
 #ifdef _WIN32
@@ -189,7 +189,7 @@ gaiaMemFseek (gaiaMemFilePtr mem, off_t offset)
 	return -1;
     if (offset < 0)
 	return -1;
-    if (offset >= mem->size)
+    if (offset >= (off_t)mem->size)
 	return -1;
     mem->offset = offset;
     return 0;
