@@ -6,7 +6,10 @@ EXTRA_DIST = makefile.vc nmake.opt \
 	makefile64.vc nmake64.opt \
 	makefile_mod.vc nmake_mod.opt \
 	makefile_mod64.vc nmake_mod64.opt \
-	config-msvc.h Android_3.0.2.mk Android_4.3.0.mk \
+	fakeconfig.h fakeconfig.h.in \
+	config.h config.h.in \
+	config-msvc.h config-msvc.h.in \
+	Android_3.0.2.mk Android_4.3.0.mk \
 	spatialite-4.3.0.mk Android_4.4.0.mk spatialite-4.4.0.mk \
 	mainpage.doxy README.coverage spatialite-sql-latest.html 
 

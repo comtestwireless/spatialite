@@ -1,5 +1,5 @@
-/* ./src/headers/spatialite/gaiaconfig-msvc.h.  Generated from gaiaconfig-msvc.h.in by configure.  */
-/* ./src/headers/spatialite/gaiaconfig-msvc.h.in - manually maintained */
+/* ./src/headers/spatialite/gaiaconfig.h.  Generated from gaiaconfig.h.in by configure.  */
+/* ./src/headers/spatialite/gaiaconfig.h.in - manually maintained */
 
 /* Should be defined in order to enable GCP support. */
 #define ENABLE_GCP 1
@@ -9,6 +9,9 @@
 
 /* Should be defined in order to enable LIBXML2 support. */
 #define ENABLE_LIBXML2 1
+
+/* Should be defined in order to enable MiniZIP support. */
+#define ENABLE_MINIZIP 1
 
 /* Should be defined in order to enable RTTOPO support. */
 #define ENABLE_RTTOPO 1
@@ -50,7 +53,7 @@
 /* #undef OMIT_PROJ */
 
 /* Should be defined in order to enable PROJ.6 support. */
-#define PROJ_NEW 1
+/* #undef PROJ_NEW */
 
 /* Should contain a text-string describing the intended target CPU */
 #define SPATIALITE_TARGET_CPU "x86_64-redhat-linux"

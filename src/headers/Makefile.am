@@ -6,7 +6,9 @@ else
 noinst_HEADERS = spatialite_private.h
 nobase_include_HEADERS = spatialite.h \
 	spatialite/gaiaconfig.h \
+	spatialite/gaiaconfig.h.in \
 	spatialite/gaiaconfig-msvc.h \
+	spatialite/gaiaconfig-msvc.h.in \
 	spatialite/gaiaexif.h \
 	spatialite/gaiaaux.h \
 	spatialite/gaiamatrix.h \
