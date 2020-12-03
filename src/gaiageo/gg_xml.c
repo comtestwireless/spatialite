@@ -49,9 +49,9 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #include <time.h>
 
 #if defined(_WIN32) && !defined(__MINGW32__)
-#include <spatialite/gaiaconfig-msvc.h>
+#include "config-msvc.h"
 #else
-#include <spatialite/gaiaconfig.h>
+#include "config.h"
 #endif
 
 #ifdef ENABLE_LIBXML2		/* LIBXML2 enabled: supporting XML documents */

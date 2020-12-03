@@ -42,17 +42,17 @@ the terms of any one of the MPL, the GPL or the LGPL.
 */
 
 #if defined(_WIN32) && !defined(__MINGW32__)
-#include <spatialite/gaiaconfig-msvc.h>
+#include "config-msvc.h"
 #else
-#include <spatialite/gaiaconfig.h>
+#include "config.h"
 #endif
 
 #include <spatialite/sqlite.h>
 
 #include <spatialite.h>
 
-const char spatialiteversion[] = VERSION;
-const char spatialitetargetcpu[] = TARGET_CPU;
+const char spatialiteversion[] = SPATIALITE_VERSION;
+const char spatialitetargetcpu[] = SPATIALITE_TARGET_CPU;
 
 SPATIALITE_DECLARE const char *
 spatialite_version (void)

@@ -45,9 +45,9 @@ the terms of any one of the MPL, the GPL or the LGPL.
 
 
 #if defined(_WIN32) && !defined(__MINGW32__)
-#include <spatialite/gaiaconfig-msvc.h>
+#include "config-msvc.h"
 #else
-#include <spatialite/gaiaconfig.h>
+#include "config.h"
 #endif
 
 #ifdef _WIN32

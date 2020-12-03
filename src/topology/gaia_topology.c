@@ -63,9 +63,9 @@ CIG: 644544015A Linea A
 #include <string.h>
 
 #if defined(_WIN32) && !defined(__MINGW32__)
-#include <spatialite/gaiaconfig-msvc.h>
+#include "config-msvc.h"
 #else
-#include <spatialite/gaiaconfig.h>
+#include "config.h"
 #endif
 
 #ifdef ENABLE_RTTOPO		/* only if RTTOPO is enabled */

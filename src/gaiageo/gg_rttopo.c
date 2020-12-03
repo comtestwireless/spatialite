@@ -64,9 +64,9 @@ the current version depends on the newer RTTOPO support
 #include <math.h>
 
 #if defined(_WIN32) && !defined(__MINGW32__)
-#include <spatialite/gaiaconfig-msvc.h>
+#include "config-msvc.h"
 #else
-#include <spatialite/gaiaconfig.h>
+#include "config.h"
 #endif
 
 #include <spatialite_private.h>

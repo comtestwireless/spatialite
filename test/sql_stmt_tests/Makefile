@@ -97,7 +97,11 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
 mkinstalldirs = $(install_sh) -d
-CONFIG_HEADER = $(top_builddir)/./src/headers/spatialite/gaiaconfig.h
+CONFIG_HEADER = $(top_builddir)/./fakeconfig.h \
+	$(top_builddir)/./config.h \
+	$(top_builddir)/./src/headers/spatialite/gaiaconfig.h \
+	$(top_builddir)/./config-msvc.h \
+	$(top_builddir)/./src/headers/spatialite/gaiaconfig-msvc.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 AM_V_P = $(am__v_P_$(V))
@@ -133,7 +137,7 @@ AUTOMAKE = automake-1.16
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -Wall -Wextra -Wunused -pedantic -O0 -fprofile-arcs -ftest-coverage -g
+CFLAGS = -Wall -Wextra -Wunused -pedantic -g -O0 -fprofile-arcs -ftest-coverage -g
 CPP = gcc -E
 CPPFLAGS = 
 CXX = g++
@@ -191,7 +195,7 @@ PACKAGE_VERSION = 5.0.1-devel
 PATH_SEPARATOR = :
 PKG_CONFIG = /usr/bin/pkg-config
 PKG_CONFIG_LIBDIR = 
-PKG_CONFIG_PATH = 
+PKG_CONFIG_PATH = /usr/local/lib/pkgconfig
 RANLIB = ranlib
 SED = /usr/bin/sed
 SET_MAKE = 
