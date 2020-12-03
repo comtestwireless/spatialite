@@ -52,7 +52,16 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #include <spatialite.h>
 
 const char spatialiteversion[] = SPATIALITE_VERSION;
+
+#if defined(_WIN32) && !defined(__MINGW32__)
+#ifdef _WIN64
+const char spatialitetargetcpu[] = "Windows_64bit";
+#else
+const char spatialitetargetcpu[] = "Windows_32bit";
+#endif
+#else
 const char spatialitetargetcpu[] = SPATIALITE_TARGET_CPU;
+#endif;
 
 SPATIALITE_DECLARE const char *
 spatialite_version (void)

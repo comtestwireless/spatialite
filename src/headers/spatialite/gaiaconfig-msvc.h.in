@@ -51,8 +51,5 @@
 /* Should be defined in order to enable PROJ.6 support. */
 #define PROJ_NEW 1
 
-/* Should contain a text-string describing the intended target CPU */
-#undef SPATIALITE_TARGET_CPU
-
 /* the Version of this package */
 #undef SPATIALITE_VERSION
