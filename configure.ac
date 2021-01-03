@@ -187,6 +187,12 @@ AC_CONFIG_FILES([Makefile \
 		test/sql_stmt_bufoptsold_tests/Makefile \
 		test/sql_stmt_minizip/Makefile \
 		test/sql_stmt_zip_proj6/Makefile \
+		test/sql_stmt_geos_390/Makefile \
+		test/sql_stmt_geos_non390/Makefile \
+		test/sql_stmt_rtgeom_390/Makefile \
+		test/sql_stmt_rtgeom_non390/Makefile \
+		test/sql_stmt_voronoj_390/Makefile \
+		test/sql_stmt_voronoj_non390/Makefile \
 		examples/Makefile \
 		Doxyfile \
 		spatialite.pc])

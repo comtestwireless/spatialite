@@ -1297,7 +1297,10 @@ SUBDIRS = sql_stmt_geosadvanced_tests sql_stmt_geos_tests \
 	sql_stmt_tiny_point sql_stmt_postgres_tests \
 	sql_stmt_proc_tests sql_stmt_geos370_tests \
 	sql_stmt_renamenew_tests sql_stmt_renameold_tests \
-	sql_stmt_bufoptsnew_tests sql_stmt_bufoptsold_tests
+	sql_stmt_bufoptsnew_tests sql_stmt_bufoptsold_tests \
+	sql_stmt_geos_390 sql_stmt_geos_non390 \
+	sql_stmt_rtgeom_390 sql_stmt_rtgeom_non390 \
+	sql_stmt_voronoj_390 sql_stmt_voronoj_non390
 
 all: all-recursive
 

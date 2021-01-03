@@ -770,6 +770,20 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
       }
     if (result != 0)
 	return result;
+    if (strcmp (GEOSversion (), "3.9") >= 0)
+      {
+	  /* GEOS 3.9.0 changed historical beheviour for some tests */
+	  result =
+	      run_subdir_test ("sql_stmt_geos_390", conn, load_extension, 0);
+      }
+    else
+      {
+	  /* older versions supporting historical beheviour for some tests */
+	  result =
+	      run_subdir_test ("sql_stmt_geos_non390", conn, load_extension, 0);
+      }
+    if (result != 0)
+	return result;
 
   skip_geos:
 #endif /* end GEOS conditional */
@@ -812,6 +826,18 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
       {
 	  return result;
       }
+    if (strcmp (GEOSversion (), "3.9") >= 0)
+      {
+	  /* GEOS 3.9.0 changed historical beheviour for some tests */
+	  result =
+	      run_subdir_test ("sql_stmt_voronoj_390", conn, load_extension, 0);
+      }
+    else
+      {
+	  /* older versions supporting historical beheviour for some tests */
+	  result =
+	      run_subdir_test ("sql_stmt_voronoj_non390", conn, load_extension, 0);
+      }
 #else
     result =
 	run_subdir_test ("sql_stmt_voronoj1_tests", conn, load_extension, 0);
@@ -848,6 +874,18 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
     if (result != 0)
       {
 	  return result;
+      }
+    if (strcmp (GEOSversion (), "3.9") >= 0)
+      {
+	  /* GEOS 3.9.0 changed historical beheviour for some tests */
+	  result =
+	      run_subdir_test ("sql_stmt_rtgeom_390", conn, load_extension, 0);
+      }
+    else
+      {
+	  /* older versions supporting historical beheviour for some tests */
+	  result =
+	      run_subdir_test ("sql_stmt_rtgeom_non390", conn, load_extension, 0);
       }
 
     result = run_subdir_test ("sql_stmt_rttopo_tests", conn, load_extension, 0);

@@ -299,8 +299,6 @@ EXTRA_DIST = 3ddistance10.testcase \
 	st_split14.testcase \
 	st_split15.testcase \
 	st_split16.testcase \
-	st_split17.testcase \
-	st_split18.testcase \
 	st_split19.testcase \
 	st_split1.testcase \
 	st_split20.testcase \
@@ -314,8 +312,6 @@ EXTRA_DIST = 3ddistance10.testcase \
 	st_split28.testcase \
 	st_split29.testcase \
 	st_split2.testcase \
-	st_split30.testcase \
-	st_split31.testcase \
 	st_split32.testcase \
 	st_split33.testcase \
 	st_split34.testcase \
@@ -327,8 +323,6 @@ EXTRA_DIST = 3ddistance10.testcase \
 	st_split3.testcase \
 	st_split40.testcase \
 	st_split41.testcase \
-	st_split42.testcase \
-	st_split43.testcase \
 	st_split44.testcase \
 	st_split45.testcase \
 	st_split46.testcase \
