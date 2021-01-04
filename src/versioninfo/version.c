@@ -61,7 +61,7 @@ const char spatialitetargetcpu[] = "Windows_32bit";
 #endif
 #else
 const char spatialitetargetcpu[] = SPATIALITE_TARGET_CPU;
-#endif;
+#endif
 
 SPATIALITE_DECLARE const char *
 spatialite_version (void)

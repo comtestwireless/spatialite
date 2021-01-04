@@ -540,6 +540,10 @@ vXL_eval_constraints (VirtualXLCursorPtr cursor)
 			    if (cur_row >= pC->intValue)
 				ok = 1;
 			    break;
+			case SQLITE_INDEX_CONSTRAINT_NE:
+			    if (cur_row != pC->intValue)
+				ok = 1;
+			    break;
 			};
 		  }
 		goto done;
@@ -578,6 +582,10 @@ vXL_eval_constraints (VirtualXLCursorPtr cursor)
 			    if (cell.value.int_value >= pC->intValue)
 				ok = 1;
 			    break;
+			case SQLITE_INDEX_CONSTRAINT_NE:
+			    if (cell.value.int_value != pC->intValue)
+				ok = 1;
+			    break;
 			};
 		  }
 		if (pC->valueType == 'D')
@@ -602,6 +610,10 @@ vXL_eval_constraints (VirtualXLCursorPtr cursor)
 			    break;
 			case SQLITE_INDEX_CONSTRAINT_GE:
 			    if (cell.value.int_value >= pC->dblValue)
+				ok = 1;
+			    break;
+			case SQLITE_INDEX_CONSTRAINT_NE:
+			    if (cell.value.int_value != pC->dblValue)
 				ok = 1;
 			    break;
 			};
@@ -633,6 +645,10 @@ vXL_eval_constraints (VirtualXLCursorPtr cursor)
 			    if (cell.value.double_value >= pC->intValue)
 				ok = 1;
 			    break;
+			case SQLITE_INDEX_CONSTRAINT_NE:
+			    if (cell.value.double_value != pC->intValue)
+				ok = 1;
+			    break;
 			};
 		  }
 		if (pC->valueType == 'D')
@@ -657,6 +673,10 @@ vXL_eval_constraints (VirtualXLCursorPtr cursor)
 			    break;
 			case SQLITE_INDEX_CONSTRAINT_GE:
 			    if (cell.value.double_value >= pC->dblValue)
+				ok = 1;
+			    break;
+			case SQLITE_INDEX_CONSTRAINT_NE:
+			    if (cell.value.double_value != pC->dblValue)
 				ok = 1;
 			    break;
 			};
@@ -689,6 +709,10 @@ vXL_eval_constraints (VirtualXLCursorPtr cursor)
 		      break;
 		  case SQLITE_INDEX_CONSTRAINT_GE:
 		      if (ret >= 0)
+			  ok = 1;
+		      break;
+		  case SQLITE_INDEX_CONSTRAINT_NE:
+		      if (ret != 0)
 			  ok = 1;
 		      break;
 #ifdef HAVE_DECL_SQLITE_INDEX_CONSTRAINT_LIKE
