@@ -216,7 +216,7 @@
 #define PACKAGE_VERSION "5.0.1-devel"
 
 /* Should be defined in order to enable PROJ.6 support. */
-/* #undef PROJ_NEW */
+#define PROJ_NEW 1
 
 /* Should contain a text-string describing the intended target CPU */
 #define SPATIALITE_TARGET_CPU "x86_64-redhat-linux"
