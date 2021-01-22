@@ -172,12 +172,13 @@ mod_spatialite_la_DEPENDENCIES = ./gaiaaux/gaiaaux.la \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
 am_mod_spatialite_la_OBJECTS =  \
-	versioninfo/mod_spatialite_la-version.lo
+	versioninfo/mod_spatialite_la-version.lo \
+	versioninfo/mod_spatialite_la-location.lo
 mod_spatialite_la_OBJECTS = $(am_mod_spatialite_la_OBJECTS)
-mod_spatialite_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+mod_spatialite_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(mod_spatialite_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link \
-	$(CCLD) $(AM_CFLAGS) $(CFLAGS) $(mod_spatialite_la_LDFLAGS) \
-	$(LDFLAGS) -o $@
+	$(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) \
+	$(mod_spatialite_la_LDFLAGS) $(LDFLAGS) -o $@
 @MODULE_ONLY_FALSE@am_mod_spatialite_la_rpath = -rpath $(libdir)
 @MODULE_ONLY_TRUE@am_mod_spatialite_la_rpath = -rpath $(libdir)
 AM_V_P = $(am__v_P_@AM_V@)
@@ -196,6 +197,7 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade =  \
+	versioninfo/$(DEPDIR)/mod_spatialite_la-location.Plo \
 	versioninfo/$(DEPDIR)/mod_spatialite_la-version.Plo \
 	versioninfo/$(DEPDIR)/version.Plo
 am__mv = mv -f
@@ -217,6 +219,24 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
+CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
+LTCXXCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) \
+	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+	$(AM_CXXFLAGS) $(CXXFLAGS)
+AM_V_CXX = $(am__v_CXX_@AM_V@)
+am__v_CXX_ = $(am__v_CXX_@AM_DEFAULT_V@)
+am__v_CXX_0 = @echo "  CXX     " $@;
+am__v_CXX_1 = 
+CXXLD = $(CXX)
+CXXLINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
+	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
+am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
+am__v_CXXLD_0 = @echo "  CXXLD   " $@;
+am__v_CXXLD_1 = 
 SOURCES = $(libspatialite_la_SOURCES) $(mod_spatialite_la_SOURCES)
 DIST_SOURCES = $(libspatialite_la_SOURCES) \
 	$(mod_spatialite_la_SOURCES)
@@ -409,6 +429,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -454,7 +475,7 @@ libspatialite_la_LIBADD = ./gaiaaux/libgaiaaux.la \
 @ANDROID_FALSE@@MINGW_FALSE@libspatialite_la_LDFLAGS = -version-info 8:1:1
 @ANDROID_TRUE@@MINGW_FALSE@libspatialite_la_LDFLAGS = -version-info 8:1:1
 @MINGW_TRUE@libspatialite_la_LDFLAGS = -version-info 4:4:0 -no-undefined
-mod_spatialite_la_SOURCES = versioninfo/version.c
+mod_spatialite_la_SOURCES = versioninfo/version.c versioninfo/location.cpp
 mod_spatialite_la_LIBADD = ./gaiaaux/gaiaaux.la ./gaiaexif/gaiaexif.la \
 	./gaiageo/gaiageo.la ./geopackage/geopackage.la \
 	./spatialite/splite.la ./shapefiles/shapefiles.la ./dxf/dxf.la \
@@ -474,7 +495,7 @@ MOSTLYCLEANFILES = *.gcna *.gcno *.gcda
 all: all-recursive
 
 .SUFFIXES:
-.SUFFIXES: .c .lo .o .obj
+.SUFFIXES: .c .cpp .lo .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -552,9 +573,12 @@ libspatialite.la: $(libspatialite_la_OBJECTS) $(libspatialite_la_DEPENDENCIES) $
 	$(AM_V_CCLD)$(libspatialite_la_LINK) $(am_libspatialite_la_rpath) $(libspatialite_la_OBJECTS) $(libspatialite_la_LIBADD) $(LIBS)
 versioninfo/mod_spatialite_la-version.lo: versioninfo/$(am__dirstamp) \
 	versioninfo/$(DEPDIR)/$(am__dirstamp)
+versioninfo/mod_spatialite_la-location.lo:  \
+	versioninfo/$(am__dirstamp) \
+	versioninfo/$(DEPDIR)/$(am__dirstamp)
 
 mod_spatialite.la: $(mod_spatialite_la_OBJECTS) $(mod_spatialite_la_DEPENDENCIES) $(EXTRA_mod_spatialite_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(mod_spatialite_la_LINK) $(am_mod_spatialite_la_rpath) $(mod_spatialite_la_OBJECTS) $(mod_spatialite_la_LIBADD) $(LIBS)
+	$(AM_V_CXXLD)$(mod_spatialite_la_LINK) $(am_mod_spatialite_la_rpath) $(mod_spatialite_la_OBJECTS) $(mod_spatialite_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -564,6 +588,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@versioninfo/$(DEPDIR)/mod_spatialite_la-location.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@versioninfo/$(DEPDIR)/mod_spatialite_la-version.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@versioninfo/$(DEPDIR)/version.Plo@am__quote@ # am--include-marker
 
@@ -603,6 +628,37 @@ versioninfo/mod_spatialite_la-version.lo: versioninfo/version.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='versioninfo/version.c' object='versioninfo/mod_spatialite_la-version.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(mod_spatialite_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mod_spatialite_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o versioninfo/mod_spatialite_la-version.lo `test -f 'versioninfo/version.c' || echo '$(srcdir)/'`versioninfo/version.c
+
+.cpp.o:
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ $<
+
+.cpp.obj:
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+.cpp.lo:
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
+@am__fastdepCXX_TRUE@	$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LTCXXCOMPILE) -c -o $@ $<
+
+versioninfo/mod_spatialite_la-location.lo: versioninfo/location.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(mod_spatialite_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mod_spatialite_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT versioninfo/mod_spatialite_la-location.lo -MD -MP -MF versioninfo/$(DEPDIR)/mod_spatialite_la-location.Tpo -c -o versioninfo/mod_spatialite_la-location.lo `test -f 'versioninfo/location.cpp' || echo '$(srcdir)/'`versioninfo/location.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) versioninfo/$(DEPDIR)/mod_spatialite_la-location.Tpo versioninfo/$(DEPDIR)/mod_spatialite_la-location.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='versioninfo/location.cpp' object='versioninfo/mod_spatialite_la-location.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(mod_spatialite_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mod_spatialite_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o versioninfo/mod_spatialite_la-location.lo `test -f 'versioninfo/location.cpp' || echo '$(srcdir)/'`versioninfo/location.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -815,7 +871,8 @@ clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
 	mostlyclean-am
 
 distclean: distclean-recursive
-		-rm -f versioninfo/$(DEPDIR)/mod_spatialite_la-version.Plo
+		-rm -f versioninfo/$(DEPDIR)/mod_spatialite_la-location.Plo
+	-rm -f versioninfo/$(DEPDIR)/mod_spatialite_la-version.Plo
 	-rm -f versioninfo/$(DEPDIR)/version.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -862,7 +919,8 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
-		-rm -f versioninfo/$(DEPDIR)/mod_spatialite_la-version.Plo
+		-rm -f versioninfo/$(DEPDIR)/mod_spatialite_la-location.Plo
+	-rm -f versioninfo/$(DEPDIR)/mod_spatialite_la-version.Plo
 	-rm -f versioninfo/$(DEPDIR)/version.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic

@@ -60,7 +60,7 @@ libspatialite_la_LIBADD += -lpthread -ldl -lm
 endif
 endif
 
-mod_spatialite_la_SOURCES = versioninfo/version.c
+mod_spatialite_la_SOURCES = versioninfo/version.c versioninfo/location.cpp
 
 mod_spatialite_la_LIBADD = ./gaiaaux/gaiaaux.la \
 	./gaiaexif/gaiaexif.la \

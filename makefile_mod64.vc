@@ -65,7 +65,7 @@ LIBOBJ = src\gaiaaux\gg_sqlaux.obj src\gaiaaux\gg_utf8.obj \
 	src\srsinit\epsg_inlined_58.obj src\srsinit\epsg_inlined_59.obj \
 	src\srsinit\epsg_inlined_extra.obj src\srsinit\epsg_inlined_prussian.obj \
 	src\srsinit\epsg_inlined_wgs84_00.obj src\srsinit\epsg_inlined_wgs84_01.obj \
-	src\versioninfo\version.obj src\virtualtext\virtualtext.obj \
+	src\versioninfo\version.obj src\versioninfo\location.obj src\virtualtext\virtualtext.obj \
 	src\cutter\gaia_cutter.obj src\spatialite\virtualknn.obj \
 	src\control_points\gaia_control_points.obj \
 	src\control_points\grass_crs3d.obj src\control_points\grass_georef_tps.obj \
@@ -93,7 +93,7 @@ LIBOBJ = src\gaiaaux\gg_sqlaux.obj src\gaiaaux\gg_utf8.obj \
 MOD_SPATIALITE_DLL = mod_spatialite$(VERSION).dll
 
 CFLAGS = /nologo -I.\src\headers -I.\src\topology \
-	-I. -IC:\OSGeo4W64\include -IC:\OSGeo4W64\include\libxml2 $(OPTFLAGS)
+	-I. /EHsc $(CL) $(OPTFLAGS)
 
 default:	all
 
@@ -108,14 +108,13 @@ $(MOD_SPATIALITE_DLL):	mod_spatialite_i.lib
 
 mod_spatialite_i.lib:     $(LIBOBJ)
 	link /dll /out:$(MOD_SPATIALITE_DLL) \
-		/implib:mod_spatialite_i.lib $(LIBOBJ) \
-		C:\OSGeo4W64\lib\proj_i.lib C:\OSGeo4W64\lib\geos_c.lib \
-		C:\OSGeo4w64\lib\freexl_i.lib C:\OSGeo4w64\lib\iconv.lib \
-		C:\OSGeo4W64\lib\sqlite3_i.lib C:\OSGeo4W64\lib\zlib.lib \
-		C:\OSGeo4W64\lib\libxml2.lib C:\OSGeo4W64\lib\librttopo.lib
+		/implib:mod_spatialite_i.lib $(LIBOBJ) $(_LINK_) Ole32.lib Ws2_32.lib Crypt32.lib Advapi32.lib User32.lib Shell32.lib
 	if exist $(MOD_SPATIALITE_DLL).manifest mt -manifest \
 		$(MOD_SPATIALITE_DLL).manifest -outputresource:$(MOD_SPATIALITE_DLL);2
 		
+.cpp.obj:
+	$(CXX) $(CFLAGS) /c $*.cpp /Fo$@
+
 .c.obj:
 	$(CC) $(CFLAGS) /c $*.c /Fo$@
 	

@@ -15,10 +15,10 @@
 #define ENABLE_LIBXML2 1
 
 /* Should be defined in order to enable MiniZIP support. */
-/* #undef ENABLE_MINIZIP */
+#undef ENABLE_MINIZIP
 
 /* Should be defined in order to enable RTTOPO support. */
-#define ENABLE_RTTOPO 1
+/* #define ENABLE_RTTOPO 1 */
 
 /* Should be defined in order to enable GEOS_370 support. */
 #define GEOS_370 1
@@ -48,7 +48,7 @@
 #define HAVE_FLOAT_H 1
 
 /* Define to 1 if you have the <freexl.h> header file. */
-#define HAVE_FREEXL_H 1
+/* #define HAVE_FREEXL_H 1 */
 
 /* Define to 1 if you have the `ftruncate' function. */
 #define HAVE_FTRUNCATE 1
@@ -178,7 +178,7 @@
 /* #undef OMIT_EPSG */
 
 /* Should be defined in order to disable FREEXL support. */
-/* #undef OMIT_FREEXL */
+#define OMIT_FREEXL
 
 /* Should be defined in order to disable GEOCALLBACKS support. */
 #define OMIT_GEOCALLBACKS 1

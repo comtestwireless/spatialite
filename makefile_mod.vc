@@ -93,7 +93,7 @@ LIBOBJ = src\gaiaaux\gg_sqlaux.obj src\gaiaaux\gg_utf8.obj \
 MOD_SPATIALITE_DLL = mod_spatialite$(VERSION).dll
 
 CFLAGS = /nologo -I.\src\headers -I.\src\topology \
-	-I. -IC:\OSGeo4W\include $(OPTFLAGS)
+	-I. $(CL) $(OPTFLAGS)
 
 default:	all
 

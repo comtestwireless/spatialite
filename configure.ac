@@ -339,7 +339,7 @@ if test x"$enable_geos" != "xno"; then
   LIBS="$GEOS_LDFLAGS"
   AC_SEARCH_LIBS(GEOSCoveredBy,geos_c,,AC_MSG_ERROR([could not find libgeos_c (or obsolete 'libgeos_c' < v.3.3.0 found) - you may need to specify the directory of a geos-config file using --with-geosconfig]))
   LIBS="$LIBS_SAVE"
-  LIBS="$LIBS $GEOS_LDFLAGS -lgeos_c"
+  LIBS="$LIBS $GEOS_LDFLAGS -lgeos_c -lgeos"
 
   #-----------------------------------------------------------------------
   #   --enable-controlpoints

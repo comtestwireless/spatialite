@@ -18272,7 +18272,7 @@ else
 fi
 
   LIBS="$LIBS_SAVE"
-  LIBS="$LIBS $GEOS_LDFLAGS -lgeos_c"
+  LIBS="$LIBS $GEOS_LDFLAGS -lgeos_c -lgeos"
 
   #-----------------------------------------------------------------------
   #   --enable-controlpoints

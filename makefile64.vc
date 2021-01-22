@@ -65,7 +65,7 @@ LIBOBJ = src\gaiaaux\gg_sqlaux.obj src\gaiaaux\gg_utf8.obj \
 	src\srsinit\epsg_inlined_58.obj src\srsinit\epsg_inlined_59.obj \
 	src\srsinit\epsg_inlined_extra.obj src\srsinit\epsg_inlined_prussian.obj \
 	src\srsinit\epsg_inlined_wgs84_00.obj src\srsinit\epsg_inlined_wgs84_01.obj \
-	src\versioninfo\version.obj src\virtualtext\virtualtext.obj \
+	src\versioninfo\version.obj src\versioninfo\location.obj src\virtualtext\virtualtext.obj \
 	src\cutter\gaia_cutter.obj src\spatialite\virtualknn.obj \
 	src\control_points\gaia_control_points.obj \
 	src\control_points\grass_crs3d.obj src\control_points\grass_georef_tps.obj \

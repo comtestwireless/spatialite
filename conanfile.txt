@@ -1,0 +1,11 @@
+[requires]
+sqlite3/3.34.0
+geos/3.9.0
+proj/7.2.1
+libxml2/2.9.10
+minizip/1.2.11
+boost/1.75.0
+
+[generators]
+virtualbuildenv
+
