@@ -180,7 +180,7 @@ static char *
 check_wkt (const char *wkt, const char *key, char axis, char axis_mode)
 {
 /* parsing a WKT string so to find a given key:value */
-    char mux[16][128];
+    char mux[16][1024];
     char *o;
     const char *p = wkt;
     int level = 0;
