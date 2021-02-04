@@ -904,6 +904,16 @@ vshp_eval_constraints (VirtualShapeCursorPtr cursor)
 	  if (pC->iColumn == 0)
 	    {
 		/* the PRIMARY KEY column */
+		if (pC->op == SQLITE_INDEX_CONSTRAINT_ISNULL)
+		  {
+		      ok = 0;
+		      goto done;
+		  }
+		if (pC->op == SQLITE_INDEX_CONSTRAINT_ISNOTNULL)
+		  {
+		      ok = 1;
+		      goto done;
+		  }
 		if (pC->valueType == 'I')
 		  {
 		      switch (pC->op)
@@ -936,6 +946,32 @@ vshp_eval_constraints (VirtualShapeCursorPtr cursor)
 		  }
 		goto done;
 	    }
+	  /* the Geometry column */
+	  nCol = 1;
+	  pFld = cursor->pVtab->Shp->Dbf->First;
+	  while (pFld)
+	    {
+		if (nCol == pC->iColumn)
+		  {
+		      if ((pFld->Value))
+			{
+			    switch (pC->op)
+			      {
+			      case SQLITE_INDEX_CONSTRAINT_ISNULL:
+				  if (pFld->Value->Type == GAIA_NULL_VALUE)
+				      ok = 1;
+				  break;
+			      case SQLITE_INDEX_CONSTRAINT_ISNOTNULL:
+				  if (pFld->Value->Type != GAIA_NULL_VALUE)
+				      ok = 1;
+				  break;
+			      };
+			}
+		      goto done;
+		  }
+		pFld = pFld->Next;
+	    }
+	  /* any other ordinary column */
 	  nCol = 2;
 	  pFld = cursor->pVtab->Shp->Dbf->First;
 	  while (pFld)
@@ -944,6 +980,19 @@ vshp_eval_constraints (VirtualShapeCursorPtr cursor)
 		  {
 		      if ((pFld->Value))
 			{
+			    switch (pC->op)
+			      {
+			      case SQLITE_INDEX_CONSTRAINT_ISNULL:
+				  if (pFld->Value->Type == GAIA_NULL_VALUE)
+				      ok = 1;
+				  break;
+			      case SQLITE_INDEX_CONSTRAINT_ISNOTNULL:
+				  if (pFld->Value->Type != GAIA_NULL_VALUE)
+				      ok = 1;
+				  break;
+			      };
+			    if (ok)
+				break;
 			    switch (pFld->Value->Type)
 			      {
 			      case GAIA_INT_VALUE:
@@ -1095,9 +1144,8 @@ vshp_eval_constraints (VirtualShapeCursorPtr cursor)
 					  case SQLITE_INDEX_CONSTRAINT_LIKE:
 					      ret =
 						  sqlite3_strlike (pC->txtValue,
-								   pFld->
-								   Value->TxtValue,
-								   0);
+								   pFld->Value->
+								   TxtValue, 0);
 					      if (ret == 0)
 						  ok = 1;
 					      break;
@@ -1168,6 +1216,11 @@ vshp_filter (sqlite3_vtab_cursor * pCursor, int idxNum, const char *idxStr,
 		if (pC->txtValue)
 		    strcpy (pC->txtValue,
 			    (char *) sqlite3_value_text (argv[i]));
+	    }
+	  if (sqlite3_value_type (argv[i]) == SQLITE_BLOB)
+	    {
+		pC->valueType = 'B';
+		fprintf (stderr, "cmp BLOB\n");
 	    }
 	  if (cursor->firstConstraint == NULL)
 	      cursor->firstConstraint = pC;

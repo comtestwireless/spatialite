@@ -554,8 +554,8 @@ do_check_shp_unique_pk_values (sqlite3 * sqlite, gaiaShapefilePtr shp, int srid,
 			    ok_insert = 1;
 			    sqlite3_bind_text (stmt, 1,
 					       dbf_field->Value->TxtValue,
-					       strlen (dbf_field->Value->
-						       TxtValue),
+					       strlen (dbf_field->
+						       Value->TxtValue),
 					       SQLITE_STATIC);
 			}
 		      else if (pk_type == SQLITE_FLOAT)
@@ -1510,8 +1510,9 @@ load_shapefile_common (struct zip_mem_shapefile *mem_shape, sqlite3 * sqlite,
 		      if (pk_type == SQLITE_TEXT)
 			  sqlite3_bind_text (stmt, 1,
 					     dbf_field->Value->TxtValue,
-					     strlen (dbf_field->Value->
-						     TxtValue), SQLITE_STATIC);
+					     strlen (dbf_field->
+						     Value->TxtValue),
+					     SQLITE_STATIC);
 		      else if (pk_type == SQLITE_FLOAT)
 			  sqlite3_bind_double (stmt, 1,
 					       dbf_field->Value->DblValue);
@@ -1552,8 +1553,8 @@ load_shapefile_common (struct zip_mem_shapefile *mem_shape, sqlite3 * sqlite,
 			case GAIA_TEXT_VALUE:
 			    sqlite3_bind_text (stmt, cnt + 2,
 					       dbf_field->Value->TxtValue,
-					       strlen (dbf_field->Value->
-						       TxtValue),
+					       strlen (dbf_field->
+						       Value->TxtValue),
 					       SQLITE_STATIC);
 			    break;
 			default:
@@ -1715,8 +1716,8 @@ do_check_dbf_unique_pk_values (sqlite3 * sqlite, gaiaDbfPtr dbf, int text_dates,
 			    ok_insert = 1;
 			    sqlite3_bind_text (stmt, 1,
 					       dbf_field->Value->TxtValue,
-					       strlen (dbf_field->Value->
-						       TxtValue),
+					       strlen (dbf_field->
+						       Value->TxtValue),
 					       SQLITE_STATIC);
 			}
 		      else if (pk_type == SQLITE_FLOAT)
@@ -2231,8 +2232,9 @@ load_dbf_common (struct zip_mem_shapefile *mem_shape, sqlite3 * sqlite,
 		      if (pk_type == SQLITE_TEXT)
 			  sqlite3_bind_text (stmt, 1,
 					     dbf_field->Value->TxtValue,
-					     strlen (dbf_field->Value->
-						     TxtValue), SQLITE_STATIC);
+					     strlen (dbf_field->
+						     Value->TxtValue),
+					     SQLITE_STATIC);
 		      else if (pk_type == SQLITE_FLOAT)
 			  sqlite3_bind_double (stmt, 1,
 					       dbf_field->Value->DblValue);
@@ -2273,8 +2275,8 @@ load_dbf_common (struct zip_mem_shapefile *mem_shape, sqlite3 * sqlite,
 			case GAIA_TEXT_VALUE:
 			    sqlite3_bind_text (stmt, cnt + 2,
 					       dbf_field->Value->TxtValue,
-					       strlen (dbf_field->Value->
-						       TxtValue),
+					       strlen (dbf_field->
+						       Value->TxtValue),
 					       SQLITE_STATIC);
 			    break;
 			default:
@@ -2822,24 +2824,25 @@ do_read_zipfile_file (unzFile uf, struct zip_mem_shapefile *mem_shape, int wich)
     is_open = 1;
     rd_cnt = 0;
     while (rd_cnt < size_buf)
-    {
-		/* reading big chunks so to avoid large file issues */
-		uint32_t max = 1000000000;	/* max chunk size */
-		uint32_t len;
-		unrd_cnt = size_buf - rd_cnt;
-		if (unrd_cnt < max)
-			len = unrd_cnt;
-		else
-			len = max;
-		err = unzReadCurrentFile (uf, buf+rd_cnt, len);
-		if (err < 0)
-		  {
-		  spatialite_e ("Error %d with zipfile in unzReadCurrentFile\n", err);
-		  retval = 0;
-		  goto skip;
-		  }
-		  rd_cnt += len;
-	}
+      {
+	  /* reading big chunks so to avoid large file issues */
+	  uint32_t max = 1000000000;	/* max chunk size */
+	  uint32_t len;
+	  unrd_cnt = size_buf - rd_cnt;
+	  if (unrd_cnt < max)
+	      len = unrd_cnt;
+	  else
+	      len = max;
+	  err = unzReadCurrentFile (uf, buf + rd_cnt, len);
+	  if (err < 0)
+	    {
+		spatialite_e ("Error %d with zipfile in unzReadCurrentFile\n",
+			      err);
+		retval = 0;
+		goto skip;
+	    }
+	  rd_cnt += len;
+      }
     mem_file->buf = buf;
     mem_file->size = size_buf;
 
@@ -5843,8 +5846,59 @@ do_check_geometry (sqlite3 * sqlite, const char *table, const char *geom_col,
 	  sqlite3_free (errMsg);
 	  return 0;
       }
+    if (rows == 1)
+	goto ok;
+
+/* it could be a possible Spatial View */
+    if (geom_col == NULL)
+	sql =
+	    sqlite3_mprintf
+	    ("SELECT g.f_geometry_column, g.srid, g.geometry_type "
+	     "FROM views_geometry_columns AS v "
+	     "JOIN geometry_columns AS g ON (v.f_table_name = g.f_table_name) "
+	     "WHERE Lower(v.view_name) = Lower(%Q)", table);
+    else
+	sql =
+	    sqlite3_mprintf
+	    ("SELECT g.f_geometry_column, g.srid, g.geometry_type "
+	     "FROM views_geometry_columns AS v "
+	     "JOIN geometry_columns AS g ON (v.f_table_name = g.f_table_name) "
+	     "WHERE Lower(v.view_name) = Lower(%Q) AND "
+	     "Lower(v.view_geometry) = Lower(%Q)", table, geom_col);
+    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, &errMsg);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+      {
+	  spatialite_e ("dump GeoJSON2 MetaData error: <%s>\n", errMsg);
+	  sqlite3_free (errMsg);
+	  return 0;
+      }
+    if (rows == 1)
+	goto ok;
+
+/* it could be a possible Spatial Virtual Table */
+    if (geom_col == NULL)
+	sql = sqlite3_mprintf ("SELECT virt_geometry, srid, geometry_type "
+			       "FROM virts_geometry_columns "
+			       "WHERE Lower(virt_name) = Lower(%Q)", table);
+    else
+	sql = sqlite3_mprintf ("SELECT virt_geometry, srid, geometry_type "
+			       "FROM virts_geometry_columns "
+			       "WHERE Lower(virt_name) = Lower(%Q) AND "
+			       "Lower(virt_geometry) = Lower(%Q)",
+			       table, geom_col);
+    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, &errMsg);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+      {
+	  spatialite_e ("dump GeoJSON2 MetaData error: <%s>\n", errMsg);
+	  sqlite3_free (errMsg);
+	  return 0;
+      }
     if (rows != 1)
 	goto error;
+
+  ok:
     for (i = 1; i <= rows; i++)
       {
 	  int gtype;
@@ -5984,7 +6038,7 @@ do_prepare_sql (sqlite3 * sqlite, const char *table, const char *geom_col,
 		      /* exporting eventual M-Values */
 		      sql =
 			  sqlite3_mprintf
-			  ("SELECT AsGeoJSON(ST_Transform(ST_ForcePolygonCCW(\"%s\", 4326)), %d)",
+			  ("SELECT AsGeoJSON(ST_Transform(ST_ForcePolygonCCW(\"%s\"), 4326), %d)",
 			   x_col, precision);
 		  }
 		else
@@ -6010,7 +6064,7 @@ do_prepare_sql (sqlite3 * sqlite, const char *table, const char *geom_col,
 			    /* unchanged dimensions */
 			    sql =
 				sqlite3_mprintf
-				("SELECT AsGeoJSON(ST_Transform(ST_ForcePolygonCCW(\"%s\", 4326)), %d)",
+				("SELECT AsGeoJSON(ST_Transform(ST_ForcePolygonCCW(\"%s\"), 4326), %d)",
 				 x_col, precision);
 			}
 		  }
@@ -8517,8 +8571,8 @@ load_XL (sqlite3 * sqlite, const char *path, const char *table,
 						     cell.value.int_value);
 			    else if (cell.type == FREEXL_CELL_DOUBLE)
 				dummy = sqlite3_mprintf ("%1.2f ",
-							 cell.value.
-							 double_value);
+							 cell.
+							 value.double_value);
 			    else if (cell.type == FREEXL_CELL_TEXT
 				     || cell.type == FREEXL_CELL_SST_TEXT
 				     || cell.type == FREEXL_CELL_DATE
@@ -8529,8 +8583,8 @@ load_XL (sqlite3 * sqlite, const char *path, const char *table,
 				  if (len < 256)
 				      dummy =
 					  sqlite3_mprintf ("%s",
-							   cell.value.
-							   text_value);
+							   cell.
+							   value.text_value);
 				  else
 				      dummy = sqlite3_mprintf ("col_%d", col);
 			      }

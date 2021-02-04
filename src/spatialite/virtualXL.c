@@ -556,6 +556,18 @@ vXL_eval_constraints (VirtualXLCursorPtr cursor)
 				     (unsigned short) pC->iColumn - 1, &cell);
 	  else
 	      cell.type = FREEXL_CELL_NULL;
+	  if (pC->op == SQLITE_INDEX_CONSTRAINT_ISNULL)
+	    {
+		if (cell.type == FREEXL_CELL_NULL)
+		    ok = 1;
+		goto done;
+	    }
+	  if (pC->op == SQLITE_INDEX_CONSTRAINT_ISNOTNULL)
+	    {
+		if (cell.type != FREEXL_CELL_NULL)
+		    ok = 1;
+		goto done;
+	    }
 	  if (cell.type == FREEXL_CELL_INT)
 	    {
 		if (pC->valueType == 'I')

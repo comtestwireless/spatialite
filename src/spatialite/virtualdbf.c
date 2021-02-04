@@ -552,6 +552,16 @@ vdbf_eval_constraints (VirtualDbfCursorPtr cursor)
 	  if (pC->iColumn == 0)
 	    {
 		/* the PRIMARY KEY column */
+		if (pC->op == SQLITE_INDEX_CONSTRAINT_ISNULL)
+		  {
+		      ok = 0;
+		      goto done;
+		  }
+		if (pC->op == SQLITE_INDEX_CONSTRAINT_ISNOTNULL)
+		  {
+		      ok = 1;
+		      goto done;
+		  }
 		if (pC->valueType == 'I')
 		  {
 		      switch (pC->op)
@@ -592,6 +602,19 @@ vdbf_eval_constraints (VirtualDbfCursorPtr cursor)
 		  {
 		      if ((pFld->Value))
 			{
+			    switch (pC->op)
+			      {
+			      case SQLITE_INDEX_CONSTRAINT_ISNULL:
+				  if (pFld->Value->Type == GAIA_NULL_VALUE)
+				      ok = 1;
+				  break;
+			      case SQLITE_INDEX_CONSTRAINT_ISNOTNULL:
+				  if (pFld->Value->Type != GAIA_NULL_VALUE)
+				      ok = 1;
+				  break;
+			      };
+			    if (ok)
+				break;
 			    switch (pFld->Value->Type)
 			      {
 			      case GAIA_INT_VALUE:

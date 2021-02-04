@@ -2922,6 +2922,16 @@ vgeojson_eval_constraints (VirtualGeoJsonCursorPtr cursor)
 	  if (pC->iColumn == 0)
 	    {
 		/* the PRIMARY KEY column */
+		if (pC->op == SQLITE_INDEX_CONSTRAINT_ISNULL)
+		  {
+		      ok = 0;
+		      goto done;
+		  }
+		if (pC->op == SQLITE_INDEX_CONSTRAINT_ISNOTNULL)
+		  {
+		      ok = 1;
+		      goto done;
+		  }
 		if (pC->valueType == 'I')
 		  {
 		      switch (pC->op)
@@ -2954,6 +2964,32 @@ vgeojson_eval_constraints (VirtualGeoJsonCursorPtr cursor)
 		  }
 		goto done;
 	    }
+	  if (pC->iColumn == 1)
+	    {
+		/* the Geometry column */
+		if (cursor->Feature != NULL)
+		  {
+		      switch (pC->op)
+			{
+			case SQLITE_INDEX_CONSTRAINT_ISNULL:
+			    if (cursor->Feature->geometry == NULL)
+				ok = 1;
+			    break;
+			case SQLITE_INDEX_CONSTRAINT_ISNOTNULL:
+			    if (cursor->Feature->geometry != NULL)
+				ok = 1;
+			    break;
+			};
+
+		  }
+		else
+		  {
+		      if (pC->op == SQLITE_INDEX_CONSTRAINT_ISNULL)
+			  ok = 1;
+		  }
+		goto done;
+	    }
+	  /* any other ordinary column */
 	  nCol = 2;
 	  col = cursor->pVtab->Parser->first_col;
 	  while (col)
@@ -2976,6 +3012,19 @@ vgeojson_eval_constraints (VirtualGeoJsonCursorPtr cursor)
 		      col = col->next;
 		      continue;
 		  }
+		switch (pC->op)
+		  {
+		  case SQLITE_INDEX_CONSTRAINT_ISNULL:
+		      if (prop->type == GEOJSON_NULL)
+			  ok = 1;
+		      break;
+		  case SQLITE_INDEX_CONSTRAINT_ISNOTNULL:
+		      if (prop->type != GEOJSON_NULL)
+			  ok = 1;
+		      break;
+		  };
+		if (ok)
+		    break;
 		switch (prop->type)
 		  {
 		  case GEOJSON_INTEGER:
