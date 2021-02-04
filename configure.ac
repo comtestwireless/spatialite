@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT(libspatialite, 5.0.1-rc0, a.furieri@lqt.it)
+AC_INIT(libspatialite, 5.0.1-rc1, a.furieri@lqt.it)
 AC_LANG(C)
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -357,8 +357,8 @@ if test x"$enable_geos" != "xno"; then
   #   --enable-controlpoints
   #
   AC_ARG_ENABLE(gcp, [AS_HELP_STRING(
-	  [--enable-gcp], [enables Control Points (from Grass GIS) [default=no]])],
-	  [], [enable_gcp=no])
+	  [--enable-gcp], [enables Control Points (from Grass GIS) [default=yes]])],
+	  [], [enable_gcp=yes])
   if test x"$enable_gcp" != "xno"; then
 	  AC_DEFINE(ENABLE_GCP)
   fi
@@ -410,8 +410,8 @@ if test x"$enable_geos" != "xno"; then
   #   --enable-rttopo
   #
   AC_ARG_ENABLE(rttopo, [AS_HELP_STRING(
-	  [--enable-rttopo], [enables RTTOPO support [default=no]])],
-	  [], [enable_rttopo=no])
+	  [--enable-rttopo], [enables RTTOPO support [default=yes]])],
+	  [], [enable_rttopo=yes])
   if test x"$enable_rttopo" != "xno"; then
 	  AC_CHECK_HEADERS(librttopo.h,, [AC_MSG_ERROR([cannot find librttopo.h, bailing out])])
 	  AC_SEARCH_LIBS(rtt_AddLineNoFace,rttopo,,AC_MSG_ERROR(['librttopo' (>= v.1.1.0) is required but it doesn't seem to be installed on this system. You may need to try re-running configure with a --disable-rttopo parameter.]))

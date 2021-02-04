@@ -53,4 +53,4 @@
 #define PROJ_NEW 1
 
 /* the Version of this package */
-#define SPATIALITE_VERSION "5.0.1-rc0"
+#define SPATIALITE_VERSION "5.0.1-rc1"
