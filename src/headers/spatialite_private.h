@@ -23,7 +23,7 @@ The Original Code is the SpatiaLite library
 
 The Initial Developer of the Original Code is Alessandro Furieri
  
-Portions created by the Initial Developer are Copyright (C) 2008-2020
+Portions created by the Initial Developer are Copyright (C) 2008-2021
 the Initial Developer. All Rights Reserved.
 
 Contributor(s):
@@ -624,6 +624,17 @@ extern "C"
 						     const char *name,
 						     const unsigned char
 						     *p_blob, int n_bytes);
+
+    SPATIALITE_PRIVATE int count_map_configurations (void *p_sqlite);
+
+    SPATIALITE_PRIVATE char *get_map_configuration_name (void *p_sqlite,
+							 int ind);
+
+    SPATIALITE_PRIVATE char *get_map_configuration_title (void *p_sqlite,
+							  int ind);
+
+    SPATIALITE_PRIVATE char *get_map_configuration_abstract (void *p_sqlite,
+							     int ind);
 
     SPATIALITE_PRIVATE int createIsoMetadataTables (void *p_sqlite,
 						    int relaxed);

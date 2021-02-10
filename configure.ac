@@ -2,13 +2,13 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT(libspatialite, 5.0.0, a.furieri@lqt.it)
+AC_INIT(libspatialite, 5.0.1, a.furieri@lqt.it)
 AC_LANG(C)
 AC_CONFIG_MACRO_DIR([m4])
 
-AM_INIT_AUTOMAKE([foreign])
+AM_INIT_AUTOMAKE([foreign no-define])
 AM_MAINTAINER_MODE
-AM_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS(./fakeconfig.h ./config.h ./src/headers/spatialite/gaiaconfig.h ./config-msvc.h ./src/headers/spatialite/gaiaconfig-msvc.h)
 
 # enabling huge-file support (64 bit file pointers)
 AH_TEMPLATE([_LARGE_FILE],
@@ -63,8 +63,10 @@ AH_TEMPLATE([ENABLE_MINIZIP],
             [Should be defined in order to enable MiniZIP support.])
 AH_TEMPLATE([ENABLE_GEOPACKAGE],
             [Should be defined in order to enable GeoPackage support.])
-AH_TEMPLATE([TARGET_CPU],
+AH_TEMPLATE([SPATIALITE_TARGET_CPU],
             [Should contain a text-string describing the intended target CPU])
+AH_TEMPLATE([SPATIALITE_VERSION],
+            [the Version of this package.])
 AH_TEMPLATE([HAVE_DECL_SQLITE_INDEX_CONSTRAINT_LIKE],
             [depending on SQLite library version.])
 
@@ -154,6 +156,7 @@ AC_CONFIG_FILES([Makefile \
 		test/sql_stmt_proj492_tests/Makefile \
 		test/sql_stmt_proj493_tests/Makefile \
 		test/sql_stmt_proj600_tests/Makefile \
+		test/sql_stmt_proj720_tests/Makefile \
 		test/sql_stmt_proj600security_tests/Makefile \
 		test/sql_stmt_mathsql_tests/Makefile \
 		test/sql_stmt_rtgeom_tests/Makefile \
@@ -184,14 +187,22 @@ AC_CONFIG_FILES([Makefile \
 		test/sql_stmt_bufoptsold_tests/Makefile \
 		test/sql_stmt_minizip/Makefile \
 		test/sql_stmt_zip_proj6/Makefile \
+		test/sql_stmt_geos_390/Makefile \
+		test/sql_stmt_geos_non390/Makefile \
+		test/sql_stmt_rtgeom_390/Makefile \
+		test/sql_stmt_rtgeom_non390/Makefile \
+		test/sql_stmt_voronoj_390/Makefile \
+		test/sql_stmt_voronoj_non390/Makefile \
 		examples/Makefile \
 		Doxyfile \
 		spatialite.pc])
 
 # exporting the TARGET_CPU string
 splite_cpu=`$CC -dumpmachine`
-AC_DEFINE_UNQUOTED([TARGET_CPU], ["$splite_cpu"])
+AC_DEFINE_UNQUOTED([SPATIALITE_TARGET_CPU], ["$splite_cpu"])
 
+# exporting the VERSION string
+AC_DEFINE_UNQUOTED([SPATIALITE_VERSION], ["$PACKAGE_VERSION"])
 
 #-----------------------------------------------------------------------
 #   --enable-mathsql
@@ -279,6 +290,7 @@ if test x"$enable_freexl" != "xno"; then
 else
   AC_DEFINE(OMIT_FREEXL)
 fi
+
 #-----------------------------------------------------------------------
 
 #-----------------------------------------------------------------------
@@ -345,8 +357,8 @@ if test x"$enable_geos" != "xno"; then
   #   --enable-controlpoints
   #
   AC_ARG_ENABLE(gcp, [AS_HELP_STRING(
-	  [--enable-gcp], [enables Control Points (from Grass GIS) [default=no]])],
-	  [], [enable_gcp=no])
+	  [--enable-gcp], [enables Control Points (from Grass GIS) [default=yes]])],
+	  [], [enable_gcp=yes])
   if test x"$enable_gcp" != "xno"; then
 	  AC_DEFINE(ENABLE_GCP)
   fi
@@ -398,8 +410,8 @@ if test x"$enable_geos" != "xno"; then
   #   --enable-rttopo
   #
   AC_ARG_ENABLE(rttopo, [AS_HELP_STRING(
-	  [--enable-rttopo], [enables RTTOPO support [default=no]])],
-	  [], [enable_rttopo=no])
+	  [--enable-rttopo], [enables RTTOPO support [default=yes]])],
+	  [], [enable_rttopo=yes])
   if test x"$enable_rttopo" != "xno"; then
 	  AC_CHECK_HEADERS(librttopo.h,, [AC_MSG_ERROR([cannot find librttopo.h, bailing out])])
 	  AC_SEARCH_LIBS(rtt_AddLineNoFace,rttopo,,AC_MSG_ERROR(['librttopo' (>= v.1.1.0) is required but it doesn't seem to be installed on this system. You may need to try re-running configure with a --disable-rttopo parameter.]))

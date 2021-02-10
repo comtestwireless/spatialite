@@ -45,12 +45,12 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #include <stdio.h>
 #include <string.h>
 
-#include "config.h"
+#include <spatialite/gaiaconfig.h>
 
 #include "sqlite3.h"
 #include "spatialite.h"
 
-int
+static int
 execute_check (sqlite3 * sqlite, const char *sql, char **error)
 {
 /* executing an SQL statement returning True/False */
@@ -77,6 +77,60 @@ execute_check (sqlite3 * sqlite, const char *sql, char **error)
     if (retcode == 1)
 	return SQLITE_OK;
     return SQLITE_ERROR;
+}
+
+static int
+execute_check_int (sqlite3 * sqlite, const char *sql)
+{
+/* executing an SQL statement returning an Integer Value */
+    sqlite3_stmt *stmt;
+    int ret;
+    int value = -1;
+
+    ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "%s", sqlite3_errmsg (sqlite));
+	  return value;
+      }
+    ret = sqlite3_step (stmt);
+    if (ret == SQLITE_DONE || ret == SQLITE_ROW)
+      {
+	  if (sqlite3_column_type (stmt, 0) == SQLITE_INTEGER)
+	      value = sqlite3_column_int (stmt, 0);
+      }
+    sqlite3_finalize (stmt);
+    return value;
+}
+
+static char *
+execute_check_text (sqlite3 * sqlite, const char *sql)
+{
+/* executing an SQL statement returning a TEXT Value */
+    sqlite3_stmt *stmt;
+    int ret;
+    char *value = NULL;
+
+    ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "%s", sqlite3_errmsg (sqlite));
+	  return value;
+      }
+    ret = sqlite3_step (stmt);
+    if (ret == SQLITE_DONE || ret == SQLITE_ROW)
+      {
+	  if (sqlite3_column_type (stmt, 0) == SQLITE_TEXT)
+	    {
+		int len;
+		const char *val = (const char *) sqlite3_column_text (stmt, 0);
+		len = strlen (val);
+		value = malloc (len + 1);
+		strcpy (value, val);
+	    }
+      }
+    sqlite3_finalize (stmt);
+    return value;
 }
 
 #ifdef ENABLE_LIBXML2		/* only if LIBXML2 is supported */
@@ -140,6 +194,8 @@ check_map_config (sqlite3 * handle, void *cache)
     char *hexBlob;
     unsigned char *xml;
     int len;
+    int intval;
+    char *txtval;
 
 /* testing Map Configuration */
     xml = load_xml ("mapconfig.xml", &len);
@@ -163,7 +219,8 @@ check_map_config (sqlite3 * handle, void *cache)
     sqlite3_free (sql);
     if (ret != SQLITE_OK)
       {
-	  fprintf (stderr, "Error RegisterMapConfiguration #1: %s\n\n", err_msg);
+	  fprintf (stderr, "Error RegisterMapConfiguration #1: %s\n\n",
+		   err_msg);
 	  sqlite3_free (err_msg);
 	  return -7;
       }
@@ -188,13 +245,15 @@ check_map_config (sqlite3 * handle, void *cache)
     sqlite3_free (sql);
     if (ret != SQLITE_OK)
       {
-	  fprintf (stderr, "Error RegisterMapConfiguration #2: %s\n\n", err_msg);
+	  fprintf (stderr, "Error RegisterMapConfiguration #2: %s\n\n",
+		   err_msg);
 	  sqlite3_free (err_msg);
 	  return -13;
       }
 
 /* Reload Map Configuration */
-    sql = sqlite3_mprintf ("SELECT RL2_ReloadMapConfiguration(12, x%Q)", hexBlob);
+    sql =
+	sqlite3_mprintf ("SELECT RL2_ReloadMapConfiguration(12, x%Q)", hexBlob);
     ret = execute_check (handle, sql, NULL);
     sqlite3_free (sql);
     if (ret == SQLITE_OK)
@@ -204,7 +263,8 @@ check_map_config (sqlite3 * handle, void *cache)
 	  return -17;
       }
 
-    sql = sqlite3_mprintf ("SELECT RL2_ReloadMapConfiguration(1, x%Q)", hexBlob);
+    sql =
+	sqlite3_mprintf ("SELECT RL2_ReloadMapConfiguration(1, x%Q)", hexBlob);
     ret = execute_check (handle, sql, NULL);
     sqlite3_free (sql);
     if (ret == SQLITE_OK)
@@ -241,7 +301,8 @@ check_map_config (sqlite3 * handle, void *cache)
     free (blob);
     if (hexBlob == NULL)
 	return -24;
-    sql = sqlite3_mprintf ("SELECT RL2_ReloadMapConfiguration(1, x%Q)", hexBlob);
+    sql =
+	sqlite3_mprintf ("SELECT RL2_ReloadMapConfiguration(1, x%Q)", hexBlob);
     ret = execute_check (handle, sql, &err_msg);
     sqlite3_free (sql);
     if (ret != SQLITE_OK)
@@ -250,8 +311,10 @@ check_map_config (sqlite3 * handle, void *cache)
 	  sqlite3_free (err_msg);
 	  return -25;
       }
-      
-    sql = sqlite3_mprintf ("SELECT RL2_ReloadMapConfiguration('my-map', x%Q)", hexBlob);
+
+    sql =
+	sqlite3_mprintf ("SELECT RL2_ReloadMapConfiguration('my-map', x%Q)",
+			 hexBlob);
     ret = execute_check (handle, sql, &err_msg);
     sqlite3_free (sql);
     if (ret != SQLITE_OK)
@@ -262,6 +325,71 @@ check_map_config (sqlite3 * handle, void *cache)
       }
     free (hexBlob);
 
+/* testing Name, Title and Abstract */
+    sql = sqlite3_mprintf ("SELECT RL2_NumMapConfigurations()");
+    intval = execute_check_int (handle, sql);
+    if (intval != 2)
+      {
+	  fprintf (stderr,
+		   "Error RL2_NumMapConfigurations() = %d (expected 2)\n",
+		   intval);
+	  return -27;
+      }
+
+    sql = sqlite3_mprintf ("SELECT RL2_MapConfigurationNameN(2)");
+    txtval = execute_check_text (handle, sql);
+    if (txtval == NULL)
+      {
+	  fprintf (stderr,
+		   "Error RL2_MapConfigurationNameN(1): unexpected NULL\n");
+	  return -28;
+      }
+    if (strcmp (txtval, "my-map") != 0)
+      {
+	  fprintf (stderr,
+		   "Error RL2_MapConfigurationNameN(1): unexpected \"%s\"\n",
+		   txtval);
+	  free (txtval);
+	  return -29;
+      }
+    free (txtval);
+
+    sql = sqlite3_mprintf ("SELECT RL2_MapConfigurationTitleN(2)");
+    txtval = execute_check_text (handle, sql);
+    if (txtval == NULL)
+      {
+	  fprintf (stderr,
+		   "Error RL2_MapConfigurationTitleN(1): unexpected NULL\n");
+	  return -30;
+      }
+    if (strcmp (txtval, "another arbitrary title") != 0)
+      {
+	  fprintf (stderr,
+		   "Error RL2_MapConfigurationTitleN(1): unexpected \"%s\"\n",
+		   txtval);
+	  free (txtval);
+	  return -31;
+      }
+    free (txtval);
+
+    sql = sqlite3_mprintf ("SELECT RL2_MapConfigurationAbstractN(2)");
+    txtval = execute_check_text (handle, sql);
+    if (txtval == NULL)
+      {
+	  fprintf (stderr,
+		   "Error RL2_MapConfigurationAbstractN(1): unexpected NULL\n");
+	  return -32;
+      }
+    if (strcmp (txtval, "an abstract as any other") != 0)
+      {
+	  fprintf (stderr,
+		   "Error RL2_MapConfigurationAbstractN(1): unexpected \"%s\"\n",
+		   txtval);
+	  free (txtval);
+	  return -33;
+      }
+    free (txtval);
+
 /* Unregister Map Configuration */
     sql = sqlite3_mprintf ("SELECT RL2_UnRegisterMapConfiguration(5)");
     ret = execute_check (handle, sql, NULL);
@@ -270,7 +398,7 @@ check_map_config (sqlite3 * handle, void *cache)
       {
 	  fprintf (stderr, "Error UnRegisterMapConfiguration #1: %s\n\n",
 		   "expected failure");
-	  return -27;
+	  return -34;
       }
 
     sql = sqlite3_mprintf ("SELECT RL2_UnRegisterMapConfiguration('alpha')");
@@ -280,17 +408,20 @@ check_map_config (sqlite3 * handle, void *cache)
       {
 	  fprintf (stderr, "Error UnRegisterMapConfiguration #2: %s\n\n",
 		   "expected failure");
-	  return -28;
+	  return -35;
       }
 
-    sql = sqlite3_mprintf ("SELECT RL2_UnRegisterMapConfiguration('another-map')");
+    sql =
+	sqlite3_mprintf
+	("SELECT RL2_UnRegisterMapConfiguration('another-map')");
     ret = execute_check (handle, sql, &err_msg);
     sqlite3_free (sql);
     if (ret != SQLITE_OK)
       {
-	  fprintf (stderr, "Error UnRegisterMapConfiguration #4: %s\n\n", err_msg);
+	  fprintf (stderr, "Error UnRegisterMapConfiguration #4: %s\n\n",
+		   err_msg);
 	  sqlite3_free (err_msg);
-	  return -31;
+	  return -36;
       }
 
     return 0;

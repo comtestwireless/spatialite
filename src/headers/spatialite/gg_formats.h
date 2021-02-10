@@ -23,7 +23,7 @@ The Original Code is the SpatiaLite library
 
 The Initial Developer of the Original Code is Alessandro Furieri
  
-Portions created by the Initial Developer are Copyright (C) 2008-2020
+Portions created by the Initial Developer are Copyright (C) 2008-2021
 the Initial Developer. All Rights Reserved.
 
 Contributor(s):
@@ -1867,7 +1867,7 @@ extern "C"
 
  \sa gaiaFseek
  */
-    GAIAGEO_DECLARE int gaiaMemFseek (gaiaMemFilePtr mem, long offset);
+    GAIAGEO_DECLARE int gaiaMemFseek (gaiaMemFilePtr mem, off_t offset);
 
 /**
  Attempting to get a WKT from the .PRJ member of a given zipped Shapefile

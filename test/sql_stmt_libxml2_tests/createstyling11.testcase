@@ -4,5 +4,4 @@ SELECT CreateStylingTables(1, 1);
 1 # rows (not including the header row)
 1 # columns
 CreateStylingTables(1, 1)
-1
-
+0

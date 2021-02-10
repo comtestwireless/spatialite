@@ -4,4 +4,4 @@ SELECT WMS_UnRegisterGetCapabilities('some-url')
 1 # rows (not including the header row)
 1 # columns
 WMS_UnRegisterGetCapabilities('some-url')
-0
+1

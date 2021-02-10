@@ -23,7 +23,7 @@ The Original Code is the SpatiaLite library
 
 The Initial Developer of the Original Code is Alessandro Furieri
  
-Portions created by the Initial Developer are Copyright (C) 2015-202
+Portions created by the Initial Developer are Copyright (C) 2015-2021
 the Initial Developer. All Rights Reserved.
 
 Contributor(s):

@@ -23,7 +23,7 @@ The Original Code is the SpatiaLite library
 
 The Initial Developer of the Original Code is Alessandro Furieri
  
-Portions created by the Initial Developer are Copyright (C) 2008-2020
+Portions created by the Initial Developer are Copyright (C) 2008-2021
 the Initial Developer. All Rights Reserved.
 
 Contributor(s):
@@ -58,6 +58,12 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #ifdef __cplusplus
 extern "C"
 {
+#endif
+
+#if defined(_WIN32) && !defined(__MINGW32__)
+#include <spatialite/gaiaconfig-msvc.h>
+#else
+#include <spatialite/gaiaconfig.h>
 #endif
 
 /* constant values for gaiaGeodesicArcLength return_type */
@@ -1652,7 +1658,8 @@ extern "C"
  */
     GAIAGEO_DECLARE gaiaGeomCollPtr
 	gaiaAddMeasure (gaiaGeomCollPtr geom, double m_start, double m_end);
-
+	
+#ifndef OMIT_GEOS		/* including GEOS */
 /**
  Will interpolate the M-value for a LinestringM at the point closest to the 
  given Point.
@@ -1668,7 +1675,8 @@ extern "C"
  */
     GAIAGEO_DECLARE int
 	gaiaInterpolatePoint (const void *p_cache, gaiaGeomCollPtr line,
-			      gaiaGeomCollPtr point, double *m_value);
+			      gaiaGeomCollPtr point, double *m_value);		      
+#endif /* end including GEOS */
 
 /**
  Return a GeometryCollection containing elements matching the specified range of measures
@@ -2274,6 +2282,10 @@ extern "C"
  */
     GAIAGEO_DECLARE void gaiaUpDownHeight (gaiaLinestringPtr line, double *up,
 					   double *down);
+	
+#ifdef _WIN32				      
+	GAIAGEO_DECLARE FILE * gaia_win_fopen(const char *path, const char *mode);
+#endif
 
 #ifdef __cplusplus
 }

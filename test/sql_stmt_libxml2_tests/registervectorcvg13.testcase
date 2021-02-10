@@ -4,4 +4,4 @@ SELECT SE_RegisterVectorCoverage('alpha', 'table', 'geom');
 1 # rows (not including the header row)
 1 # columns
 SE_RegisterVectorCoverage('alpha', 'table', 'geom')
-0
+1

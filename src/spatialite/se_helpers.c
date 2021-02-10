@@ -24,7 +24,7 @@ The Original Code is the SpatiaLite library
 
 The Initial Developer of the Original Code is Alessandro Furieri
  
-Portions created by the Initial Developer are Copyright (C) 2008-2020
+Portions created by the Initial Developer are Copyright (C) 2008-2021
 the Initial Developer. All Rights Reserved.
 
 Contributor(s):
@@ -637,6 +637,151 @@ reload_map_configuration (void *p_sqlite, int xid,
       }
     else
 	return 0;
+}
+
+SPATIALITE_PRIVATE int
+count_map_configurations (void *p_sqlite)
+{
+/* auxiliary function: counting how may registered Map Configurations are there */
+    sqlite3 *sqlite = (sqlite3 *) p_sqlite;
+    char *errMsg = NULL;
+    int i;
+    char **results;
+    int rows;
+    int columns;
+    int ret;
+    int count = 0;
+    const char *sql = "SELECT Count(*) FROM rl2map_configurations_view";
+    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, &errMsg);
+    if (ret != SQLITE_OK)
+      {
+	  spatialite_e ("NumMapConfigurations: \"%s\"\n", errMsg);
+	  sqlite3_free (errMsg);
+	  return -1;
+      }
+    for (i = 1; i <= rows; i++)
+	count = atoi (results[(i * columns) + 0]);
+    sqlite3_free_table (results);
+    return count;
+}
+
+SPATIALITE_PRIVATE char *
+get_map_configuration_name (void *p_sqlite, int ind)
+{
+/* auxiliary function: returning the Name of the Nth MapConfiguration */
+    sqlite3 *sqlite = (sqlite3 *) p_sqlite;
+    char *errMsg = NULL;
+    int i;
+    char **results;
+    int rows;
+    int columns;
+    int ret;
+    int count = 0;
+    char *name = NULL;
+    const char *sql = "SELECT name FROM rl2map_configurations_view ORDER BY name";
+    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, &errMsg);
+    if (ret != SQLITE_OK)
+      {
+	  spatialite_e ("GetMapConfigurationName: \"%s\"\n", errMsg);
+	  sqlite3_free (errMsg);
+	  return NULL;
+      }
+    for (i = 1; i <= rows; i++)
+      {
+	  const char *str = results[(i * columns) + 0];
+	  count++;
+	  if (count == ind)
+	    {
+		if (str != NULL)
+		  {
+		      int len = strlen (str);
+		      name = malloc (len + 1);
+		      strcpy (name, str);
+		  }
+	    }
+      }
+    sqlite3_free_table (results);
+    return name;
+}
+
+SPATIALITE_PRIVATE char *
+get_map_configuration_title (void *p_sqlite, int ind)
+{
+/* auxiliary function: returning the Title of the Nth MapConfiguration */
+    sqlite3 *sqlite = (sqlite3 *) p_sqlite;
+    char *errMsg = NULL;
+    int i;
+    char **results;
+    int rows;
+    int columns;
+    int ret;
+    int count = 0;
+    char *title = NULL;
+    const char *sql =
+	"SELECT title FROM rl2map_configurations_view ORDER BY name";
+    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, &errMsg);
+    if (ret != SQLITE_OK)
+      {
+	  spatialite_e ("GetMapConfigurationTitle: \"%s\"\n", errMsg);
+	  sqlite3_free (errMsg);
+	  return NULL;
+      }
+    for (i = 1; i <= rows; i++)
+      {
+	  const char *str = results[(i * columns) + 0];
+	  count++;
+	  if (count == ind)
+	    {
+		if (str != NULL)
+		  {
+		      int len = strlen (str);
+		      title = malloc (len + 1);
+		      strcpy (title, str);
+		  }
+	    }
+      }
+    sqlite3_free_table (results);
+    return title;
+}
+
+SPATIALITE_PRIVATE char *
+get_map_configuration_abstract (void *p_sqlite, int ind)
+{
+/* auxiliary function: returning the Abstract of the Nth MapConfiguration */
+    sqlite3 *sqlite = (sqlite3 *) p_sqlite;
+    char *errMsg = NULL;
+    int i;
+    char **results;
+    int rows;
+    int columns;
+    int ret;
+    int count = 0;
+    char *abstract = NULL;
+    const char *sql =
+	"SELECT abstract FROM rl2map_configurations_view ORDER BY name";
+    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, &errMsg);
+    if (ret != SQLITE_OK)
+      {
+	  spatialite_e ("GetMapConfigurationAbstract: \"%s\"\n", errMsg);
+	  sqlite3_free (errMsg);
+	  return NULL;
+      }
+    for (i = 1; i <= rows; i++)
+      {
+	  const char *str = results[(i * columns) + 0];
+	  count++;
+	  if (count == ind)
+	    {
+		if (str != NULL)
+		  {
+		      int len = strlen (str);
+		      abstract = malloc (len + 1);
+		      strcpy (abstract, str);
+		  }
+	    }
+      }
+    sqlite3_free_table (results);
+    return abstract;
 }
 
 SPATIALITE_PRIVATE int
@@ -3512,6 +3657,8 @@ do_update_vector_coverage_extents (sqlite3 * sqlite, const void *cache,
     gaiaGeomCollPtr in;
     gaiaGeomCollPtr out;
     gaiaPointPtr pt;
+    
+#ifndef OMIT_PROJ		/* including PROJ.4 */
 
     getProjParams (sqlite, natural_srid, &proj_from);
     if (proj_from == NULL)
@@ -3707,6 +3854,7 @@ do_update_vector_coverage_extents (sqlite3 * sqlite, const void *cache,
 	free (proj_from);
     if (proj_to)
 	free (proj_to);
+#endif /* end including PROJ.4 */
     return 0;
 }
 
@@ -4543,6 +4691,8 @@ do_update_raster_coverage_extents (sqlite3 * sqlite, const void *cache,
     gaiaGeomCollPtr in;
     gaiaGeomCollPtr out;
     gaiaPointPtr pt;
+    
+#ifndef OMIT_PROJ		/* including PROJ.4 */
 
     getProjParams (sqlite, natural_srid, &proj_from);
     if (proj_from == NULL)
@@ -4738,6 +4888,7 @@ do_update_raster_coverage_extents (sqlite3 * sqlite, const void *cache,
 	free (proj_from);
     if (proj_to)
 	free (proj_to);
+#endif /* end including PROJ.4 */
     return 0;
 }
 

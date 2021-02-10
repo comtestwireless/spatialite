@@ -24,7 +24,7 @@ The Original Code is the SpatiaLite library
 
 The Initial Developer of the Original Code is Alessandro Furieri
  
-Portions created by the Initial Developer are Copyright (C) 2017-2020
+Portions created by the Initial Developer are Copyright (C) 2017-2021
 the Initial Developer. All Rights Reserved.
 
 Contributor(s):
@@ -614,7 +614,11 @@ gaia_sql_proc_import (const void *cache, const char *filepath,
     stored_proc_reset_error (cache);
 
 /* opening the input file */
+#ifdef _WIN32
+    in = gaia_win_fopen (filepath, "rb");
+#else
     in = fopen (filepath, "rb");
+#endif
     if (in == NULL)
       {
 	  char *errmsg = sqlite3_mprintf ("Unable to open: %s\n", filepath);
@@ -2449,9 +2453,17 @@ gaia_sql_proc_logfile (const void *ctx, const char *filepath, int append)
 
 /* attempting to enable the Logfile */
     if (append)
+#ifdef _WIN32
+	log = gaia_win_fopen (filepath, "ab");
+#else
 	log = fopen (filepath, "ab");
+#endif
     else
+#ifdef _WIN32
+	log = gaia_win_fopen (filepath, "wb");
+#else
 	log = fopen (filepath, "wb");
+#endif
     if (log == NULL)
 	return 0;
 

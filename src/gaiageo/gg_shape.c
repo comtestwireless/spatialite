@@ -24,7 +24,7 @@ The Original Code is the SpatiaLite library
 
 The Initial Developer of the Original Code is Alessandro Furieri
  
-Portions created by the Initial Developer are Copyright (C) 2008-2020
+Portions created by the Initial Developer are Copyright (C) 2008-2021
 the Initial Developer. All Rights Reserved.
 
 Contributor(s):
@@ -55,6 +55,10 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #include "config-msvc.h"
 #else
 #include "config.h"
+#endif
+
+#ifdef _WIN32
+#include <Windows.h>
 #endif
 
 #if OMIT_ICONV == 0		/* if ICONV is disabled no SHP support is available */
@@ -176,7 +180,7 @@ gaiaSetStrValue (gaiaDbfFieldPtr field, char *str)
 }
 
 GAIAGEO_DECLARE int
-gaiaMemFseek (gaiaMemFilePtr mem, long offset)
+gaiaMemFseek (gaiaMemFilePtr mem, off_t offset)
 {
 /* repositioning a Memory File */
     if (mem == NULL)
@@ -185,7 +189,7 @@ gaiaMemFseek (gaiaMemFilePtr mem, long offset)
 	return -1;
     if (offset < 0)
 	return -1;
-    if (offset >= mem->size)
+    if (offset >= (off_t)mem->size)
 	return -1;
     mem->offset = offset;
     return 0;
@@ -526,7 +530,11 @@ gaiaOpenShpRead (gaiaShapefilePtr shp, const char *path, const char *charFrom,
     if (shp->memShx == NULL)
       {
 	  sprintf (xpath, "%s.shx", path);
+#ifdef _WIN32
+	  fl_shx = gaia_win_fopen (xpath, "rb");
+#else
 	  fl_shx = fopen (xpath, "rb");
+#endif
 	  if (!fl_shx)
 	    {
 		sys_err = strerror (errno);
@@ -538,7 +546,11 @@ gaiaOpenShpRead (gaiaShapefilePtr shp, const char *path, const char *charFrom,
     if (shp->memShp == NULL)
       {
 	  sprintf (xpath, "%s.shp", path);
+#ifdef _WIN32
+	  fl_shp = gaia_win_fopen (xpath, "rb");
+#else
 	  fl_shp = fopen (xpath, "rb");
+#endif
 	  if (!fl_shp)
 	    {
 		sys_err = strerror (errno);
@@ -550,7 +562,11 @@ gaiaOpenShpRead (gaiaShapefilePtr shp, const char *path, const char *charFrom,
     if (shp->memDbf == NULL)
       {
 	  sprintf (xpath, "%s.dbf", path);
+#ifdef _WIN32
+	  fl_dbf = gaia_win_fopen (xpath, "rb");
+#else
 	  fl_dbf = fopen (xpath, "rb");
+#endif
 	  if (!fl_dbf)
 	    {
 		sys_err = strerror (errno);
@@ -1086,7 +1102,11 @@ gaiaOpenShpWriteEx (gaiaShapefilePtr shp, const char *path, int shape,
     buf_shp = malloc (buf_size);
 /* trying to open shapefile files */
     sprintf (xpath, "%s.shx", path);
+#ifdef _WIN32
+    fl_shx = gaia_win_fopen (xpath, "wb");
+#else
     fl_shx = fopen (xpath, "wb");
+#endif
     if (!fl_shx)
       {
 	  sys_err = strerror (errno);
@@ -1095,7 +1115,11 @@ gaiaOpenShpWriteEx (gaiaShapefilePtr shp, const char *path, int shape,
 	  goto no_file;
       }
     sprintf (xpath, "%s.shp", path);
+#ifdef _WIN32
+    fl_shp = gaia_win_fopen (xpath, "wb");
+#else
     fl_shp = fopen (xpath, "wb");
+#endif
     if (!fl_shp)
       {
 	  sys_err = strerror (errno);
@@ -1104,7 +1128,11 @@ gaiaOpenShpWriteEx (gaiaShapefilePtr shp, const char *path, int shape,
 	  goto no_file;
       }
     sprintf (xpath, "%s.dbf", path);
+#ifdef _WIN32
+    fl_dbf = gaia_win_fopen (xpath, "wb");
+#else
     fl_dbf = fopen (xpath, "wb");
+#endif
     if (!fl_dbf)
       {
 	  sys_err = strerror (errno);
@@ -4988,7 +5016,11 @@ gaiaOpenDbfRead (gaiaDbfPtr dbf, const char *path, const char *charFrom,
       }
     if (dbf->memDbf == NULL)
       {
+#ifdef _WIN32
+	  fl_dbf = gaia_win_fopen (path, "rb");
+#else
 	  fl_dbf = fopen (path, "rb");
+#endif
 	  if (!fl_dbf)
 	    {
 		sys_err = strerror (errno);
@@ -5237,7 +5269,11 @@ gaiaOpenDbfWriteEx (gaiaDbfPtr dbf, const char *path, const char *charFrom,
 	  goto unsupported_conversion;
       }
 /* trying to open the DBF file */
+#ifdef _WIN32
+    fl_dbf = gaia_win_fopen (path, "wb");
+#else
     fl_dbf = fopen (path, "wb");
+#endif
     if (!fl_dbf)
       {
 	  sys_err = strerror (errno);
@@ -5565,3 +5601,34 @@ gaiaReadDbfEntity_ex (gaiaDbfPtr dbf, int current_row, int *deleted,
 }
 
 #endif /* ICONV enabled/disabled */
+
+#ifdef _WIN32
+GAIAGEO_DECLARE FILE *
+gaia_win_fopen (const char *path, const char *mode)
+{
+/* only for Windows: opening a file with an UTF16 path */
+    wchar_t *path16;
+    wchar_t *mode16;
+    int len;
+    FILE *fl;
+
+/* converting the PATH from UTF-8 to UNICODE UTF-16 */
+    len = MultiByteToWideChar (CP_UTF8, 0, path, -1, NULL, 0);
+    path16 = malloc ((len + 1) * 2);
+    len = MultiByteToWideChar (CP_UTF8, 0, path, -1, path16, len);
+
+/* converting the MODE from UTF-8 to UNICODE UTF-16 */
+    len = MultiByteToWideChar (CP_UTF8, 0, mode, -1, NULL, 0);
+    mode16 = malloc ((len + 1) * 2);
+    MultiByteToWideChar (CP_UTF8, 0, mode, -1, mode16, len);
+
+/* calling the UTF-16 version of fopen() */
+    fl = _wfopen (path16, mode16);
+
+/* memory cleanup */
+    free (path16);
+    free (mode16);
+
+    return fl;
+}
+#endif

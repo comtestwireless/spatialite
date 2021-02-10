@@ -23,7 +23,7 @@ The Original Code is the SpatiaLite library
 
 The Initial Developer of the Original Code is Alessandro Furieri
  
-Portions created by the Initial Developer are Copyright (C) 2008-2020
+Portions created by the Initial Developer are Copyright (C) 2008-2021
 the Initial Developer. All Rights Reserved.
 
 Contributor(s):
@@ -368,8 +368,8 @@ extern "C"
 /* Memory File Type */
 	char *path;
 	void *buf;
-	uint32_t size;
-	uint32_t offset;
+	uint64_t size;
+	uint64_t offset;
     } gaiaMemFile;
 /** 
  Typedef for Memory File structure

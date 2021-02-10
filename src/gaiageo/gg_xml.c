@@ -24,7 +24,7 @@ The Original Code is the SpatiaLite library
 
 The Initial Developer of the Original Code is Alessandro Furieri
  
-Portions created by the Initial Developer are Copyright (C) 2008-2020
+Portions created by the Initial Developer are Copyright (C) 2008-2021
 the Initial Developer. All Rights Reserved.
 
 Contributor(s):
@@ -3074,7 +3074,11 @@ gaiaXmlStore (const unsigned char *blob, int size, const char *path, int indent)
 	return 0;
 
 /* exporting the XML Document into an external file */
+#ifdef _WIN32
+    fl = gaia_win_fopen (path, "wb");
+#else
     fl = fopen (path, "wb");
+#endif
     if (fl == NULL)
       {
 	  spatialite_e ("Unable to open \"%s\"\n", path);

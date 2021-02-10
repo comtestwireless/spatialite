@@ -23,7 +23,7 @@ The Original Code is the SpatiaLite library
 
 The Initial Developer of the Original Code is Alessandro Furieri
  
-Portions created by the Initial Developer are Copyright (C) 2013-2020
+Portions created by the Initial Developer are Copyright (C) 2013-2021
 the Initial Developer. All Rights Reserved.
 
 Contributor(s):
@@ -413,10 +413,12 @@ init_splite_internal_cache (struct splite_internal_cache *cache)
     else if (atoi (tinyPoint) != 0)
 	cache->tinyPointEnabled = 1;
     cache->lastPostgreSqlError = NULL;
+#ifndef OMIT_GEOS		/* including GEOS */
     cache->buffer_end_cap_style = GEOSBUF_CAP_ROUND;
     cache->buffer_join_style = GEOSBUF_JOIN_ROUND;
     cache->buffer_mitre_limit = 5.0;
     cache->buffer_quadrant_segments = 30;
+#endif /* end including GEOS */
 /* initializing an empty linked list of Topologies */
     cache->firstTopology = NULL;
     cache->lastTopology = NULL;
@@ -500,7 +502,7 @@ spatialite_alloc_reentrant ()
 /* initializing GEOS and PROJ.4 handles */
 
 #ifndef OMIT_GEOS		/* initializing GEOS */
-    cache->GEOS_handle = GEOS_init_r (NULL, NULL);
+    cache->GEOS_handle = GEOS_init_r ();
     GEOSContext_setNoticeMessageHandler_r (cache->GEOS_handle,
 					   conn_geos_warning, cache);
     GEOSContext_setErrorMessageHandler_r (cache->GEOS_handle, conn_geos_error,

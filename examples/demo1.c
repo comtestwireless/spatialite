@@ -18,7 +18,7 @@ redistribute it freely
 #include <stdio.h>
 #include <string.h>
 
-#include "config.h"
+#include <spatialite/gaiaconfig.h>
 
 /*
 these headers are required in order to support

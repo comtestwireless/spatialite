@@ -81,7 +81,6 @@ EXTRA_DIST = bdmpolyfromtext10.testcase \
 	buffer4.testcase \
 	buffer5.testcase \
 	buffer6.testcase \
-	buffer7.testcase \
 	buffer8.testcase \
 	buffer9.testcase \
 	buildarea1.testcase \
@@ -213,8 +212,6 @@ EXTRA_DIST = bdmpolyfromtext10.testcase \
 	intersection4.testcase \
 	intersection5.testcase \
 	intersection6.testcase \
-	intersection7.testcase \
-	intersection8.testcase \
 	intersection9.testcase \
 	isclosed10.testcase \
 	isclosed1.testcase \
@@ -440,16 +437,10 @@ EXTRA_DIST = bdmpolyfromtext10.testcase \
 	symdifference9.testcase \
 	union10.testcase \
 	union11.testcase \
-	union12.testcase \
-	union13.testcase \
 	union14.testcase \
 	union15.testcase \
 	union16.testcase \
-	union17.testcase \
-	union18.testcase \
-	union19.testcase \
 	union1.testcase \
-	union20.testcase \
 	union21.testcase \
 	union22.testcase \
 	union23.testcase \
@@ -500,7 +491,6 @@ EXTRA_DIST = bdmpolyfromtext10.testcase \
 	geoserror4.testcase \
 	geoserror5.testcase \
 	geoserror6.testcase \
-	geoserror7.testcase \
 	geoserror7.testcase \
 	testgeos1.testcase \
 	testgeos2.testcase \

@@ -2,8 +2,8 @@
 <RL2MapConfig version="1.0" xmlns="http://www.gaia-gis.it/RL2MapConfig" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.gaia-gis.it/RL2MapConfig http://www.gaia-gis.it/RL2MapConfig_1_0.xsd" >
 	<Name>my-map</Name>
 	<Description>
-		<Title>another arbitraty title</Title>
-		<Abstract>another abstract as another</Abstract>
+		<Title>another arbitrary title</Title>
+		<Abstract>an abstract as any other</Abstract>
 	</Description>
 	<MapOptions>
 		<MultiThreading Enabled="true" MaxThreads="8" />

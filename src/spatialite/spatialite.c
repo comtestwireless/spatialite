@@ -24,7 +24,7 @@ The Original Code is the SpatiaLite library
 
 The Initial Developer of the Original Code is Alessandro Furieri
  
-Portions created by the Initial Developer are Copyright (C) 2008-2020
+Portions created by the Initial Developer are Copyright (C) 2008-2021
 the Initial Developer. All Rights Reserved.
 
 Contributor(s):
@@ -93,7 +93,7 @@ Regione Toscana - Settore Sistema Informativo Territoriale ed Ambientale
 #include <spatialite/gaiageo.h>
 #include <spatialite/gaiaexif.h>
 #include <spatialite/geopackage.h>
-#include <spatialite/spatialite.h>
+#include <spatialite/spatialite_ext.h>
 #include <spatialite/gg_advanced.h>
 #include <spatialite/gg_dxf.h>
 #include <spatialite/gaiamatrix.h>
@@ -24190,7 +24190,11 @@ fnct_PROJ_GuessSridFromSHP (sqlite3_context * context, int argc,
       }
 /* loocking for an eventual .PRJ file */
     path = sqlite3_mprintf ("%s.prj", basepath);
+#ifdef _WIN32
+    in = gaia_win_fopen (path, "rb");
+#else
     in = fopen (path, "rb");
+#endif
     if (in != NULL)
       {
 	  /* reading the WKT expression from the PRJ file */
@@ -24947,11 +24951,10 @@ length_common (const void *p_cache, sqlite3_context * context, int argc,
 					l = gaiaGeodesicTotalLength (a,
 								     b,
 								     rf,
-								     line->DimensionModel,
 								     line->
-								     Coords,
-								     line->
-								     Points);
+								     DimensionModel,
+								     line->Coords,
+								     line->Points);
 					if (l < 0.0)
 					  {
 					      length = -1.0;
@@ -24974,12 +24977,9 @@ length_common (const void *p_cache, sqlite3_context * context, int argc,
 					      l = gaiaGeodesicTotalLength (a,
 									   b,
 									   rf,
-									   ring->
-									   DimensionModel,
-									   ring->
-									   Coords,
-									   ring->
-									   Points);
+									   ring->DimensionModel,
+									   ring->Coords,
+									   ring->Points);
 					      if (l < 0.0)
 						{
 						    length = -1.0;
@@ -26139,11 +26139,11 @@ fnct_Circularity (sqlite3_context * context, int argc, sqlite3_value ** argv)
 		  {
 #ifdef ENABLE_RTTOPO		/* only if RTTOPO is enabled */
 		      perimeter = gaiaGeodesicTotalLength (a, b, rf,
-							   pg->Exterior->
-							   DimensionModel,
+							   pg->
+							   Exterior->DimensionModel,
 							   pg->Exterior->Coords,
-							   pg->Exterior->
-							   Points);
+							   pg->
+							   Exterior->Points);
 		      if (perimeter < 0.0)
 			  ret = 0;
 		      else
@@ -35988,7 +35988,11 @@ fnct_BlobFromFile (sqlite3_context * context, int argc, sqlite3_value ** argv)
       }
     p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
     n_bytes = sqlite3_value_bytes (argv[0]);
+#ifdef _WIN32
+    in = gaia_win_fopen (path, "rb");
+#else
     in = fopen (path, "rb");
+#endif
     if (in == NULL)
       {
 	  sqlite3_result_null (context);
@@ -36058,7 +36062,11 @@ fnct_BlobToFile (sqlite3_context * context, int argc, sqlite3_value ** argv)
       }
     p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
     n_bytes = sqlite3_value_bytes (argv[0]);
+#ifdef _WIN32
+    out = gaia_win_fopen (path, "wb");
+#else
     out = fopen (path, "wb");
+#endif
     if (out == NULL)
 	ret = 0;
     else
@@ -36518,7 +36526,11 @@ fnct_ExportDXF (sqlite3_context * context, int argc, sqlite3_value ** argv)
       }
 
     path = sqlite3_mprintf ("%s/%s.dxf", dir_path, filename);
+#ifdef _WIN32
+    out = gaia_win_fopen (path, "wb");
+#else
     out = fopen (path, "wb");
+#endif
     if (out == NULL)
       {
 	  ret = 0;
@@ -40726,8 +40738,7 @@ fnct_GeodesicLength (sqlite3_context * context, int argc, sqlite3_value ** argv)
 				  /* interior Rings */
 				  ring = polyg->Interiors + ib;
 				  l = gaiaGeodesicTotalLength (a, b, rf,
-							       ring->
-							       DimensionModel,
+							       ring->DimensionModel,
 							       ring->Coords,
 							       ring->Points);
 				  if (l < 0.0)
@@ -40821,8 +40832,7 @@ fnct_GreatCircleLength (sqlite3_context * context, int argc,
 			    ring = polyg->Exterior;
 			    length +=
 				gaiaGreatCircleTotalLength (a, b,
-							    ring->
-							    DimensionModel,
+							    ring->DimensionModel,
 							    ring->Coords,
 							    ring->Points);
 			    for (ib = 0; ib < polyg->NumInteriors; ib++)
@@ -40831,8 +40841,7 @@ fnct_GreatCircleLength (sqlite3_context * context, int argc,
 				  ring = polyg->Interiors + ib;
 				  length +=
 				      gaiaGreatCircleTotalLength (a, b,
-								  ring->
-								  DimensionModel,
+								  ring->DimensionModel,
 								  ring->Coords,
 								  ring->Points);
 			      }
@@ -42722,6 +42731,108 @@ fnct_ReloadMapConfiguration (sqlite3_context * context, int argc,
     n_bytes = sqlite3_value_bytes (argv[1]);
     ret = reload_map_configuration (sqlite, id, name, p_blob, n_bytes);
     sqlite3_result_int (context, ret);
+}
+
+static void
+fnct_NumMapConfigurations (sqlite3_context * context, int argc,
+			   sqlite3_value ** argv)
+{
+/* SQL function:
+/ RL2_NumMapConfigurations()
+/
+/ returns the total number of registered MapConfigurations
+/ >= 1 on success
+/ 0 if no MapConfiguration is registered, -1 on error
+*/
+    int ret;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    ret = count_map_configurations (sqlite);
+    sqlite3_result_int (context, ret);
+}
+
+static void
+fnct_MapConfigurationNameN (sqlite3_context * context, int argc,
+			       sqlite3_value ** argv)
+{
+/* SQL function:
+/ MapConfigurationNameN(Integer ind)
+/
+/ returns the Name of the Nth  Map Configuration (first Index is ZERO)
+/ NULL on failure or on invalid arguments
+*/
+    int ind = -1;
+    char *name = NULL;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) == SQLITE_INTEGER)
+	ind = sqlite3_value_int (argv[0]);
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    name = get_map_configuration_name (sqlite, ind);
+    if (name == NULL)
+	sqlite3_result_null (context);
+    else
+	sqlite3_result_text (context, name, strlen (name), free);
+}
+
+static void
+fnct_MapConfigurationTitleN (sqlite3_context * context, int argc,
+				sqlite3_value ** argv)
+{
+/* SQL function:
+/ MapConfigurationTitleN(Integer ind)
+/
+/ returns the Title of the Nth  Map Configuration (first Index is ZERO)
+/ NULL on failure or on invalid arguments
+*/
+    int ind = -1;
+    char *name = NULL;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) == SQLITE_INTEGER)
+	ind = sqlite3_value_int (argv[0]);
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    name = get_map_configuration_title (sqlite, ind);
+    if (name == NULL)
+	sqlite3_result_null (context);
+    else
+	sqlite3_result_text (context, name, strlen (name), free);
+}
+
+static void
+fnct_MapConfigurationAbstractN (sqlite3_context * context, int argc,
+				   sqlite3_value ** argv)
+{
+/* SQL function:
+/ MapConfigurationAbstractN(Integer ind)
+/
+/ returns the Name of the Nth  Map Configuration (first Index is ZERO)
+/ NULL on failure or on invalid arguments
+*/
+    int ind = -1;
+    char *name = NULL;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) == SQLITE_INTEGER)
+	ind = sqlite3_value_int (argv[0]);
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    name = get_map_configuration_abstract (sqlite, ind);
+    if (name == NULL)
+	sqlite3_result_null (context);
+    else
+	sqlite3_result_text (context, name, strlen (name), free);
 }
 
 static void
@@ -46953,6 +47064,7 @@ fnct_bufferoptions_reset (sqlite3_context * context, int argc,
 /
 / returns: 1 on success, 0 on failure
 */
+#ifndef OMIT_GEOS		/* including GEOS */
     struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (cache == NULL)
@@ -46965,6 +47077,9 @@ fnct_bufferoptions_reset (sqlite3_context * context, int argc,
     cache->buffer_mitre_limit = 5.0;
     cache->buffer_quadrant_segments = 30;
     sqlite3_result_int (context, 1);
+#else /* GEOS is disabled */
+	sqlite3_result_int (context, 0);
+#endif /* end including GEOS */
 }
 
 static void
@@ -46976,6 +47091,7 @@ fnct_bufferoptions_set_endcap (sqlite3_context * context, int argc,
 /
 / returns: 1 on success, 0 on failure
 */
+#ifndef OMIT_GEOS		/* including GEOS */
     const char *value;
     int val = -1;
     struct splite_internal_cache *cache = sqlite3_user_data (context);
@@ -47005,6 +47121,9 @@ fnct_bufferoptions_set_endcap (sqlite3_context * context, int argc,
       }
     else
 	sqlite3_result_int (context, 0);
+#else /* GEOS is disabled */
+	sqlite3_result_int (context, 0);
+#endif /* end including GEOS */
 }
 
 static void
@@ -47016,6 +47135,7 @@ fnct_bufferoptions_set_join (sqlite3_context * context, int argc,
 /
 / returns: 1 on success, 0 on failure
 */
+#ifndef OMIT_GEOS		/* including GEOS */
     const char *value;
     int val = -1;
     struct splite_internal_cache *cache = sqlite3_user_data (context);
@@ -47047,6 +47167,9 @@ fnct_bufferoptions_set_join (sqlite3_context * context, int argc,
       }
     else
 	sqlite3_result_int (context, 0);
+#else /* GEOS is disabled */
+	sqlite3_result_int (context, 0);
+#endif /* end including GEOS */
 }
 
 static void
@@ -47058,6 +47181,7 @@ fnct_bufferoptions_set_mitrelimit (sqlite3_context * context, int argc,
 /
 / returns: 1 on success, 0 on failure
 */
+#ifndef OMIT_GEOS		/* including GEOS */
     double value;
     struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
@@ -47080,6 +47204,9 @@ fnct_bufferoptions_set_mitrelimit (sqlite3_context * context, int argc,
       }
     cache->buffer_mitre_limit = value;
     sqlite3_result_int (context, 1);
+#else /* GEOS is disabled */
+	sqlite3_result_int (context, 0);
+#endif /* end including GEOS */
 }
 
 static void
@@ -47091,6 +47218,7 @@ fnct_bufferoptions_set_quadsegs (sqlite3_context * context, int argc,
 /
 / returns: 1 on success, 0 on failure
 */
+#ifndef OMIT_GEOS		/* including GEOS */
     int value;
     struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
@@ -47110,6 +47238,9 @@ fnct_bufferoptions_set_quadsegs (sqlite3_context * context, int argc,
 	value = 1;
     cache->buffer_quadrant_segments = value;
     sqlite3_result_int (context, 1);
+#else /* GEOS is disabled */
+	sqlite3_result_int (context, 0);
+#endif /* end including GEOS */
 }
 
 static void
@@ -47121,6 +47252,7 @@ fnct_bufferoptions_get_endcap (sqlite3_context * context, int argc,
 /
 / returns: a Text string on success, NULL on failure
 */
+#ifndef OMIT_GEOS		/* including GEOS */
     struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (cache == NULL)
@@ -47145,6 +47277,9 @@ fnct_bufferoptions_get_endcap (sqlite3_context * context, int argc,
       default:
 	  sqlite3_result_null (context);
       };
+#else /* GEOS is disabled */
+	  sqlite3_result_null (context);
+#endif /* end including GEOS */
 }
 
 static void
@@ -47156,6 +47291,7 @@ fnct_bufferoptions_get_join (sqlite3_context * context, int argc,
 /
 / returns: a Text string on success, NULL on failure
 */
+#ifndef OMIT_GEOS		/* including GEOS */
     struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (cache == NULL)
@@ -47180,6 +47316,9 @@ fnct_bufferoptions_get_join (sqlite3_context * context, int argc,
       default:
 	  sqlite3_result_null (context);
       };
+#else /* GEOS is disabled */
+	  sqlite3_result_null (context);
+#endif /* end including GEOS */
 }
 
 static void
@@ -47191,6 +47330,7 @@ fnct_bufferoptions_get_mitrelimit (sqlite3_context * context, int argc,
 /
 / returns: a Double on success, NULL on failure
 */
+#ifndef OMIT_GEOS		/* including GEOS */
     struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (cache == NULL)
@@ -47199,6 +47339,9 @@ fnct_bufferoptions_get_mitrelimit (sqlite3_context * context, int argc,
 	  return;
       }
     sqlite3_result_double (context, cache->buffer_mitre_limit);
+#else /* GEOS is disabled */
+	  sqlite3_result_null (context);
+#endif /* end including GEOS */
 }
 
 static void
@@ -47210,6 +47353,7 @@ fnct_bufferoptions_get_quadsegs (sqlite3_context * context, int argc,
 /
 / returns: an Integer on success, NULL on failure
 */
+#ifndef OMIT_GEOS		/* including GEOS */
     struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
     if (cache == NULL)
@@ -47218,6 +47362,9 @@ fnct_bufferoptions_get_quadsegs (sqlite3_context * context, int argc,
 	  return;
       }
     sqlite3_result_int (context, cache->buffer_quadrant_segments);
+#else /* GEOS is disabled */
+	  sqlite3_result_null (context);
+#endif /* end including GEOS */
 }
 
 static void
@@ -52544,6 +52691,18 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "RL2_ReloadMapConfiguration", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_ReloadMapConfiguration, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "RL2_NumMapConfigurations", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_NumMapConfigurations, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "RL2_MapConfigurationNameN", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_MapConfigurationNameN, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "RL2_MapConfigurationTitleN", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_MapConfigurationTitleN, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "RL2_MapConfigurationAbstractN", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_MapConfigurationAbstractN, 0, 0, 0);
 
     sqlite3_create_function_v2 (db, "CreateIsoMetadataTables", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
@@ -53311,7 +53470,8 @@ spatialite_splash_screen (int verbose)
 		    ("\t- 'VirtualShape'\t[direct Shapefile access]\n");
 		spatialite_i ("\t- 'VirtualDbf'\t\t[direct DBF access]\n");
 		spatialite_i ("\t- 'VirtualText'\t\t[direct CSV/TXT access]\n");
-		spatialite_i ("\t- 'VirtualGeoJSON'\t\t[direct GeoJSON access]\n");
+		spatialite_i
+		    ("\t- 'VirtualGeoJSON'\t\t[direct GeoJSON access]\n");
 #ifndef OMIT_FREEXL
 		spatialite_i ("\t- 'VirtualXL'\t\t[direct XLS access]\n");
 #endif /* end FreeXL conditional */
@@ -53328,13 +53488,13 @@ spatialite_splash_screen (int verbose)
 		    ("\t- 'VirtualSpatialIndex'\t[R*Tree metahandler]\n");
 		spatialite_i
 		    ("\t- 'VirtualElementary'\t[ElemGeoms metahandler]\n");
-		    
+
 #ifndef OMIT_GEOS		/* only if GEOS is supported */
 /* initializing the VirtualRouting  extension */
 		spatialite_i
 		    ("\t- 'VirtualRouting'\t[Dijkstra shortest path - advanced]\n");
 #ifndef OMIT_KNN		/* only if KNN is enabled */
-/* initializing the VirtualKNN  extension */spatialite_i
+/* initializing the VirtualKNN  extension */ spatialite_i
 		    ("\t- 'VirtualKNN'\t[K-Nearest Neighbors metahandler]\n");
 #endif /* end KNN conditional */
 #endif /* end GEOS conditional */
@@ -53343,13 +53503,13 @@ spatialite_splash_screen (int verbose)
 		spatialite_i
 		    ("\t- 'VirtualGPKG'\t[OGC GeoPackage interoperability]\n");
 #endif
-		spatialite_i ("\t- 'SpatiaLite'\t\t[Spatial SQL - OGC]\n");
-	    }
-
 #ifdef ENABLE_LIBXML2		/* VirtualXPath is supported */
 		spatialite_i
 		    ("\t- 'VirtualXPath'\t[XML Path Language - XPath]\n");
 #endif /* end including LIBXML2 */
+		spatialite_i ("\t- 'SpatiaLite'\t\t[Spatial SQL - OGC]\n");
+	    }
+
 
 #ifndef OMIT_PROJ		/* PROJ.4 version */
 	  if (verbose)

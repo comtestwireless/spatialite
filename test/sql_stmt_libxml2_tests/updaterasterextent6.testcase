@@ -4,4 +4,4 @@ SELECT SE_UpdateRasterCoverageExtent('alpha');
 1 # rows (not including the header row)
 1 # columns
 SE_UpdateRasterCoverageExtent('alpha')
-0
+1
