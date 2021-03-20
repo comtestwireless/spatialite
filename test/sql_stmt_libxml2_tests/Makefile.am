@@ -446,6 +446,16 @@ EXTRA_DIST = addfileid1.testcase \
 	setvectorinfos20.testcase \
 	setvectorinfos21.testcase \
 	setvectorinfos22.testcase \
+	setvectorvisrange1.testcase \
+	setvectorvisrange2.testcase \
+	setvectorvisrange3.testcase \
+	setvectorvisrange4.testcase \
+	setvectorvisrange5.testcase \
+	setvectorvisrange6.testcase \
+	setvectorvisrange7.testcase \
+	setvectorvisrange8.testcase \
+	setvectorvisrange9.testcase \
+	setvectorvisrange10.testcase \
 	unregisterGraphic1.testcase \
 	unregisterGraphic2.testcase \
 	unregisterGraphic3.testcase \

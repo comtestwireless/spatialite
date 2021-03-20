@@ -2020,6 +2020,9 @@ create_raster_coverages (sqlite3 * sqlite)
 	"section_md5 INTEGER NOT NULL,\n"
 	"section_summary INTEGER NOT NULL,\n"
 	"is_queryable INTEGER NOT NULL,\n"
+	"is_opaque INTEGER NOT NULL DEFAULT 0,\n"
+	"min_scale DOUBLE,\n"
+	"max_scale DOUBLE,\n"
 	"red_band_index INTEGER,\n"
 	"green_band_index INTEGER,\n"
 	"blue_band_index INTEGER,\n"
@@ -2081,6 +2084,7 @@ create_raster_coverages (sqlite3 * sqlite)
 	"c.mixed_resolutions AS mixed_resolutions, "
 	"c.section_paths AS section_paths, c.section_md5 AS section_md5, "
 	"c.section_summary AS section_summary, c.is_queryable AS is_queryable, "
+	"c.is_opaque AS is_opaque, c.min_scale AS min_scale, c.max_scale AS max_scale, "
 	"c.red_band_index, c.green_band_index, c.blue_band_index, "
 	"c.nir_band_index, c.enable_auto_ndvi\n"
 	"FROM raster_coverages AS c\n"
@@ -2103,6 +2107,7 @@ create_raster_coverages (sqlite3 * sqlite)
 	"c.mixed_resolutions AS mixed_resolutions, "
 	"c.section_paths AS section_paths, c.section_md5 AS section_md5, "
 	"c.section_summary AS section_summary, c.is_queryable AS is_queryable, "
+	"c.is_opaque AS is_opaque, c.min_scale AS min_scale, c.max_scale AS max_scale, "
 	"c.red_band_index, c.green_band_index, c.blue_band_index, "
 	"c.nir_band_index, c.enable_auto_ndvi\n"
 	"FROM raster_coverages AS c\n"
@@ -2777,6 +2782,8 @@ create_vector_coverages (sqlite3 * sqlite)
 	"abstract TEXT NOT NULL DEFAULT '*** missing Abstract ***',\n"
 	"is_queryable INTEGER NOT NULL,\n"
 	"is_editable INTEGER NOT NULL,\n"
+	"min_scale DOUBLE,\n"
+	"max_scale DOUBLE,\n"
 	"copyright TEXT NOT NULL DEFAULT '*** unknown ***',\n"
 	"license INTEGER NOT NULL DEFAULT 0,\n"
 	"CONSTRAINT fk_vc_gc FOREIGN KEY (f_table_name, f_geometry_column) "
@@ -2835,7 +2842,8 @@ create_vector_coverages (sqlite3 * sqlite)
 /* creating the vector_coverages_ref_sys view */
     sql = "CREATE VIEW IF NOT EXISTS vector_coverages_ref_sys AS\n"
 	"SELECT v.coverage_name AS coverage_name, v.title AS title, v.abstract AS abstract, "
-	"v.is_queryable AS is_queryable, v.geo_minx AS geo_minx, v.geo_miny AS geo_miny, "
+	"v.is_queryable AS is_queryable, v.min_scale AS min_scale, v.max_scale AS max_scale, "
+	"v.geo_minx AS geo_minx, v.geo_miny AS geo_miny, "
 	"v.geo_maxx AS geo_maxx, v.geo_maxy AS geo_maxy, v.extent_minx AS extent_minx, "
 	"v.extent_miny AS extent_miny, v.extent_maxx AS extent_maxx, v.extent_maxy AS extent_maxy, "
 	"s.srid AS srid, 1 AS native_srid, s.auth_name AS auth_name, s.auth_srid AS auth_srid, "
@@ -2847,7 +2855,8 @@ create_vector_coverages (sqlite3 * sqlite)
 	"LEFT JOIN spatial_ref_sys AS s ON (x.srid = s.srid)\n"
 	"UNION\n"
 	"SELECT v.coverage_name AS coverage_name, v.title AS title, v.abstract AS abstract, "
-	"v.is_queryable AS is_queryable, v.geo_minx AS geo_minx, v.geo_miny AS geo_miny, "
+	"v.is_queryable AS is_queryable, v.min_scale AS min_scale, v.max_scale AS max_scale, "
+	"v.geo_minx AS geo_minx, v.geo_miny AS geo_miny, "
 	"v.geo_maxx AS geo_maxx, v.geo_maxy AS geo_maxy, v.extent_minx AS extent_minx, "
 	"v.extent_miny AS extent_miny, v.extent_maxx AS extent_maxx, v.extent_maxy AS extent_maxy, "
 	"s.srid AS srid, 1 AS native_srid, s.auth_name AS auth_name, s.auth_srid AS auth_srid, "
@@ -2861,7 +2870,8 @@ create_vector_coverages (sqlite3 * sqlite)
 	"LEFT JOIN spatial_ref_sys AS s ON (x.srid = s.srid)\n"
 	"UNION\n"
 	"SELECT v.coverage_name AS coverage_name, v.title AS title, v.abstract AS abstract, "
-	"v.is_queryable AS is_queryable, v.geo_minx AS geo_minx, v.geo_miny AS geo_miny, "
+	"v.is_queryable AS is_queryable, v.min_scale AS min_scale, v.max_scale AS max_scale, "
+	"v.geo_minx AS geo_minx, v.geo_miny AS geo_miny, "
 	"v.geo_maxx AS geo_maxx, v.geo_maxy AS geo_maxy, v.extent_minx AS extent_minx, "
 	"v.extent_miny AS extent_miny, v.extent_maxx AS extent_maxx, v.extent_maxy AS extent_maxy, "
 	"s.srid AS srid, 1 AS native_srid, s.auth_name AS auth_name, s.auth_srid AS auth_srid, "
@@ -2873,7 +2883,8 @@ create_vector_coverages (sqlite3 * sqlite)
 	"LEFT JOIN spatial_ref_sys AS s ON (x.srid = s.srid)\n"
 	"UNION\n"
 	"SELECT v.coverage_name AS coverage_name, v.title AS title, v.abstract AS abstract, "
-	"v.is_queryable AS is_queryable, v.geo_minx AS geo_minx, v.geo_miny AS geo_miny, "
+	"v.is_queryable AS is_queryable, v.min_scale AS min_scale, v.max_scale AS max_scale, "
+	"v.geo_minx AS geo_minx, v.geo_miny AS geo_miny, "
 	"v.geo_maxx AS geo_maxx, v.geo_maxy AS geo_maxy, v.extent_minx AS extent_minx, "
 	"v.extent_miny AS extent_miny, v.extent_maxx AS extent_maxx, v.extent_maxy AS extent_maxy, "
 	"s.srid AS srid, 1 AS native_srid, s.auth_name AS auth_name, s.auth_srid AS auth_srid, "
@@ -2883,7 +2894,8 @@ create_vector_coverages (sqlite3 * sqlite)
 	"LEFT JOIN spatial_ref_sys AS s ON (x.srid = s.srid)\n"
 	"UNION\n"
 	"SELECT v.coverage_name AS coverage_name, v.title AS title, v.abstract AS abstract, "
-	"v.is_queryable AS is_queryable, v.geo_minx AS geo_minx, v.geo_miny AS geo_miny, "
+	"v.is_queryable AS is_queryable, v.min_scale AS min_scale, v.max_scale AS max_scale, "
+	"v.geo_minx AS geo_minx, v.geo_miny AS geo_miny, "
 	"v.geo_maxx AS geo_maxx, v.geo_maxy AS geo_maxy, v.extent_minx AS extent_minx, "
 	"v.extent_miny AS extent_miny, v.extent_maxx AS extent_maxx, v.extent_maxy AS extent_maxy, "
 	"s.srid AS srid, 1 AS native_srid, s.auth_name AS auth_name, s.auth_srid AS auth_srid, "
@@ -2893,7 +2905,8 @@ create_vector_coverages (sqlite3 * sqlite)
 	"LEFT JOIN spatial_ref_sys AS s ON (x.srid = s.srid)\n"
 	"UNION\n"
 	"SELECT v.coverage_name AS coverage_name, v.title AS title, v.abstract AS abstract, "
-	"v.is_queryable AS is_queryable, v.geo_minx AS geo_minx, v.geo_miny AS geo_miny, "
+	"v.is_queryable AS is_queryable, v.min_scale AS min_scale, v.max_scale AS max_scale, "
+	"v.geo_minx AS geo_minx, v.geo_miny AS geo_miny, "
 	"v.geo_maxx AS geo_maxx, v.geo_maxy AS geo_maxy, x.extent_minx AS extent_minx, "
 	"x.extent_miny AS extent_miny, x.extent_maxx AS extent_maxx, x.extent_maxy AS extent_maxy, "
 	"s.srid AS srid, 0 AS native_srid, s.auth_name AS auth_name, s.auth_srid AS auth_srid, "
@@ -3160,6 +3173,9 @@ create_wms_tables (sqlite3 * sqlite)
 	"is_queryable INTEGER NOT NULL CHECK (is_queryable IN (0, 1)),\n"
 	"getfeatureinfo_url TEXT,\n"
 	"bgcolor TEXT,\n"
+	"cascaded INTEGER,\n"
+	"min_scale DOUBLE,\n"
+	"max_scale DOUBLE,\n"
 	"tiled INTEGER NOT NULL CHECK (tiled IN (0, 1)),\n"
 	"tile_width INTEGER NOT NULL CHECK (tile_width BETWEEN 256 AND 5000),\n"
 	"tile_height INTEGER NOT NULL CHECK (tile_width BETWEEN 256 AND 5000),\n"
@@ -5130,4 +5146,78 @@ createMissingSystemTables (sqlite3 * sqlite, const void *cache, int relaxed,
     return 1;
 #endif /* end RTTOPO */
 #endif /* end LIBXML2 */
+}
+
+SPATIALITE_PRIVATE int
+createMissingRasterlite2Columns (sqlite3 * sqlite)
+{
+/* 
+/ attempting to create all missing Columns in System Tables 
+/ required by Rasterlite2 "final"
+*/
+    int ret;
+    int failure = 0;
+    int success = 0;
+    const char *sql;
+
+    sql = "ALTER TABLE MAIN.raster_coverages ADD COLUMN is_opaque "
+	"INTEGER NOT NULL DEFAULT 0";
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    if (ret != SQLITE_OK)
+	failure++;
+    else
+	success++;
+
+    sql = "ALTER TABLE MAIN.raster_coverages ADD COLUMN min_scale DOUBLE";
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    if (ret != SQLITE_OK)
+	failure++;
+    else
+	success++;
+
+    sql = "ALTER TABLE MAIN.raster_coverages ADD COLUMN max_scale DOUBLE";
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    if (ret != SQLITE_OK)
+	failure++;
+    else
+	success++;
+
+    sql = "ALTER TABLE MAIN.vector_coverages ADD COLUMN min_scale DOUBLE";
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    if (ret != SQLITE_OK)
+	failure++;
+    else
+	success++;
+
+    sql = "ALTER TABLE MAIN.vector_coverages ADD COLUMN max_scale DOUBLE";
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    if (ret != SQLITE_OK)
+	failure++;
+    else
+	success++;
+
+    sql = "ALTER TABLE MAIN.wms_getmap ADD COLUMN cascaded INTEGER";
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    if (ret != SQLITE_OK)
+	failure++;
+    else
+	success++;
+
+    sql = "ALTER TABLE MAIN.wms_getmap ADD COLUMN min_scale DOUBLE";
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    if (ret != SQLITE_OK)
+	failure++;
+    else
+	success++;
+
+    sql = "ALTER TABLE MAIN.wms_getmap ADD COLUMN max_scale DOUBLE";
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    if (ret != SQLITE_OK)
+	failure++;
+    else
+	success++;
+
+    if (success == 0)
+	return 0;
+    return 1;
 }

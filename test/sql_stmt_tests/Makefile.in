@@ -3166,6 +3166,19 @@ EXTRA_DIST = addpoint10.testcase \
 	wms_registergetmap84.testcase \
 	wms_registergetmap85.testcase \
 	wms_registergetmap86.testcase \
+	wms_registergetmap87.testcase \
+	wms_registergetmap88.testcase \
+	wms_registergetmap89.testcase \
+	wms_registergetmap90.testcase \
+	wms_registergetmap91.testcase \
+	wms_registergetmap92.testcase \
+	wms_registergetmap93.testcase \
+	wms_registergetmap94.testcase \
+	wms_registergetmap95.testcase \
+	wms_registergetmap96.testcase \
+	wms_registergetmap97.testcase \
+	wms_registergetmap98.testcase \
+	wms_registergetmap99.testcase \
 	wms_registersetting1.testcase \
 	wms_registersetting2.testcase \
 	wms_registersetting3.testcase \

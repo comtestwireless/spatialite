@@ -730,6 +730,14 @@ extern "C"
 							  const char *copyright,
 							  const char *license);
 
+    SPATIALITE_PRIVATE int set_vector_coverage_visibility_range (void *p_sqlite,
+								 const char
+								 *coverage_name,
+								 double
+								 min_scale,
+								 double
+								 max_scale);
+
     SPATIALITE_PRIVATE int register_vector_coverage_srid (void *p_sqlite,
 							  const char
 							  *coverage_name,
@@ -791,7 +799,9 @@ extern "C"
 						int tile_height,
 						const char *bgcolor,
 						int is_queryable,
-						const char *getfeatureinfo_url);
+						const char *getfeatureinfo_url,
+						int cascaded, double min_scale,
+						double max_scale);
 
     SPATIALITE_PRIVATE int unregister_wms_getmap (void *p_sqlite,
 						  const char *url,
@@ -1540,6 +1550,9 @@ extern "C"
 						      int relaxed,
 						      int transaction,
 						      char **err_msg);
+
+    SPATIALITE_PRIVATE int createMissingRasterlite2Columns (sqlite3 *
+							    db_handle);
 
 #ifdef __cplusplus
 }

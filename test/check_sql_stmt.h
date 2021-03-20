@@ -770,7 +770,13 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
       }
     if (result != 0)
 	return result;
-    if (strcmp (GEOSversion (), "3.9") >= 0)
+    if (strcmp (GEOSversion (), "3.9.1") >= 0)
+      {
+	  /* GEOS 3.9.1 changed historical beheviour for some tests */
+	  result =
+	      run_subdir_test ("sql_stmt_geos_391", conn, load_extension, 0);
+      }
+    else if (strcmp (GEOSversion (), "3.9") >= 0)
       {
 	  /* GEOS 3.9.0 changed historical beheviour for some tests */
 	  result =

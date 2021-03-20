@@ -402,6 +402,28 @@ fnct_createMissingSystemTables (sqlite3_context * context, int argc,
 }
 
 static void
+fnct_createMissingRasterlite2Columns (sqlite3_context * context, int argc,
+				      sqlite3_value ** argv)
+{
+/* SQL function:
+/ CreateMissingRasterlite2Columns()
+/
+/ creates all missing columns on system tables required 
+/ by RasterLite2 "stable"
+/ returns 1 on success, 0 on failure
+*/
+    int ret;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+
+    ret = createMissingRasterlite2Columns (sqlite);
+    if (ret == 0)
+	sqlite3_result_int (context, 0);
+    else
+	sqlite3_result_int (context, 1);
+}
+
+static void
 fnct_spatialite_version (sqlite3_context * context, int argc,
 			 sqlite3_value ** argv)
 {
@@ -9871,6 +9893,16 @@ fnct_RegisterWMSGetMap (sqlite3_context * context, int argc,
 /                    Int tiled, Int cached, Int tile_width, 
 /                    Int tile_height, Text bgcolor, Int is_queryable,
 /                    Text getfeatureinfo_url)
+/   or
+/ WMS_RegisterGetMap(Text getcapabilitites_url, Text getmap_url,
+/                    Text layer_name, Text title, Text abstract,
+/                    Text version, Text ref_sys, Text image_format,
+/                    Text style, Int transparent, Int flip_axes,
+/                    Int tiled, Int cached, Int tile_width, 
+/                    Int tile_height, Text bgcolor, Int is_queryable,
+/                    Text getfeatureinfo_url, int cascaded,
+/                    Double min_scale_denominator, 
+/                    Double max_scale_denominator)
 /
 / inserts a WMS GetMap
 / returns 1 on success
@@ -9895,6 +9927,9 @@ fnct_RegisterWMSGetMap (sqlite3_context * context, int argc,
     const char *bgcolor = NULL;
     int is_queryable = 0;
     const char *getfeatureinfo_url = NULL;
+    int cascaded = -1;
+    double min_scale = -1.0;
+    double max_scale = -1.0;
     sqlite3 *sqlite = sqlite3_context_db_handle (context);
     GAIA_UNUSED ();
     if (sqlite3_value_type (argv[0]) != SQLITE_TEXT
@@ -10013,12 +10048,112 @@ fnct_RegisterWMSGetMap (sqlite3_context * context, int argc,
 		return;
 	    }
       }
+    if (argc == 21)
+      {
+	  if (sqlite3_value_type (argv[0]) != SQLITE_TEXT
+	      || sqlite3_value_type (argv[1]) != SQLITE_TEXT
+	      || sqlite3_value_type (argv[2]) != SQLITE_TEXT
+	      || sqlite3_value_type (argv[3]) != SQLITE_TEXT
+	      || sqlite3_value_type (argv[4]) != SQLITE_TEXT ||
+	      sqlite3_value_type (argv[5]) != SQLITE_TEXT ||
+	      sqlite3_value_type (argv[6]) != SQLITE_TEXT ||
+	      sqlite3_value_type (argv[7]) != SQLITE_TEXT ||
+	      sqlite3_value_type (argv[8]) != SQLITE_TEXT)
+	    {
+		sqlite3_result_int (context, -1);
+		return;
+	    }
+	  getcapabilities_url = (const char *) sqlite3_value_text (argv[0]);
+	  getmap_url = (const char *) sqlite3_value_text (argv[1]);
+	  layer_name = (const char *) sqlite3_value_text (argv[2]);
+	  title = (const char *) sqlite3_value_text (argv[3]);
+	  abstract = (const char *) sqlite3_value_text (argv[4]);
+	  version = (const char *) sqlite3_value_text (argv[5]);
+	  ref_sys = (const char *) sqlite3_value_text (argv[6]);
+	  image_format = (const char *) sqlite3_value_text (argv[7]);
+	  style = (const char *) sqlite3_value_text (argv[8]);
+	  if (sqlite3_value_type (argv[9]) != SQLITE_INTEGER ||
+	      sqlite3_value_type (argv[10]) != SQLITE_INTEGER ||
+	      sqlite3_value_type (argv[11]) != SQLITE_INTEGER ||
+	      sqlite3_value_type (argv[12]) != SQLITE_INTEGER ||
+	      sqlite3_value_type (argv[13]) != SQLITE_INTEGER ||
+	      sqlite3_value_type (argv[14]) != SQLITE_INTEGER ||
+	      sqlite3_value_type (argv[16]) != SQLITE_INTEGER ||
+	      (sqlite3_value_type (argv[18]) != SQLITE_INTEGER && sqlite3_value_type(argv[18]) != SQLITE_NULL))
+	    {
+		sqlite3_result_int (context, -1);
+		return;
+	    }
+	  transparent = sqlite3_value_int (argv[9]);
+	  flip_axes = sqlite3_value_int (argv[10]);
+	  tiled = sqlite3_value_int (argv[11]);
+	  cached = sqlite3_value_int (argv[12]);
+	  tile_width = sqlite3_value_int (argv[13]);
+	  tile_height = sqlite3_value_int (argv[14]);
+	  is_queryable = sqlite3_value_int (argv[16]);
+	  if (sqlite3_value_type (argv[15]) == SQLITE_NULL)
+	      bgcolor = NULL;
+	  else if (sqlite3_value_type (argv[15]) == SQLITE_TEXT)
+	    {
+		bgcolor = (const char *) sqlite3_value_text (argv[15]);
+		if (!validate_wms_bgcolor (bgcolor))
+		  {
+		      sqlite3_result_int (context, -1);
+		      return;
+		  }
+	    }
+	  else
+	    {
+		sqlite3_result_int (context, -1);
+		return;
+	    }
+	  if (sqlite3_value_type (argv[17]) == SQLITE_NULL)
+	      getfeatureinfo_url = NULL;
+	  else if (sqlite3_value_type (argv[17]) == SQLITE_TEXT)
+	      getfeatureinfo_url = (const char *) sqlite3_value_text (argv[17]);
+	  else
+	    {
+		sqlite3_result_int (context, -1);
+		return;
+	    }
+	    if (sqlite3_value_type(argv[18]) == SQLITE_INTEGER)
+	  cascaded = sqlite3_value_int (argv[18]);
+	  if (sqlite3_value_type (argv[19]) == SQLITE_NULL)
+	      ;
+	  else if (sqlite3_value_type (argv[19]) == SQLITE_INTEGER)
+	    {
+		int val = sqlite3_value_int (argv[19]);
+		min_scale = val;
+	    }
+	  else if (sqlite3_value_type (argv[19]) == SQLITE_FLOAT)
+	      min_scale = sqlite3_value_double (argv[19]);
+	  else
+	    {
+		sqlite3_result_int (context, -1);
+		return;
+	    }
+	  if (sqlite3_value_type (argv[20]) == SQLITE_NULL)
+	      ;
+	  else if (sqlite3_value_type (argv[20]) == SQLITE_INTEGER)
+	    {
+		int val = sqlite3_value_int (argv[20]);
+		max_scale = val;
+	    }
+	  else if (sqlite3_value_type (argv[20]) == SQLITE_FLOAT)
+	      max_scale = sqlite3_value_double (argv[20]);
+	  else
+	    {
+		sqlite3_result_int (context, -1);
+		return;
+	    }
+      }
     ret =
 	register_wms_getmap (sqlite, getcapabilities_url, getmap_url,
 			     layer_name, title, abstract, version, ref_sys,
 			     image_format, style, transparent, flip_axes,
 			     tiled, cached, tile_width, tile_height, bgcolor,
-			     is_queryable, getfeatureinfo_url);
+			     is_queryable, getfeatureinfo_url, cascaded,
+			     min_scale, max_scale);
     sqlite3_result_int (context, ret);
 }
 
@@ -24951,10 +25086,11 @@ length_common (const void *p_cache, sqlite3_context * context, int argc,
 					l = gaiaGeodesicTotalLength (a,
 								     b,
 								     rf,
+								     line->DimensionModel,
 								     line->
-								     DimensionModel,
-								     line->Coords,
-								     line->Points);
+								     Coords,
+								     line->
+								     Points);
 					if (l < 0.0)
 					  {
 					      length = -1.0;
@@ -24977,9 +25113,12 @@ length_common (const void *p_cache, sqlite3_context * context, int argc,
 					      l = gaiaGeodesicTotalLength (a,
 									   b,
 									   rf,
-									   ring->DimensionModel,
-									   ring->Coords,
-									   ring->Points);
+									   ring->
+									   DimensionModel,
+									   ring->
+									   Coords,
+									   ring->
+									   Points);
 					      if (l < 0.0)
 						{
 						    length = -1.0;
@@ -26139,11 +26278,11 @@ fnct_Circularity (sqlite3_context * context, int argc, sqlite3_value ** argv)
 		  {
 #ifdef ENABLE_RTTOPO		/* only if RTTOPO is enabled */
 		      perimeter = gaiaGeodesicTotalLength (a, b, rf,
-							   pg->
-							   Exterior->DimensionModel,
+							   pg->Exterior->
+							   DimensionModel,
 							   pg->Exterior->Coords,
-							   pg->
-							   Exterior->Points);
+							   pg->Exterior->
+							   Points);
 		      if (perimeter < 0.0)
 			  ret = 0;
 		      else
@@ -40738,7 +40877,8 @@ fnct_GeodesicLength (sqlite3_context * context, int argc, sqlite3_value ** argv)
 				  /* interior Rings */
 				  ring = polyg->Interiors + ib;
 				  l = gaiaGeodesicTotalLength (a, b, rf,
-							       ring->DimensionModel,
+							       ring->
+							       DimensionModel,
 							       ring->Coords,
 							       ring->Points);
 				  if (l < 0.0)
@@ -40832,7 +40972,8 @@ fnct_GreatCircleLength (sqlite3_context * context, int argc,
 			    ring = polyg->Exterior;
 			    length +=
 				gaiaGreatCircleTotalLength (a, b,
-							    ring->DimensionModel,
+							    ring->
+							    DimensionModel,
 							    ring->Coords,
 							    ring->Points);
 			    for (ib = 0; ib < polyg->NumInteriors; ib++)
@@ -40841,7 +40982,8 @@ fnct_GreatCircleLength (sqlite3_context * context, int argc,
 				  ring = polyg->Interiors + ib;
 				  length +=
 				      gaiaGreatCircleTotalLength (a, b,
-								  ring->DimensionModel,
+								  ring->
+								  DimensionModel,
 								  ring->Coords,
 								  ring->Points);
 			      }
@@ -42468,6 +42610,64 @@ fnct_SetVectorCoverageCopyright (sqlite3_context * context, int argc,
 }
 
 static void
+fnct_SetVectorCoverageVisibilityRange (sqlite3_context * context, int argc,
+				       sqlite3_value ** argv)
+{
+/* SQL function:
+/ SetVectorCoverageVisibilityRange(Text coverage_name, Double min_scale,
+/                            Double max_scale)
+/
+/ updates the Visibility Scale Range supporting a Vector Coverage
+/ returns 1 on success
+/ 0 on failure, -1 on invalid arguments
+*/
+    int ret;
+    const char *coverage_name;
+    double min_scale = -1.0;
+    double max_scale = -1.0;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) != SQLITE_TEXT)
+      {
+	  sqlite3_result_int (context, -1);
+	  return;
+      }
+    coverage_name = (const char *) sqlite3_value_text (argv[0]);
+    if (sqlite3_value_type (argv[1]) == SQLITE_NULL)
+	;
+    else if (sqlite3_value_type (argv[1]) == SQLITE_INTEGER)
+      {
+	  int val = sqlite3_value_int (argv[1]);
+	  min_scale = val;
+      }
+    else if (sqlite3_value_type (argv[1]) == SQLITE_FLOAT)
+	min_scale = sqlite3_value_double (argv[1]);
+    else
+      {
+	  sqlite3_result_int (context, -1);
+	  return;
+      }
+    if (sqlite3_value_type (argv[2]) == SQLITE_NULL)
+	;
+    else if (sqlite3_value_type (argv[2]) == SQLITE_INTEGER)
+      {
+	  int val = sqlite3_value_int (argv[2]);
+	  max_scale = val;
+      }
+    else if (sqlite3_value_type (argv[2]) == SQLITE_FLOAT)
+	max_scale = sqlite3_value_double (argv[2]);
+    else
+      {
+	  sqlite3_result_int (context, -1);
+	  return;
+      }
+    ret =
+	set_vector_coverage_visibility_range (sqlite, coverage_name, min_scale,
+					      max_scale);
+    sqlite3_result_int (context, ret);
+}
+
+static void
 fnct_RegisterVectorCoverageSrid (sqlite3_context * context, int argc,
 				 sqlite3_value ** argv)
 {
@@ -42753,7 +42953,7 @@ fnct_NumMapConfigurations (sqlite3_context * context, int argc,
 
 static void
 fnct_MapConfigurationNameN (sqlite3_context * context, int argc,
-			       sqlite3_value ** argv)
+			    sqlite3_value ** argv)
 {
 /* SQL function:
 / MapConfigurationNameN(Integer ind)
@@ -42781,7 +42981,7 @@ fnct_MapConfigurationNameN (sqlite3_context * context, int argc,
 
 static void
 fnct_MapConfigurationTitleN (sqlite3_context * context, int argc,
-				sqlite3_value ** argv)
+			     sqlite3_value ** argv)
 {
 /* SQL function:
 / MapConfigurationTitleN(Integer ind)
@@ -42809,7 +43009,7 @@ fnct_MapConfigurationTitleN (sqlite3_context * context, int argc,
 
 static void
 fnct_MapConfigurationAbstractN (sqlite3_context * context, int argc,
-				   sqlite3_value ** argv)
+				sqlite3_value ** argv)
 {
 /* SQL function:
 / MapConfigurationAbstractN(Integer ind)
@@ -47078,7 +47278,7 @@ fnct_bufferoptions_reset (sqlite3_context * context, int argc,
     cache->buffer_quadrant_segments = 30;
     sqlite3_result_int (context, 1);
 #else /* GEOS is disabled */
-	sqlite3_result_int (context, 0);
+    sqlite3_result_int (context, 0);
 #endif /* end including GEOS */
 }
 
@@ -47122,7 +47322,7 @@ fnct_bufferoptions_set_endcap (sqlite3_context * context, int argc,
     else
 	sqlite3_result_int (context, 0);
 #else /* GEOS is disabled */
-	sqlite3_result_int (context, 0);
+    sqlite3_result_int (context, 0);
 #endif /* end including GEOS */
 }
 
@@ -47168,7 +47368,7 @@ fnct_bufferoptions_set_join (sqlite3_context * context, int argc,
     else
 	sqlite3_result_int (context, 0);
 #else /* GEOS is disabled */
-	sqlite3_result_int (context, 0);
+    sqlite3_result_int (context, 0);
 #endif /* end including GEOS */
 }
 
@@ -47205,7 +47405,7 @@ fnct_bufferoptions_set_mitrelimit (sqlite3_context * context, int argc,
     cache->buffer_mitre_limit = value;
     sqlite3_result_int (context, 1);
 #else /* GEOS is disabled */
-	sqlite3_result_int (context, 0);
+    sqlite3_result_int (context, 0);
 #endif /* end including GEOS */
 }
 
@@ -47239,7 +47439,7 @@ fnct_bufferoptions_set_quadsegs (sqlite3_context * context, int argc,
     cache->buffer_quadrant_segments = value;
     sqlite3_result_int (context, 1);
 #else /* GEOS is disabled */
-	sqlite3_result_int (context, 0);
+    sqlite3_result_int (context, 0);
 #endif /* end including GEOS */
 }
 
@@ -47278,7 +47478,7 @@ fnct_bufferoptions_get_endcap (sqlite3_context * context, int argc,
 	  sqlite3_result_null (context);
       };
 #else /* GEOS is disabled */
-	  sqlite3_result_null (context);
+    sqlite3_result_null (context);
 #endif /* end including GEOS */
 }
 
@@ -47317,7 +47517,7 @@ fnct_bufferoptions_get_join (sqlite3_context * context, int argc,
 	  sqlite3_result_null (context);
       };
 #else /* GEOS is disabled */
-	  sqlite3_result_null (context);
+    sqlite3_result_null (context);
 #endif /* end including GEOS */
 }
 
@@ -47340,7 +47540,7 @@ fnct_bufferoptions_get_mitrelimit (sqlite3_context * context, int argc,
       }
     sqlite3_result_double (context, cache->buffer_mitre_limit);
 #else /* GEOS is disabled */
-	  sqlite3_result_null (context);
+    sqlite3_result_null (context);
 #endif /* end including GEOS */
 }
 
@@ -47363,7 +47563,7 @@ fnct_bufferoptions_get_quadsegs (sqlite3_context * context, int argc,
       }
     sqlite3_result_int (context, cache->buffer_quadrant_segments);
 #else /* GEOS is disabled */
-	  sqlite3_result_null (context);
+    sqlite3_result_null (context);
 #endif /* end including GEOS */
 }
 
@@ -48247,6 +48447,9 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "CreateMissingSystemTables", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_createMissingSystemTables, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "CreateMissingRasterlite2Columns", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_createMissingRasterlite2Columns, 0, 0, 0);
 
     sqlite3_create_function_v2 (db, "spatialite_target_cpu", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
@@ -48623,6 +48826,8 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function (db, "WMS_RegisterGetMap", 13, SQLITE_ANY, 0,
 			     fnct_RegisterWMSGetMap, 0, 0);
     sqlite3_create_function (db, "WMS_RegisterGetMap", 18, SQLITE_ANY, 0,
+			     fnct_RegisterWMSGetMap, 0, 0);
+    sqlite3_create_function (db, "WMS_RegisterGetMap", 21, SQLITE_ANY, 0,
 			     fnct_RegisterWMSGetMap, 0, 0);
     sqlite3_create_function (db, "WMS_UnRegisterGetMap", 2, SQLITE_ANY, 0,
 			     fnct_UnregisterWMSGetMap, 0, 0);
@@ -52591,27 +52796,26 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function (db, "SE_SetVectorCoverageCopyright", 3,
 			     SQLITE_ANY, 0, fnct_SetVectorCoverageCopyright,
 			     0, 0);
-    sqlite3_create_function (db, "SE_RegisterVectorCoverageSrid", 2,
-			     SQLITE_ANY, 0, fnct_RegisterVectorCoverageSrid,
-			     0, 0);
+    sqlite3_create_function (db, "SE_SetVectorCoverageVisibilityRange", 3,
+			     SQLITE_ANY, 0,
+			     fnct_SetVectorCoverageVisibilityRange, 0, 0);
+    sqlite3_create_function (db, "SE_RegisterVectorCoverageSrid", 2, SQLITE_ANY,
+			     0, fnct_RegisterVectorCoverageSrid, 0, 0);
     sqlite3_create_function (db, "SE_UnRegisterVectorCoverageSrid", 2,
 			     SQLITE_ANY, 0, fnct_UnregisterVectorCoverageSrid,
 			     0, 0);
     sqlite3_create_function (db, "SE_RegisterVectorCoverageKeyword", 2,
-			     SQLITE_ANY, 0,
-			     fnct_RegisterVectorCoverageKeyword, 0, 0);
+			     SQLITE_ANY, 0, fnct_RegisterVectorCoverageKeyword,
+			     0, 0);
     sqlite3_create_function (db, "SE_UnRegisterVectorCoverageKeyword", 2,
 			     SQLITE_ANY, 0,
 			     fnct_UnregisterVectorCoverageKeyword, 0, 0);
-    sqlite3_create_function (db, "SE_UpdateVectorCoverageExtent", 0,
-			     SQLITE_ANY, 0, fnct_UpdateVectorCoverageExtent,
-			     0, 0);
-    sqlite3_create_function (db, "SE_UpdateVectorCoverageExtent", 1,
-			     SQLITE_ANY, 0, fnct_UpdateVectorCoverageExtent,
-			     0, 0);
-    sqlite3_create_function (db, "SE_UpdateVectorCoverageExtent", 2,
-			     SQLITE_ANY, 0, fnct_UpdateVectorCoverageExtent,
-			     0, 0);
+    sqlite3_create_function (db, "SE_UpdateVectorCoverageExtent", 0, SQLITE_ANY,
+			     0, fnct_UpdateVectorCoverageExtent, 0, 0);
+    sqlite3_create_function (db, "SE_UpdateVectorCoverageExtent", 1, SQLITE_ANY,
+			     0, fnct_UpdateVectorCoverageExtent, 0, 0);
+    sqlite3_create_function (db, "SE_UpdateVectorCoverageExtent", 2, SQLITE_ANY,
+			     0, fnct_UpdateVectorCoverageExtent, 0, 0);
     sqlite3_create_function_v2 (db, "SE_AutoRegisterStandardBrushes", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_AutoRegisterStandardBrushes, 0, 0, 0);
@@ -52660,27 +52864,23 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "SE_UnRegisterRasterStyledLayer", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_UnRegisterRasterStyledLayer, 0, 0, 0);
-    sqlite3_create_function (db, "SE_RegisterRasterCoverageSrid", 2,
-			     SQLITE_ANY, 0, fnct_RegisterRasterCoverageSrid,
-			     0, 0);
+    sqlite3_create_function (db, "SE_RegisterRasterCoverageSrid", 2, SQLITE_ANY,
+			     0, fnct_RegisterRasterCoverageSrid, 0, 0);
     sqlite3_create_function (db, "SE_UnRegisterRasterCoverageSrid", 2,
 			     SQLITE_ANY, 0, fnct_UnregisterRasterCoverageSrid,
 			     0, 0);
     sqlite3_create_function (db, "SE_RegisterRasterCoverageKeyword", 2,
-			     SQLITE_ANY, 0,
-			     fnct_RegisterRasterCoverageKeyword, 0, 0);
+			     SQLITE_ANY, 0, fnct_RegisterRasterCoverageKeyword,
+			     0, 0);
     sqlite3_create_function (db, "SE_UnRegisterRasterCoverageKeyword", 2,
 			     SQLITE_ANY, 0,
 			     fnct_UnregisterRasterCoverageKeyword, 0, 0);
-    sqlite3_create_function (db, "SE_UpdateRasterCoverageExtent", 0,
-			     SQLITE_ANY, 0, fnct_UpdateRasterCoverageExtent,
-			     0, 0);
-    sqlite3_create_function (db, "SE_UpdateRasterCoverageExtent", 1,
-			     SQLITE_ANY, 0, fnct_UpdateRasterCoverageExtent,
-			     0, 0);
-    sqlite3_create_function (db, "SE_UpdateRasterCoverageExtent", 2,
-			     SQLITE_ANY, 0, fnct_UpdateRasterCoverageExtent,
-			     0, 0);
+    sqlite3_create_function (db, "SE_UpdateRasterCoverageExtent", 0, SQLITE_ANY,
+			     0, fnct_UpdateRasterCoverageExtent, 0, 0);
+    sqlite3_create_function (db, "SE_UpdateRasterCoverageExtent", 1, SQLITE_ANY,
+			     0, fnct_UpdateRasterCoverageExtent, 0, 0);
+    sqlite3_create_function (db, "SE_UpdateRasterCoverageExtent", 2, SQLITE_ANY,
+			     0, fnct_UpdateRasterCoverageExtent, 0, 0);
 
     sqlite3_create_function_v2 (db, "RL2_RegisterMapConfiguration", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,

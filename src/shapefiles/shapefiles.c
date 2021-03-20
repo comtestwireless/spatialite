@@ -6304,7 +6304,7 @@ dump_geojson2 (sqlite3 * sqlite, char *table, char *geom_col,
 		if (indented)
 		    fprintf (out, "\r\n\t\t},\r\n\t\t\"geometry\" : ");
 		else
-		    fprintf (out, "},\"geomety\":");
+		    fprintf (out, "},\"geometry\":");
 		switch (sqlite3_column_type (stmt, 0))
 		  {
 		  case SQLITE_NULL:

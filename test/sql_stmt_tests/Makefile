@@ -188,10 +188,10 @@ OTOOL64 =
 PACKAGE = libspatialite
 PACKAGE_BUGREPORT = a.furieri@lqt.it
 PACKAGE_NAME = libspatialite
-PACKAGE_STRING = libspatialite 5.0.1
+PACKAGE_STRING = libspatialite 5.1.0-devel
 PACKAGE_TARNAME = libspatialite
 PACKAGE_URL = 
-PACKAGE_VERSION = 5.0.1
+PACKAGE_VERSION = 5.1.0-devel
 PATH_SEPARATOR = :
 PKG_CONFIG = /usr/bin/pkg-config
 PKG_CONFIG_LIBDIR = 
@@ -201,7 +201,7 @@ SED = /usr/bin/sed
 SET_MAKE = 
 SHELL = /bin/sh
 STRIP = strip
-VERSION = 5.0.1
+VERSION = 5.1.0-devel
 abs_builddir = /home/sandro/fossil/libspatialite/test/sql_stmt_tests
 abs_srcdir = /home/sandro/fossil/libspatialite/test/sql_stmt_tests
 abs_top_builddir = /home/sandro/fossil/libspatialite
@@ -3166,6 +3166,19 @@ EXTRA_DIST = addpoint10.testcase \
 	wms_registergetmap84.testcase \
 	wms_registergetmap85.testcase \
 	wms_registergetmap86.testcase \
+	wms_registergetmap87.testcase \
+	wms_registergetmap88.testcase \
+	wms_registergetmap89.testcase \
+	wms_registergetmap90.testcase \
+	wms_registergetmap91.testcase \
+	wms_registergetmap92.testcase \
+	wms_registergetmap93.testcase \
+	wms_registergetmap94.testcase \
+	wms_registergetmap95.testcase \
+	wms_registergetmap96.testcase \
+	wms_registergetmap97.testcase \
+	wms_registergetmap98.testcase \
+	wms_registergetmap99.testcase \
 	wms_registersetting1.testcase \
 	wms_registersetting2.testcase \
 	wms_registersetting3.testcase \

@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT(libspatialite, 5.0.1, a.furieri@lqt.it)
+AC_INIT(libspatialite, 5.1.0-devel, a.furieri@lqt.it)
 AC_LANG(C)
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -188,6 +188,7 @@ AC_CONFIG_FILES([Makefile \
 		test/sql_stmt_minizip/Makefile \
 		test/sql_stmt_zip_proj6/Makefile \
 		test/sql_stmt_geos_390/Makefile \
+		test/sql_stmt_geos_391/Makefile \
 		test/sql_stmt_geos_non390/Makefile \
 		test/sql_stmt_rtgeom_390/Makefile \
 		test/sql_stmt_rtgeom_non390/Makefile \
