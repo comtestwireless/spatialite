@@ -3207,6 +3207,8 @@ create_wms_tables (sqlite3 * sqlite)
 	"parent_id INTEGER NOT NULL,\n"
 	"key TEXT NOT NULL CHECK (Lower(key) IN ('version', 'format', 'style')),\n"
 	"value TEXT NOT NULL,\n"
+	"style_title TEXT,\n"
+	"style_abstract TEXT,\n"
 	"is_default INTEGER NOT NULL CHECK (is_default IN (0, 1)),\n"
 	"CONSTRAINT fk_wms_settings FOREIGN KEY (parent_id) "
 	"REFERENCES wms_getmap (id) ON DELETE CASCADE)";
@@ -5211,6 +5213,20 @@ createMissingRasterlite2Columns (sqlite3 * sqlite)
 	success++;
 
     sql = "ALTER TABLE MAIN.wms_getmap ADD COLUMN max_scale DOUBLE";
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    if (ret != SQLITE_OK)
+	failure++;
+    else
+	success++;
+
+    sql = "ALTER TABLE MAIN.wms_settings ADD COLUMN style_title TEXT";
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    if (ret != SQLITE_OK)
+	failure++;
+    else
+	success++;
+
+    sql = "ALTER TABLE MAIN.wms_settings ADD COLUMN style_abstract TEXT";
     ret = sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
     if (ret != SQLITE_OK)
 	failure++;

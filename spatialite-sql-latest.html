@@ -5951,7 +5951,7 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				    WMS_RegisterSetting( getmap_url <i>Text</i> , layer_name <i>Text</i> , key <i>Text</i> , value <i>Text</i> , is_default <i>Boolean</i> ) : <i>Integer</i></td>
 				<td colspan="3">Registers an alternative setting for the WMS Layer identified by <b>getmap_url</b> and <b>layer_name</b>.
 					<ul>
-						<li><b>key</b>: identifies a specific multi-value setting, and should be one between <b>version</b>, <b>format</b> or <b>style</b>.</li>
+						<li><b>key</b>: identifies a specific multi-value setting, and should be either <b>version</b> or <b>format</b>.</li>
 						<li><b>value</b>: an alternative setting value. Examples:
 							<ul>
 								<li><i>key</i> = <b>'version'</b> , <i>value</i> = '<b>'1.0.0'</b></li>
@@ -5961,6 +5961,17 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 							</ul>
 						</li>
 						<li><b>is_default</b> (<i>optional arg</i>): if the corresponding value will become the standard setting for the corresponding WMS Layer (<b>FALSE</b> if undefined).</li>
+					</ul><hr>
+					Will return <b>1</b> on success; <b>0</b> on failure; <b>-1</b> on invalid arguments.</td></tr>
+			<tr><td><b>WMS_RegisterStyle</b></td>
+				<td>WMS_RegisterStyle( getmap_url <i>Text</i> , layer_name <i>Text</i> , style_name <i>Text</i> , style_title <i>Text</i> , style_abstract <i>Text</i> ) : <i>Integer</i><hr>
+				    WMS_RegisterStyle( getmap_url <i>Text</i> , layer_name <i>Text</i> , style_name <i>Text</i> , style_title <i>Text</i> , style_abstract <i>Text</i> , is_default <i>Boolean</i> ) : <i>Integer</i></td>
+				<td colspan="3">Registers an alternative style available for the WMS Layer identified by <b>getmap_url</b> and <b>layer_name</b>.
+					<ul>
+						<li><b>style_name</b>: Name of the supported Style.</li>
+						<li><b>style_title</b>: Title of the supported Style.</li>
+						<li><b>style_abstract</b>: Abstract of the supported Style. Can legitimately be <b>NULL</b> if undefined.</li>
+						<li><b>is_default</b> (<i>optional arg</i>): if the corresponding value will become the standard Style for the corresponding WMS Layer (<b>FALSE</b> if undefined).</li>
 					</ul><hr>
 					Will return <b>1</b> on success; <b>0</b> on failure; <b>-1</b> on invalid arguments.</td></tr>
 			<tr><td><b>WMS_UnRegisterSetting</b></td>

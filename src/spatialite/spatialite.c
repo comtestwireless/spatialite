@@ -10079,7 +10079,8 @@ fnct_RegisterWMSGetMap (sqlite3_context * context, int argc,
 	      sqlite3_value_type (argv[13]) != SQLITE_INTEGER ||
 	      sqlite3_value_type (argv[14]) != SQLITE_INTEGER ||
 	      sqlite3_value_type (argv[16]) != SQLITE_INTEGER ||
-	      (sqlite3_value_type (argv[18]) != SQLITE_INTEGER && sqlite3_value_type(argv[18]) != SQLITE_NULL))
+	      (sqlite3_value_type (argv[18]) != SQLITE_INTEGER
+	       && sqlite3_value_type (argv[18]) != SQLITE_NULL))
 	    {
 		sqlite3_result_int (context, -1);
 		return;
@@ -10116,8 +10117,8 @@ fnct_RegisterWMSGetMap (sqlite3_context * context, int argc,
 		sqlite3_result_int (context, -1);
 		return;
 	    }
-	    if (sqlite3_value_type(argv[18]) == SQLITE_INTEGER)
-	  cascaded = sqlite3_value_int (argv[18]);
+	  if (sqlite3_value_type (argv[18]) == SQLITE_INTEGER)
+	      cascaded = sqlite3_value_int (argv[18]);
 	  if (sqlite3_value_type (argv[19]) == SQLITE_NULL)
 	      ;
 	  else if (sqlite3_value_type (argv[19]) == SQLITE_INTEGER)
@@ -10547,6 +10548,81 @@ fnct_DefaultWMSSetting (sqlite3_context * context, int argc,
     key = (const char *) sqlite3_value_text (argv[2]);
     value = (const char *) sqlite3_value_text (argv[3]);
     ret = set_wms_default_setting (sqlite, url, layer_name, key, value);
+    sqlite3_result_int (context, ret);
+}
+
+static void
+fnct_RegisterWMSStyle (sqlite3_context * context, int argc,
+		       sqlite3_value ** argv)
+{
+/* SQL function:
+/ WMS_RegisterStyle(Text url, Text layer_name, Text style_name,
+/                   Text style_title, Text style_abstract)
+/   or
+/ WMS_RegisterStyle(Text url, Text layer_name, Text style_name,
+/                   Text style_title, Text style_abstract,
+/                   Int default)
+/
+/ inserts a WMS GetMap Style
+/ returns 1 on success
+/ 0 on failure, -1 on invalid arguments
+*/
+    int ret;
+    const char *url;
+    const char *layer_name;
+    const char *style_name;
+    const char *style_title;
+    const char *style_abstract;
+    int is_default = 0;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (sqlite3_value_type (argv[0]) != SQLITE_TEXT)
+      {
+	  sqlite3_result_int (context, -1);
+	  return;
+      }
+    url = (const char *) sqlite3_value_text (argv[0]);
+    if (sqlite3_value_type (argv[1]) != SQLITE_TEXT)
+      {
+	  sqlite3_result_int (context, -1);
+	  return;
+      }
+    layer_name = (const char *) sqlite3_value_text (argv[1]);
+    if (sqlite3_value_type (argv[2]) != SQLITE_TEXT)
+      {
+	  sqlite3_result_int (context, -1);
+	  return;
+      }
+
+
+    style_name = (const char *) sqlite3_value_text (argv[2]);
+    if (sqlite3_value_type (argv[3]) != SQLITE_TEXT)
+      {
+	  sqlite3_result_int (context, -1);
+	  return;
+      }
+    style_title = (const char *) sqlite3_value_text (argv[3]);
+    if (sqlite3_value_type (argv[4]) == SQLITE_NULL)
+	;
+    else if (sqlite3_value_type (argv[4]) == SQLITE_TEXT)
+	style_abstract = (const char *) sqlite3_value_text (argv[4]);
+    else
+      {
+	  sqlite3_result_int (context, -1);
+	  return;
+      }
+    if (argc >= 6)
+      {
+	  if (sqlite3_value_type (argv[5]) != SQLITE_INTEGER)
+	    {
+		sqlite3_result_int (context, -1);
+		return;
+	    }
+	  is_default = sqlite3_value_int (argv[5]);
+      }
+    ret =
+	register_wms_style (sqlite, url, layer_name, style_name, style_title,
+			    style_abstract, is_default);
     sqlite3_result_int (context, ret);
 }
 
@@ -48851,6 +48927,10 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 			     fnct_DefaultWMSSetting, 0, 0);
     sqlite3_create_function (db, "WMS_UnRegisterSetting", 4, SQLITE_ANY, 0,
 			     fnct_UnregisterWMSSetting, 0, 0);
+    sqlite3_create_function (db, "WMS_RegisterStyle", 5, SQLITE_ANY, 0,
+			     fnct_RegisterWMSStyle, 0, 0);
+    sqlite3_create_function (db, "WMS_RegisterStyle", 6, SQLITE_ANY, 0,
+			     fnct_RegisterWMSStyle, 0, 0);
     sqlite3_create_function (db, "WMS_RegisterRefSys", 7, SQLITE_ANY, 0,
 			     fnct_RegisterWMSRefSys, 0, 0);
     sqlite3_create_function (db, "WMS_RegisterRefSys", 8, SQLITE_ANY, 0,

@@ -502,9 +502,67 @@ do_level0_tests (sqlite3 * handle, int *retcode)
 	  *retcode = -64;
 	  return 0;
       }
+    if (atoi (*(results + 1)) >= 1)
+      {
+	  fprintf (stderr, "WMS_RegisterSetting() #5 unexpected success\n");
+	  sqlite3_free_table (results);
+	  *retcode = -65;
+	  return 0;
+      }
+    sqlite3_free_table (results);
+
+    ret =
+	sqlite3_get_table (handle,
+			   "SELECT WMS_RegisterStyle('urlmap_gamma_zero', 'layer', 'gray', 'gray style', 'an example of a gray style')",
+			   &results, &rows, &columns, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "WMS_RegisterStyle() #1 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  *retcode = -63;
+	  return 0;
+      }
+    if (rows != 1 || columns != 1)
+      {
+	  fprintf (stderr,
+		   "WMS_RegisterStyle() #1 error: rows=%d columns=%d\n", rows,
+		   columns);
+	  sqlite3_free_table (results);
+	  *retcode = -64;
+	  return 0;
+      }
     if (atoi (*(results + 1)) != 1)
       {
-	  fprintf (stderr, "WMS_RegisterSetting() #5 unexpected failure\n");
+	  fprintf (stderr, "WMS_RegisterStyle() #1 unexpected failure\n");
+	  sqlite3_free_table (results);
+	  *retcode = -65;
+	  return 0;
+      }
+    sqlite3_free_table (results);
+
+    ret =
+	sqlite3_get_table (handle,
+			   "SELECT WMS_RegisterStyle('urlmap_gamma_zero', 'layer', 'other', 'another style', NULL, 3)",
+			   &results, &rows, &columns, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "WMS_RegisterStyle() #2 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  *retcode = -63;
+	  return 0;
+      }
+    if (rows != 1 || columns != 1)
+      {
+	  fprintf (stderr,
+		   "WMS_RegisterStyle() #2 error: rows=%d columns=%d\n", rows,
+		   columns);
+	  sqlite3_free_table (results);
+	  *retcode = -64;
+	  return 0;
+      }
+    if (atoi (*(results + 1)) != 1)
+      {
+	  fprintf (stderr, "WMS_RegisterStyle() #2 unexpected failure\n");
 	  sqlite3_free_table (results);
 	  *retcode = -65;
 	  return 0;

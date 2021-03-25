@@ -863,6 +863,14 @@ extern "C"
 						    const char *key,
 						    const char *value);
 
+    SPATIALITE_PRIVATE int register_wms_style (void *p_sqlite,
+					       const char *url,
+					       const char *layer_name,
+					       const char *style_name,
+					       const char *style_title,
+					       const char *style_abstract,
+					       int is_default);
+
     SPATIALITE_PRIVATE int register_wms_srs (void *p_sqlite,
 					     const char *url,
 					     const char *layer_name,

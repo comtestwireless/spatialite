@@ -5838,7 +5838,7 @@ register_wms_getmap (void *p_sqlite, const char *getcapabilities_url,
 	  if (cascaded < 0)
 	      sqlite3_bind_null (stmt, 17);
 	  else
-	      sqlite3_bind_int (stmt, 17, cascaded); 
+	      sqlite3_bind_int (stmt, 17, cascaded);
 	  if (min_scale < 0.0)
 	      sqlite3_bind_null (stmt, 18);
 	  else
@@ -6614,6 +6614,12 @@ register_wms_setting (void *p_sqlite, const char *url, const char *layer_name,
 	  spatialite_e ("WMS_RegisterSetting: missing parent GetMap\n");
 	  return 0;
       }
+    if (strcasecmp (key, "style") == 0)
+      {
+	  spatialite_e
+	      ("WMS_RegisterSetting: key='style' is only supported by register_wms_style\n");
+	  return 0;
+      }
 
     /* attempting to insert the WMS Setting */
     sql = "INSERT INTO wms_settings (parent_id, key, value, is_default) "
@@ -6768,6 +6774,66 @@ set_wms_default_setting (void *p_sqlite, const char *url,
 	return 0;
     /* updating the WMS GetMap Default Setting */
     return do_wms_set_default (sqlite, url, layer_name, key, value);
+}
+
+SPATIALITE_PRIVATE int
+register_wms_style (void *p_sqlite, const char *url, const char *layer_name,
+		    const char *style_name, const char *style_title,
+		    const char *style_abstract, int is_default)
+{
+/* auxiliary function: inserts a WMS GetMap Style */
+    sqlite3 *sqlite = (sqlite3 *) p_sqlite;
+    int ret;
+    sqlite3_int64 parent_id;
+    const char *sql;
+    sqlite3_stmt *stmt;
+
+    if (!wms_setting_parentid (sqlite, url, layer_name, &parent_id))
+      {
+	  spatialite_e ("WMS_RegisterStyle: missing parent GetMap\n");
+	  return 0;
+      }
+
+    /* attempting to insert the WMS Style */
+    sql =
+	"INSERT INTO wms_settings (parent_id, key, value, style_title, style_abstract, is_default) "
+	"VALUES (?, 'style', ?, ?, ?, ?)";
+    ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
+    if (ret != SQLITE_OK)
+      {
+	  spatialite_e ("WMS_RegisterStyle: \"%s\"\n", sqlite3_errmsg (sqlite));
+	  return 0;
+      }
+    sqlite3_reset (stmt);
+    sqlite3_clear_bindings (stmt);
+    sqlite3_bind_int64 (stmt, 1, parent_id);
+    sqlite3_bind_text (stmt, 2, style_name, strlen (style_name), SQLITE_STATIC);
+    sqlite3_bind_text (stmt, 3, style_title, strlen (style_title),
+		       SQLITE_STATIC);
+    if (style_abstract == NULL)
+	sqlite3_bind_null (stmt, 4);
+    else
+	sqlite3_bind_text (stmt, 4, style_abstract, strlen (style_abstract),
+			   SQLITE_STATIC);
+    if (is_default != 0)
+	is_default = 1;
+    sqlite3_bind_int (stmt, 5, 0);
+    ret = sqlite3_step (stmt);
+    if (ret == SQLITE_DONE || ret == SQLITE_ROW)
+	;
+    else
+      {
+	  spatialite_e ("WMS_RegisterStyle() error: \"%s\"\n",
+			sqlite3_errmsg (sqlite));
+	  sqlite3_finalize (stmt);
+	  return 0;
+      }
+    sqlite3_finalize (stmt);
+
+    if (is_default)
+	return do_wms_set_default (sqlite, url, layer_name, "style",
+				   style_name);
+    return 1;
 }
 
 SPATIALITE_PRIVATE int

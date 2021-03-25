@@ -3201,6 +3201,32 @@ EXTRA_DIST = addpoint10.testcase \
 	wms_registersetting20.testcase \
 	wms_registersetting21.testcase \
 	wms_registersetting22.testcase \
+	wms_registerstyle1.testcase \
+	wms_registerstyle2.testcase \
+	wms_registerstyle3.testcase \
+	wms_registerstyle4.testcase \
+	wms_registerstyle5.testcase \
+	wms_registerstyle6.testcase \
+	wms_registerstyle7.testcase \
+	wms_registerstyle8.testcase \
+	wms_registerstyle9.testcase \
+	wms_registerstyle10.testcase \
+	wms_registerstyle11.testcase \
+	wms_registerstyle12.testcase \
+	wms_registerstyle13.testcase \
+	wms_registerstyle14.testcase \
+	wms_registerstyle15.testcase \
+	wms_registerstyle16.testcase \
+	wms_registerstyle17.testcase \
+	wms_registerstyle18.testcase \
+	wms_registerstyle19.testcase \
+	wms_registerstyle20.testcase \
+	wms_registerstyle21.testcase \
+	wms_registerstyle22.testcase \
+	wms_registerstyle23.testcase \
+	wms_registerstyle24.testcase \
+	wms_registerstyle25.testcase \
+	wms_registerstyle26.testcase \
 	wms_registersrs1.testcase \
 	wms_registersrs2.testcase \
 	wms_registersrs3.testcase \
