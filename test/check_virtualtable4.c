@@ -449,6 +449,184 @@ main (int argc, char *argv[])
       }
     sqlite3_free (err_msg);
 
+    ret =
+	sqlite3_exec (db_handle,
+		      "create VIRTUAL TABLE xltest_xlsx_1 USING VirtualXL('test_xml.xlsx');",
+		      NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "VirtualXL (XLSX) error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  return -50;
+      }
+
+    sql_statement =
+	sqlite3_mprintf
+	("SELECT col_0 FROM xltest_xlsx_1 WHERE col_0 IS NOT NULL;");
+    ret =
+	sqlite3_get_table (db_handle, sql_statement, &results, &rows, &columns,
+			   &err_msg);
+    sqlite3_free (sql_statement);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "Error (XLSX): %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  return -51;
+      }
+    if ((rows != 1) || (columns != 1))
+      {
+	  fprintf (stderr,
+		   "Unexpected error (XLSX): select columns bad result: %i/%i.\n",
+		   rows, columns);
+	  return -52;
+      }
+    if (strcmp (results[0], "col_0") != 0)
+      {
+	  fprintf (stderr,
+		   "Unexpected error (XLSX): header() bad result: %s.\n",
+		   results[0]);
+	  return -53;
+      }
+    if (strcmp (results[1], "alpha") != 0)
+      {
+	  fprintf (stderr, "Unexpected error (XLSX): col_0 bad result: %s.\n",
+		   results[0]);
+	  return -54;
+      }
+    sqlite3_free_table (results);
+
+    sql_statement =
+	sqlite3_mprintf ("SELECT col_3 FROM xltest_xlsx_1 WHERE row_no = 10;");
+    ret =
+	sqlite3_get_table (db_handle, sql_statement, &results, &rows, &columns,
+			   &err_msg);
+    sqlite3_free (sql_statement);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "Error (XLSX): %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  return -55;
+      }
+    if ((rows != 1) || (columns != 1))
+      {
+	  fprintf (stderr,
+		   "Unexpected error (XLSX): select columns bad result: %i/%i.\n",
+		   rows, columns);
+	  return -56;
+      }
+    if (strcmp (results[0], "col_3") != 0)
+      {
+	  fprintf (stderr,
+		   "Unexpected error (XLSX): header() bad result: %s.\n",
+		   results[0]);
+	  return -57;
+      }
+    if (strcmp (results[1], "1956-02-02 19:23:00") != 0)
+      {
+	  fprintf (stderr, "Unexpected error (XLSX): col_3 bad result: %s.\n",
+		   results[1]);
+	  return -58;
+      }
+    sqlite3_free_table (results);
+
+    ret =
+	sqlite3_exec (db_handle, "DROP TABLE xltest_xlsx_1;", NULL, NULL,
+		      &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "DROP TABLE error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  return -59;
+      }
+
+    ret =
+	sqlite3_exec (db_handle,
+		      "create VIRTUAL TABLE xltest_ods_1 USING VirtualXL('test_xml.ods');",
+		      NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "VirtualXL (ODS) error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  return -60;
+      }
+
+    sql_statement =
+	sqlite3_mprintf
+	("SELECT col_0 FROM xltest_ods_1 WHERE col_0 IS NOT NULL;");
+    ret =
+	sqlite3_get_table (db_handle, sql_statement, &results, &rows, &columns,
+			   &err_msg);
+    sqlite3_free (sql_statement);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "Error (ODS): %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  return -61;
+      }
+    if ((rows != 1) || (columns != 1))
+      {
+	  fprintf (stderr,
+		   "Unexpected error (ODS): select columns bad result: %i/%i.\n",
+		   rows, columns);
+	  return -62;
+      }
+    if (strcmp (results[0], "col_0") != 0)
+      {
+	  fprintf (stderr, "Unexpected error (ODS): header() bad result: %s.\n",
+		   results[0]);
+	  return -63;
+      }
+    if (strcmp (results[1], "alpha") != 0)
+      {
+	  fprintf (stderr, "Unexpected error (ODS): col_0 bad result: %s.\n",
+		   results[0]);
+	  return -64;
+      }
+    sqlite3_free_table (results);
+
+    sql_statement =
+	sqlite3_mprintf ("SELECT col_3 FROM xltest_ods_1 WHERE row_no = 10;");
+    ret =
+	sqlite3_get_table (db_handle, sql_statement, &results, &rows, &columns,
+			   &err_msg);
+    sqlite3_free (sql_statement);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "Error (ODS): %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  return -65;
+      }
+    if ((rows != 1) || (columns != 1))
+      {
+	  fprintf (stderr,
+		   "Unexpected error (ODS): select columns bad result: %i/%i.\n",
+		   rows, columns);
+	  return -66;
+      }
+    if (strcmp (results[0], "col_3") != 0)
+      {
+	  fprintf (stderr, "Unexpected error (ODS): header() bad result: %s.\n",
+		   results[0]);
+	  return -67;
+      }
+    if (strcmp (results[1], "1956-02-02 19:23:00") != 0)
+      {
+	  fprintf (stderr, "Unexpected error (ODS): col_3 bad result: %s.\n",
+		   results[1]);
+	  return -68;
+      }
+    sqlite3_free_table (results);
+
+    ret =
+	sqlite3_exec (db_handle, "DROP TABLE xltest_ods_1;", NULL, NULL,
+		      &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "DROP TABLE error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  return -69;
+      }
+
     sqlite3_close (db_handle);
     spatialite_cleanup_ex (cache);
 #endif /* end ICONV conditional */

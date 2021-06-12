@@ -18024,9 +18024,9 @@ fi
 
 done
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing freexl_version" >&5
-$as_echo_n "checking for library containing freexl_version... " >&6; }
-if ${ac_cv_search_freexl_version+:} false; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing freexl_open_ods" >&5
+$as_echo_n "checking for library containing freexl_open_ods... " >&6; }
+if ${ac_cv_search_freexl_open_ods+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_func_search_save_LIBS=$LIBS
@@ -18039,11 +18039,11 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char freexl_version ();
+char freexl_open_ods ();
 int
 main ()
 {
-return freexl_version ();
+return freexl_open_ods ();
   ;
   return 0;
 }
@@ -18056,30 +18056,30 @@ for ac_lib in '' freexl; do
     LIBS="-l$ac_lib -lm $ac_func_search_save_LIBS"
   fi
   if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_search_freexl_version=$ac_res
+  ac_cv_search_freexl_open_ods=$ac_res
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext
-  if ${ac_cv_search_freexl_version+:} false; then :
+  if ${ac_cv_search_freexl_open_ods+:} false; then :
   break
 fi
 done
-if ${ac_cv_search_freexl_version+:} false; then :
+if ${ac_cv_search_freexl_open_ods+:} false; then :
 
 else
-  ac_cv_search_freexl_version=no
+  ac_cv_search_freexl_open_ods=no
 fi
 rm conftest.$ac_ext
 LIBS=$ac_func_search_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_freexl_version" >&5
-$as_echo "$ac_cv_search_freexl_version" >&6; }
-ac_res=$ac_cv_search_freexl_version
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_freexl_open_ods" >&5
+$as_echo "$ac_cv_search_freexl_open_ods" >&6; }
+ac_res=$ac_cv_search_freexl_open_ods
 if test "$ac_res" != no; then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
 
 else
-  as_fn_error $? "could not find 'freexl' (or obsolete 'freexl' < v.1.0.1 found)." "$LINENO" 5
+  as_fn_error $? "could not find 'freexl' (or obsolete 'freexl' < v.2.0.0 found)." "$LINENO" 5
 fi
 
 else

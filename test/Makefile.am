@@ -191,6 +191,8 @@ EXTRA_DIST = fnmatch_impl4win.h \
 	shp/foggia/local_councils.prj \
 	shp/foggia/local_councils.shp \
 	shp/foggia/local_councils.shx \
+	test_xml.xlsx \
+	test_xml.ods \
 	testcase1.xls \
 	testcase1.csv \
 	books.xml books.xsd opera.xml opera.xsd \

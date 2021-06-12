@@ -10572,7 +10572,7 @@ fnct_RegisterWMSStyle (sqlite3_context * context, int argc,
     const char *layer_name;
     const char *style_name;
     const char *style_title;
-    const char *style_abstract;
+    const char *style_abstract = NULL;
     int is_default = 0;
     sqlite3 *sqlite = sqlite3_context_db_handle (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
@@ -10593,7 +10593,6 @@ fnct_RegisterWMSStyle (sqlite3_context * context, int argc,
 	  sqlite3_result_int (context, -1);
 	  return;
       }
-
 
     style_name = (const char *) sqlite3_value_text (argv[2]);
     if (sqlite3_value_type (argv[3]) != SQLITE_TEXT)

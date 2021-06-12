@@ -554,8 +554,8 @@ do_check_shp_unique_pk_values (sqlite3 * sqlite, gaiaShapefilePtr shp, int srid,
 			    ok_insert = 1;
 			    sqlite3_bind_text (stmt, 1,
 					       dbf_field->Value->TxtValue,
-					       strlen (dbf_field->
-						       Value->TxtValue),
+					       strlen (dbf_field->Value->
+						       TxtValue),
 					       SQLITE_STATIC);
 			}
 		      else if (pk_type == SQLITE_FLOAT)
@@ -1510,9 +1510,8 @@ load_shapefile_common (struct zip_mem_shapefile *mem_shape, sqlite3 * sqlite,
 		      if (pk_type == SQLITE_TEXT)
 			  sqlite3_bind_text (stmt, 1,
 					     dbf_field->Value->TxtValue,
-					     strlen (dbf_field->
-						     Value->TxtValue),
-					     SQLITE_STATIC);
+					     strlen (dbf_field->Value->
+						     TxtValue), SQLITE_STATIC);
 		      else if (pk_type == SQLITE_FLOAT)
 			  sqlite3_bind_double (stmt, 1,
 					       dbf_field->Value->DblValue);
@@ -1553,8 +1552,8 @@ load_shapefile_common (struct zip_mem_shapefile *mem_shape, sqlite3 * sqlite,
 			case GAIA_TEXT_VALUE:
 			    sqlite3_bind_text (stmt, cnt + 2,
 					       dbf_field->Value->TxtValue,
-					       strlen (dbf_field->
-						       Value->TxtValue),
+					       strlen (dbf_field->Value->
+						       TxtValue),
 					       SQLITE_STATIC);
 			    break;
 			default:
@@ -1716,8 +1715,8 @@ do_check_dbf_unique_pk_values (sqlite3 * sqlite, gaiaDbfPtr dbf, int text_dates,
 			    ok_insert = 1;
 			    sqlite3_bind_text (stmt, 1,
 					       dbf_field->Value->TxtValue,
-					       strlen (dbf_field->
-						       Value->TxtValue),
+					       strlen (dbf_field->Value->
+						       TxtValue),
 					       SQLITE_STATIC);
 			}
 		      else if (pk_type == SQLITE_FLOAT)
@@ -2232,9 +2231,8 @@ load_dbf_common (struct zip_mem_shapefile *mem_shape, sqlite3 * sqlite,
 		      if (pk_type == SQLITE_TEXT)
 			  sqlite3_bind_text (stmt, 1,
 					     dbf_field->Value->TxtValue,
-					     strlen (dbf_field->
-						     Value->TxtValue),
-					     SQLITE_STATIC);
+					     strlen (dbf_field->Value->
+						     TxtValue), SQLITE_STATIC);
 		      else if (pk_type == SQLITE_FLOAT)
 			  sqlite3_bind_double (stmt, 1,
 					       dbf_field->Value->DblValue);
@@ -2275,8 +2273,8 @@ load_dbf_common (struct zip_mem_shapefile *mem_shape, sqlite3 * sqlite,
 			case GAIA_TEXT_VALUE:
 			    sqlite3_bind_text (stmt, cnt + 2,
 					       dbf_field->Value->TxtValue,
-					       strlen (dbf_field->
-						       Value->TxtValue),
+					       strlen (dbf_field->Value->
+						       TxtValue),
 					       SQLITE_STATIC);
 			    break;
 			default:
@@ -2759,8 +2757,7 @@ do_list_zipfile_dir (unzFile uf, const char *shp_path, int dbf_mode)
 static int
 do_read_zipfile_file (unzFile uf, struct zip_mem_shapefile *mem_shape, int wich)
 {
-//
-// impo
+/* reading from a Zip compressed file */
     int is_open = 0;
     int retval = 1;
     uint64_t size_buf;
@@ -8443,6 +8440,34 @@ elementary_geometries_ex3 (sqlite3 * sqlite,
 
 #ifndef OMIT_FREEXL		/* including FreeXL */
 
+static int
+is_xlsx (const char *path)
+{
+/* testing for a file suffix ".xlsx" */
+    char suffix[8];
+    int len = strlen (path);
+    if (len < 6)
+	return 0;
+    strcpy (suffix, path + len - 5);
+    if (strcasecmp (suffix, ".xlsx") == 0)
+	return 1;
+    return 0;
+}
+
+static int
+is_ods (const char *path)
+{
+/* testing for a file suffix ".ods" */
+    char suffix[8];
+    int len = strlen (path);
+    if (len < 5)
+	return 0;
+    strcpy (suffix, path + len - 4);
+    if (strcasecmp (suffix, ".ods") == 0)
+	return 1;
+    return 0;
+}
+
 SPATIALITE_DECLARE int
 load_XL (sqlite3 * sqlite, const char *path, const char *table,
 	 unsigned int worksheetIndex, int first_titles, unsigned int *rows,
@@ -8507,18 +8532,38 @@ load_XL (sqlite3 * sqlite, const char *path, const char *table,
 		       table);
 	  return 0;
       }
-/* opening the .XLS file [Workbook] */
-    ret = freexl_open (path, &xl_handle);
-    if (ret != FREEXL_OK)
-	goto error;
-/* checking if Password protected */
-    ret = freexl_get_info (xl_handle, FREEXL_BIFF_PASSWORD, &info);
-    if (ret != FREEXL_OK)
-	goto error;
-    if (info != FREEXL_BIFF_PLAIN)
-	goto error;
-/* Worksheet entries */
-    ret = freexl_get_info (xl_handle, FREEXL_BIFF_SHEET_COUNT, &info);
+
+    if (is_xlsx (path))
+      {
+	  /* opening the .XLSX file [Workbook] */
+	  ret = freexl_open_xlsx (path, &xl_handle);
+	  if (ret != FREEXL_OK)
+	      goto error;
+	  ret = freexl_get_worksheets_count (xl_handle, &info);
+      }
+    else if (is_ods (path))
+      {
+	  /* opening the .ODS file [Workbook] */
+	  ret = freexl_open_ods (path, &xl_handle);
+	  if (ret != FREEXL_OK)
+	      goto error;
+	  ret = freexl_get_worksheets_count (xl_handle, &info);
+      }
+    else
+      {
+	  /* opening the .XLS file [Workbook] */
+	  ret = freexl_open (path, &xl_handle);
+	  if (ret != FREEXL_OK)
+	      goto error;
+	  /* checking if Password protected */
+	  ret = freexl_get_info (xl_handle, FREEXL_BIFF_PASSWORD, &info);
+	  if (ret != FREEXL_OK)
+	      goto error;
+	  if (info != FREEXL_BIFF_PLAIN)
+	      goto error;
+	  /* Worksheet entries */
+	  ret = freexl_get_info (xl_handle, FREEXL_BIFF_SHEET_COUNT, &info);
+      }
     if (ret != FREEXL_OK)
 	goto error;
     if (info == 0)
@@ -8571,8 +8616,8 @@ load_XL (sqlite3 * sqlite, const char *path, const char *table,
 						     cell.value.int_value);
 			    else if (cell.type == FREEXL_CELL_DOUBLE)
 				dummy = sqlite3_mprintf ("%1.2f ",
-							 cell.
-							 value.double_value);
+							 cell.value.
+							 double_value);
 			    else if (cell.type == FREEXL_CELL_TEXT
 				     || cell.type == FREEXL_CELL_SST_TEXT
 				     || cell.type == FREEXL_CELL_DATE
@@ -8583,8 +8628,8 @@ load_XL (sqlite3 * sqlite, const char *path, const char *table,
 				  if (len < 256)
 				      dummy =
 					  sqlite3_mprintf ("%s",
-							   cell.
-							   value.text_value);
+							   cell.value.
+							   text_value);
 				  else
 				      dummy = sqlite3_mprintf ("col_%d", col);
 			      }

@@ -89,13 +89,14 @@ main (int argc, char *argv[])
 	load_XL (handle, "./testcase1.xls", "test1", 0, 0, &row_count, err_msg);
     if (!ret)
       {
-	  fprintf (stderr, "load_XL() error: %s\n", err_msg);
+	  fprintf (stderr, "load_XL() #1 error: %s\n", err_msg);
 	  sqlite3_close (handle);
 	  return -3;
       }
     if (row_count != 17)
       {
-	  fprintf (stderr, "load_XL() unexpected row count: %u\n", row_count);
+	  fprintf (stderr, "load_XL() #1 unexpected row count: %u\n",
+		   row_count);
 	  sqlite3_close (handle);
 	  return -4;
       }
@@ -104,13 +105,13 @@ main (int argc, char *argv[])
 	load_XL (handle, "./testcase1.xls", "test2", 1, 1, &row_count, err_msg);
     if (!ret)
       {
-	  fprintf (stderr, "load_XL() error sheet 2: %s\n", err_msg);
+	  fprintf (stderr, "load_XL() #2 error sheet 2: %s\n", err_msg);
 	  sqlite3_close (handle);
 	  return -5;
       }
     if (row_count != 19)
       {
-	  fprintf (stderr, "load_XL() unexpected row count sheet 2: %u\n",
+	  fprintf (stderr, "load_XL() #2 unexpected row count sheet 2: %u\n",
 		   row_count);
 	  sqlite3_close (handle);
 	  return -6;
@@ -120,7 +121,7 @@ main (int argc, char *argv[])
     if (rcnt != 0)
       {
 	  fprintf (stderr,
-		   "check_duplicated_rows() unexpected duplicate count: %d\n",
+		   "check_duplicated_rows() #1 unexpected duplicate count: %d\n",
 		   rcnt);
 	  sqlite3_close (handle);
 	  return -8;
@@ -130,7 +131,7 @@ main (int argc, char *argv[])
     if (rcnt != 2)
       {
 	  fprintf (stderr,
-		   "check_duplicated_rows() unexpected duplicate count sheet 2: %d\n",
+		   "check_duplicated_rows() #2 unexpected duplicate count sheet 2: %d\n",
 		   rcnt);
 	  sqlite3_close (handle);
 	  return -10;
@@ -139,6 +140,72 @@ main (int argc, char *argv[])
     remove_duplicated_rows (handle, "test1");
 
     remove_duplicated_rows (handle, "test2");
+
+    ret =
+	load_XL (handle, "./test_xml.xlsx", "xlsx_1", 0, 0, &row_count,
+		 err_msg);
+    if (!ret)
+      {
+	  fprintf (stderr, "load_XL() #3 error: %s\n", err_msg);
+	  sqlite3_close (handle);
+	  return -11;
+      }
+    if (row_count != 31)
+      {
+	  fprintf (stderr, "load_XL() #3 unexpected row count: %u\n",
+		   row_count);
+	  sqlite3_close (handle);
+	  return -12;
+      }
+
+    ret =
+	load_XL (handle, "./test_xml.xlsx", "xlsx_2", 0, 0, &row_count,
+		 err_msg);
+    if (!ret)
+      {
+	  fprintf (stderr, "load_XL() #4 error: %s\n", err_msg);
+	  sqlite3_close (handle);
+	  return -13;
+      }
+    if (row_count != 31)
+      {
+	  fprintf (stderr, "load_XL() #4 unexpected row count: %u\n",
+		   row_count);
+	  sqlite3_close (handle);
+	  return -14;
+      }
+
+    ret =
+	load_XL (handle, "./test_xml.ods", "ods_1", 0, 0, &row_count, err_msg);
+    if (!ret)
+      {
+	  fprintf (stderr, "load_XL() #5 error: %s\n", err_msg);
+	  sqlite3_close (handle);
+	  return -15;
+      }
+    if (row_count != 31)
+      {
+	  fprintf (stderr, "load_XL() #5 unexpected row count: %u\n",
+		   row_count);
+	  sqlite3_close (handle);
+	  return -16;
+      }
+
+    ret =
+	load_XL (handle, "./test_xml.ods", "ods_2", 0, 0, &row_count, err_msg);
+    if (!ret)
+      {
+	  fprintf (stderr, "load_XL() #6 error: %s\n", err_msg);
+	  sqlite3_close (handle);
+	  return -17;
+      }
+    if (row_count != 31)
+      {
+	  fprintf (stderr, "load_XL() #6 unexpected row count: %u\n",
+		   row_count);
+	  sqlite3_close (handle);
+	  return -18;
+      }
 
     ret = sqlite3_close (handle);
     if (ret != SQLITE_OK)

@@ -920,6 +920,9 @@ free_internal_cache (struct splite_internal_cache *cache)
     free (cache->xmlParsingErrors);
     free (cache->xmlSchemaValidationErrors);
     free (cache->xmlXPathErrors);
+#ifdef ENABLE_LIBXML2		/* only if LIBXML2 is supported */
+    xmlCleanupParser ();
+#endif /* end LIBXML2 conditional */
 
 /* freeing the GEOS cache */
     p = &(cache->cacheItem1);

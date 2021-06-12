@@ -287,7 +287,7 @@ AC_ARG_ENABLE(freexl, [AS_HELP_STRING(
   [], [enable_freexl=yes])
 if test x"$enable_freexl" != "xno"; then
   AC_CHECK_HEADERS(freexl.h,, [AC_MSG_ERROR([cannot find freexl.h, bailing out])])
-  AC_SEARCH_LIBS(freexl_version,freexl,,AC_MSG_ERROR([could not find 'freexl' (or obsolete 'freexl' < v.1.0.1 found).]),-lm)
+  AC_SEARCH_LIBS(freexl_open_ods,freexl,,AC_MSG_ERROR([could not find 'freexl' (or obsolete 'freexl' < v.2.0.0 found).]),-lm)
 else
   AC_DEFINE(OMIT_FREEXL)
 fi
