@@ -53627,6 +53627,8 @@ spatialite_internal_cleanup (const void *ptr)
 #if !(defined _WIN32) || defined(__MINGW32__)
 /* MSVC is unable to understand this declaration */
 __attribute__((visibility ("default")))
+#else
+__declspec( dllexport )
 #endif
      SPATIALITE_DECLARE int
 	 sqlite3_modspatialite_init (sqlite3 * db, char **pzErrMsg,
