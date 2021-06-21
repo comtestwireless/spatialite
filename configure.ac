@@ -51,8 +51,6 @@ AH_TEMPLATE([OMIT_MATHSQL],
             [Should be defined in order to disable MATHSQL support.])
 AH_TEMPLATE([OMIT_EPSG],
             [Should be defined in order to disable EPSG full support.])
-AH_TEMPLATE([OMIT_GEOCALLBACKS],
-            [Should be defined in order to disable GEOCALLBACKS support.])
 AH_TEMPLATE([OMIT_KNN],
             [Should be defined in order to disable KNN support.])
 AH_TEMPLATE([OMIT_FREEXL],
@@ -115,7 +113,7 @@ AC_FUNC_STRFTIME
 AC_CHECK_FUNCS([memset sqrt strcasecmp strerror strncasecmp strstr fdatasync ftruncate getcwd gettimeofday localtime_r memmove strerror])
 
 # Checks for installed libraries
-AC_CHECK_LIB(sqlite3,sqlite3_prepare_v2,,AC_MSG_ERROR(['libsqlite3' is required but it doesn't seem to be installed on this system.]),-lm)
+# AC_CHECK_LIB(sqlite3,sqlite3_prepare_v2,,AC_MSG_ERROR(['libsqlite3' is required but it doesn't seem to be installed on this system.]),-lm)
 AC_CHECK_LIB(z,inflateInit_,,AC_MSG_ERROR(['libz' is required but it doesn't seem to be installed on this system.]),-lm)
 
 AC_CONFIG_FILES([Makefile \
@@ -216,31 +214,8 @@ if test x"$enable_mathsql" != "xyes"; then
 fi
 #-----------------------------------------------------------------------
 
-#-----------------------------------------------------------------------
-#   --enable-geocallbacks
-#
-AC_ARG_ENABLE(geocallbacks, [AS_HELP_STRING(
-  [--enable-geocallbacks], [enables geometry callbacks [default=no]])],
-  [], [enable_geocallbacks=no])
-if test x"$enable_geocallbacks" == "xyes"; then
-  AC_CHECK_LIB(sqlite3,sqlite3_rtree_geometry_callback,,AC_MSG_ERROR([obsolete 'libsqlite3' (< v.3.7.3). please retry specifying: --disable-geocallbacks]),-lm)
-else
-  AC_DEFINE(OMIT_GEOCALLBACKS)
-fi
-#-----------------------------------------------------------------------
-
-#-----------------------------------------------------------------------
-#   --enable-knn
-#
-AC_ARG_ENABLE(knn, [AS_HELP_STRING(
-  [--enable-knn], [enables KNN support [default=yes]])],
-  [], [enable_knn=yes])
-if test x"$enable_knn" == "xyes"; then
-  AC_CHECK_LIB(sqlite3,sqlite3_rtree_query_callback,,AC_MSG_ERROR([obsolete 'libsqlite3' (< v.3.8.5). please retry specifying: --disable-knn]),-lm)
-else
-  AC_DEFINE(OMIT_KNN)
-fi
-#-----------------------------------------------------------------------
+PKG_CHECK_MODULES([SQLITE3], [sqlite3], , AC_MSG_ERROR(['libsqlite3' is required but it doesn't seem to be installed on this system.]))
+AC_SUBST(SQLITE3_LIBS)
 
 #-----------------------------------------------------------------------
 #   --enable-proj

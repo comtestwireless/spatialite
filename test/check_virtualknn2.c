@@ -1,6 +1,6 @@
 /*
 
- check_virtualknn.c -- SpatiaLite Test Case
+ check_virtualknn2.c -- SpatiaLite Test Case
 
  Author: Sandro Furieri <a.furieri@lqt.it>
 
@@ -22,7 +22,7 @@ The Original Code is the SpatiaLite library
 
 The Initial Developer of the Original Code is Alessandro Furieri
  
-Portions created by the Initial Developer are Copyright (C) 2015
+Portions created by the Initial Developer are Copyright (C) 2021
 the Initial Developer. All Rights Reserved.
 
 Contributor(s):
@@ -51,7 +51,6 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #include "spatialite.h"
 
 #ifndef OMIT_GEOS		/* GEOS is supported */
-#ifndef OMIT_KNN		/* only if KNN is enabled */
 
 static int
 create_table (sqlite3 * sqlite)
@@ -210,7 +209,7 @@ add_second_geom (sqlite3 * sqlite)
     ret = sqlite3_exec (sqlite, sql, NULL, NULL, &err_msg);
     if (ret != SQLITE_OK)
       {
-	  fprintf (stderr, "UPDATE \"knn\" error: %s\n", err_msg);
+	  fprintf (stderr, "UPDATE \"knn2\" error: %s\n", err_msg);
 	  sqlite3_free (err_msg);
 	  return 0;
       }
@@ -240,18 +239,19 @@ add_second_rtree (sqlite3 * sqlite)
 }
 
 static int
-create_knn (sqlite3 * sqlite)
+create_knn2 (sqlite3 * sqlite)
 {
 /* creating a test table */
     int ret;
     char *err_msg = NULL;
     const char *sql;
 
-    sql = "CREATE VIRTUAL TABLE knn USING VirtualKNN ()";
+    sql = "CREATE VIRTUAL TABLE knn2 USING VirtualKNN2 ()";
     ret = sqlite3_exec (sqlite, sql, NULL, NULL, &err_msg);
     if (ret != SQLITE_OK)
       {
-	  fprintf (stderr, "CREATE VIRTUAL TABLE \"knn\" error: %s\n", err_msg);
+	  fprintf (stderr, "CREATE VIRTUAL TABLE \"knn2\" error: %s\n",
+		   err_msg);
 	  sqlite3_free (err_msg);
 	  return 0;
       }
@@ -323,7 +323,7 @@ create_spatial_view_2 (sqlite3 * sqlite)
 }
 
 static int
-test_knn (sqlite3 * sqlite, int mode)
+test_knn2 (sqlite3 * sqlite, int mode)
 {
 /* testing a resultset */
     int ret;
@@ -331,60 +331,89 @@ test_knn (sqlite3 * sqlite, int mode)
     sqlite3_stmt *stmt = NULL;
     double x;
     double y;
-    int rows = 0;
+    double minx;
+    double maxx;
+    double miny;
+    double maxy;
 
     switch (mode)
       {
       case 0:
 	  sql =
-	      "SELECT * FROM knn WHERE f_table_name = 'DB=main.points' AND ref_geometry = MakePoint(?, ?)";
+	      "SELECT * FROM knn2 WHERE f_table_name = 'points' AND ref_geometry = MakePoint(?, ?) AND radius = 100.0";
 	  break;
       case 1:
 	  sql =
-	      "SELECT * FROM knn WHERE f_table_name = 'points' AND f_geometry_column = 'geom' "
-	      "AND ref_geometry = MakePoint(?, ?) AND max_items = 32632";
+	      "SELECT * FROM knn2 WHERE f_table_name = 'points' AND f_geometry_column = 'geom' "
+	      "AND ref_geometry = MakePoint(?, ?) AND radius = 100 AND max_items = 32632";
 	  break;
       case 2:
 	  sql =
-	      "SELECT * FROM knn WHERE f_table_name = 'points' AND f_geometry_column = 'geomx' "
-	      "AND ref_geometry = MakePoint(?, ?)";
+	      "SELECT * FROM knn2 WHERE f_table_name = 'points' AND f_geometry_column = 'geomx' "
+	      "AND ref_geometry = MakePoint(?, ?) AND radius = 100";
 	  break;
       case 3:
 	  sql =
-	      "SELECT * FROM knn WHERE f_table_name = 'pointsx' AND ref_geometry = MakePoint(?, ?)";
+	      "SELECT * FROM knn2 WHERE f_table_name = 'pointsx' AND ref_geometry = MakePoint(?, ?)";
 	  break;
       case 4:
 	  sql =
-	      "SELECT * FROM knn WHERE f_table_name = 'points' AND f_geometry_column = 'geometry' "
-	      "AND ref_geometry = ST_Transform(MakePoint(?, ?, 32632), 4326) AND max_items = -10";
+	      "SELECT * FROM knn2 WHERE f_table_name = 'points' AND f_geometry_column = 'geometry' "
+	      "AND ref_geometry = ST_Transform(MakePoint(?, ?, 32632), 4326) AND radius = 0.0001 AND max_items = -10";
 	  break;
       case 5:
 	  sql =
-	      "SELECT * FROM knn WHERE f_table_name = 'view_1' AND ref_geometry = MakePoint(?, ?)";
+	      "SELECT * FROM knn2 WHERE f_table_name = 'view_1' AND ref_geometry = MakePoint(?, ?) AND radius = 100";
 	  break;
       case 6:
 	  sql =
-	      "SELECT * FROM knn WHERE f_table_name = 'view_2' AND f_geometry_column = 'geom' "
-	      "AND ref_geometry = ST_Transform(MakePoint(?, ?, 32632), 4326)";
+	      "SELECT * FROM knn2 WHERE f_table_name = 'view_2' AND f_geometry_column = 'geometry' "
+	      "AND ref_geometry = ST_Transform(MakePoint(?, ?, 32632), 4326) AND radius = 0.0001";
 	  break;
       case 7:
 	  sql =
-	      "SELECT * FROM knn WHERE f_table_name = 'points' AND ref_geometry = MakePoint(?, ?) "
-	      "AND max_items = 10";
+	      "SELECT * FROM knn2 WHERE f_table_name = 'points' AND ref_geometry = MakePoint(?, ?) "
+	      "AND radius = 100.0 AND max_items = 10";
+	  break;
+      case 8:
+	  sql =
+	      "SELECT * FROM knn2 WHERE db_prefix = 'main' AND f_table_name = 'points' AND f_geometry_column = 'geometry' "
+	      "AND ref_geometry = ST_Transform(MakePoint(?, ?, 32632), 4326) AND radius = 0.00001 AND max_items = 10 AND expand = 1";
+	  break;
+      case 9:
+	  sql =
+	      "SELECT * FROM knn2 WHERE db_prefix = 'MAIN' AND f_table_name = 'view_2' AND f_geometry_column = 'geometry' "
+	      "AND ref_geometry = ST_Transform(MakePoint(?, ?, 32632), 4326) AND radius = 0.00001 AND expand = 1";
 	  break;
       };
     ret = sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
     if (ret != SQLITE_OK)
       {
-	  fprintf (stderr, "SELECT FROM \"knn\": \"%s\"\n",
+	  fprintf (stderr, "SELECT FROM \"knn2\": \"%s\"\n",
 		   sqlite3_errmsg (sqlite));
 	  return 0;
       }
 
-    for (y = 3800000.25; y < 4002000.0; y += 12345.12345)
+    if (mode == 8 || mode == 9)
       {
-	  for (x = 80000.25; x < 102000.0; x += 12345.12345)
+	  minx = 100500.5;
+	  maxx = 101000.0;
+	  miny = 4000500.5;
+	  maxy = 4001000.0;
+      }
+    else
+      {
+	  minx = 100750.5;
+	  maxx = 101000.0;
+	  miny = 4000750.5;
+	  maxy = 4001000.0;
+      }
+
+    for (y = miny; y < maxy; y += 100.0)
+      {
+	  for (x = minx; x < maxx; x += 100.0)
 	    {
+		int rows = 0;
 		sqlite3_reset (stmt);
 		sqlite3_clear_bindings (stmt);
 		sqlite3_bind_double (stmt, 1, x);
@@ -399,15 +428,19 @@ test_knn (sqlite3 * sqlite, int mode)
 			{
 			    if (sqlite3_column_type (stmt, 0) == SQLITE_TEXT
 				&& sqlite3_column_type (stmt, 1) == SQLITE_TEXT
-				&& sqlite3_column_type (stmt, 2) == SQLITE_BLOB
-				&& sqlite3_column_type (stmt,
-							3) == SQLITE_INTEGER
-				&& sqlite3_column_type (stmt,
-							4) == SQLITE_INTEGER
+				&& sqlite3_column_type (stmt, 2) == SQLITE_TEXT
+				&& sqlite3_column_type (stmt, 3) == SQLITE_BLOB
+				&& sqlite3_column_type (stmt, 4) == SQLITE_FLOAT
 				&& sqlite3_column_type (stmt,
 							5) == SQLITE_INTEGER
 				&& sqlite3_column_type (stmt,
-							6) == SQLITE_FLOAT)
+							6) == SQLITE_INTEGER
+				&& sqlite3_column_type (stmt,
+							7) == SQLITE_INTEGER
+				&& sqlite3_column_type (stmt,
+							8) == SQLITE_INTEGER
+				&& sqlite3_column_type (stmt,
+							9) == SQLITE_FLOAT)
 				;
 			    else
 				goto error;
@@ -416,10 +449,10 @@ test_knn (sqlite3 * sqlite, int mode)
 		      else
 			  goto error;
 		  }
+		if (!rows)
+		    goto error;
 	    }
       }
-    if (!rows)
-	goto error;
     sqlite3_finalize (stmt);
     return 1;
 
@@ -429,7 +462,6 @@ test_knn (sqlite3 * sqlite, int mode)
     return 0;
 }
 
-#endif
 #endif
 
 int
@@ -458,11 +490,10 @@ main (int argc, char *argv[])
     spatialite_init_ex (db_handle, cache, 0);
 
 #ifndef OMIT_GEOS		/* GEOS is supported */
-#ifndef OMIT_KNN		/* only if KNN is enabled */
 
     ret =
-	sqlite3_exec (db_handle, "SELECT InitSpatialMetadataFull(1)", NULL, NULL,
-		      &err_msg);
+	sqlite3_exec (db_handle, "SELECT InitSpatialMetadataFull(1)", NULL,
+		      NULL, &err_msg);
     if (ret != SQLITE_OK)
       {
 	  fprintf (stderr, "InitSpatialMetadataFull() error: %s\n", err_msg);
@@ -493,8 +524,8 @@ main (int argc, char *argv[])
 	  return -5;
       }
 
-/* Creating the VirtualKNN table */
-    ret = create_knn (db_handle);
+/* Creating the VirtualKNN2 table */
+    ret = create_knn2 (db_handle);
     if (ret)
       {
 	  fprintf (stderr, "CREATE VIRTUAL TABLE knn: expected failure !!!\n");
@@ -502,29 +533,29 @@ main (int argc, char *argv[])
 	  return -6;
       }
 
-/* Testing KNN - #1 */
-    ret = test_knn (db_handle, 0);
+/* Testing KNN2 - #1 */
+    ret = test_knn2 (db_handle, 0);
     if (!ret)
       {
-	  fprintf (stderr, "Check KNN #1: unexpected failure\n");
+	  fprintf (stderr, "Check KNN2 #1: unexpected failure\n");
 	  sqlite3_close (db_handle);
 	  return -7;
       }
 
-/* Testing KNN - #2 */
-    ret = test_knn (db_handle, 1);
+/* Testing KNN2 - #2 */
+    ret = test_knn2 (db_handle, 1);
     if (!ret)
       {
-	  fprintf (stderr, "Check KNN #2: unexpected failure\n");
+	  fprintf (stderr, "Check KNN2 #2: unexpected failure\n");
 	  sqlite3_close (db_handle);
 	  return -8;
       }
 
-/* Testing KNN - #3 */
-    ret = test_knn (db_handle, 2);
+/* Testing KNN2 - #3 */
+    ret = test_knn2 (db_handle, 2);
     if (ret)
       {
-	  fprintf (stderr, "Check KNN #3: unexpected success\n");
+	  fprintf (stderr, "Check KNN2 #3: unexpected success\n");
 	  sqlite3_close (db_handle);
 	  return -9;
       }
@@ -538,47 +569,47 @@ main (int argc, char *argv[])
 	  return -10;
       }
 
-/* Testing KNN - #4 */
-    ret = test_knn (db_handle, 5);
+/* Testing KNN2 - #4 */
+    ret = test_knn2 (db_handle, 5);
     if (!ret)
       {
-	  fprintf (stderr, "Check KNN #4: unexpected failure\n");
+	  fprintf (stderr, "Check KNN2 #4: unexpected failure\n");
 	  sqlite3_close (db_handle);
 	  return -11;
       }
 
-/* Testing KNN - #5 */
-    ret = test_knn (db_handle, 7);
+/* Testing KNN2 - #5 */
+    ret = test_knn2 (db_handle, 7);
     if (!ret)
       {
-	  fprintf (stderr, "Check KNN #5: unexpected failure\n");
+	  fprintf (stderr, "Check KNN2 #5: unexpected failure\n");
 	  sqlite3_close (db_handle);
 	  return -12;
       }
 
-/* Testing KNN - #6 */
-    ret = test_knn (db_handle, 3);
+/* Testing KNN2 - #6 */
+    ret = test_knn2 (db_handle, 3);
     if (ret)
       {
-	  fprintf (stderr, "Check KNN #6: unexpected success\n");
+	  fprintf (stderr, "Check KNN2 #6: unexpected success\n");
 	  sqlite3_close (db_handle);
 	  return -13;
       }
 
-/* Testing KNN - #7 */
-    ret = test_knn (db_handle, 1);
+/* Testing KNN2 - #7 */
+    ret = test_knn2 (db_handle, 1);
     if (!ret)
       {
-	  fprintf (stderr, "Check KNN #7: unexpected failure\n");
+	  fprintf (stderr, "Check KNN2 #7: unexpected failure\n");
 	  sqlite3_close (db_handle);
 	  return -14;
       }
 
-/* Testing KNN - #8 */
-    ret = test_knn (db_handle, 4);
+/* Testing KNN2 - #8 */
+    ret = test_knn2 (db_handle, 4);
     if (ret)
       {
-	  fprintf (stderr, "Check KNN #8: unexpected success\n");
+	  fprintf (stderr, "Check KNN2 #8: unexpected success\n");
 	  sqlite3_close (db_handle);
 	  return -15;
       }
@@ -593,11 +624,11 @@ main (int argc, char *argv[])
 	  return -16;
       }
 
-/* Testing KNN - #9 */
-    ret = test_knn (db_handle, 4);
+/* Testing KNN2 - #9 */
+    ret = test_knn2 (db_handle, 4);
     if (!ret)
       {
-	  fprintf (stderr, "Check KNN #9: unexpected failure\n");
+	  fprintf (stderr, "Check KNN2 #9: unexpected failure\n");
 	  sqlite3_close (db_handle);
 	  return -17;
       }
@@ -611,16 +642,33 @@ main (int argc, char *argv[])
 	  return -18;
       }
 
-/* Testing KNN - #10 */
-    ret = test_knn (db_handle, 6);
+/* Testing KNN2 - #10 */
+    ret = test_knn2 (db_handle, 6);
     if (!ret)
       {
-	  fprintf (stderr, "Check KNN #10: unexpected failure\n");
+	  fprintf (stderr, "Check KNN2 #10: unexpected failure\n");
 	  sqlite3_close (db_handle);
 	  return -19;
       }
 
-#endif /* end KNN conditional */
+/* Testing KNN2 - #11 */
+    ret = test_knn2 (db_handle, 8);
+    if (!ret)
+      {
+	  fprintf (stderr, "Check KNN2 #11: unexpected failure\n");
+	  sqlite3_close (db_handle);
+	  return -20;
+      }
+
+/* Testing KNN2 - #12 */
+    ret = test_knn2 (db_handle, 9);
+    if (!ret)
+      {
+	  fprintf (stderr, "Check KNN2 #12: unexpected failure\n");
+	  sqlite3_close (db_handle);
+	  return -21;
+      }
+
 #endif /* end GEOS conditional */
 
     sqlite3_close (db_handle);

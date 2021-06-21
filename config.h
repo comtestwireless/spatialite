@@ -41,7 +41,7 @@
 #define HAVE_LIBRTTOPO_H 1
 
 /* Define to 1 if you have the `sqlite3' library (-lsqlite3). */
-#define HAVE_LIBSQLITE3 1
+/* #undef HAVE_LIBSQLITE3 */
 
 /* Define to 1 if you have the `z' library (-lz). */
 #define HAVE_LIBZ 1

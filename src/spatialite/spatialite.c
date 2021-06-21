@@ -160,17 +160,6 @@ struct gaia_geom_chain
     struct gaia_geom_chain_item *last;
 };
 
-#ifndef OMIT_GEOCALLBACKS	/* supporting RTree geometry callbacks */
-struct gaia_rtree_mbr
-{
-/* a struct used by R*Tree GeometryCallback functions [MBR] */
-    double minx;
-    double miny;
-    double maxx;
-    double maxy;
-};
-#endif /* end RTree geometry callbacks */
-
 struct stddev_str
 {
 /* a struct to implement StandardVariation and Variance aggregate functions */
@@ -849,14 +838,11 @@ fnct_has_geo_callbacks (sqlite3_context * context, int argc,
 /* SQL function:
 / HasGeoCallbacks()
 /
-/ return 1 if built enabling GEOCALLBACKS; otherwise 0
+/ always return 0 - since 5.1 GeoCallbacks have been
+/ definitely removed from the code base
 */
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
-#ifndef OMIT_GEOCALLBACKS	/* GEO-CALLBACKS are supported */
-    sqlite3_result_int (context, 1);
-#else
     sqlite3_result_int (context, 0);
-#endif
 }
 
 static void
@@ -962,15 +948,21 @@ fnct_has_knn (sqlite3_context * context, int argc, sqlite3_value ** argv)
 /* SQL function:
 / HasKNN()
 /
-/ return 1 if built including KNN support; otherwise 0
+/ since 5.1 (fake) KNN is always supported
+*/
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    sqlite3_result_int (context, 1);
+}
+
+static void
+fnct_has_knn2 (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ HasKNN2()
 */
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
 #ifndef OMIT_GEOS		/* only if GEOS is enabled */
-#ifndef OMIT_KNN		/* only if KNN is enabled */
     sqlite3_result_int (context, 1);
-#else
-    sqlite3_result_int (context, 0);
-#endif
 #else
     sqlite3_result_int (context, 0);
 #endif
@@ -2766,14 +2758,12 @@ fnct_InitSpatialMetaData (sqlite3_context * context, int argc,
     if (ret != SQLITE_OK)
 	goto error;
 
-#ifndef OMIT_KNN		/* only if KNN is enabled */
-/* creating the KNN VIRTUAL TABLE */
-    strcpy (sql, "CREATE VIRTUAL TABLE KNN ");
-    strcat (sql, "USING VirtualKNN()");
+/* creating the KNN2 VIRTUAL TABLE */
+    strcpy (sql, "CREATE VIRTUAL TABLE KNN2 ");
+    strcat (sql, "USING VirtualKNN2()");
     ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
     if (ret != SQLITE_OK)
 	goto error;
-#endif /* end KNN conditional */
 
     if (transaction)
       {
@@ -2867,14 +2857,12 @@ fnct_InitAdvancedMetaData (sqlite3_context * context, int argc,
     if (ret != SQLITE_OK)
 	goto error;
 
-#ifndef OMIT_KNN		/* only if KNN is enabled */
 /* creating the KNN VIRTUAL TABLE */
-    strcpy (sql, "CREATE VIRTUAL TABLE IF NOT EXISTS KNN ");
-    strcat (sql, "USING VirtualKNN()");
+    strcpy (sql, "CREATE VIRTUAL TABLE IF NOT EXISTS KNN2 ");
+    strcat (sql, "USING VirtualKNN2()");
     ret = sqlite3_exec (sqlite, sql, NULL, NULL, &errMsg);
     if (ret != SQLITE_OK)
 	goto error;
-#endif /* end KNN conditional */
 
     if (transaction)
       {
@@ -8328,244 +8316,6 @@ fnct_CheckSpatialIndex (sqlite3_context * context, int argc,
 	sqlite3_result_int (context, 1);
     else
 	sqlite3_result_int (context, 0);
-}
-
-static gaiaGeomCollPtr
-get_gpkg_spatial_index_extent (sqlite3 * sqlite, const char *db_prefix,
-			       const char *table, const char *geom)
-{
-/* attempting to get the Spatial Index Full Extent   GeoPackage */
-    char *xprefix = NULL;
-    char *idx_name;
-    char *sql_statement;
-    int ret;
-    int srid = -1234567890;
-    sqlite3_stmt *stmt;
-    gaiaGeomCollPtr envelope;
-
-/* checking if the R*Tree Spatial Index is defined - Spatial Table */
-    xprefix = gaiaDoubleQuotedSql (db_prefix);
-    sql_statement =
-	sqlite3_mprintf ("SELECT srs_id FROM \"%s\".gpkg_geometry_columns "
-			 "WHERE Upper(table_name) = Upper(%Q) "
-			 "AND Upper(column_name) = Upper(%Q)", xprefix, table,
-			 geom);
-    free (xprefix);
-    ret = sqlite3_prepare_v2 (sqlite, sql_statement, strlen (sql_statement),
-			      &stmt, NULL);
-    sqlite3_free (sql_statement);
-    if (ret != SQLITE_OK)
-      {
-	  spatialite_e ("GetSpatialIndexExtent SQL error: %s\n",
-			sqlite3_errmsg (sqlite));
-	  goto err;
-      }
-    while (1)
-      {
-	  ret = sqlite3_step (stmt);
-	  if (ret == SQLITE_DONE)
-	      break;
-	  if (ret == SQLITE_ROW)
-	      srid = sqlite3_column_int (stmt, 0);
-	  else
-	    {
-		spatialite_e ("sqlite3_step() error: %s\n",
-			      sqlite3_errmsg (sqlite));
-		sqlite3_finalize (stmt);
-		goto err;
-	    }
-      }
-    sqlite3_finalize (stmt);
-    if (srid == -1234567890)
-	goto err;
-
-    idx_name = sqlite3_mprintf ("rtree_%s_%s", table, geom);
-    envelope = gaiaGetGpkgRTreeFullExtent (sqlite, db_prefix, idx_name, srid);
-    sqlite3_free (idx_name);
-    return envelope;
-
-  err:
-    return NULL;
-}
-
-static gaiaGeomCollPtr
-get_spatial_index_extent (sqlite3 * sqlite, const char *db_prefix,
-			  const char *table, const char *geom)
-{
-/* attempting to get the Spatial Index Full Extent - SpatiaLite */
-    char *xprefix = NULL;
-    char *idx_name;
-    char *sql_statement;
-    int ret;
-    int srid = -1234567890;
-    sqlite3_stmt *stmt;
-    gaiaGeomCollPtr envelope;
-
-/* checking if the R*Tree Spatial Index is defined - Spatial Table */
-    xprefix = gaiaDoubleQuotedSql (db_prefix);
-    sql_statement = sqlite3_mprintf ("SELECT srid FROM \"%s\".geometry_columns "
-				     "WHERE Upper(f_table_name) = Upper(%Q) "
-				     "AND Upper(f_geometry_column) = Upper(%Q) AND spatial_index_enabled = 1",
-				     xprefix, table, geom);
-    free (xprefix);
-    ret = sqlite3_prepare_v2 (sqlite, sql_statement, strlen (sql_statement),
-			      &stmt, NULL);
-    sqlite3_free (sql_statement);
-    if (ret != SQLITE_OK)
-      {
-	  spatialite_e ("GetSpatialIndexExtent SQL error: %s\n",
-			sqlite3_errmsg (sqlite));
-	  goto err;
-      }
-    while (1)
-      {
-	  ret = sqlite3_step (stmt);
-	  if (ret == SQLITE_DONE)
-	      break;
-	  if (ret == SQLITE_ROW)
-	      srid = sqlite3_column_int (stmt, 0);
-	  else
-	    {
-		spatialite_e ("sqlite3_step() error: %s\n",
-			      sqlite3_errmsg (sqlite));
-		sqlite3_finalize (stmt);
-		goto err;
-	    }
-      }
-    sqlite3_finalize (stmt);
-    if (srid != -1234567890)
-      {
-	  idx_name = sqlite3_mprintf ("idx_%s_%s", table, geom);
-	  goto done;
-      }
-
-/* checking if the R*Tree Spatial Index is defined - Spatial View */
-    xprefix = gaiaDoubleQuotedSql (db_prefix);
-    sql_statement =
-	sqlite3_mprintf ("SELECT g.f_table_name, g.f_geometry_column, g.srid "
-			 "FROM \"%s\".views_geometry_columns AS v "
-			 "JOIN geometry_columns AS g ON (Upper(v.f_table_name) = Upper(g.f_table_name) "
-			 "AND Upper(v.f_geometry_column) = Upper(g.f_geometry_column) "
-			 "AND g.spatial_index_enabled = 1) "
-			 "WHERE Upper(view_name) = Upper(%Q) AND Upper(view_geometry) = Upper(%Q)",
-			 xprefix, table, geom);
-    free (xprefix);
-    ret = sqlite3_prepare_v2 (sqlite, sql_statement, strlen (sql_statement),
-			      &stmt, NULL);
-    sqlite3_free (sql_statement);
-    if (ret != SQLITE_OK)
-      {
-	  spatialite_e ("GetSpatialIndexExtent SQL error: %s\n",
-			sqlite3_errmsg (sqlite));
-	  goto err;
-      }
-    while (1)
-      {
-	  ret = sqlite3_step (stmt);
-	  if (ret == SQLITE_DONE)
-	      break;
-	  if (ret == SQLITE_ROW)
-	    {
-		const char *name = (const char *) sqlite3_column_text (stmt, 0);
-		const char *column =
-		    (const char *) sqlite3_column_text (stmt, 1);
-		idx_name = sqlite3_mprintf ("idx_%s_%s", name, column);
-		srid = sqlite3_column_int (stmt, 2);
-	    }
-	  else
-	    {
-		spatialite_e ("sqlite3_step() error: %s\n",
-			      sqlite3_errmsg (sqlite));
-		sqlite3_finalize (stmt);
-		goto err;
-	    }
-      }
-    sqlite3_finalize (stmt);
-    if (srid == -1234567890)
-	goto err;
-
-  done:
-    envelope = gaiaGetRTreeFullExtent (sqlite, db_prefix, idx_name, srid);
-    sqlite3_free (idx_name);
-    return envelope;
-
-  err:
-    return NULL;
-}
-
-static void
-fnct_GetSpatialIndexExtent (sqlite3_context * context, int argc,
-			    sqlite3_value ** argv)
-{
-/* SQL function:
-/ GetSpatialIndexExtent(db-prefix, table, column)
-/
-/ evaluates a SpatialIndex, returning:
-/ - a Rectangle Geometry corresponding to the Spatial Index Full Extent
-/ - NULL on invalid arguments or on not existing Spatial Index
-*/
-    const char *db_prefix = "main";
-    const char *table;
-    const char *column;
-    gaiaGeomCollPtr envelope;
-    sqlite3 *sqlite = sqlite3_context_db_handle (context);
-    int gpkg_mode = 0;
-    int tiny_point = 0;
-    int gpkg_layout = 0;
-    struct splite_internal_cache *cache = sqlite3_user_data (context);
-    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
-    if (cache != NULL)
-      {
-	  gpkg_mode = cache->gpkg_mode;
-	  tiny_point = cache->tinyPointEnabled;
-      }
-    if (sqlite3_value_type (argv[0]) == SQLITE_NULL)
-	;
-    else if (sqlite3_value_type (argv[0]) == SQLITE_TEXT)
-	db_prefix = (const char *) sqlite3_value_text (argv[0]);
-    else
-      {
-	  spatialite_e
-	      ("GetSpatialIndexExtent() error: argument 1 [db-prefix] is not of the String type\n");
-	  sqlite3_result_null (context);
-	  return;
-      }
-    if (sqlite3_value_type (argv[1]) != SQLITE_TEXT)
-      {
-	  spatialite_e
-	      ("GetSpatialIndexExtent() error: argument 2 [table_name] is not of the String type\n");
-	  sqlite3_result_null (context);
-	  return;
-      }
-    table = (const char *) sqlite3_value_text (argv[1]);
-    if (sqlite3_value_type (argv[2]) != SQLITE_TEXT)
-      {
-	  spatialite_e
-	      ("GetSpatialIndexExtent() error: argument 3 [column_name] is not of the String type\n");
-	  sqlite3_result_null (context);
-	  return;
-      }
-    if (checkSpatialMetaData_ex (sqlite, db_prefix) == 4)
-	gpkg_layout = 1;
-    column = (const char *) sqlite3_value_text (argv[2]);
-
-    if (gpkg_layout)
-	envelope =
-	    get_gpkg_spatial_index_extent (sqlite, db_prefix, table, column);
-    else
-	envelope = get_spatial_index_extent (sqlite, db_prefix, table, column);
-    if (envelope != NULL)
-      {
-	  /* builds the BLOB geometry to be returned */
-	  unsigned char *blob;
-	  int len;
-	  gaiaToSpatiaLiteBlobWkbEx2 (envelope, &blob, &len, gpkg_mode,
-				      tiny_point);
-	  sqlite3_result_blob (context, blob, len, free);
-	  gaiaFreeGeomColl (envelope);
-      }
-    else
-	sqlite3_result_null (context);
 }
 
 static int
@@ -18986,155 +18736,6 @@ fnct_MbrMaxY (sqlite3_context * context, int argc, sqlite3_value ** argv)
     else
 	sqlite3_result_double (context, coord);
 }
-
-#ifndef OMIT_GEOCALLBACKS	/* supporting RTree geometry callbacks */
-static void
-gaia_mbr_del (void *p)
-{
-/* freeing data used by R*Tree Geometry Callback */
-    sqlite3_free (p);
-}
-
-static int
-fnct_RTreeIntersects (sqlite3_rtree_geometry * p, int nCoord, double *aCoord,
-		      int *pRes)
-{
-/* R*Tree Geometry callback function:
-/ ... MATCH RTreeIntersects(double x1, double y1, double x2, double y2)
-*/
-    struct gaia_rtree_mbr *mbr;
-    double xmin;
-    double xmax;
-    double ymin;
-    double ymax;
-    float fminx;
-    float fminy;
-    float fmaxx;
-    float fmaxy;
-    double tic;
-    double tic2;
-
-    if (p->pUser == 0)
-      {
-	  /* first call: we must check args and then initialize the MBR struct */
-	  if (nCoord != 4)
-	      return SQLITE_ERROR;
-	  if (p->nParam != 4)
-	      return SQLITE_ERROR;
-	  mbr = (struct gaia_rtree_mbr *) (p->pUser =
-					   sqlite3_malloc (sizeof
-							   (struct
-							    gaia_rtree_mbr)));
-	  if (!mbr)
-	      return SQLITE_NOMEM;
-	  p->xDelUser = gaia_mbr_del;
-	  xmin = p->aParam[0];
-	  ymin = p->aParam[1];
-	  xmax = p->aParam[2];
-	  ymax = p->aParam[3];
-	  if (xmin > xmax)
-	    {
-		xmin = p->aParam[2];
-		xmax = p->aParam[0];
-	    }
-	  if (ymin > ymax)
-	    {
-		ymin = p->aParam[3];
-		ymax = p->aParam[1];
-	    }
-
-	  /* adjusting the MBR so to compensate for DOUBLE/FLOAT truncations */
-	  fminx = (float) xmin;
-	  fminy = (float) ymin;
-	  fmaxx = (float) xmax;
-	  fmaxy = (float) ymax;
-	  tic = fabs (xmin - fminx);
-	  tic2 = fabs (ymin - fminy);
-	  if (tic2 > tic)
-	      tic = tic2;
-	  tic2 = fabs (xmax - fmaxx);
-	  if (tic2 > tic)
-	      tic = tic2;
-	  tic2 = fabs (ymax - fmaxy);
-	  if (tic2 > tic)
-	      tic = tic2;
-	  tic *= 2.0;
-
-	  mbr->minx = xmin - tic;
-	  mbr->miny = ymin - tic;
-	  mbr->maxx = xmax + tic;
-	  mbr->maxy = ymax + tic;
-      }
-
-    mbr = (struct gaia_rtree_mbr *) (p->pUser);
-    xmin = aCoord[0];
-    xmax = aCoord[1];
-    ymin = aCoord[2];
-    ymax = aCoord[3];
-    *pRes = 1;
-/* evaluating Intersects relationship */
-    if (xmin > mbr->maxx)
-	*pRes = 0;
-    if (xmax < mbr->minx)
-	*pRes = 0;
-    if (ymin > mbr->maxy)
-	*pRes = 0;
-    if (ymax < mbr->miny)
-	*pRes = 0;
-    return SQLITE_OK;
-}
-
-static int
-fnct_RTreeDistWithin (sqlite3_rtree_geometry * p, int nCoord, double *aCoord,
-		      int *pRes)
-{
-/* R*Tree Geometry callback function:
-/ ... MATCH RTreeDistWithin(double x, double y, double radius)
-*/
-    struct gaia_rtree_mbr *mbr;
-    double xmin;
-    double xmax;
-    double ymin;
-    double ymax;
-
-    if (p->pUser == 0)
-      {
-	  /* first call: we must check args and then initialize the MBR struct */
-	  if (nCoord != 4)
-	      return SQLITE_ERROR;
-	  if (p->nParam != 3)
-	      return SQLITE_ERROR;
-	  mbr = (struct gaia_rtree_mbr *) (p->pUser =
-					   sqlite3_malloc (sizeof
-							   (struct
-							    gaia_rtree_mbr)));
-	  if (!mbr)
-	      return SQLITE_NOMEM;
-	  p->xDelUser = gaia_mbr_del;
-	  mbr->minx = p->aParam[0] - p->aParam[2];
-	  mbr->miny = p->aParam[1] - p->aParam[2];
-	  mbr->maxx = p->aParam[0] + p->aParam[2];
-	  mbr->maxy = p->aParam[1] + p->aParam[2];
-      }
-
-    mbr = (struct gaia_rtree_mbr *) (p->pUser);
-    xmin = aCoord[0];
-    xmax = aCoord[1];
-    ymin = aCoord[2];
-    ymax = aCoord[3];
-    *pRes = 1;
-/* evaluating Intersects relationship */
-    if (xmin > mbr->maxx)
-	*pRes = 0;
-    if (xmax < mbr->minx)
-	*pRes = 0;
-    if (ymin > mbr->maxy)
-	*pRes = 0;
-    if (ymax < mbr->miny)
-	*pRes = 0;
-    return SQLITE_OK;
-}
-#endif /* end RTree geometry callbacks */
 
 static void
 fnct_X (sqlite3_context * context, int argc, sqlite3_value ** argv)
@@ -48613,6 +48214,9 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "HasKNN", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_has_knn, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "HasKNN2", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_has_knn2, 0, 0, 0);
     sqlite3_create_function_v2 (db, "HasRouting", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_has_routing, 0, 0, 0);
@@ -48821,9 +48425,6 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "CheckSpatialIndex", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_CheckSpatialIndex, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "GetSpatialIndexExtent", 3,
-				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
-				fnct_GetSpatialIndexExtent, 0, 0, 0);
     sqlite3_create_function_v2 (db, "CheckShadowedRowid", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_CheckShadowedRowid, 0, 0, 0);
@@ -50350,17 +49951,6 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "ST_TrajectoryInterpolatePoint", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_TrajectoryInterpolatePoint, 0, 0, 0);
-
-#ifndef OMIT_GEOCALLBACKS	/* supporting RTree geometry callbacks */
-    sqlite3_rtree_geometry_callback (db, "RTreeWithin", fnct_RTreeIntersects,
-				     0);
-    sqlite3_rtree_geometry_callback (db, "RTreeContains",
-				     fnct_RTreeIntersects, 0);
-    sqlite3_rtree_geometry_callback (db, "RTreeIntersects",
-				     fnct_RTreeIntersects, 0);
-    sqlite3_rtree_geometry_callback (db, "RTreeDistWithin",
-				     fnct_RTreeDistWithin, 0);
-#endif /* end RTree geometry callbacks */
 
 /* some BLOB/JPEG/EXIF functions */
     sqlite3_create_function_v2 (db, "IsGeometryBlob", 1,
@@ -53675,14 +53265,14 @@ init_spatialite_virtualtables (void *p_db, const void *p_cache)
     virtual_spatialindex_extension_init (db);
 /* initializing the VirtualElementary  extension */
     virtual_elementary_extension_init (db);
+/* initializing the (fake) VirtualKNN  extension */
+    virtual_knn_extension_init (db);
 
 #ifndef OMIT_GEOS		/* only if GEOS is supported */
 /* initializing the VirtualRouting  extension */
     virtualrouting_extension_init (db);
-#ifndef OMIT_KNN		/* only if KNN is enabled */
-/* initializing the VirtualKNN  extension */
-    virtual_knn_extension_init (db);
-#endif /* end KNN conditional */
+/* initializing the VirtualKNN2  extension */
+    virtual_knn2_extension_init (db);
 #endif /* end GEOS conditional */
 
 #ifdef ENABLE_GEOPACKAGE	/* only if GeoPackage support is enabled */
@@ -53772,10 +53362,9 @@ spatialite_splash_screen (int verbose)
 /* initializing the VirtualRouting  extension */
 		spatialite_i
 		    ("\t- 'VirtualRouting'\t[Dijkstra shortest path - advanced]\n");
-#ifndef OMIT_KNN		/* only if KNN is enabled */
-/* initializing the VirtualKNN  extension */ spatialite_i
-		    ("\t- 'VirtualKNN'\t[K-Nearest Neighbors metahandler]\n");
-#endif /* end KNN conditional */
+/* initializing the VirtualKNN2  extension */ 
+		spatialite_i
+		    ("\t- 'VirtualKNN2'\t[K-Nearest Neighbors metahandler]\n");
 #endif /* end GEOS conditional */
 
 #ifdef ENABLE_GEOPACKAGE	/* VirtualGPKG is supported */

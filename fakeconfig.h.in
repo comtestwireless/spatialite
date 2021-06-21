@@ -66,9 +66,6 @@
 /* Define to 1 if you have the <librttopo.h> header file. */
 #undef HAVE_LIBRTTOPO_H
 
-/* Define to 1 if you have the `sqlite3' library (-lsqlite3). */
-#undef HAVE_LIBSQLITE3
-
 /* Define to 1 if you have the `z' library (-lz). */
 #undef HAVE_LIBZ
 
@@ -177,9 +174,6 @@
 
 /* Should be defined in order to disable FREEXL support. */
 #undef OMIT_FREEXL
-
-/* Should be defined in order to disable GEOCALLBACKS support. */
-#undef OMIT_GEOCALLBACKS
 
 /* Should be defined in order to disable GEOS support. */
 #undef OMIT_GEOS

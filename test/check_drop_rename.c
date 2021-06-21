@@ -222,21 +222,21 @@ do_test_rename_table (sqlite3 * handle, void *cache)
 
 /* attempting to rename a Virtual Table*/
     ret =
-	sqlite3_exec (handle, "SELECT RenameTable(NULL, 'knn', 'new_knn')",
+	sqlite3_exec (handle, "SELECT RenameTable(NULL, 'knn2', 'new_knn2')",
 		      NULL, NULL, &err_msg);
     if (ret == SQLITE_OK)
       {
-	  fprintf (stderr, "RenameTable \"knn\" unexpected success\n");
+	  fprintf (stderr, "RenameTable \"knn2\" unexpected success\n");
 	  sqlite3_close (handle);
 	  spatialite_cleanup_ex (cache);
 	  return -22;
       }
     ret =
 	strcmp (err_msg,
-		"RenameTable exception - forbidden: SpatiaLite internal Table [main.knn].");
+		"RenameTable exception - forbidden: SpatiaLite internal Table [main.knn2].");
     if (ret != 0)
       {
-	  fprintf (stderr, "RenameTable \"knn\" error: %s\n", err_msg);
+	  fprintf (stderr, "RenameTable \"knn2\" error: %s\n", err_msg);
 	  sqlite3_free (err_msg);
 	  sqlite3_close (handle);
 	  spatialite_cleanup_ex (cache);
@@ -445,21 +445,21 @@ do_test_rename_column (sqlite3 * handle, void *cache)
 /* attempting to rename a Virtual Table */
     ret =
 	sqlite3_exec (handle,
-		      "SELECT RenameColumn(NULL, 'knn', 'f_table_name', 'table_name')",
+		      "SELECT RenameColumn(NULL, 'knn2', 'f_table_name', 'table_name')",
 		      NULL, NULL, &err_msg);
     if (ret == SQLITE_OK)
       {
-	  fprintf (stderr, "RenameColumn \"knn\" unexpected success\n");
+	  fprintf (stderr, "RenameColumn \"knn2\" unexpected success\n");
 	  sqlite3_close (handle);
 	  spatialite_cleanup_ex (cache);
 	  return -24;
       }
     ret =
 	strcmp (err_msg,
-		"RenameColumn exception - forbidden: SpatiaLite internal Table [main.knn].");
+		"RenameColumn exception - forbidden: SpatiaLite internal Table [main.knn2].");
     if (ret != 0)
       {
-	  fprintf (stderr, "RenameColumn \"knn\" error: %s\n", err_msg);
+	  fprintf (stderr, "RenameColumn \"knn2\" error: %s\n", err_msg);
 	  sqlite3_free (err_msg);
 	  sqlite3_close (handle);
 	  spatialite_cleanup_ex (cache);

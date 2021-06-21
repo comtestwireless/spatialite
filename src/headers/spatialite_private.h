@@ -1505,7 +1505,9 @@ extern "C"
 #endif
 
     SPATIALITE_PRIVATE void finalize_topologies (const void *p_cache);
-
+    
+    SPATIALITE_PRIVATE int create_knn2 (sqlite3 * sqlite);
+    
     SPATIALITE_PRIVATE int create_data_licenses (sqlite3 * sqlite);
 
     SPATIALITE_PRIVATE int create_geometry_columns_time (sqlite3 * sqlite);

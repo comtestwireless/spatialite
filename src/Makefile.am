@@ -45,7 +45,7 @@ libspatialite_la_LIBADD = ./gaiaaux/libgaiaaux.la \
 	./stored_procedures/libstored_procedures.la \
 	./connection_cache/libconnection_cache.la \
 	./virtualtext/libvirtualtext.la \
-	./wfs/libwfs.la @LIBXML2_LIBS@
+	./wfs/libwfs.la @LIBXML2_LIBS@ @SQLITE3_LIBS@
 
 if MINGW
 libspatialite_la_LDFLAGS = -version-info 5:1:0 -no-undefined

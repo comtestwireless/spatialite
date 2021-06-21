@@ -137,7 +137,7 @@ AUTOMAKE = automake-1.16
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -g -O2 -fprofile-arcs -ftest-coverage -g
+CFLAGS = -Wall -Wextra -Wunused -pedantic -g -O0 -fprofile-arcs -ftest-coverage -g
 CPP = gcc -E
 CPPFLAGS = 
 CXX = g++
@@ -168,7 +168,7 @@ INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
 LD = /usr/bin/ld -m elf_x86_64
 LDFLAGS = 
 LIBOBJS = 
-LIBS = -lminizip -lrttopo -lfreexl -lproj -lsqlite3 -lz -lsqlite3  -L/usr/lib64 -lgeos_c
+LIBS = -lminizip -lrttopo -lfreexl -lproj -lz  -L/usr/lib64 -lgeos_c
 LIBTOOL = $(SHELL) $(top_builddir)/libtool
 LIBXML2_CFLAGS = -I/usr/include/libxml2 
 LIBXML2_LIBS = -lxml2 
@@ -195,11 +195,13 @@ PACKAGE_VERSION = 5.1.0-devel
 PATH_SEPARATOR = :
 PKG_CONFIG = /usr/bin/pkg-config
 PKG_CONFIG_LIBDIR = 
-PKG_CONFIG_PATH = 
+PKG_CONFIG_PATH = /usr/local/lib/pkgconfig
 RANLIB = ranlib
 SED = /usr/bin/sed
 SET_MAKE = 
 SHELL = /bin/sh
+SQLITE3_CFLAGS = 
+SQLITE3_LIBS = -lsqlite3 
 STRIP = strip
 VERSION = 5.1.0-devel
 abs_builddir = /home/sandro/fossil/libspatialite/test/sql_stmt_tests
@@ -2555,21 +2557,6 @@ EXTRA_DIST = addpoint10.testcase \
 	shiftlongitude8.testcase \
 	shiftlongitude9.testcase \
 	spatialindex.testcase \
-	spatialindexextent1.testcase \
-	spatialindexextent2.testcase \
-	spatialindexextent3.testcase \
-	spatialindexextent4.testcase \
-	spatialindexextent5.testcase \
-	spatialindexextent6.testcase \
-	spatialindexextent7.testcase \
-	spatialindexextent8.testcase \
-	spatialindexextent9.testcase \
-	spatialindexextent10.testcase \
-	spatialindexextent11.testcase \
-	spatialindexextent12.testcase \
-	spatialindexextent13.testcase \
-	spatialindexextent14.testcase \
-	spatialindexextent15.testcase \
 	srid10.testcase \
 	srid11.testcase \
 	srid1.testcase \

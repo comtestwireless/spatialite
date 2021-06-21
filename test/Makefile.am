@@ -70,7 +70,7 @@ check_PROGRAMS = check_endian \
 		check_network2d \
 		check_network3d \
 		check_network_log \
-		check_virtualknn \
+		check_virtualknn2 \
 		check_sequence \
 		check_stored_proc \
 		check_wms \

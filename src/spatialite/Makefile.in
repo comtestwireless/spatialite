@@ -119,7 +119,8 @@ am__objects_1 = libsplite_la-mbrcache.lo libsplite_la-spatialite.lo \
 	libsplite_la-virtualnetwork.lo libsplite_la-virtualrouting.lo \
 	libsplite_la-virtualshape.lo libsplite_la-virtualxpath.lo \
 	libsplite_la-virtualelementary.lo libsplite_la-virtualknn.lo \
-	libsplite_la-create_routing.lo libsplite_la-virtualgeojson.lo
+	libsplite_la-virtualknn2.lo libsplite_la-create_routing.lo \
+	libsplite_la-virtualgeojson.lo
 am_libsplite_la_OBJECTS = $(am__objects_1)
 libsplite_la_OBJECTS = $(am_libsplite_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -141,8 +142,8 @@ am__objects_2 = splite_la-mbrcache.lo splite_la-spatialite.lo \
 	splite_la-virtualspatialindex.lo splite_la-virtualnetwork.lo \
 	splite_la-virtualrouting.lo splite_la-virtualshape.lo \
 	splite_la-virtualxpath.lo splite_la-virtualelementary.lo \
-	splite_la-virtualknn.lo splite_la-create_routing.lo \
-	splite_la-virtualgeojson.lo
+	splite_la-virtualknn.lo splite_la-virtualknn2.lo \
+	splite_la-create_routing.lo splite_la-virtualgeojson.lo
 am_splite_la_OBJECTS = $(am__objects_2)
 splite_la_OBJECTS = $(am_splite_la_OBJECTS)
 splite_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
@@ -183,6 +184,7 @@ am__depfiles_remade = ./$(DEPDIR)/libsplite_la-create_routing.Plo \
 	./$(DEPDIR)/libsplite_la-virtualgeojson.Plo \
 	./$(DEPDIR)/libsplite_la-virtualgpkg.Plo \
 	./$(DEPDIR)/libsplite_la-virtualknn.Plo \
+	./$(DEPDIR)/libsplite_la-virtualknn2.Plo \
 	./$(DEPDIR)/libsplite_la-virtualnetwork.Plo \
 	./$(DEPDIR)/libsplite_la-virtualrouting.Plo \
 	./$(DEPDIR)/libsplite_la-virtualshape.Plo \
@@ -208,6 +210,7 @@ am__depfiles_remade = ./$(DEPDIR)/libsplite_la-create_routing.Plo \
 	./$(DEPDIR)/splite_la-virtualgeojson.Plo \
 	./$(DEPDIR)/splite_la-virtualgpkg.Plo \
 	./$(DEPDIR)/splite_la-virtualknn.Plo \
+	./$(DEPDIR)/splite_la-virtualknn2.Plo \
 	./$(DEPDIR)/splite_la-virtualnetwork.Plo \
 	./$(DEPDIR)/splite_la-virtualrouting.Plo \
 	./$(DEPDIR)/splite_la-virtualshape.Plo \
@@ -334,6 +337,8 @@ RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
+SQLITE3_CFLAGS = @SQLITE3_CFLAGS@
+SQLITE3_LIBS = @SQLITE3_LIBS@
 STRIP = @STRIP@
 VERSION = @VERSION@
 abs_builddir = @abs_builddir@
@@ -415,6 +420,7 @@ SPATIALITE_COMMON_SOURCES = mbrcache.c \
 	virtualxpath.c \
 	virtualelementary.c \
 	virtualknn.c \
+	virtualknn2.c \
 	create_routing.c \
 	virtualgeojson.c
 
@@ -504,6 +510,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsplite_la-virtualgeojson.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsplite_la-virtualgpkg.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsplite_la-virtualknn.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsplite_la-virtualknn2.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsplite_la-virtualnetwork.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsplite_la-virtualrouting.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsplite_la-virtualshape.Plo@am__quote@ # am--include-marker
@@ -529,6 +536,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/splite_la-virtualgeojson.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/splite_la-virtualgpkg.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/splite_la-virtualknn.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/splite_la-virtualknn2.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/splite_la-virtualnetwork.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/splite_la-virtualrouting.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/splite_la-virtualshape.Plo@am__quote@ # am--include-marker
@@ -723,6 +731,13 @@ libsplite_la-virtualknn.lo: virtualknn.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsplite_la_CFLAGS) $(CFLAGS) -c -o libsplite_la-virtualknn.lo `test -f 'virtualknn.c' || echo '$(srcdir)/'`virtualknn.c
 
+libsplite_la-virtualknn2.lo: virtualknn2.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsplite_la_CFLAGS) $(CFLAGS) -MT libsplite_la-virtualknn2.lo -MD -MP -MF $(DEPDIR)/libsplite_la-virtualknn2.Tpo -c -o libsplite_la-virtualknn2.lo `test -f 'virtualknn2.c' || echo '$(srcdir)/'`virtualknn2.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libsplite_la-virtualknn2.Tpo $(DEPDIR)/libsplite_la-virtualknn2.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='virtualknn2.c' object='libsplite_la-virtualknn2.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsplite_la_CFLAGS) $(CFLAGS) -c -o libsplite_la-virtualknn2.lo `test -f 'virtualknn2.c' || echo '$(srcdir)/'`virtualknn2.c
+
 libsplite_la-create_routing.lo: create_routing.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsplite_la_CFLAGS) $(CFLAGS) -MT libsplite_la-create_routing.lo -MD -MP -MF $(DEPDIR)/libsplite_la-create_routing.Tpo -c -o libsplite_la-create_routing.lo `test -f 'create_routing.c' || echo '$(srcdir)/'`create_routing.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libsplite_la-create_routing.Tpo $(DEPDIR)/libsplite_la-create_routing.Plo
@@ -898,6 +913,13 @@ splite_la-virtualknn.lo: virtualknn.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(splite_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(splite_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o splite_la-virtualknn.lo `test -f 'virtualknn.c' || echo '$(srcdir)/'`virtualknn.c
 
+splite_la-virtualknn2.lo: virtualknn2.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(splite_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(splite_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT splite_la-virtualknn2.lo -MD -MP -MF $(DEPDIR)/splite_la-virtualknn2.Tpo -c -o splite_la-virtualknn2.lo `test -f 'virtualknn2.c' || echo '$(srcdir)/'`virtualknn2.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/splite_la-virtualknn2.Tpo $(DEPDIR)/splite_la-virtualknn2.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='virtualknn2.c' object='splite_la-virtualknn2.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(splite_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(splite_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o splite_la-virtualknn2.lo `test -f 'virtualknn2.c' || echo '$(srcdir)/'`virtualknn2.c
+
 splite_la-create_routing.lo: create_routing.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(splite_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(splite_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT splite_la-create_routing.lo -MD -MP -MF $(DEPDIR)/splite_la-create_routing.Tpo -c -o splite_la-create_routing.lo `test -f 'create_routing.c' || echo '$(srcdir)/'`create_routing.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/splite_la-create_routing.Tpo $(DEPDIR)/splite_la-create_routing.Plo
@@ -1064,6 +1086,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/libsplite_la-virtualgeojson.Plo
 	-rm -f ./$(DEPDIR)/libsplite_la-virtualgpkg.Plo
 	-rm -f ./$(DEPDIR)/libsplite_la-virtualknn.Plo
+	-rm -f ./$(DEPDIR)/libsplite_la-virtualknn2.Plo
 	-rm -f ./$(DEPDIR)/libsplite_la-virtualnetwork.Plo
 	-rm -f ./$(DEPDIR)/libsplite_la-virtualrouting.Plo
 	-rm -f ./$(DEPDIR)/libsplite_la-virtualshape.Plo
@@ -1089,6 +1112,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/splite_la-virtualgeojson.Plo
 	-rm -f ./$(DEPDIR)/splite_la-virtualgpkg.Plo
 	-rm -f ./$(DEPDIR)/splite_la-virtualknn.Plo
+	-rm -f ./$(DEPDIR)/splite_la-virtualknn2.Plo
 	-rm -f ./$(DEPDIR)/splite_la-virtualnetwork.Plo
 	-rm -f ./$(DEPDIR)/splite_la-virtualrouting.Plo
 	-rm -f ./$(DEPDIR)/splite_la-virtualshape.Plo
@@ -1159,6 +1183,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/libsplite_la-virtualgeojson.Plo
 	-rm -f ./$(DEPDIR)/libsplite_la-virtualgpkg.Plo
 	-rm -f ./$(DEPDIR)/libsplite_la-virtualknn.Plo
+	-rm -f ./$(DEPDIR)/libsplite_la-virtualknn2.Plo
 	-rm -f ./$(DEPDIR)/libsplite_la-virtualnetwork.Plo
 	-rm -f ./$(DEPDIR)/libsplite_la-virtualrouting.Plo
 	-rm -f ./$(DEPDIR)/libsplite_la-virtualshape.Plo
@@ -1184,6 +1209,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/splite_la-virtualgeojson.Plo
 	-rm -f ./$(DEPDIR)/splite_la-virtualgpkg.Plo
 	-rm -f ./$(DEPDIR)/splite_la-virtualknn.Plo
+	-rm -f ./$(DEPDIR)/splite_la-virtualknn2.Plo
 	-rm -f ./$(DEPDIR)/splite_la-virtualnetwork.Plo
 	-rm -f ./$(DEPDIR)/splite_la-virtualrouting.Plo
 	-rm -f ./$(DEPDIR)/splite_la-virtualshape.Plo

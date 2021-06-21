@@ -2061,7 +2061,9 @@ do_open_new_connection (sqlite3 * origin, void *cache)
 	  sqlite3_close (handle);
 	  return NULL;
       }
+#ifndef LOADABLE_EXTENSION
     sqlite3_enable_load_extension (handle, 1);
+#endif
     spatialite_internal_init (handle, cache);
     return handle;
 }

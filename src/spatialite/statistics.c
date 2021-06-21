@@ -5415,7 +5415,7 @@ check_spatialite_table (const char *table)
 	return 1;
     if (strcasecmp (table, "iso_metadata_reference") == 0)
 	return 1;
-    if (strcasecmp (table, "KNN") == 0)
+    if (strcasecmp (table, "KNN2") == 0)
 	return 1;
     if (strcasecmp (table, "SpatialIndex") == 0)
 	return 1;

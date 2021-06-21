@@ -5075,6 +5075,7 @@ createMissingSystemTables (sqlite3 * sqlite, const void *cache, int relaxed,
 	 NULL},
 	{"rl2map_configurations_view", create_rl2map_configurations_view, NULL,
 	 NULL, NULL},
+	{"KNN2", create_knn2, NULL,	 NULL, NULL},
 	{NULL, NULL, NULL, NULL, NULL}
     };
     struct str_tables *p_table = tables;

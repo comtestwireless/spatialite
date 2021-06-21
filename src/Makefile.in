@@ -366,6 +366,8 @@ RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
+SQLITE3_CFLAGS = @SQLITE3_CFLAGS@
+SQLITE3_LIBS = @SQLITE3_LIBS@
 STRIP = @STRIP@
 VERSION = @VERSION@
 abs_builddir = @abs_builddir@
@@ -454,7 +456,7 @@ libspatialite_la_LIBADD = ./gaiaaux/libgaiaaux.la \
 	./stored_procedures/libstored_procedures.la \
 	./connection_cache/libconnection_cache.la \
 	./virtualtext/libvirtualtext.la ./wfs/libwfs.la @LIBXML2_LIBS@ \
-	$(am__append_1) $(am__append_2) $(am__append_3)
+	@SQLITE3_LIBS@ $(am__append_1) $(am__append_2) $(am__append_3)
 @ANDROID_FALSE@@MINGW_FALSE@libspatialite_la_LDFLAGS = -version-info 8:2:2
 @ANDROID_TRUE@@MINGW_FALSE@libspatialite_la_LDFLAGS = -version-info 8:2:2
 @MINGW_TRUE@libspatialite_la_LDFLAGS = -version-info 5:1:0 -no-undefined

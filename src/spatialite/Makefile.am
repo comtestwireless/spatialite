@@ -27,6 +27,7 @@ SPATIALITE_COMMON_SOURCES = mbrcache.c \
 	virtualxpath.c \
 	virtualelementary.c \
 	virtualknn.c \
+	virtualknn2.c \
 	create_routing.c \
 	virtualgeojson.c
 
