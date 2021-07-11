@@ -195,7 +195,7 @@ PACKAGE_VERSION = 5.1.0-devel
 PATH_SEPARATOR = :
 PKG_CONFIG = /usr/bin/pkg-config
 PKG_CONFIG_LIBDIR = 
-PKG_CONFIG_PATH = /usr/local/lib/pkgconfig
+PKG_CONFIG_PATH = 
 RANLIB = ranlib
 SED = /usr/bin/sed
 SET_MAKE = 
@@ -1694,6 +1694,23 @@ EXTRA_DIST = addpoint10.testcase \
 	getmimetype3.testcase \
 	getmimetype4.testcase \
 	getmimetype5.testcase \
+	getpointindex1.testcase \
+	getpointindex2.testcase \
+	getpointindex3.testcase \
+	getpointindex4.testcase \
+	getpointindex5.testcase \
+	getpointindex6.testcase \
+	getpointindex7.testcase \
+	getpointindex8.testcase \
+	getpointindex9.testcase \
+	getpointindex10.testcase \
+	getpointindex11.testcase \
+	getpointindex12.testcase \
+	getpointindex13.testcase \
+	getpointindex14.testcase \
+	getpointindex15.testcase \
+	getpointindex16.testcase \
+	getpointindex17.testcase \
 	getvtableextent1.testcase \
 	getvtableextent2.testcase \
 	getvtableextent3.testcase \

@@ -77,7 +77,8 @@ check_PROGRAMS = check_endian \
 		check_drop_rename \
 		routing_test \
 		geojson_test \
-		check_zipshp
+		check_zipshp \
+		check_multiple_points
 		
 if ENABLE_GEOPACKAGE
 check_PROGRAMS += \

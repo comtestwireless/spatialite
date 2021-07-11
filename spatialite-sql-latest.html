@@ -1914,6 +1914,61 @@ algorithm with given <i>tolerance</i> and respecting topology</td></tr>
 				<td align="center" bgcolor="#d0f0d0">base</td>
 				<td>returns a new Linestring by removing the Point at <b>position</b> (zero-based index).<br>
                                 <b>NULL</b> will be returned if any error is encountered.</td></tr>
+			<tr><td><b>GetPointIndex</b></td>
+				<td>GetPointIndex( line <i>LineString</i> , point <i>Point</i> ) : <i>Integer</i><br>
+					GetPointIndex( line <i>LineString</i> , point <i>Point</i> , check_multiple <i>Boolean</i> ) : <i>Integer</i><hr>
+					ST_GetPointIndex line <i>LineString</i> , point <i>Point</i> ) : <i>Integer</i><br>
+					ST_GetPointIndex line <i>LineString</i> , point <i>Point</i> , check_multiple <i>Boolean</i> ) : <i>Integer</i></td>
+				<td></td>
+				<td align="center" bgcolor="#d0f0d0">base</td>
+				<td>returns the <b>position</b> (zero-based index) of the Linestring's vertex nearest to the given Point.<br>						
+						<b>NULL</b> will be returned if any error is encountered.
+						<ul><li>if the optional argument <b>check_multiple</b> is set to <b>TRUE</b> (always <b>FALSE</b> by default) the following special behavior applies:
+						<ul>
+							<li>if <b>Point</b> corresponds to multiple vertices of the Linestring (<i>repeated vertices or self-intesections</i>) then <b>-1</b> will be returned.</li>
+							<li>otherwise the index of the first Vertex found will be returned.</li>
+						</ul>
+						</li></ul>
+						</td></tr>
+			<tr><td><b>SetMultiplePoints</b></td>
+				<td>SetMultiplePoints( line <i>LineString</i> , pk_value <i>Integer</i> , table_name <i>Text</i> , point_name <i>Text</i>, pk_name <i>Text</i> , position_name <i>Text</i> ) : <i>Linestring</i><hr>
+					ST_SetMultiplePoints( line <i>LineString</i> , pk_value <i>Integer</i> , table_name <i>Text</i> , point_name <i>Text</i>, pk_name <i>Text</i> , position_name <i>Text</i> ) : <i>Linestring</i></td>
+				<td></td>
+				<td align="center" bgcolor="#d0f0d0">base</td>
+				<td>returns a new Linestring by replacing one or more Vertices accordingly to the content of an <i><u>auxiliary helper table</u></i>.<br><br>
+					<b>Note</b>: this one is a very special SQL Function not intended for general purposes but mostly for supporting power users.<br>
+						Its intended scope is to make easier the task of cleaning/snapping very dirty linear geometries before any attempt to load them into a Topology.<br><br>
+						The expected layout of the auxiliary helper table is as follows:
+						<table cellspan="0" cellpadding="0" bgcolor="#ffffc0">
+							<tr><td cellspan="2"><b>CREATE TABLE</b> <i>helper_table</i> <b>(</b></td></tr>
+							<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<i>fid</i> <b>INTEGER NOT NULL</b>,</td><td>-- column containing <i>Feature IDs</i></td></tr>
+							<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<i>pos</i> <b>INTEGER NOT NULL</b>,</td><td>-- column containing <i>vertex positions</i> (zero-based index)</td></tr>
+							<tr><td colspan="2">&nbsp;&nbsp;&nbsp;&nbsp;<b>CONSTRAINT</b> <i>pk_helptbl</i> <b>PRIMARY KEY (</b><i>fid, pos</i><b>));</b></td></tr>
+							<tr><td><b>SELECT AddGeometryColumn(</b>'<i>helper_table</i>', '<i>geom</i>', <i>someSRID</i>, '<b>POINT</b>', <i>dimensions</i> <b>);</b></td>
+							<td>-- Geometry column of the <b>POINT</b> type containing the new vertices to be replaced</td></tr>
+						</table><br>
+						Arguments interpretation:
+						<ul>
+							<li><b>line</b> is the input Linestring to be edited.</li>
+							<li><b>pk_value</b> is the Feature ID corresponding to the above Linestring</li>
+							<li><b>table_name</b> is the name of the auxiliari helper table always assumed to be on the <b>MAIN</b> DB.
+								(in this example '<i>helper_table</i>')</li>
+							<li><b>point_name</b> is the name of the column containing the new Points to be replaced.
+								(in this example '<i>geom</i>')</li></li>
+							<li><b>pk_name</b> is the name of the column containing Feature IDs.
+								(in this example '<i>fid</i>')</li></li>
+							<li><b>position_name</b> is the name of the column containing Vertices' relative positions.
+								(in this example '<i>pos</i>')</li></li>
+						</ul>
+						Remarks:
+						<ul>
+							<li><b>point_name</b> must be a registered Geometry and must have tha same SRID and Dimensions of the input Linestring.</li>
+							<li>Only the Vertices matching <b>pk_value</b> will be taken in consideration.</li>
+							<li>Rows from the helper table eventually exceeding the <b>position</b> range allowed by the Linestring will be silently ignored.</li>
+							<li>All Vertices not matching any row in the helper table will be left untouched as they are.</li>
+							<li>Multiple definitions of the same position will raise an Exception.</li>
+						</ul>
+                                an <b>Exception</b> will be raised if any error is encountered.</td></tr>
 			<tr><td><b>LinestringMinSegmentLength</b></td>
 				<td>LinestringMinSegmentLength( line <i>LineString</i> ) : <i>Double precision</i><hr>
 					LinestringMinSegmentLength( line <i>LineString</i> , boolean <i>ignore_repeated_vertices</i> ) : <i>Double precision</i><hr>

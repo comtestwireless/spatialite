@@ -7804,3 +7804,217 @@ gaiaStatisticsInvalidate (sqlite3 * sqlite, const char *table,
     else
 	return 0;
 }
+
+SPATIALITE_PRIVATE int
+do_set_multiple_points (sqlite3 * db_handle, void *xline,
+			sqlite3_int64 pk_value, const char *table_name,
+			const char *point_name, const char *pk_name,
+			const char *pos_name)
+{
+/*
+/ will attempt to edit a Linestring by replacing all Points found into an helper table
+/    - db_handle is the handle to the current SQLite's connection
+/    - xline is the pointer to the Geometry (of the Linestring type) to be edited
+/    - pk_value is the correspong feature's PK value
+/    - table_name is the name of the helper table
+/    - point_name is the name of the column containing Points
+/    - pk_name is the name of the column containig FIDs
+/    - pos_name is the name of the column containing 
+/      "positions" (zero-based index) of the Points to
+/       be replaced
+*/
+    sqlite3_stmt *stmt = NULL;
+    char *xtable_name;
+    char *xpoint_name;
+    char *xpk_name;
+    char *xpos_name;
+    char *sql;
+    int ret;
+    const char *name;
+    int i;
+    char **results;
+    int rows;
+    int columns;
+    int ok_point_name = 0;
+    int ok_pk_name = 0;
+    int ok_pos_name = 0;
+    int srid = -9999;
+    int gtype = -1;
+    int dims = -1;
+    int empty = 0;
+    gaiaGeomCollPtr line = (gaiaGeomCollPtr) xline;
+    gaiaLinestringPtr ln = line->FirstLinestring;
+
+/* checking if the helper table exists with the expected columns */
+    xtable_name = gaiaDoubleQuotedSql (table_name);
+    sql = sqlite3_mprintf ("PRAGMA MAIN.table_info(\"%s\")", xtable_name);
+    free (xtable_name);
+    ret = sqlite3_get_table (db_handle, sql, &results, &rows, &columns, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+	return MULTIPLE_POINTS_TABLE;	/* table does not seems to exist */
+    if (rows < 1)
+	empty = 1;
+    else
+      {
+	  for (i = 1; i <= rows; i++)
+	    {
+		name = results[(i * columns) + 1];
+		if (strcasecmp (name, point_name) == 0)
+		    ok_point_name = 1;
+		if (strcasecmp (name, pk_name) == 0)
+		    ok_pk_name = 1;
+		if (strcasecmp (name, pos_name) == 0)
+		    ok_pos_name = 1;
+	    }
+      }
+    sqlite3_free_table (results);
+    if (empty)
+	return MULTIPLE_POINTS_TABLE;	/* not existing table */
+    if (!ok_point_name)
+	return MULTIPLE_POINTS_POINT;	/* points column not found */
+    if (!ok_pk_name)
+	return MULTIPLE_POINTS_PK;	/* PK column not found */
+    if (!ok_pos_name)
+	return MULTIPLE_POINTS_POS;	/* position column not found */
+
+/* checking the helper table's Geometry for consistency */
+    sql =
+	sqlite3_mprintf
+	("SELECT geometry_type, srid FROM MAIN.geometry_columns "
+	 "WHERE f_table_name = %Q AND f_geometry_column = %Q", table_name,
+	 point_name);
+    ret = sqlite3_get_table (db_handle, sql, &results, &rows, &columns, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+	return MULTIPLE_POINTS_NOGEOM;	/* point_name is not a registered Geometry */
+    empty = 0;
+    if (rows < 1)
+	empty = 1;
+    else
+      {
+	  for (i = 1; i <= rows; i++)
+	    {
+		gtype = atoi (results[(i * columns) + 0]);
+		srid = atoi (results[(i * columns) + 1]);
+	    }
+      }
+    sqlite3_free_table (results);
+    if (empty)
+	return MULTIPLE_POINTS_NOGEOM;	/* point_name is not a registered Geometry */
+    if (line->Srid != srid)
+	return MULTIPLE_POINTS_SRID;
+    switch (gtype)
+      {
+      case GAIA_POINT:
+	  dims = GAIA_XY;
+	  break;
+      case GAIA_POINTZ:
+	  dims = GAIA_XY_Z;
+	  break;
+      case GAIA_POINTM:
+	  dims = GAIA_XY_M;
+	  break;
+      case GAIA_POINTZM:
+	  dims = GAIA_XY_Z_M;
+	  break;
+      default:
+	  return MULTIPLE_POINTS_NOPOINT;
+      };
+    if (dims != line->DimensionModel)
+	return MULTIPLE_POINTS_DIMS;
+
+/* preparing the SQL statement to get POINTs from the helper table */
+    xtable_name = gaiaDoubleQuotedSql (table_name);
+    xpoint_name = gaiaDoubleQuotedSql (point_name);
+    xpk_name = gaiaDoubleQuotedSql (pk_name);
+    xpos_name = gaiaDoubleQuotedSql (pos_name);
+    sql = sqlite3_mprintf ("SELECT \"%s\", \"%s\", Count(*) FROM MAIN.\"%s\" "
+			   "WHERE \"%s\" = ? GROUP BY \"%s\" ORDER BY \"%s\"",
+			   xpos_name, xpoint_name, xtable_name, xpk_name,
+			   xpos_name, xpos_name);
+    free (xpos_name);
+    free (xpk_name);
+    free (xpoint_name);
+    free (xtable_name);
+    ret = sqlite3_prepare_v2 (db_handle, sql, strlen (sql), &stmt, NULL);
+    sqlite3_free (sql);
+    if (ret != SQLITE_OK)
+	goto error;
+    sqlite3_reset (stmt);
+    sqlite3_clear_bindings (stmt);
+    sqlite3_bind_int64 (stmt, 1, pk_value);
+
+    while (1)
+      {
+	  /* scrolling the result set rows */
+	  ret = sqlite3_step (stmt);
+	  if (ret == SQLITE_DONE)
+	      break;		/* end of result set */
+	  if (ret == SQLITE_ROW)
+	    {
+		gaiaGeomCollPtr point;
+		gaiaPointPtr pt;
+		const unsigned char *blob;
+		int blob_size;
+		int position = sqlite3_column_int (stmt, 0);
+		int count = sqlite3_column_int (stmt, 2);
+		if (count != 1)
+		    goto dupl_row;
+		if (sqlite3_column_type (stmt, 1) != SQLITE_BLOB)
+		    goto illegal_geom;
+		blob = sqlite3_column_blob (stmt, 1);
+		blob_size = sqlite3_column_bytes (stmt, 1);
+		point = gaiaFromSpatiaLiteBlobWkb (blob, blob_size);
+		if (point == NULL)
+		    goto illegal_geom;
+		pt = point->FirstPoint;
+		if (pt == NULL)
+		    goto illegal_geom;
+		if (position >= 0 && position < ln->Points)
+		  {
+		      /* replacing coodinates of some vertex */
+		      if (line->DimensionModel == GAIA_XY_Z_M)
+			{
+			    gaiaSetPointXYZM (ln->Coords, position, pt->X,
+					      pt->Y, pt->Z, pt->M);
+			}
+		      else if (line->DimensionModel == GAIA_XY_Z)
+			{
+			    gaiaSetPointXYZ (ln->Coords, position, pt->X, pt->Y,
+					     pt->Z);
+			}
+		      else if (line->DimensionModel == GAIA_XY_M)
+			{
+			    gaiaSetPointXYM (ln->Coords, position, pt->X, pt->Y,
+					     pt->M);
+			}
+		      else
+			{
+			    gaiaSetPoint (ln->Coords, position, pt->X, pt->Y);
+			}
+		  }
+	    }
+	  else
+	      goto error;
+      }
+    sqlite3_finalize (stmt);
+
+
+    return MULTIPLE_POINTS_OK;
+
+  error:
+    if (stmt != NULL)
+	sqlite3_finalize (stmt);
+    return MULTIPLE_POINTS_SQL;
+
+  dupl_row:
+    if (stmt != NULL)
+	sqlite3_finalize (stmt);
+    return MULTIPLE_POINTS_DUPL;
+
+  illegal_geom:
+    if (stmt != NULL)
+	sqlite3_finalize (stmt);
+    return MULTIPLE_POINTS_GEOM;
+}

@@ -95,6 +95,19 @@ extern "C"
 #define SPATIALITE_CACHE_MAGIC1	0xf8
 #define SPATIALITE_CACHE_MAGIC2 0x8f
 
+#define MULTIPLE_POINTS_TABLE	0x10
+#define MULTIPLE_POINTS_POINT	0x20
+#define MULTIPLE_POINTS_PK		0x40
+#define MULTIPLE_POINTS_POS		0x80
+#define MULTIPLE_POINTS_NOGEOM	0x41
+#define MULTIPLE_POINTS_SRID	0x42
+#define MULTIPLE_POINTS_NOPOINT	0x44
+#define MULTIPLE_POINTS_DIMS	0x48
+#define MULTIPLE_POINTS_SQL		0x81
+#define MULTIPLE_POINTS_DUPL	0x82
+#define MULTIPLE_POINTS_GEOM	0x84
+#define MULTIPLE_POINTS_OK		0xff
+
     struct vxpath_ns
     {
 	/* a Namespace definition */
@@ -1505,9 +1518,9 @@ extern "C"
 #endif
 
     SPATIALITE_PRIVATE void finalize_topologies (const void *p_cache);
-    
+
     SPATIALITE_PRIVATE int create_knn2 (sqlite3 * sqlite);
-    
+
     SPATIALITE_PRIVATE int create_data_licenses (sqlite3 * sqlite);
 
     SPATIALITE_PRIVATE int create_geometry_columns_time (sqlite3 * sqlite);
@@ -1563,6 +1576,14 @@ extern "C"
 
     SPATIALITE_PRIVATE int createMissingRasterlite2Columns (sqlite3 *
 							    db_handle);
+
+    SPATIALITE_PRIVATE int do_set_multiple_points (sqlite3 * db_handle,
+						   void *line,
+						   sqlite3_int64 pk_value,
+						   const char *table_name,
+						   const char *point_name,
+						   const char *pk_name,
+						   const char *pos_name);
 
 #ifdef __cplusplus
 }

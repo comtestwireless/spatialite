@@ -126,7 +126,8 @@ check_PROGRAMS = check_endian$(EXEEXT) check_version$(EXEEXT) \
 	check_sequence$(EXEEXT) check_stored_proc$(EXEEXT) \
 	check_wms$(EXEEXT) check_drop_rename$(EXEEXT) \
 	routing_test$(EXEEXT) geojson_test$(EXEEXT) \
-	check_zipshp$(EXEEXT) $(am__EXEEXT_1)
+	check_zipshp$(EXEEXT) check_multiple_points$(EXEEXT) \
+	$(am__EXEEXT_1)
 @ENABLE_GEOPACKAGE_TRUE@am__append_1 = \
 @ENABLE_GEOPACKAGE_TRUE@		check_createBaseTables \
 @ENABLE_GEOPACKAGE_TRUE@		check_gpkgCreateTilesTable \
@@ -425,6 +426,9 @@ check_md5_LDADD = $(LDADD)
 check_metacatalog_SOURCES = check_metacatalog.c
 check_metacatalog_OBJECTS = check_metacatalog.$(OBJEXT)
 check_metacatalog_LDADD = $(LDADD)
+check_multiple_points_SOURCES = check_multiple_points.c
+check_multiple_points_OBJECTS = check_multiple_points.$(OBJEXT)
+check_multiple_points_LDADD = $(LDADD)
 check_multithread_SOURCES = check_multithread.c
 check_multithread_OBJECTS = check_multithread.$(OBJEXT)
 check_multithread_LDADD = $(LDADD)
@@ -628,6 +632,7 @@ am__depfiles_remade = ./$(DEPDIR)/check_add_tile_triggers.Po \
 	./$(DEPDIR)/check_map_config.Po \
 	./$(DEPDIR)/check_math_funcs.Po ./$(DEPDIR)/check_mbrcache.Po \
 	./$(DEPDIR)/check_md5.Po ./$(DEPDIR)/check_metacatalog.Po \
+	./$(DEPDIR)/check_multiple_points.Po \
 	./$(DEPDIR)/check_multithread.Po \
 	./$(DEPDIR)/check_network2d.Po ./$(DEPDIR)/check_network3d.Po \
 	./$(DEPDIR)/check_network_log.Po \
@@ -712,23 +717,24 @@ SOURCES = check_add_tile_triggers.c \
 	check_gpkg_opt_extension_mechanism_extensions_data_table_def.c \
 	check_init.c check_init2.c check_init_full.c check_libxml2.c \
 	check_map_config.c check_math_funcs.c check_mbrcache.c \
-	check_md5.c check_metacatalog.c check_multithread.c \
-	check_network2d.c check_network3d.c check_network_log.c \
-	check_recover_geom.c check_relations_fncts.c check_sequence.c \
-	check_shp_load.c check_shp_load_3d.c check_spatialindex.c \
-	check_sql_stmt.c check_sql_stmt_extension.c \
-	check_sql_stmt_legacy.c check_sql_stmt_tiny.c \
-	check_srid_fncts.c check_stored_proc.c check_styling.c \
-	check_tempgeom.c check_topology2d.c check_topology3d.c \
-	check_toponoface2d.c check_topoplus.c check_toposnap.c \
-	check_version.c check_virtual_ovflw.c check_virtualbbox.c \
-	check_virtualelem.c check_virtualknn2.c check_virtualtable1.c \
-	check_virtualtable2.c check_virtualtable3.c \
-	check_virtualtable4.c check_virtualtable5.c \
-	check_virtualtable6.c check_virtualxpath.c check_wfsin.c \
-	check_wms.c check_xls_load.c check_zipshp.c geojson_test.c \
-	routing_test.c shape_3d.c shape_cp1252.c shape_primitives.c \
-	shape_utf8_1.c shape_utf8_1ex.c shape_utf8_2.c
+	check_md5.c check_metacatalog.c check_multiple_points.c \
+	check_multithread.c check_network2d.c check_network3d.c \
+	check_network_log.c check_recover_geom.c \
+	check_relations_fncts.c check_sequence.c check_shp_load.c \
+	check_shp_load_3d.c check_spatialindex.c check_sql_stmt.c \
+	check_sql_stmt_extension.c check_sql_stmt_legacy.c \
+	check_sql_stmt_tiny.c check_srid_fncts.c check_stored_proc.c \
+	check_styling.c check_tempgeom.c check_topology2d.c \
+	check_topology3d.c check_toponoface2d.c check_topoplus.c \
+	check_toposnap.c check_version.c check_virtual_ovflw.c \
+	check_virtualbbox.c check_virtualelem.c check_virtualknn2.c \
+	check_virtualtable1.c check_virtualtable2.c \
+	check_virtualtable3.c check_virtualtable4.c \
+	check_virtualtable5.c check_virtualtable6.c \
+	check_virtualxpath.c check_wfsin.c check_wms.c \
+	check_xls_load.c check_zipshp.c geojson_test.c routing_test.c \
+	shape_3d.c shape_cp1252.c shape_primitives.c shape_utf8_1.c \
+	shape_utf8_1ex.c shape_utf8_2.c
 DIST_SOURCES = check_add_tile_triggers.c \
 	check_add_tile_triggers_bad_table_name.c check_bufovflw.c \
 	check_clone_table.c check_control_points.c check_create.c \
@@ -758,23 +764,24 @@ DIST_SOURCES = check_add_tile_triggers.c \
 	check_gpkg_opt_extension_mechanism_extensions_data_table_def.c \
 	check_init.c check_init2.c check_init_full.c check_libxml2.c \
 	check_map_config.c check_math_funcs.c check_mbrcache.c \
-	check_md5.c check_metacatalog.c check_multithread.c \
-	check_network2d.c check_network3d.c check_network_log.c \
-	check_recover_geom.c check_relations_fncts.c check_sequence.c \
-	check_shp_load.c check_shp_load_3d.c check_spatialindex.c \
-	check_sql_stmt.c check_sql_stmt_extension.c \
-	check_sql_stmt_legacy.c check_sql_stmt_tiny.c \
-	check_srid_fncts.c check_stored_proc.c check_styling.c \
-	check_tempgeom.c check_topology2d.c check_topology3d.c \
-	check_toponoface2d.c check_topoplus.c check_toposnap.c \
-	check_version.c check_virtual_ovflw.c check_virtualbbox.c \
-	check_virtualelem.c check_virtualknn2.c check_virtualtable1.c \
-	check_virtualtable2.c check_virtualtable3.c \
-	check_virtualtable4.c check_virtualtable5.c \
-	check_virtualtable6.c check_virtualxpath.c check_wfsin.c \
-	check_wms.c check_xls_load.c check_zipshp.c geojson_test.c \
-	routing_test.c shape_3d.c shape_cp1252.c shape_primitives.c \
-	shape_utf8_1.c shape_utf8_1ex.c shape_utf8_2.c
+	check_md5.c check_metacatalog.c check_multiple_points.c \
+	check_multithread.c check_network2d.c check_network3d.c \
+	check_network_log.c check_recover_geom.c \
+	check_relations_fncts.c check_sequence.c check_shp_load.c \
+	check_shp_load_3d.c check_spatialindex.c check_sql_stmt.c \
+	check_sql_stmt_extension.c check_sql_stmt_legacy.c \
+	check_sql_stmt_tiny.c check_srid_fncts.c check_stored_proc.c \
+	check_styling.c check_tempgeom.c check_topology2d.c \
+	check_topology3d.c check_toponoface2d.c check_topoplus.c \
+	check_toposnap.c check_version.c check_virtual_ovflw.c \
+	check_virtualbbox.c check_virtualelem.c check_virtualknn2.c \
+	check_virtualtable1.c check_virtualtable2.c \
+	check_virtualtable3.c check_virtualtable4.c \
+	check_virtualtable5.c check_virtualtable6.c \
+	check_virtualxpath.c check_wfsin.c check_wms.c \
+	check_xls_load.c check_zipshp.c geojson_test.c routing_test.c \
+	shape_3d.c shape_cp1252.c shape_primitives.c shape_utf8_1.c \
+	shape_utf8_1ex.c shape_utf8_2.c
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -1589,6 +1596,10 @@ check_metacatalog$(EXEEXT): $(check_metacatalog_OBJECTS) $(check_metacatalog_DEP
 	@rm -f check_metacatalog$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(check_metacatalog_OBJECTS) $(check_metacatalog_LDADD) $(LIBS)
 
+check_multiple_points$(EXEEXT): $(check_multiple_points_OBJECTS) $(check_multiple_points_DEPENDENCIES) $(EXTRA_check_multiple_points_DEPENDENCIES) 
+	@rm -f check_multiple_points$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(check_multiple_points_OBJECTS) $(check_multiple_points_LDADD) $(LIBS)
+
 check_multithread$(EXEEXT): $(check_multithread_OBJECTS) $(check_multithread_DEPENDENCIES) $(EXTRA_check_multithread_DEPENDENCIES) 
 	@rm -f check_multithread$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(check_multithread_OBJECTS) $(check_multithread_LDADD) $(LIBS)
@@ -1843,6 +1854,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_mbrcache.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_md5.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_metacatalog.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_multiple_points.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_multithread.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_network2d.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_network3d.Po@am__quote@ # am--include-marker
@@ -2710,6 +2722,13 @@ check_zipshp.log: check_zipshp$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+check_multiple_points.log: check_multiple_points$(EXEEXT)
+	@p='check_multiple_points$(EXEEXT)'; \
+	b='check_multiple_points'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 check_createBaseTables.log: check_createBaseTables$(EXEEXT)
 	@p='check_createBaseTables$(EXEEXT)'; \
 	b='check_createBaseTables'; \
@@ -3093,6 +3112,7 @@ distclean: distclean-recursive
 	-rm -f ./$(DEPDIR)/check_mbrcache.Po
 	-rm -f ./$(DEPDIR)/check_md5.Po
 	-rm -f ./$(DEPDIR)/check_metacatalog.Po
+	-rm -f ./$(DEPDIR)/check_multiple_points.Po
 	-rm -f ./$(DEPDIR)/check_multithread.Po
 	-rm -f ./$(DEPDIR)/check_network2d.Po
 	-rm -f ./$(DEPDIR)/check_network3d.Po
@@ -3245,6 +3265,7 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -f ./$(DEPDIR)/check_mbrcache.Po
 	-rm -f ./$(DEPDIR)/check_md5.Po
 	-rm -f ./$(DEPDIR)/check_metacatalog.Po
+	-rm -f ./$(DEPDIR)/check_multiple_points.Po
 	-rm -f ./$(DEPDIR)/check_multithread.Po
 	-rm -f ./$(DEPDIR)/check_network2d.Po
 	-rm -f ./$(DEPDIR)/check_network3d.Po

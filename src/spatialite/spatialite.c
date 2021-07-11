@@ -19867,8 +19867,8 @@ fnct_AddPoint (sqlite3_context * context, int argc, sqlite3_value ** argv)
 }
 
 static void
-commont_set_point (sqlite3_context * context, gaiaGeomCollPtr line,
-		   int position, gaiaGeomCollPtr point)
+common_set_point (sqlite3_context * context, gaiaGeomCollPtr line,
+		  int position, gaiaGeomCollPtr point)
 {
 /* SetPoint - common implementation */
     gaiaGeomCollPtr out;
@@ -19969,6 +19969,388 @@ commont_set_point (sqlite3_context * context, gaiaGeomCollPtr line,
 }
 
 static void
+get_point_index (sqlite3_context * context, gaiaGeomCollPtr line,
+		 gaiaGeomCollPtr point, int check_multiple)
+{
+/* actual implementation of get_point_index */
+    gaiaLinestringPtr ln;
+    gaiaPointPtr pt;
+    int iv;
+    double x = 0.0;
+    double y = 0.0;
+    double m = 0.0;
+    double z = 0.0;
+    double sv_x = 0.0;
+    double sv_y = 0.0;
+    double sv_m = 0.0;
+    double sv_z = 0.0;
+    double dist;
+    double min_dist = DBL_MAX;
+    int position;
+    int multiple = 0;
+
+    if (is_single_linestring (line) && is_single_point (point))
+	;
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    ln = line->FirstLinestring;
+    pt = point->FirstPoint;
+    for (iv = 0; iv < ln->Points; iv++)
+      {
+	  if (line->DimensionModel == GAIA_XY_Z)
+	    {
+		gaiaGetPointXYZ (ln->Coords, iv, &x, &y, &z);
+	    }
+	  else if (line->DimensionModel == GAIA_XY_M)
+	    {
+		gaiaGetPointXYM (ln->Coords, iv, &x, &y, &m);
+	    }
+	  else if (line->DimensionModel == GAIA_XY_Z_M)
+	    {
+		gaiaGetPointXYZM (ln->Coords, iv, &x, &y, &z, &m);
+	    }
+	  else
+	    {
+		gaiaGetPoint (ln->Coords, iv, &x, &y);
+	    }
+	  dist =
+	      sqrt (((x - pt->X) * (x - pt->X)) + ((y - pt->Y) * (y - pt->Y)));
+	  if (dist < min_dist)
+	    {
+		min_dist = dist;
+		position = iv;
+		sv_x = x;
+		sv_y = y;
+		sv_z = z;
+		sv_m = m;
+	    }
+      }
+    if (check_multiple)
+      {
+	  /* checking for multiple points */
+	  for (iv = 0; iv < ln->Points; iv++)
+	    {
+		if (iv == position)
+		    continue;	/* ignoring the first occurence */
+		if (line->DimensionModel == GAIA_XY_Z)
+		  {
+		      gaiaGetPointXYZ (ln->Coords, iv, &x, &y, &z);
+		  }
+		else if (line->DimensionModel == GAIA_XY_M)
+		  {
+		      gaiaGetPointXYM (ln->Coords, iv, &x, &y, &m);
+		  }
+		else if (line->DimensionModel == GAIA_XY_Z_M)
+		  {
+		      gaiaGetPointXYZM (ln->Coords, iv, &x, &y, &z, &m);
+		  }
+		else
+		  {
+		      gaiaGetPoint (ln->Coords, iv, &x, &y);
+		  }
+		if (x == sv_x && y == sv_y && z == sv_z && m == sv_m)
+		    multiple++;
+	    }
+      }
+    if (multiple)
+	sqlite3_result_int (context, -1);
+    else
+	sqlite3_result_int (context, position);
+}
+
+static void
+fnct_GetPointIndex (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL functions:
+/ ST_GetPointIndex(BLOB encoded LINESTRING line, BLOB encoded POINT point)
+/ or
+/ ST_GetPointIndex(BLOB encoded LINESTRING line, BLOB encoded POINT point,
+/                  BOOLEAN check_multiple)
+/
+/ returns the "position" (zero-based index) of the Linestring's vertex
+/ nearest to the given Point
+/ or NULL if any error is encountered
+/ or a NEGATIVE value if there are multiple definitions of the same vertex
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    gaiaGeomCollPtr line = NULL;
+    gaiaGeomCollPtr point = NULL;
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    int check_multiple = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    line =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (!line)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (sqlite3_value_type (argv[1]) != SQLITE_BLOB)
+      {
+	  gaiaFreeGeomColl (line);
+	  sqlite3_result_null (context);
+	  return;
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[1]);
+    n_bytes = sqlite3_value_bytes (argv[1]);
+    point =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (!point)
+      {
+	  gaiaFreeGeomColl (line);
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (argc >= 3)
+      {
+	  if (sqlite3_value_type (argv[2]) != SQLITE_INTEGER)
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+	  check_multiple = sqlite3_value_int (argv[2]);
+      }
+    get_point_index (context, line, point, check_multiple);
+    gaiaFreeGeomColl (line);
+    gaiaFreeGeomColl (point);
+}
+
+static void
+fnct_SetMultiplePoints (sqlite3_context * context, int argc,
+			sqlite3_value ** argv)
+{
+/* SQL function:
+/ ST_SetMultiplePoints(BLOB encoded LINESTRING line, INTEGER pk_value, TEXT table_name,
+/                      TEXT point_name, TEXT pk_name, TEXT pos_name)
+/
+/ returns a new Linestring by replacing all Points found into an helper table
+/                      - table_name is the name of the helper table
+/                      - point_name is the name of the column containing Points
+/                      - pk_name is the name of the column containig FIDs
+/                      - pos_name is the name of the column containing 
+/                        "positions" (zero-based index) of the Points to
+/                        be replaced
+/ or NULL if any error is encountered
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    gaiaGeomCollPtr line = NULL;
+    sqlite3_int64 pk_value;
+    const char *table_name;
+    const char *point_name;
+    const char *pk_name;
+    const char *pos_name;
+    int ret;
+    char *err_msg;
+    unsigned char *p_result = NULL;
+    int len;
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    int tiny_point = 0;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+	  tiny_point = cache->tinyPointEnabled;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+	goto invalid_linestring;
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    line =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (!line)
+	goto invalid_linestring;
+    if (!is_single_linestring (line))
+	goto invalid_linestring;
+    if (sqlite3_value_type (argv[1]) != SQLITE_INTEGER)
+	goto invalid_pk_value;
+    else
+	pk_value = sqlite3_value_int64 (argv[1]);
+    if (sqlite3_value_type (argv[2]) != SQLITE_TEXT)
+	goto invalid_table_name;
+    else
+	table_name = (const char *) sqlite3_value_text (argv[2]);
+    if (sqlite3_value_type (argv[3]) != SQLITE_TEXT)
+	goto invalid_point_name;
+    else
+	point_name = (const char *) sqlite3_value_text (argv[3]);
+    if (sqlite3_value_type (argv[4]) != SQLITE_TEXT)
+	goto invalid_pk_name;
+    else
+	pk_name = (const char *) sqlite3_value_text (argv[4]);
+    if (sqlite3_value_type (argv[5]) != SQLITE_TEXT)
+	goto invalid_pos_name;
+    else
+	pos_name = (const char *) sqlite3_value_text (argv[5]);
+
+    ret =
+	do_set_multiple_points (sqlite, line, pk_value, table_name, point_name,
+				pk_name, pos_name);
+    switch (ret)
+      {
+      case MULTIPLE_POINTS_TABLE:
+	  err_msg =
+	      sqlite3_mprintf
+	      ("SetMultiplePoints() exception: no such table \"%s\".",
+	       table_name);
+	  sqlite3_result_error (context, err_msg, -1);
+	  sqlite3_free (err_msg);
+	  break;
+      case MULTIPLE_POINTS_POINT:
+	  err_msg =
+	      sqlite3_mprintf
+	      ("SetMultiplePoints() exception: table \"%s\" has no column \"%s\".",
+	       table_name, point_name);
+	  sqlite3_result_error (context, err_msg, -1);
+	  sqlite3_free (err_msg);
+	  break;
+      case MULTIPLE_POINTS_PK:
+	  err_msg =
+	      sqlite3_mprintf
+	      ("SetMultiplePoints() exception: table \"%s\" has no column \"%s\".",
+	       table_name, pk_name);
+	  sqlite3_result_error (context, err_msg, -1);
+	  sqlite3_free (err_msg);
+	  break;
+      case MULTIPLE_POINTS_POS:
+	  err_msg =
+	      sqlite3_mprintf
+	      ("SetMultiplePoints() exception: table \"%s\" has no column \"%s\".",
+	       table_name, pos_name);
+	  sqlite3_result_error (context, err_msg, -1);
+	  sqlite3_free (err_msg);
+	  break;
+      case MULTIPLE_POINTS_NOGEOM:
+	  err_msg =
+	      sqlite3_mprintf
+	      ("SetMultiplePoints() exception: \"%s\".\"%s\" is not a registered Geometry.",
+	       table_name, point_name);
+	  sqlite3_result_error (context, err_msg, -1);
+	  sqlite3_free (err_msg);
+	  break;
+      case MULTIPLE_POINTS_SRID:
+	  err_msg =
+	      sqlite3_mprintf
+	      ("SetMultiplePoints() exception: \"%s\".\"%s\" mismatching SRID.",
+	       table_name, point_name);
+	  sqlite3_result_error (context, err_msg, -1);
+	  sqlite3_free (err_msg);
+	  break;
+      case MULTIPLE_POINTS_NOPOINT:
+	  err_msg =
+	      sqlite3_mprintf
+	      ("SetMultiplePoints() exception: \"%s\".\"%s\" is not a Geometry of the POINT type.",
+	       table_name, point_name);
+	  sqlite3_result_error (context, err_msg, -1);
+	  sqlite3_free (err_msg);
+	  break;
+      case MULTIPLE_POINTS_DIMS:
+	  err_msg =
+	      sqlite3_mprintf
+	      ("SetMultiplePoints() exception: \"%s\".\"%s\" mismatching dimensions.",
+	       table_name, point_name);
+	  sqlite3_result_error (context, err_msg, -1);
+	  sqlite3_free (err_msg);
+	  break;
+      case MULTIPLE_POINTS_SQL:
+	  err_msg =
+	      sqlite3_mprintf
+	      ("SetMultiplePoints() exception: unexpected SQL error.");
+	  sqlite3_result_error (context, err_msg, -1);
+	  sqlite3_free (err_msg);
+	  break;
+      case MULTIPLE_POINTS_DUPL:
+	  err_msg =
+	      sqlite3_mprintf
+	      ("SetMultiplePoints() exception: duplicate position found.");
+	  sqlite3_result_error (context, err_msg, -1);
+	  sqlite3_free (err_msg);
+	  break;
+      case MULTIPLE_POINTS_GEOM:
+	  err_msg =
+	      sqlite3_mprintf
+	      ("SetMultiplePoints() exception: illegal Geometry found.");
+	  sqlite3_result_error (context, err_msg, -1);
+	  sqlite3_free (err_msg);
+	  break;
+      case MULTIPLE_POINTS_OK:
+	  gaiaToSpatiaLiteBlobWkbEx2 (line, &p_result, &len, gpkg_mode,
+				      tiny_point);
+	  sqlite3_result_blob (context, p_result, len, free);
+	  break;
+      };
+    gaiaFreeGeomColl (line);
+    return;
+
+  invalid_linestring:
+    if (line != NULL)
+	gaiaFreeGeomColl (line);
+    sqlite3_result_error (context,
+			  "SetMultiplePoints() exception: first argument is not a valid Linestring.",
+			  -1);
+    return;
+
+  invalid_pk_value:
+    gaiaFreeGeomColl (line);
+    sqlite3_result_error (context,
+			  "SetMultiplePoints() exception: second argument is not of the INTEGER type.",
+			  -1);
+    return;
+
+  invalid_table_name:
+    gaiaFreeGeomColl (line);
+    sqlite3_result_error (context,
+			  "SetMultiplePoints() exception: third argument is not of the TEXT type.",
+			  -1);
+    return;
+
+  invalid_point_name:
+    gaiaFreeGeomColl (line);
+    sqlite3_result_error (context,
+			  "SetMultiplePoints() exception: fourth argument is not of the TEXT type.",
+			  -1);
+    return;
+
+  invalid_pk_name:
+    gaiaFreeGeomColl (line);
+    sqlite3_result_error (context,
+			  "SetMultiplePoints() exception: fifth argument is not of the TEXT type.",
+			  -1);
+    return;
+
+  invalid_pos_name:
+    sqlite3_result_error (context,
+			  "SetMultiplePoints() exception: sixth argument is not of the TEXT type.",
+			  -1);
+    return;
+}
+
+static void
 fnct_SetPoint (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
 /* SQL functions:
@@ -20030,7 +20412,7 @@ fnct_SetPoint (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  sqlite3_result_null (context);
 	  return;
       }
-    commont_set_point (context, line, position, point);
+    common_set_point (context, line, position, point);
 }
 
 static void
@@ -20087,7 +20469,7 @@ fnct_SetStartPoint (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  sqlite3_result_null (context);
 	  return;
       }
-    commont_set_point (context, line, 0, point);
+    common_set_point (context, line, 0, point);
 }
 
 static void
@@ -20155,7 +20537,7 @@ fnct_SetEndPoint (sqlite3_context * context, int argc, sqlite3_value ** argv)
       }
     ln = line->FirstLinestring;
     position = ln->Points - 1;
-    commont_set_point (context, line, position, point);
+    common_set_point (context, line, position, point);
     return;
   stop:
     gaiaFreeGeomColl (line);
@@ -49741,12 +50123,30 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "ST_RemovePoint", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_RemovePoint, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "GetPointIndex", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_GetPointIndex, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_GetPointIndex", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_GetPointIndex, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "GetPointIndex", 3,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_GetPointIndex, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_GetPointIndex", 3,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_GetPointIndex, 0, 0, 0);
     sqlite3_create_function_v2 (db, "SetPoint", 3,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_SetPoint, 0, 0, 0);
     sqlite3_create_function_v2 (db, "ST_SetPoint", 3,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_SetPoint, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "SetMultiplePoints", 6,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_SetMultiplePoints, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_SetMultiplePoints", 6,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_SetMultiplePoints, 0, 0, 0);
     sqlite3_create_function_v2 (db, "SetStartPoint", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_SetStartPoint, 0, 0, 0);
@@ -53362,7 +53762,7 @@ spatialite_splash_screen (int verbose)
 /* initializing the VirtualRouting  extension */
 		spatialite_i
 		    ("\t- 'VirtualRouting'\t[Dijkstra shortest path - advanced]\n");
-/* initializing the VirtualKNN2  extension */ 
+/* initializing the VirtualKNN2  extension */
 		spatialite_i
 		    ("\t- 'VirtualKNN2'\t[K-Nearest Neighbors metahandler]\n");
 #endif /* end GEOS conditional */
