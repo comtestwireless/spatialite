@@ -1149,7 +1149,7 @@ GAIAAUX_DECLARE char *
 gaiaConvertToDMS (double longitude, double latitude)
 {
 /* formatting a DMS string */
-    return gaiaConvertToDMS (longitude, latitude);
+    return gaiaConvertToDMSex (longitude, latitude, 0);
 }
 
 GAIAAUX_DECLARE char *

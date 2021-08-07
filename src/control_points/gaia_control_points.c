@@ -7,7 +7,7 @@
  Author: Sandro Furieri a.furieri@lqt.it
 
  ------------------------------------------------------------------------------
- DISCLAIMER: this source is simply intemded as an interface supporting the
+ DISCLAIMER: this source is simply intended as an interface supporting the
              sources from Grass GIS
 			 NOTE: accordingly to the initial license this file is released
 			 under GPL2+ terms

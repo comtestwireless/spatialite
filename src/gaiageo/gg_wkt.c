@@ -64,6 +64,24 @@ gaiaOutClean (char *buffer)
 {
 /* cleans unneeded trailing zeros */
     int i;
+
+/* 
+ * sandro 2021-08-07
+ * 
+ * fixing an issue reported by Jan Vaillant in the mailing list
+ * ensuring that trailing zeros will never be pruned from
+ * integer numbers
+*/
+    int integer = 1;
+    for (i = 0; i < strlen (buffer); i++)
+      {
+	  if (buffer[i] == '.')
+	      integer = 0;
+      }
+    if (integer)
+	goto final_clean;
+/* end sandro 2021-08-07 */
+
     for (i = strlen (buffer) - 1; i > 0; i--)
       {
 	  if (buffer[i] == '0')
@@ -73,6 +91,8 @@ gaiaOutClean (char *buffer)
       }
     if (buffer[i] == '.')
 	buffer[i] = '\0';
+	
+final_clean:
     if (strcmp (buffer, "-0") == 0)
       {
 	  /* avoiding to return embarassing NEGATIVE ZEROes */
