@@ -4718,6 +4718,78 @@ create_iso_metadata (sqlite3 * sqlite, int relaxed)
     return 1;
 }
 
+static int
+iso_reference_triggers (sqlite3 * sqlite, int enable_eval)
+{
+/* creating the ISO_metadata_reference_row_id_value_XXXX triggers */
+    char *sql;
+    int ret;
+    char *err_msg = NULL;
+    if (enable_eval)
+      {
+	  /* full check - requires eval() and thus SPATIALITE_SECURITY=RELAXED */
+	  sql = "CREATE TRIGGER 'ISO_metadata_reference_row_id_value_insert'\n"
+	      "BEFORE INSERT ON 'ISO_metadata_reference'\nFOR EACH ROW BEGIN\n"
+	      "SELECT RAISE(ROLLBACK, 'insert on ISO_table ISO_metadata_reference violates constraint: "
+	      "row_id_value must be 0 when reference_scope is ''table'' or ''column''')\n"
+	      "WHERE NEW.reference_scope IN ('table','column') AND NEW.row_id_value <> 0;\n"
+	      "SELECT RAISE(ROLLBACK, 'insert on table ISO_metadata_reference violates constraint: "
+	      "row_id_value must exist in specified table when reference_scope is ''row'' or ''row/col''')\n"
+	      "WHERE NEW.reference_scope IN ('row','row/col') AND\n"
+	      "(SELECT eval('SELECT rowid FROM ' || NEW.table_name || "
+	      "' WHERE rowid = ' || NEW.row_id_value)) IS NULL;\nEND";
+      }
+    else
+      {
+	  /* partial check ignoring "row_id_value" */
+	  sql = "CREATE TRIGGER 'ISO_metadata_reference_row_id_value_insert'\n"
+	      "BEFORE INSERT ON 'ISO_metadata_reference'\nFOR EACH ROW BEGIN\n"
+	      "SELECT RAISE(ROLLBACK, 'insert on ISO_table ISO_metadata_reference violates constraint: "
+	      "row_id_value must be 0 when reference_scope is ''table'' or ''column''')\n"
+	      "WHERE NEW.reference_scope IN ('table','column') AND NEW.row_id_value <> 0;\nEND";
+      }
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  spatialite_e ("SQL error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  return 0;
+      }
+    if (enable_eval)
+      {
+	  /* full check - requires eval() and thus SPATIALITE_SECURITY=RELAXED */
+	  sql = "CREATE TRIGGER 'ISO_metadata_reference_row_id_value_update'\n"
+	      "BEFORE UPDATE OF 'row_id_value' ON 'ISO_metadata_reference'\n"
+	      "FOR EACH ROW BEGIN\n"
+	      "SELECT RAISE(ROLLBACK, 'update on table ISO_metadata_reference violates constraint: "
+	      "row_id_value must be 0 when reference_scope is ''table'' or ''column''')\n"
+	      "WHERE NEW.reference_scope IN ('table','column') AND NEW.row_id_value <> 0;\n"
+	      "SELECT RAISE(ROLLBACK, 'update on ISO_table metadata_reference violates constraint: "
+	      "row_id_value must exist in specified table when reference_scope is ''row'' or ''row/col''')\n"
+	      "WHERE NEW.reference_scope IN ('row','row/col') AND\n"
+	      "(SELECT eval('SELECT rowid FROM ' || NEW.table_name || "
+	      "' WHERE rowid = ' || NEW.row_id_value)) IS NULL;\nEND";
+      }
+    else
+      {
+	  /* partial check ignoring "row_id_value" */
+	  sql = "CREATE TRIGGER 'ISO_metadata_reference_row_id_value_update'\n"
+	      "BEFORE UPDATE OF 'row_id_value' ON 'ISO_metadata_reference'\n"
+	      "FOR EACH ROW BEGIN\n"
+	      "SELECT RAISE(ROLLBACK, 'update on table ISO_metadata_reference violates constraint: "
+	      "row_id_value must be 0 when reference_scope is ''table'' or ''column''')\n"
+	      "WHERE NEW.reference_scope IN ('table','column') AND NEW.row_id_value <> 0;\nEND";
+      }
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  spatialite_e ("SQL error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  return 0;
+      }
+    return 1;
+}
+
 SPATIALITE_PRIVATE int
 create_iso_metadata_reference (sqlite3 * sqlite)
 {
@@ -4799,41 +4871,11 @@ create_iso_metadata_reference (sqlite3 * sqlite)
 	  sqlite3_free (err_msg);
 	  return 0;
       }
-    sql = "CREATE TRIGGER 'ISO_metadata_reference_row_id_value_insert'\n"
-	"BEFORE INSERT ON 'ISO_metadata_reference'\nFOR EACH ROW BEGIN\n"
-	"SELECT RAISE(ROLLBACK, 'insert on ISO_table ISO_metadata_reference violates constraint: "
-	"row_id_value must be 0 when reference_scope is ''table'' or ''column''')\n"
-	"WHERE NEW.reference_scope IN ('table','column') AND NEW.row_id_value <> 0;\n"
-	"SELECT RAISE(ROLLBACK, 'insert on table ISO_metadata_reference violates constraint: "
-	"row_id_value must exist in specified table when reference_scope is ''row'' or ''row/col''')\n"
-	"WHERE NEW.reference_scope IN ('row','row/col') AND NOT EXISTS\n"
-	"(SELECT rowid FROM (SELECT NEW.table_name AS table_name) "
-	"WHERE rowid = NEW.row_id_value);\nEND";
-    ret = sqlite3_exec (sqlite, sql, NULL, NULL, &err_msg);
-    if (ret != SQLITE_OK)
-      {
-	  spatialite_e ("SQL error: %s\n", err_msg);
-	  sqlite3_free (err_msg);
-	  return 0;
-      }
-    sql = "CREATE TRIGGER 'ISO_metadata_reference_row_id_value_update'\n"
-	"BEFORE UPDATE OF 'row_id_value' ON 'ISO_metadata_reference'\n"
-	"FOR EACH ROW BEGIN\n"
-	"SELECT RAISE(ROLLBACK, 'update on table ISO_metadata_reference violates constraint: "
-	"row_id_value must be 0 when reference_scope is ''table'' or ''column''')\n"
-	"WHERE NEW.reference_scope IN ('table','column') AND NEW.row_id_value <> 0;\n"
-	"SELECT RAISE(ROLLBACK, 'update on ISO_table metadata_reference violates constraint: "
-	"row_id_value must exist in specified table when reference_scope is ''row'' or ''row/col''')\n"
-	"WHERE NEW.reference_scope IN ('row','row/col') AND NOT EXISTS\n"
-	"(SELECT rowid FROM (SELECT NEW.table_name AS table_name) "
-	"WHERE rowid = NEW.row_id_value);\nEND";
-    ret = sqlite3_exec (sqlite, sql, NULL, NULL, &err_msg);
-    if (ret != SQLITE_OK)
-      {
-	  spatialite_e ("SQL error: %s\n", err_msg);
-	  sqlite3_free (err_msg);
-	  return 0;
-      }
+
+/* creating ISO_metadata_reference_row_id_value_XXXX triggers */
+    if (!iso_reference_triggers (sqlite, 0))
+	return 0;
+
     sql = "CREATE TRIGGER 'ISO_metadata_reference_timestamp_insert'\n"
 	"BEFORE INSERT ON 'ISO_metadata_reference'\nFOR EACH ROW BEGIN\n"
 	"SELECT RAISE(ROLLBACK, 'insert on table ISO_metadata_reference violates constraint: "
@@ -4886,6 +4928,52 @@ create_iso_metadata_reference (sqlite3 * sqlite)
 	  sqlite3_free (err_msg);
 	  return 0;
       }
+    return 1;
+}
+
+SPATIALITE_PRIVATE int
+recreateIsoMetaRefsTriggers (void *p_sqlite, int enable_eval)
+{
+/* recreates both ISO Metadata Refernce Triggers by enabling/disabling eval() */
+    sqlite3 *sqlite = (sqlite3 *) p_sqlite;
+    int count = 0;
+    const char *sql;
+    int ret;
+    int i;
+    char **results;
+    int rows;
+    int columns;
+
+/* checking if the table ISO_metadata_reference do really exist */
+    sql = "SELECT Count(*) FROM sqlite_master WHERE type = 'table' "
+	"AND Upper(tbl_name) = Upper('ISO_metadata_reference')";
+    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, NULL);
+    if (ret != SQLITE_OK)
+	return 0;
+    if (rows < 1)
+	;
+    else
+      {
+	  for (i = 1; i <= rows; i++)
+	      count++;
+      }
+    sqlite3_free_table (results);
+    if (!count)
+	return 0;
+
+/* dropping the currently installed Triggers (if they exist) */
+    sql = "DROP TRIGGER IF EXISTS ISO_metadata_reference_row_id_value_insert";
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    if (ret != SQLITE_OK)
+	return 0;
+    sql = "DROP TRIGGER IF EXISTS ISO_metadata_reference_row_id_value_update";
+    ret = sqlite3_exec (sqlite, sql, NULL, NULL, NULL);
+    if (ret != SQLITE_OK)
+	return 0;
+
+/* reinstalling both Triggers */
+    if (!iso_reference_triggers (sqlite, enable_eval))
+	return 0;
     return 1;
 }
 
@@ -5075,7 +5163,7 @@ createMissingSystemTables (sqlite3 * sqlite, const void *cache, int relaxed,
 	 NULL},
 	{"rl2map_configurations_view", create_rl2map_configurations_view, NULL,
 	 NULL, NULL},
-	{"KNN2", create_knn2, NULL,	 NULL, NULL},
+	{"KNN2", create_knn2, NULL, NULL, NULL},
 	{NULL, NULL, NULL, NULL, NULL}
     };
     struct str_tables *p_table = tables;

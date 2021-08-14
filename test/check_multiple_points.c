@@ -246,7 +246,7 @@ do_test_success (sqlite3 * sqlite)
 
     sql = "SELECT AsText(ST_SetMultiplePoints("
 	"GeomFromText('LINESTRING(0 0, 1 0, 1 1, 2 1, 2 2, 3 2, 3 3)', 4326), "
-	"123, 'ok_points', 'geom', 'fid', 'pos'))";
+	"123, 'OK_POINTS', 'GEOM', 'fid', 'pos'))";
     ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, &err_msg);
     if (ret != SQLITE_OK)
       {
@@ -283,7 +283,7 @@ do_test_success (sqlite3 * sqlite)
 
     sql = "SELECT AsText(ST_SetMultiplePoints("
 	"GeomFromText('LINESTRING(0 0, 10 10)', 4326), "
-	"123, 'ok_points', 'geom', 'fid', 'pos'))";
+	"123, 'OK_POINTS', 'geom', 'fid', 'pos'))";
     ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, &err_msg);
     if (ret != SQLITE_OK)
       {
@@ -317,7 +317,7 @@ do_test_success (sqlite3 * sqlite)
 
     sql = "SELECT AsText(ST_SetMultiplePoints("
 	"GeomFromText('LINESTRING(0 0, 1 0, 1 1, 2 1, 2 2, 3 2, 3 3)', 4326), "
-	"0, 'ok_points', 'geom', 'fid', 'pos'))";
+	"0, 'ok_points', 'GEOM', 'fid', 'pos'))";
     ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, &err_msg);
     if (ret != SQLITE_OK)
       {

@@ -776,6 +776,198 @@ check_mline_gpx (sqlite3 * handle, void *cache, const char *path)
 #endif
 #endif
 
+static int
+check_eval_triggers (int enable_eval)
+{
+/* testing eval() depending Triggers */
+    int ret;
+    sqlite3 *handle;
+    void *cache = spatialite_alloc_connection ();
+    const char *sql;
+    char *err_msg;
+    int retval = 1;
+    char *old_SPATIALITE_SECURITY_ENV = NULL;
+#ifdef _WIN32
+    char *env;
+#endif /* not WIN32 */
+
+    old_SPATIALITE_SECURITY_ENV = getenv ("SPATIALITE_SECURITY");
+#ifdef _WIN32
+    putenv ("SPATIALITE_SECURITY=relaxed");
+#else /* not WIN32 */
+    setenv ("SPATIALITE_SECURITY", "relaxed", 1);
+#endif
+
+    ret =
+	sqlite3_open_v2 (":memory:", &handle,
+			 SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "cannot open in-memory db: %s\n",
+		   sqlite3_errmsg (handle));
+	  sqlite3_close (handle);
+	  return 0;
+      }
+
+    spatialite_init_ex (handle, cache, 0);
+
+#ifdef ENABLE_LIBXML2		/* only if LIBXML2 is supported */
+#ifndef OMIT_ICONV		/* only if ICONV is supported */
+
+/* initializing the DB-file */
+    ret =
+	sqlite3_exec (handle, "SELECT InitSpatialMetadataFull(1)", NULL, NULL,
+		      &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "InitSpatialMetadataFull() error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  retval = 0;
+	  goto cleanup;
+      }
+
+/* recreating Eval Triggers */
+    if (enable_eval)
+	sql = "SELECT ReCreateIsoMetaRefsTriggers(1)";
+    else
+	sql = "SELECT ReCreateIsoMetaRefsTriggers(0)";
+    ret = sqlite3_exec (handle, sql, NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "ReCreateIsoMetaRefsTriggers() error: %s\n",
+		   err_msg);
+	  sqlite3_free (err_msg);
+	  retval = 0;
+	  goto cleanup;
+      }
+
+    sql =
+	"SELECT RegisterIsoMetadata('series', XB_Create(XB_LoadXML('/home/sandro/fossil/libspatialite/test/inspire-data-example.xml'), 1, 1))";
+    ret = sqlite3_exec (handle, sql, NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "INSERT 'series' error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  retval = 0;
+	  goto cleanup;
+      }
+
+    sql = "CREATE TABLE bridges (id INTEGER PRIMARY KEY, name TEXT NOT NULL)";
+    ret = sqlite3_exec (handle, sql, NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "CREATE TABLE 'bridges' error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  retval = 0;
+	  goto cleanup;
+      }
+
+    sql = "SELECT AddGeometryColumn('bridges', 'geom', 4326, 'POINT', 'XY')";
+    ret = sqlite3_exec (handle, sql, NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "AddGeometryColumn 'bridges' error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  retval = 0;
+	  goto cleanup;
+      }
+
+    sql =
+	"INSERT INTO ISO_Metadata_reference VALUES ('table', 'bridges', 'undefined', 0, strftime('%Y-%m-%dT%H:%M:%fZ', datetime('now')), 1, 0)";
+    ret = sqlite3_exec (handle, sql, NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "INSERT 'table' error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  retval = 0;
+	  goto cleanup;
+      }
+
+    sql = "INSERT INTO bridges VALUES (123, 'alpha', MakePoint(42, 11, 4326))";
+    ret = sqlite3_exec (handle, sql, NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "INSERT INTO 'bridges' error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  retval = 0;
+	  goto cleanup;
+      }
+
+    sql =
+	"INSERT INTO ISO_Metadata_reference VALUES ('row', 'bridges', 'undefined', 123, strftime('%Y-%m-%dT%H:%M:%fZ', datetime('now')), 2, 1)";
+    ret = sqlite3_exec (handle, sql, NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "INSERT 'row' error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  retval = 0;
+	  goto cleanup;
+      }
+
+    sql =
+	"INSERT INTO ISO_Metadata_reference VALUES ('row', 'bridges', 'undefined', 321, strftime('%Y-%m-%dT%H:%M:%fZ', datetime('now')), 2, 1)";
+    ret = sqlite3_exec (handle, sql, NULL, NULL, &err_msg);
+    if (enable_eval)
+      {
+	  /* eval() is enabled: full check - must fail */
+	  if (ret == SQLITE_OK)
+	    {
+		fprintf (stderr, "INSERT 'row' unexpected success\n");
+		retval = 0;
+		goto cleanup;
+	    }
+      }
+    else
+      {
+	  /* eval() is disabled: partial check - must pass */
+	  if (ret != SQLITE_OK)
+	    {
+		fprintf (stderr, "INSERT 'row' error: %s\n", err_msg);
+		sqlite3_free (err_msg);
+		retval = 0;
+		goto cleanup;
+	    }
+      }
+
+#endif
+#endif
+
+  cleanup:
+    ret = sqlite3_close (handle);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "sqlite3_close() error: %s\n",
+		   sqlite3_errmsg (handle));
+	  return 0;
+      }
+
+    spatialite_cleanup_ex (cache);
+
+    spatialite_shutdown ();
+    if (old_SPATIALITE_SECURITY_ENV)
+      {
+#ifdef _WIN32
+	  env =
+	      sqlite3_mprintf ("SPATIALITE_SECURITY=%s",
+			       old_SPATIALITE_SECURITY_ENV);
+	  putenv (env);
+	  sqlite3_free (env);
+#else /* not WIN32 */
+	  setenv ("SPATIALITE_SECURITY", old_SPATIALITE_SECURITY_ENV, 1);
+#endif
+      }
+    else
+      {
+#ifdef _WIN32
+	  putenv ("SPATIALITE_SECURITY=");
+#else /* not WIN32 */
+	  unsetenv ("SPATIALITE_SECURITY");
+#endif
+      }
+
+    return retval;
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -885,6 +1077,12 @@ main (int argc, char *argv[])
     spatialite_cleanup_ex (cache);
 
     spatialite_shutdown ();
+
+/* testing eval() depending Triggers */
+    if (!check_eval_triggers (0))
+	return -11;
+    if (!check_eval_triggers (1))
+	return -12;
 
     return 0;
 }

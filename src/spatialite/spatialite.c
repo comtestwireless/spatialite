@@ -43635,7 +43635,6 @@ fnct_UpdateRasterCoverageExtent (sqlite3_context * context, int argc,
     sqlite3_result_int (context, ret);
 }
 
-
 static void
 fnct_CreateIsoMetadataTables (sqlite3_context * context, int argc,
 			      sqlite3_value ** argv)
@@ -43666,6 +43665,44 @@ fnct_CreateIsoMetadataTables (sqlite3_context * context, int argc,
 	goto error;
     updateSpatiaLiteHistory (sqlite, "*** ISO Metadata ***", NULL,
 			     "ISO Metadata tables successfully created");
+    sqlite3_result_int (context, 1);
+    return;
+
+  error:
+    sqlite3_result_int (context, 0);
+    return;
+}
+
+static void
+fnct_ReCreateIsoMetaRefsTriggers (sqlite3_context * context, int argc,
+				  sqlite3_value ** argv)
+{
+/* SQL function:
+/ ReCreateIsoMetaRefsTriggers()
+/  or
+/ ReCreateIsoMetaRefsTriggers(bool enable_eval)
+/
+/ recreates both ISO Metadata Reference Triggers by enabling/disabling eval()
+/ returns 1 on success
+/ 0 on failure, -1 on invalid arguments
+*/
+    int relaxed = 0;
+    sqlite3 *sqlite = sqlite3_context_db_handle (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (argc == 1)
+      {
+	  if (sqlite3_value_type (argv[0]) != SQLITE_INTEGER)
+	    {
+		sqlite3_result_int (context, -1);
+		return;
+	    }
+	  relaxed = sqlite3_value_int (argv[0]);
+      }
+
+    if (!recreateIsoMetaRefsTriggers (sqlite, relaxed))
+	goto error;
+    updateSpatiaLiteHistory (sqlite, "*** ISO Metadata ***", NULL,
+			     "ISO Metadata Reference Triggers successfully recreated");
     sqlite3_result_int (context, 1);
     return;
 
@@ -52979,6 +53016,12 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "CreateIsoMetadataTables", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_CreateIsoMetadataTables, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ReCreateIsoMetaRefsTriggers", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_ReCreateIsoMetaRefsTriggers, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ReCreateIsoMetaRefsTriggers", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_ReCreateIsoMetaRefsTriggers, 0, 0, 0);
     sqlite3_create_function_v2 (db, "GetIsoMetadataId", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_GetIsoMetadataId, 0, 0, 0);

@@ -652,6 +652,9 @@ extern "C"
     SPATIALITE_PRIVATE int createIsoMetadataTables (void *p_sqlite,
 						    int relaxed);
 
+    SPATIALITE_PRIVATE int recreateIsoMetaRefsTriggers (void *p_sqlite,
+							int enable_eval);
+
     SPATIALITE_PRIVATE int get_iso_metadata_id (void *p_sqlite,
 						const char *fileIdentifier,
 						void *p_id);

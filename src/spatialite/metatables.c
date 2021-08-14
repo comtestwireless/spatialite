@@ -7882,7 +7882,8 @@ do_set_multiple_points (sqlite3 * db_handle, void *xline,
     sql =
 	sqlite3_mprintf
 	("SELECT geometry_type, srid FROM MAIN.geometry_columns "
-	 "WHERE f_table_name = %Q AND f_geometry_column = %Q", table_name,
+	 "WHERE Upper(f_table_name) = Upper(%Q) AND "
+	 "Upper(f_geometry_column) = Upper(%Q)", table_name,
 	 point_name);
     ret = sqlite3_get_table (db_handle, sql, &results, &rows, &columns, NULL);
     sqlite3_free (sql);

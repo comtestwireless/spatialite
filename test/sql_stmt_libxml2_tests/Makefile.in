@@ -381,6 +381,11 @@ EXTRA_DIST = addfileid1.testcase \
 	recreatestyling9.testcase \
 	recreatestyling10.testcase \
 	recreatestyling11.testcase \
+	recreateisometarefs1.testcase \
+	recreateisometarefs2.testcase \
+	recreateisometarefs3.testcase \
+	recreateisometarefs4.testcase \
+	recreateisometarefs5.testcase \
 	registerGraphic10.testcase \
 	registerGraphic11.testcase \
 	registerGraphic12.testcase \

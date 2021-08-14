@@ -4222,6 +4222,28 @@ the return type is Integer, with a return value of 1 for TRUE (success) or 0 for
 				</ul><hr>
 the return type is Integer, with a return value of 1 for TRUE (success) or 0 for FALSE (failure): -1 will be
 				returned on invalid arguments.</td></tr>
+		<tr><td><b>ReCreateIsoMetaRefsTriggers</b></td>
+				<td>ReCreateIsoMetaRefsTriggers() : <i>Integer</i><hr>
+					ReCreateIsoMetaRefsTriggers( enable_eval <i>Integer</i> ) : <i>Integer</i></td>
+				<td></td>
+				<td align="center" bgcolor="#99d099">libxml2</td>
+				<td>Drops and creates again two Triggers supporting the <b>ISO_metadata_reference</b> table.
+				<ul>
+					<li>the <i>optional</i> argument <b>enable_eval</b> chooses wich type of validating Triggers
+					 will be installed. By default this argument is always set to <b>FALSE</b> (<b>0</b>)
+					 <ul>
+						 <li><b>enable_eval=FALSE</b>: both the <b>ISO_metadata_reference_row_id_value_insert</b> and
+						 the <b>ISO_metadata_reference_row_id_value_update</b> Triggers will be defined in such a way
+						 to never check if the referenced row in the target table do really exist.</li>
+						 <li><b>enable_eval=TRUE</b>: in this case both Triggers will fully check if the referenced row in the target table do really exist.<br>
+						 But for doing such a task they'll require to call the <b>eval()</b> function, that only works when <b>SPATIALITE_SECURITY=relaxed</b> is set,
+						 this being a potentially harmful option in many cases.</li>
+						 <li><u>Note</u>: <b>CreateIsoMetadataTables()</b> will always create the version of both Triggers not using <b>eval()</b>; you are
+						 free to switch between the two altenatives by calling this function.</li>
+					 </ul></li>
+				</ul><hr>
+the return type is Integer, with a return value of 1 for TRUE (success) or 0 for FALSE (failure): -1 will be
+				returned on invalid arguments.</td></tr>
 		<tr><td><b>RegisterIsoMetadata</b></td>
 				<td>RegisterIsoMetadata( scope <i>String</i> , metadata <i>BLOB</i> ) : <i>Integer</i><hr>
 				RegisterIsoMetadata( scope <i>String</i> , metadata <i>BLOB</i> , id Integer ) : <i>Integer</i><hr>
