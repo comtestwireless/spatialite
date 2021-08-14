@@ -1286,11 +1286,26 @@ vrttxt_is_double (const char *value, char decimal_separator)
 }
 
 static int
-vrttxt_check_type (const char *value, char decimal_separator)
+vrttxt_check_type (const char *value, char decimal_separator,
+		   char text_delimiter)
 {
 /* checking the Field type */
+    int len;
     if (*value == '\0')
 	return VRTTXT_NULL;
+    len = strlen (value);
+    if (*(value + 0) == text_delimiter && *(value + len - 1) == text_delimiter)
+      {
+	  /* 
+	   * sandro 2021-08-14
+	   * 
+	   * carefully preserving any explicitly delimited text string 
+	   * 
+	   * fixing ticket ba12cb832c
+	   * 
+	   */
+	  return VRTTXT_TEXT;
+      }
     if (vrttxt_is_integer (value))
 	return VRTTXT_INTEGER;
     if (vrttxt_is_double (value, decimal_separator))
@@ -1485,7 +1500,8 @@ vrttxt_add_line (gaiaTextReaderPtr txt, struct vrttxt_line *line)
 		/* plain Field Value */
 		value_type =
 		    vrttxt_check_type (txt->field_buffer,
-				       txt->decimal_separator);
+				       txt->decimal_separator,
+				       txt->text_separator);
 		column_type = txt->columns[ind].type;
 		switch (value_type)
 		  {
