@@ -1,0 +1,4 @@
+[submodule "PROJ"]
+	path = PROJ
+	url = https://github.com/comtestwireless/PROJ.git
+	branch = release/6.3.2-ext

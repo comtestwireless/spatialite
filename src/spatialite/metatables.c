@@ -7845,6 +7845,8 @@ rtree_bbox_callback (sqlite3_rtree_query_info * info)
     return SQLITE_OK;
 }
 
+#ifndef NO_FULL_RTREE
+
 SPATIALITE_DECLARE gaiaGeomCollPtr
 gaiaGetRTreeFullExtent (sqlite3 * db_handle, const char *db_prefix,
 			const char *name, int srid)
@@ -7942,3 +7944,5 @@ gaiaGetGpkgRTreeFullExtent (sqlite3 * db_handle, const char *db_prefix,
     gaiaSetPoint (rect->Coords, 4, data.minx, data.miny);	/* vertex # 5 [same as vertex # 1 to close the polygon] */
     return envelope;
 }
+
+#endif // NO_FULL_RTREE

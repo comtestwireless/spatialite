@@ -8308,6 +8308,8 @@ fnct_CheckSpatialIndex (sqlite3_context * context, int argc,
 	sqlite3_result_int (context, 0);
 }
 
+#ifndef NO_FULL_RTREE
+
 static gaiaGeomCollPtr
 get_gpkg_spatial_index_extent (sqlite3 * sqlite, const char *db_prefix,
 			       const char *table, const char *geom)
@@ -8545,6 +8547,9 @@ fnct_GetSpatialIndexExtent (sqlite3_context * context, int argc,
     else
 	sqlite3_result_null (context);
 }
+
+#endif // NO_FULL_RTREE
+
 
 static int
 recover_spatial_index (sqlite3 * sqlite, const unsigned char *table,
@@ -48543,9 +48548,15 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "CheckSpatialIndex", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_CheckSpatialIndex, 0, 0, 0);
+
+#ifndef NO_FULL_RTREE
+
     sqlite3_create_function_v2 (db, "GetSpatialIndexExtent", 3,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_GetSpatialIndexExtent, 0, 0, 0);
+
+#endif // NO_FULL_RTREE
+
     sqlite3_create_function_v2 (db, "CheckShadowedRowid", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_CheckShadowedRowid, 0, 0, 0);
@@ -53418,7 +53429,9 @@ init_spatialite_virtualtables (void *p_db, const void *p_cache)
 }
 
 #ifdef LOADABLE_EXTENSION	/* loadable-extension only */
-SQLITE_EXTENSION_INIT1 static int
+SQLITE_EXTENSION_INIT1
+
+static int
 init_spatialite_extension (sqlite3 * db, char **pzErrMsg,
 			   const sqlite3_api_routines * pApi)
 {

@@ -52,8 +52,16 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #else
 #include <sqlite3ext.h>
 #endif
-/* We can't use SQLITE_EXTENSION_INIT1 as this is an intializer in recent version of sqlite */
-extern const sqlite3_api_routines *sqlite3_api;
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+SQLITE_EXTENSION_INIT3
+
+#ifdef __cplusplus
+}
+#endif
+
 #else /* ordinary lib */
 #ifdef SPL_AMALGAMATION		/* spatialite-amalgamation */
 #include <spatialite/sqlite3.h>

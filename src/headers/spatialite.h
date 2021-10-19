@@ -2069,6 +2069,9 @@ extern "C"
  \return a Rectangle Geometry corresponding to the Full Extent,\n
  NULL on failure.
  */
+
+#ifndef NO_FULL_RTREE
+
     SPATIALITE_DECLARE gaiaGeomCollPtr gaiaGetRTreeFullExtent (sqlite3 *
 							       db_handle,
 							       const char
@@ -2097,6 +2100,7 @@ extern "C"
 								   const char
 								   *name,
 								   int srid);
+#endif // NO_FULL_RTREE
 
     SPATIALITE_DECLARE const char *gaia_create_routing_get_last_error (const
 								       void

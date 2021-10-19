@@ -18,8 +18,9 @@ include(${CMAKE_BINARY_DIR}/conan.cmake)
 conan_cmake_configure(REQUIRES
                           sqlite3/3.34.0
                           geos/3.9.0
-                          proj/7.2.1
                           boost/1.77.0
+                          librttopo/1.1.0
+                          zlib/1.2.11
                       GENERATORS cmake_find_package)
 
 conan_cmake_autodetect(settings)
@@ -29,12 +30,297 @@ conan_cmake_install(PATH_OR_REFERENCE .
                     SETTINGS ${settings})
 
 
-find_package(sqlite3)
-find_package(geos)
-find_package(proj)
-find_package(boost)
 
-include_directories(./ ./src/headers)
+SET(BUILD_LIBPROJ_SHARED OFF)
+
+set(SRC_LIBPROJ_PROJECTIONS
+  PROJ/src/projections/aeqd.cpp
+  PROJ/src/projections/gnom.cpp
+  PROJ/src/projections/laea.cpp
+  PROJ/src/projections/mod_ster.cpp
+  PROJ/src/projections/nsper.cpp
+  PROJ/src/projections/nzmg.cpp
+  PROJ/src/projections/ortho.cpp
+  PROJ/src/projections/stere.cpp
+  PROJ/src/projections/sterea.cpp
+  PROJ/src/projections/aea.cpp
+  PROJ/src/projections/bipc.cpp
+  PROJ/src/projections/bonne.cpp
+  PROJ/src/projections/eqdc.cpp
+  PROJ/src/projections/isea.cpp
+  PROJ/src/projections/ccon.cpp
+  PROJ/src/projections/imw_p.cpp
+  PROJ/src/projections/krovak.cpp
+  PROJ/src/projections/lcc.cpp
+  PROJ/src/projections/poly.cpp
+  PROJ/src/projections/rpoly.cpp
+  PROJ/src/projections/sconics.cpp
+  PROJ/src/projections/rouss.cpp
+  PROJ/src/projections/cass.cpp
+  PROJ/src/projections/cc.cpp
+  PROJ/src/projections/cea.cpp
+  PROJ/src/projections/eqc.cpp
+  PROJ/src/projections/gall.cpp
+  PROJ/src/projections/labrd.cpp
+  PROJ/src/projections/lsat.cpp
+  PROJ/src/projections/misrsom.cpp
+  PROJ/src/projections/merc.cpp
+  PROJ/src/projections/mill.cpp
+  PROJ/src/projections/ocea.cpp
+  PROJ/src/projections/omerc.cpp
+  PROJ/src/projections/somerc.cpp
+  PROJ/src/projections/tcc.cpp
+  PROJ/src/projections/tcea.cpp
+  PROJ/src/projections/times.cpp
+  PROJ/src/projections/tmerc.cpp
+  PROJ/src/projections/tobmerc.cpp
+  PROJ/src/projections/airy.cpp
+  PROJ/src/projections/aitoff.cpp
+  PROJ/src/projections/august.cpp
+  PROJ/src/projections/bacon.cpp
+  PROJ/src/projections/bertin1953.cpp
+  PROJ/src/projections/chamb.cpp
+  PROJ/src/projections/hammer.cpp
+  PROJ/src/projections/lagrng.cpp
+  PROJ/src/projections/larr.cpp
+  PROJ/src/projections/lask.cpp
+  PROJ/src/projections/latlong.cpp
+  PROJ/src/projections/nicol.cpp
+  PROJ/src/projections/ob_tran.cpp
+  PROJ/src/projections/oea.cpp
+  PROJ/src/projections/tpeqd.cpp
+  PROJ/src/projections/vandg.cpp
+  PROJ/src/projections/vandg2.cpp
+  PROJ/src/projections/vandg4.cpp
+  PROJ/src/projections/wag7.cpp
+  PROJ/src/projections/lcca.cpp
+  PROJ/src/projections/geos.cpp
+  PROJ/src/projections/boggs.cpp
+  PROJ/src/projections/collg.cpp
+  PROJ/src/projections/comill.cpp
+  PROJ/src/projections/crast.cpp
+  PROJ/src/projections/denoy.cpp
+  PROJ/src/projections/eck1.cpp
+  PROJ/src/projections/eck2.cpp
+  PROJ/src/projections/eck3.cpp
+  PROJ/src/projections/eck4.cpp
+  PROJ/src/projections/eck5.cpp
+  PROJ/src/projections/fahey.cpp
+  PROJ/src/projections/fouc_s.cpp
+  PROJ/src/projections/gins8.cpp
+  PROJ/src/projections/gstmerc.cpp
+  PROJ/src/projections/gn_sinu.cpp
+  PROJ/src/projections/goode.cpp
+  PROJ/src/projections/igh.cpp
+  PROJ/src/projections/hatano.cpp
+  PROJ/src/projections/loxim.cpp
+  PROJ/src/projections/mbt_fps.cpp
+  PROJ/src/projections/mbtfpp.cpp
+  PROJ/src/projections/mbtfpq.cpp
+  PROJ/src/projections/moll.cpp
+  PROJ/src/projections/nell.cpp
+  PROJ/src/projections/nell_h.cpp
+  PROJ/src/projections/patterson.cpp
+  PROJ/src/projections/putp2.cpp
+  PROJ/src/projections/putp3.cpp
+  PROJ/src/projections/putp4p.cpp
+  PROJ/src/projections/putp5.cpp
+  PROJ/src/projections/putp6.cpp
+  PROJ/src/projections/qsc.cpp
+  PROJ/src/projections/robin.cpp
+  PROJ/src/projections/sch.cpp
+  PROJ/src/projections/sts.cpp
+  PROJ/src/projections/urm5.cpp
+  PROJ/src/projections/urmfps.cpp
+  PROJ/src/projections/wag2.cpp
+  PROJ/src/projections/wag3.cpp
+  PROJ/src/projections/wink1.cpp
+  PROJ/src/projections/wink2.cpp
+  PROJ/src/projections/healpix.cpp
+  PROJ/src/projections/natearth.cpp
+  PROJ/src/projections/natearth2.cpp
+  PROJ/src/projections/calcofi.cpp
+  PROJ/src/projections/eqearth.cpp
+)
+
+set(SRC_LIBPROJ_CONVERSIONS
+  PROJ/src/conversions/axisswap.cpp
+  PROJ/src/conversions/cart.cpp
+  PROJ/src/conversions/geoc.cpp
+  PROJ/src/conversions/geocent.cpp
+  PROJ/src/conversions/noop.cpp
+  PROJ/src/conversions/unitconvert.cpp
+)
+
+set(SRC_LIBPROJ_TRANSFORMATIONS
+  PROJ/src/transformations/affine.cpp
+  PROJ/src/transformations/deformation.cpp
+  PROJ/src/transformations/helmert.cpp
+  PROJ/src/transformations/hgridshift.cpp
+  PROJ/src/transformations/horner.cpp
+  PROJ/src/transformations/molodensky.cpp
+  PROJ/src/transformations/vgridshift.cpp
+)
+
+set(SRC_LIBPROJ_ISO19111
+  PROJ/src/iso19111/static.cpp
+  PROJ/src/iso19111/util.cpp
+  PROJ/src/iso19111/metadata.cpp
+  PROJ/src/iso19111/common.cpp
+  PROJ/src/iso19111/crs.cpp
+  PROJ/src/iso19111/datum.cpp
+  PROJ/src/iso19111/coordinatesystem.cpp
+  PROJ/src/iso19111/coordinateoperation.cpp
+  PROJ/src/iso19111/io.cpp
+  PROJ/src/iso19111/internal.cpp
+  PROJ/src/iso19111/factory.cpp
+  PROJ/src/iso19111/c_api.cpp
+)
+
+set(SRC_LIBPROJ_CORE
+  PROJ/src/4D_api.cpp
+  PROJ/src/aasincos.cpp
+  PROJ/src/adjlon.cpp
+  PROJ/src/apply_gridshift.cpp
+  PROJ/src/apply_vgridshift.cpp
+  PROJ/src/auth.cpp
+  PROJ/src/ctx.cpp
+  PROJ/src/datum_set.cpp
+  PROJ/src/datums.cpp
+  PROJ/src/deriv.cpp
+  PROJ/src/dmstor.cpp
+  PROJ/src/ell_set.cpp
+  PROJ/src/ellps.cpp
+  PROJ/src/errno.cpp
+  PROJ/src/factors.cpp
+  PROJ/src/fileapi.cpp
+  PROJ/src/fwd.cpp
+  PROJ/src/gauss.cpp
+  PROJ/src/gc_reader.cpp
+  PROJ/src/geocent.cpp
+  PROJ/src/geocent.h
+  PROJ/src/geodesic.c
+  PROJ/src/gridcatalog.cpp
+  PROJ/src/gridinfo.cpp
+  PROJ/src/gridlist.cpp
+  PROJ/src/init.cpp
+  PROJ/src/initcache.cpp
+  PROJ/src/internal.cpp
+  PROJ/src/inv.cpp
+  PROJ/src/jniproj.cpp
+  PROJ/src/list.cpp
+  PROJ/src/log.cpp
+  PROJ/src/malloc.cpp
+  PROJ/src/mlfn.cpp
+  PROJ/src/msfn.cpp
+  PROJ/src/mutex.cpp
+  PROJ/src/nad_cvt.cpp
+  PROJ/src/nad_init.cpp
+  PROJ/src/nad_intr.cpp
+  PROJ/src/open_lib.cpp
+  PROJ/src/param.cpp
+  PROJ/src/phi2.cpp
+  PROJ/src/pipeline.cpp
+  PROJ/src/pj_list.h
+  PROJ/src/pr_list.cpp
+  PROJ/src/proj_internal.h
+  PROJ/src/proj_mdist.cpp
+  PROJ/src/qsfn.cpp
+  PROJ/src/release.cpp
+  PROJ/src/rtodms.cpp
+  PROJ/src/strerrno.cpp
+  PROJ/src/strtod.cpp
+  PROJ/src/transform.cpp
+  PROJ/src/tsfn.cpp
+  PROJ/src/units.cpp
+  PROJ/src/utils.cpp
+  PROJ/src/wkt1_generated_parser.c
+  PROJ/src/wkt1_generated_parser.h
+  PROJ/src/wkt1_parser.cpp
+  PROJ/src/wkt1_parser.h
+  PROJ/src/wkt2_generated_parser.c
+  PROJ/src/wkt2_generated_parser.h
+  PROJ/src/wkt2_parser.cpp
+  PROJ/src/wkt2_parser.h
+  PROJ/src/wkt_parser.cpp
+  PROJ/src/wkt_parser.hpp
+  PROJ/src/zpoly1.cpp
+  PROJ/src/proj_json_streaming_writer.hpp
+  PROJ/src/proj_json_streaming_writer.cpp
+  PROJ/src/tracing.cpp
+  ${CMAKE_CURRENT_BINARY_DIR}/proj_config.h
+)
+
+set(HEADERS_LIBPROJ
+  PROJ/src/proj_api.h
+  PROJ/src/proj.h
+  PROJ/src/proj_experimental.h
+  PROJ/src/proj_constants.h
+  PROJ/src/geodesic.h
+)
+
+find_package(SQLite3)
+
+include(CheckIncludeFiles)
+include(CheckLibraryExists)
+include(CheckFunctionExists)
+
+# check needed include file
+check_include_files(dlfcn.h HAVE_DLFCN_H)
+check_include_files(inttypes.h HAVE_INTTYPES_H)
+check_include_files(jni.h HAVE_JNI_H)
+check_include_files(memory.h HAVE_MEMORY_H)
+check_include_files(stdint.h HAVE_STDINT_H)
+check_include_files(stdlib.h HAVE_STDLIB_H)
+check_include_files(string.h HAVE_STRING_H)
+check_include_files(sys/stat.h HAVE_SYS_STAT_H)
+check_include_files(sys/types.h HAVE_SYS_TYPES_H)
+check_include_files(unistd.h HAVE_UNISTD_H)
+check_include_files("stdlib.h;stdarg.h;string.h;float.h" STDC_HEADERS)
+
+check_function_exists(localeconv HAVE_LOCALECONV)
+check_function_exists(strerror HAVE_STRERROR)
+
+check_library_exists(m ceil "" HAVE_LIBM)
+
+configure_file(PROJ/cmake/proj_config.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/proj_config.h)
+
+
+add_library(proj STATIC)
+
+set_target_properties(proj PROPERTIES
+    CXX_VISIBILITY_PRESET hidden
+    C_VISIBILITY_PRESET hidden
+    POSITION_INDEPENDENT_CODE ON)
+
+target_sources(proj
+    PRIVATE
+    ${SRC_LIBPROJ_PROJECTIONS}
+    ${SRC_LIBPROJ_CONVERSIONS}
+    ${SRC_LIBPROJ_TRANSFORMATIONS}
+    ${SRC_LIBPROJ_ISO19111}
+    ${SRC_LIBPROJ_CORE}
+    ${HEADERS_LIBPROJ}
+)
+
+target_include_directories(proj
+    PUBLIC
+    PROJ/src
+)
+
+
+target_include_directories(proj
+    PRIVATE
+    PROJ/include
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${SQLite_SQLite3_INCLUDE_DIRS}
+)
+
+
+find_package(geos)
+find_package(Boost)
+find_package(librttopo)
+find_package(ZLIB)
 
 set(SOURCE_FILES
     src/versioninfo/location.cpp
@@ -196,19 +482,35 @@ set(SOURCE_FILES
     src/versioninfo/version.c
     src/virtualtext/virtualtext.c
     src/wfs/wfs_in.c
-)
+) 
 
 add_library(mod_spatialite SHARED ${SOURCE_FILES})
 
+set_target_properties(mod_spatialite PROPERTIES
+    CXX_VISIBILITY_PRESET hidden
+    C_VISIBILITY_PRESET hidden
+    POSITION_INDEPENDENT_CODE ON
+)
+
+
+target_compile_definitions(proj PUBLIC
+    PROJ_DLL=
+    )
+
 target_compile_definitions(mod_spatialite PUBLIC
     LOADABLE_EXTENSION
+    NO_FULL_RTREE
     OMIT_FREEXL=1
     OMIT_ICONV=1
+    OMIT_KNN=1
+    PROJ_DLL=
     YY_NO_UNISTD_H)
 
-target_link_libraries(mod_spatialite INTERFACE SQLite3::sqlite3)
-target_link_libraries(mod_spatialite INTERFACE Boost::boost)
+
+target_include_directories(mod_spatialite PRIVATE ./ ./src/headers ${SQLite_SQLite3_INCLUDE_DIRS})
+target_link_libraries(mod_spatialite PRIVATE Boost::boost)
 target_link_libraries(mod_spatialite PRIVATE GEOS::geos_c)
-target_link_libraries(mod_spatialite PRIVATE PROJ::proj)
+target_link_libraries(mod_spatialite PRIVATE librttopo::librttopo)
 target_link_libraries(mod_spatialite PRIVATE Boost::filesystem)
- 
+target_link_libraries(mod_spatialite PRIVATE proj)
+target_link_libraries(mod_spatialite PRIVATE ZLIB::ZLIB)

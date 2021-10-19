@@ -8,10 +8,10 @@
 #define ENABLE_GEOPACKAGE 1
 
 /* Should be defined in order to enable LIBXML2 support. */
-#define ENABLE_LIBXML2 1
+// #define ENABLE_LIBXML2 1
 
 /* Should be defined in order to enable MiniZIP support. */
-#define ENABLE_MINIZIP 1
+// #define ENABLE_MINIZIP 1
 
 /* Should be defined in order to enable RTTOPO support. */
 #define ENABLE_RTTOPO 1
