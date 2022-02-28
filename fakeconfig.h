@@ -16,6 +16,9 @@
 /* Should be defined in order to enable RTTOPO support. */
 #define ENABLE_RTTOPO 1
 
+/* Should be defined in order to enable GEOS_3100 support. */
+/* #undef GEOS_3100 */
+
 /* Should be defined in order to enable GEOS_370 support. */
 #define GEOS_370 1
 

@@ -221,8 +221,11 @@ EXTRA_DIST = fnmatch_impl4win.h \
 
 SUBDIRS = sql_stmt_geosadvanced_tests sql_stmt_geos_tests \
 	sql_stmt_geos_380 sql_stmt_geos_non380 \
+	sql_stmt_geos_390 sql_stmt_geos_non390 sql_stmt_geos_391 \
+	sql_stmt_geos370_tests sql_stmt_geos3100_tests \
+	sql_stmt_geos_3100 sql_stmt_geos_non3100 \
 	sql_stmt_libxml2_tests sql_stmt_rtgeom_tests \
-	sql_stmt_libxml2_rttopo_tests \
+	sql_stmt_libxml2_rttopo_tests sql_stmt_proc_tests \
 	sql_stmt_mathsql_tests sql_stmt_proj_tests \
 	sql_stmt_proj492_tests sql_stmt_proj493_tests \
 	sql_stmt_proj600security_tests sql_stmt_proj720_tests \
@@ -239,9 +242,7 @@ SUBDIRS = sql_stmt_geosadvanced_tests sql_stmt_geos_tests \
 	sql_stmt_routing_tests sql_stmt_logfile_tests \
 	sql_stmt_iconv_tests sql_stmt_point_geom \
 	sql_stmt_tiny_point sql_stmt_postgres_tests \
-	sql_stmt_proc_tests sql_stmt_geos370_tests \
 	sql_stmt_renamenew_tests sql_stmt_renameold_tests \
 	sql_stmt_bufoptsnew_tests sql_stmt_bufoptsold_tests \
-	sql_stmt_geos_390 sql_stmt_geos_391 sql_stmt_geos_non390 \
 	sql_stmt_rtgeom_390 sql_stmt_rtgeom_non390 \
 	sql_stmt_voronoj_390 sql_stmt_voronoj_non390

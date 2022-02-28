@@ -2037,6 +2037,111 @@ gaiaGeomCollDistance_r (const void *p_cache, gaiaGeomCollPtr geom1,
     return ret;
 }
 
+GAIAGEO_DECLARE int
+gaiaGeomCollPreparedDistance (const void *p_cache, gaiaGeomCollPtr geom1,
+			      unsigned char *blob1, int size1,
+			      gaiaGeomCollPtr geom2, unsigned char *blob2,
+			      int size2, double *xdist)
+{
+/* computes the minimum distance intercurring between GEOM-1 and GEOM-2 */
+    double dist;
+    int ret;
+    struct splite_internal_cache *cache =
+	(struct splite_internal_cache *) p_cache;
+    GEOSPreparedGeometry *gPrep;
+    GEOSGeometry *g1;
+    GEOSGeometry *g2;
+    gaiaGeomCollPtr geom;
+    GEOSContextHandle_t handle = NULL;
+    if (cache == NULL)
+	return 0;
+    if (cache->magic1 != SPATIALITE_CACHE_MAGIC1
+	|| cache->magic2 != SPATIALITE_CACHE_MAGIC2)
+	return 0;
+    handle = cache->GEOS_handle;
+    if (handle == NULL)
+	return 0;
+    gaiaResetGeosMsg_r (cache);
+    if (!geom1 || !geom2)
+	return 0;
+    if (gaiaIsToxic_r (cache, geom1) || gaiaIsToxic_r (cache, geom2))
+	return 0;
+
+/* handling the internal GEOS cache */
+    if (evalGeosCache
+	(cache, geom1, blob1, size1, geom2, blob2, size2, &gPrep, &geom))
+      {
+	  g2 = gaiaToGeos_r (cache, geom);
+	  ret = GEOSPreparedDistance_r (handle, gPrep, g2, &dist);
+	  GEOSGeom_destroy_r (handle, g2);
+	  if (ret)
+	      *xdist = dist;
+	  return ret;
+      }
+    g1 = gaiaToGeos_r (cache, geom1);
+    g2 = gaiaToGeos_r (cache, geom2);
+    ret = GEOSDistance_r (handle, g1, g2, &dist);
+    GEOSGeom_destroy_r (handle, g1);
+    GEOSGeom_destroy_r (handle, g2);
+    if (ret)
+	*xdist = dist;
+    return ret;
+}
+
+#ifdef GEOS_3100		/* only if GEOS_3100 support is available */
+
+GAIAGEO_DECLARE int
+gaiaGeomCollPreparedDistanceWithin (const void *p_cache, gaiaGeomCollPtr geom1,
+				    unsigned char *blob1, int size1,
+				    gaiaGeomCollPtr geom2, unsigned char *blob2,
+				    int size2, double dist)
+{
+/* Test whether the distance between two geometries is within the given dist. */
+    int ret;
+    struct splite_internal_cache *cache =
+	(struct splite_internal_cache *) p_cache;
+    GEOSPreparedGeometry *gPrep;
+    GEOSGeometry *g1;
+    GEOSGeometry *g2;
+    gaiaGeomCollPtr geom;
+    GEOSContextHandle_t handle = NULL;
+    if (cache == NULL)
+	return 0;
+    if (cache->magic1 != SPATIALITE_CACHE_MAGIC1
+	|| cache->magic2 != SPATIALITE_CACHE_MAGIC2)
+	return 0;
+    handle = cache->GEOS_handle;
+    if (handle == NULL)
+	return 0;
+    gaiaResetGeosMsg_r (cache);
+    if (!geom1 || !geom2)
+	return 0;
+    if (gaiaIsToxic_r (cache, geom1) || gaiaIsToxic_r (cache, geom2))
+	return 0;
+
+/* handling the internal GEOS cache */
+    if (evalGeosCache
+	(cache, geom1, blob1, size1, geom2, blob2, size2, &gPrep, &geom))
+      {
+	  g2 = gaiaToGeos_r (cache, geom);
+	  ret = GEOSPreparedDistanceWithin_r (handle, gPrep, g2, dist);
+	  GEOSGeom_destroy_r (handle, g2);
+	  if (ret)
+	      return 1;
+	  return 0;
+      }
+    g1 = gaiaToGeos_r (cache, geom1);
+    g2 = gaiaToGeos_r (cache, geom2);
+    ret = GEOSDistanceWithin_r (handle, g1, g2, dist);
+    GEOSGeom_destroy_r (handle, g1);
+    GEOSGeom_destroy_r (handle, g2);
+    if (ret)
+	return 1;
+    return 0;
+}
+
+#endif /* end GEOS_3100 conditional */
+
 GAIAGEO_DECLARE gaiaGeomCollPtr
 gaiaGeometryIntersection (gaiaGeomCollPtr geom1, gaiaGeomCollPtr geom2)
 {

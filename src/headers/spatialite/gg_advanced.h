@@ -2103,7 +2103,7 @@ extern "C"
 
  \return 0 on failure: any other value on success.
 
- \sa gaiaGeomCollDistance_r, 
+ \sa gaiaGeomCollDistance_r, gaiaGeomCollPreparedDistance,
  gaia3DDistance, gaiaMaxDistance, gaia3DMaxDistance
 
  \note this function always computes the 2D cartesian distance.\n
@@ -2125,8 +2125,9 @@ extern "C"
 
  \return 0 on failure: any other value on success.
 
- \sa gaiaGeomCollDistance, 
- gaia3DDistance, gaiaMaxDistance, gaia3DMaxDistance
+ \sa gaiaGeomCollDistance, gaiaGeomCollPreparedDistance,
+ gaia3DDistance, gaiaMaxDistance, gaia3DMaxDistance, 
+ gaiaGeomCollPreparedDistanceWithin
 
  \note this function always computes the 2D cartesian distance.\n
  reentrant and thread-safe.
@@ -2137,6 +2138,67 @@ extern "C"
 						gaiaGeomCollPtr geom1,
 						gaiaGeomCollPtr geom2,
 						double *dist);
+
+/**
+ Spatial relationship evalution: Distance (GEOSPreparedGeometry)
+
+ \param p_cache a memory pointer returned by spatialite_alloc_connection()
+ \param geom1 the first Geometry object to be evaluated
+ \param blob1 the BLOB corresponding to the first Geometry
+ \param size1 the size (in bytes) of the first BLOB
+ \param geom2 the second Geometry object to be evaluated
+ \param blob2 the BLOB corresponding to the second Geometry
+ \param size2 the size (in bytes) of the second BLOB
+ \param dist on completion this variable will contain the calculated distance
+
+ \return 0 if false: any other value if true
+
+ \sa gaiaGeomCollDistance, gaiaGeomCollDistance_r,
+ gaiaGeomCollPreparedDistanceWithin
+
+ \note reentrant and thread-safe.
+ 
+ \remark \b GEOS_3100 support required.
+ */
+    GAIAGEO_DECLARE int gaiaGeomCollPreparedDistance (const void *p_cache,
+						      gaiaGeomCollPtr geom1,
+						      unsigned char *blob1,
+						      int size1,
+						      gaiaGeomCollPtr geom2,
+						      unsigned char *blob2,
+						      int size2, double *dist);
+
+/**
+ Spatial operator: DistanceWithin (GEOSPreparedGeometry)
+
+ \param p_cache a memory pointer returned by spatialite_alloc_connection()
+ \param geom1 the first Geometry object to be evaluated
+ \param blob1 the BLOB corresponding to the first Geometry
+ \param size1 the size (in bytes) of the first BLOB
+ \param geom2 the second Geometry object to be evaluated
+ \param blob2 the BLOB corresponding to the second Geometry
+ \param size2 the size (in bytes) of the second BLOB
+ \param dist the max distance to be checked
+
+ \return 0 if false: any other value if true
+
+ \sa gaiaGeomCollDistance, gaiaGeomCollDistance_r, 
+ gaiaGeomCollPreparedDistance
+
+ \note reentrant and thread-safe.
+ 
+ \remark \b GEOS_3100 support required.
+ */
+    GAIAGEO_DECLARE int gaiaGeomCollPreparedDistanceWithin (const void *p_cache,
+							    gaiaGeomCollPtr
+							    geom1,
+							    unsigned char
+							    *blob1, int size1,
+							    gaiaGeomCollPtr
+							    geom2,
+							    unsigned char
+							    *blob2, int size2,
+							    double dist);
 
 /**
  Spatial operator: Intersection
@@ -3706,6 +3768,147 @@ extern "C"
 #endif				/* end GEOS advanced features */
 
 #ifndef DOXYGEN_SHOULD_IGNORE_THIS
+#ifdef GEOS_3100
+#endif
+
+/**
+ Densifies a geometry using a given distance tolerance
+                                            
+ \param geom pointer to input Geometry object.
+ \param tolerance the distance tolerance to densify.
+ 
+ \return the pointer to newly created Geometry object: NULL on failure.
+ \n NULL will be returned if any argument is invalid.
+
+ \sa gaiaGeosDensify_r,
+ gaiaFreeGeomColl
+
+ \note you are responsible to destroy (before or after) any allocated Geometry,
+ this including any Geometry returned by gaiaGeosDensify()\n
+ not reentrant and thread unsafe.
+
+ \remark \b GEOS_3100 support required.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr gaiaGeosDensify (gaiaGeomCollPtr
+						     geom, double tolerance);
+
+/**
+ Densifies a geometry using a given distance tolerance
+                          
+ \param p_cache a memory pointer returned by spatialite_alloc_connection()                   
+ \param geom pointer to input Geometry object.
+ \param tolerance the distance tolerance to densify.
+ 
+ \return the pointer to newly created Geometry object: NULL on failure.
+ \n NULL will be returned if any argument is invalid.
+
+ \sa gaiaGeosDensify,
+ gaiaFreeGeomColl
+
+ \note you are responsible to destroy (before or after) any allocated Geometry,
+ this including any Geometry returned by gaiaGeosDensify_r()\n
+ reentrant and thread-safe.
+
+ \remark \b GEOS_3100 support required.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr gaiaGeosDensify_r (const void
+						       *p_cache,
+						       gaiaGeomCollPtr
+						       geom, double tolerance);
+
+/**
+ Constrained Delaunay Triangulation
+                                            
+ \param geom pointer to input Geometry object.
+ 
+ \return the pointer to newly created Geometry object: NULL on failure.
+ \n NULL will be returned if any argument is invalid or if the input
+ geometry does not contain any Polygon.
+
+ \sa gaiaConstrainedDelaunayTriangulation_r,
+ gaiaFreeGeomColl
+
+ \note you are responsible to destroy (before or after) any allocated Geometry,
+ this including any Geometry returned by gaiaConstrainedDelaunayTriangulation()\n
+ not reentrant and thread unsafe.
+
+ \remark \b GEOS_3100 support required.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr
+	gaiaConstrainedDelaunayTriangulation (gaiaGeomCollPtr geom);
+
+/**
+ Constrained Delaunay Triangulation
+                          
+ \param p_cache a memory pointer returned by spatialite_alloc_connection()                   
+ \param geom pointer to input Geometry object.
+ 
+ \return the pointer to newly created Geometry object: NULL on failure.
+ \n NULL will be returned if any argument is invalid or if the input
+ geometry does not contain any Polygon.
+
+ \sa gaiaConstrainedDelaunayTriangulation,
+ gaiaFreeGeomColl
+
+ \note you are responsible to destroy (before or after) any allocated Geometry,
+ this including any Geometry returned by gaiaConstrainedDelaunayTriangulation_r()\n
+ reentrant and thread-safe.
+
+ \remark \b GEOS_3100 support required.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr
+	gaiaConstrainedDelaunayTriangulation_r (const void *p_cache,
+						gaiaGeomCollPtr geom);
+
+/**
+ Utility function: GeosMakeValid
+
+ \param geom the input Geometry object.
+ \param keep_discarded boolean: if FALSE all geometry components that
+ collapse to a lower dimensionality, for example a one-point linestring,
+ will be dropped.
+
+ \return the pointer to newly created Geometry object: NULL on failure.
+ \n this function will attempt to create a valid representation of a given 
+ invalid geometry using the GEOS own "method=structure". 
+
+ \sa gaiaFreeGeomColl, gaiaMakeValid
+
+ \note you are responsible to destroy (before or after) any allocated Geometry,
+ this including any Geometry returned by gaiaGeosMakeValid()
+
+ \remark \b RTTOPO support required.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr gaiaGeosMakeValid (gaiaGeomCollPtr geom,
+						       int keep_discarded);
+
+/**
+ Utility function: GeosMakeValid
+
+ \param p_cache a memory pointer returned by spatialite_alloc_connection() 
+ \param geom the input Geometry object.
+ \param keep_discarded boolean: if FALSE all geometry components that
+ collapse to a lower dimensionality, for example a one-point linestring,
+ will be dropped.
+
+ \return the pointer to newly created Geometry object: NULL on failure.
+ \n this function will attempt to create a valid representation of a given 
+ invalid geometry using the GEOS own "method=structure". 
+
+ \sa gaiaFreeGeomColl, gaiaMakeValid
+
+ \note you are responsible to destroy (before or after) any allocated Geometry,
+ this including any Geometry returned by gaiaGeosMakeValid()
+
+ \remark \b RTTOPO support required.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr gaiaGeosMakeValid_r (const void *p_cache,
+							 gaiaGeomCollPtr geom,
+							 int keep_discarded);
+
+#endif				/* end GEOS_3100 features */
+
+#ifndef DOXYGEN_SHOULD_IGNORE_THIS
 #ifdef GEOS_TRUNK
 #endif
 
@@ -3720,7 +3923,7 @@ extern "C"
  \return the pointer to newly created Geometry object: NULL on failure.
  \n NULL will be returned if any argument is invalid.
 
- \sa gaiaDelaunatTriangulation_r,
+ \sa gaiaDelaunayTriangulation_r,
  gaiaFreeGeomColl, gaiaVoronojDiagram, gaiaConcaveHull
 
  \note you are responsible to destroy (before or after) any allocated Geometry,
@@ -3747,7 +3950,7 @@ extern "C"
  \return the pointer to newly created Geometry object: NULL on failure.
  \n NULL will be returned if any argument is invalid.
 
- \sa gaiaDelaunatTriangulation,
+ \sa gaiaDelaunayTriangulation,
  gaiaFreeGeomColl, gaiaVoronojDiagram, gaiaConcaveHull
 
  \note you are responsible to destroy (before or after) any allocated Geometry,
@@ -3978,7 +4181,7 @@ extern "C"
  \n Already-valid geometries are returned without further intervention. 
  \n NULL will be returned if the passed argument is invalid.
 
- \sa gaiaFreeGeomColl, gaiaMakeValidDiscarded
+ \sa gaiaFreeGeomColl, gaiaMakeValidDiscarded, gaiaGeosMakeValid
 
  \note you are responsible to destroy (before or after) any allocated Geometry,
  this including any Geometry returned by gaiaMakeValid()

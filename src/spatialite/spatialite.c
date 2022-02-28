@@ -673,6 +673,23 @@ fnct_has_geos_advanced (sqlite3_context * context, int argc,
 }
 
 static void
+fnct_has_geos_3100 (sqlite3_context * context, int argc,
+			sqlite3_value ** argv)
+{
+/* SQL function:
+/ HasGeos3100()
+/
+/ return 1 if built including GEOS-3100; otherwise 0
+*/
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+#ifdef GEOS_3100		/* GEOS-3100 is supported */
+    sqlite3_result_int (context, 1);
+#else
+    sqlite3_result_int (context, 0);
+#endif
+}
+
+static void
 fnct_has_geos_trunk (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
 /* SQL function:
@@ -27998,8 +28015,10 @@ fnct_Distance (sqlite3_context * context, int argc, sqlite3_value ** argv)
 /
 / returns the distance between GEOM-1 and GEOM-2
 */
-    unsigned char *p_blob;
-    int n_bytes;
+    unsigned char *blob1;
+    unsigned char *blob2;
+    int bytes1;
+    int bytes2;
     gaiaGeomCollPtr geo1 = NULL;
     gaiaGeomCollPtr geo2 = NULL;
     double dist;
@@ -28040,16 +28059,14 @@ fnct_Distance (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  if (use_ellipsoid != 0)
 	      use_ellipsoid = 1;
       }
-    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
-    n_bytes = sqlite3_value_bytes (argv[0]);
+    blob1 = (unsigned char *) sqlite3_value_blob (argv[0]);
+    bytes1 = sqlite3_value_bytes (argv[0]);
     geo1 =
-	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
-				     gpkg_amphibious);
-    p_blob = (unsigned char *) sqlite3_value_blob (argv[1]);
-    n_bytes = sqlite3_value_bytes (argv[1]);
+	gaiaFromSpatiaLiteBlobWkbEx (blob1, bytes1, gpkg_mode, gpkg_amphibious);
+    blob2 = (unsigned char *) sqlite3_value_blob (argv[1]);
+    bytes2 = sqlite3_value_bytes (argv[1]);
     geo2 =
-	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
-				     gpkg_amphibious);
+	gaiaFromSpatiaLiteBlobWkbEx (blob2, bytes2, gpkg_mode, gpkg_amphibious);
     if (!geo1 || !geo2)
 	sqlite3_result_null (context);
     else
@@ -28171,7 +28188,14 @@ fnct_Distance (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	  else
 	    {
 		if (data != NULL)
+#ifdef GEOS_3100		/* only if GEOS_3100 support is available */
+		    ret =
+			gaiaGeomCollPreparedDistance (data, geo1, blob1, bytes1,
+						      geo2, blob2, bytes2,
+						      &dist);
+#else
 		    ret = gaiaGeomCollDistance_r (data, geo1, geo2, &dist);
+#endif
 		else
 		    ret = gaiaGeomCollDistance (geo1, geo2, &dist);
 		if (!ret)
@@ -29253,6 +29277,323 @@ fnct_FrechetDistanceDensify (sqlite3_context * context, int argc,
 }
 
 #endif /* end GEOS_370 conditional */
+
+#ifdef GEOS_3100		/* only if GEOS_3100 support is available */
+
+static void
+fnct_GeosDensify (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ GeosDensify(BLOBencoded geometry, DOUBLE tolerance)
+/
+/ return a densified geometry using a given distance tolerance.
+/ or NULL if any error is encountered
+/
+/ Additional vertices will be added to every line segment
+/ that is greater this tolerance; these vertices will
+/ evenly subdivide that segment.
+/ Only linear components of input geometry are densified.
+/
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    gaiaGeomCollPtr geo = NULL;
+    gaiaGeomCollPtr result;
+    double tolerance;
+    int int_value;
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    int tiny_point = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+	  tiny_point = cache->tinyPointEnabled;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (sqlite3_value_type (argv[1]) == SQLITE_FLOAT)
+	tolerance = sqlite3_value_double (argv[1]);
+    else if (sqlite3_value_type (argv[1]) == SQLITE_INTEGER)
+      {
+	  int_value = sqlite3_value_int (argv[1]);
+	  tolerance = int_value;
+      }
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geo =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (!geo)
+	sqlite3_result_null (context);
+    else
+      {
+	  void *data = sqlite3_user_data (context);
+	  if (data != NULL)
+	      result = gaiaGeosDensify_r (data, geo, tolerance);
+	  else
+	      result = gaiaGeosDensify (geo, tolerance);
+	  if (!result)
+	      sqlite3_result_null (context);
+	  else
+	    {
+		/* builds the BLOB geometry to be returned */
+		int len;
+		unsigned char *p_result = NULL;
+		result->Srid = geo->Srid;
+		gaiaToSpatiaLiteBlobWkbEx2 (result, &p_result, &len,
+					    gpkg_mode, tiny_point);
+		sqlite3_result_blob (context, p_result, len, free);
+		gaiaFreeGeomColl (result);
+	    }
+      }
+    gaiaFreeGeomColl (geo);
+}
+
+static void
+fnct_ConstrainedDelaunayTriangulation (sqlite3_context * context, int argc,
+				       sqlite3_value ** argv)
+{
+/* SQL function:
+/ ConstrainedDelaunayTriangulation(BLOBencoded geometry)
+/
+/ Return a constrained Delaunay triangulation of the vertices of the
+* given polygon(s).
+/ NULL is returned for invalid arguments
+* For non-polygonal inputs, returns a NULL geometry collection.
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    gaiaGeomCollPtr geo = NULL;
+    gaiaGeomCollPtr result;
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    int tiny_point = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+	  tiny_point = cache->tinyPointEnabled;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geo =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (geo == NULL)
+	sqlite3_result_null (context);
+    else
+      {
+	  void *data = sqlite3_user_data (context);
+	  if (data != NULL)
+	      result = gaiaConstrainedDelaunayTriangulation_r (data, geo);
+	  else
+	      result = gaiaConstrainedDelaunayTriangulation (geo);
+	  if (result == NULL)
+	      sqlite3_result_null (context);
+	  else
+	    {
+		/* builds the BLOB geometry to be returned */
+		int len;
+		unsigned char *p_result = NULL;
+		result->Srid = geo->Srid;
+		gaiaToSpatiaLiteBlobWkbEx2 (result, &p_result, &len,
+					    gpkg_mode, tiny_point);
+		sqlite3_result_blob (context, p_result, len, free);
+		gaiaFreeGeomColl (result);
+	    }
+      }
+      if (geo != NULL)
+    gaiaFreeGeomColl (geo);
+}
+
+static void
+fnct_GeosMakeValid (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ GeosMakeValid(BLOBencoded geometry)
+/ GeosMakeValid(BLOBencoded geometry, BOOL keep_collapsed)
+/
+/ Attempts to make an invalid geometry valid (the GEOS way).
+/ NULL is returned for invalid arguments
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    gaiaGeomCollPtr geo = NULL;
+    gaiaGeomCollPtr result;
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    int tiny_point = 0;
+    int keep_collapsed = 1;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+	  tiny_point = cache->tinyPointEnabled;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (argc == 2)
+      {
+	  if (sqlite3_value_type (argv[1]) == SQLITE_INTEGER)
+	      keep_collapsed = sqlite3_value_int (argv[1]);
+	  else
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geo =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (geo == NULL)
+	sqlite3_result_null (context);
+    else
+      {
+	  void *data = sqlite3_user_data (context);
+	  if (data != NULL)
+	      result = gaiaGeosMakeValid_r (data, geo, keep_collapsed);
+	  else
+	      result = gaiaGeosMakeValid (geo, keep_collapsed);
+	  if (result == NULL)
+	      sqlite3_result_null (context);
+	  else
+	    {
+		/* builds the BLOB geometry to be returned */
+		int len;
+		unsigned char *p_result = NULL;
+		result->Srid = geo->Srid;
+		gaiaToSpatiaLiteBlobWkbEx2 (result, &p_result, &len,
+					    gpkg_mode, tiny_point);
+		sqlite3_result_blob (context, p_result, len, free);
+		gaiaFreeGeomColl (result);
+	    }
+      }
+    gaiaFreeGeomColl (geo);
+}
+
+#endif /* end GEOS_3100 conditional */
+
+static void
+fnct_DistanceWithin (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ DistanceWithin(BLOBencoded geom1, BLOBencoded geom2, double dist)
+/
+/ Test whether the distance between two geometries is
+/ within the given dist.
+/ Will return TRUE or FALSE; -1 on invalid args
+/
+*/
+    unsigned char *blob1;
+    unsigned char *blob2;
+    int bytes1;
+    int bytes2;
+    gaiaGeomCollPtr geo1 = NULL;
+    gaiaGeomCollPtr geo2 = NULL;
+    int int_val;
+    double dist;
+    double xdist;
+    int ret;
+    void *data = sqlite3_user_data (context);
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_int (context, -1);
+	  return;
+      }
+    if (sqlite3_value_type (argv[1]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_int (context, -1);
+	  return;
+      }
+    if (argc == 3)
+      {
+	  if (sqlite3_value_type (argv[2]) == SQLITE_INTEGER)
+	    {
+		int_val = sqlite3_value_int (argv[2]);
+		dist = int_val;
+	    }
+	  else if (sqlite3_value_type (argv[2]) == SQLITE_FLOAT)
+	      dist = sqlite3_value_double (argv[2]);
+	  else
+	    {
+		sqlite3_result_int (context, -1);
+		return;
+	    }
+      }
+    blob1 = (unsigned char *) sqlite3_value_blob (argv[0]);
+    bytes1 = sqlite3_value_bytes (argv[0]);
+    geo1 =
+	gaiaFromSpatiaLiteBlobWkbEx (blob1, bytes1, gpkg_mode, gpkg_amphibious);
+    blob2 = (unsigned char *) sqlite3_value_blob (argv[1]);
+    bytes2 = sqlite3_value_bytes (argv[1]);
+    geo2 =
+	gaiaFromSpatiaLiteBlobWkbEx (blob2, bytes2, gpkg_mode, gpkg_amphibious);
+    if (!geo1 || !geo2)
+	sqlite3_result_int (context, -1);
+    else
+      {
+	  int result = 0;
+	  if (data != NULL)
+	    {
+#ifdef GEOS_3100		/* only if GEOS_3100 support is available */
+		ret =
+		    gaiaGeomCollPreparedDistanceWithin (data, geo1, blob1,
+							bytes1, geo2, blob2,
+							bytes2, dist);
+		result = ret;
+#else
+		ret = gaiaGeomCollDistance_r (data, geo1, geo2, &xdist);
+		if (ret && xdist <= dist)
+		    result = 1;
+#endif
+	    }
+	  else
+	    {
+		ret = gaiaGeomCollDistance (geo1, geo2, &xdist);
+		if (ret && xdist <= dist)
+		    result = 1;
+	    }
+	  sqlite3_result_int (context, result);
+      }
+      if (geo1 != NULL)
+    gaiaFreeGeomColl (geo1);
+      if (geo2 != NULL)
+    gaiaFreeGeomColl (geo2);
+}
 
 static void
 fnct_SharedPaths (sqlite3_context * context, int argc, sqlite3_value ** argv)
@@ -48585,6 +48926,9 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "HasGeosAdvanced", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_has_geos_advanced, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "HasGeos3100", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_has_geos_3100, 0, 0, 0);
     sqlite3_create_function_v2 (db, "HasGeosTrunk", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_has_geos_trunk, 0, 0, 0);
@@ -52399,6 +52743,31 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_FrechetDistanceDensify, 0, 0, 0);
 #endif /* end GEOS_370 conditional */
+
+#ifdef GEOS_3100		/* only if GEOS_3100 support is available */
+    sqlite3_create_function_v2 (db, "GeosDensify", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_GeosDensify, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ConstrainedDelaunayTriangulation", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_ConstrainedDelaunayTriangulation, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_ConstrainedDelaunayTriangulation", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_ConstrainedDelaunayTriangulation, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "GeosMakeValid", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_GeosMakeValid, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "GeosMakeValid", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_GeosMakeValid, 0, 0, 0);
+#endif /* end GEOS_3100 conditional */
+
+    sqlite3_create_function_v2 (db, "DistanceWithin", 3,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_DistanceWithin, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_DistanceWithin", 3,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_DistanceWithin, 0, 0, 0);
 
     sqlite3_create_function_v2 (db, "SharedPaths", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,

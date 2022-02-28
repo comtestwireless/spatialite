@@ -1,0 +1,32 @@
+EXTRA_DIST = geosdensify1.testcase \
+	geosdensify2.testcase \
+	geosdensify3.testcase \
+	geosdensify4.testcase \
+	geosdensify5.testcase \
+	geosdensify6.testcase \
+	geosdensify7.testcase \
+	geosdensify7.testcase \
+	geosdensify7.testcase \
+	geosdensify7.testcase \
+	geosdensify7.testcase \
+	geosmakevalid1.testcase \
+	geosmakevalid2.testcase \
+	geosmakevalid3.testcase \
+	geosmakevalid4.testcase \
+	geosmakevalid5.testcase \
+	geosmakevalid6.testcase \
+	geosmakevalid7.testcase \
+	geosmakevalid8.testcase \
+	geosmakevalid9.testcase \
+	geosmakevalid10.testcase \
+	geosmakevalid11.testcase \
+	geosmakevalid12.testcase \
+	geosmakevalid13.testcase \
+	geosmakevalid14.testcase \
+	constrdelaunay1.testcase \
+	constrdelaunay2.testcase \
+	constrdelaunay3.testcase \
+	constrdelaunay4.testcase \
+	constrdelaunay6.testcase \
+	constrdelaunay7.testcase \
+	constrdelaunay8.testcase

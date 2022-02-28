@@ -1331,6 +1331,39 @@ toGeosGeometry (const void *cache, GEOSContextHandle_t handle,
     return geos;
 }
 
+static int
+check_empty_geom (gaiaGeomCollPtr geom)
+{
+/* checking for EMTPY Geometries */
+    gaiaPointPtr pt;
+    gaiaLinestringPtr ln;
+    gaiaPolygonPtr pg;
+    int pts = 0;
+    int lns = 0;
+    int pgs = 0;
+    pt = geom->FirstPoint;
+    while (pt != NULL)
+      {
+	  pts++;
+	  pt = pt->Next;
+      }
+    ln = geom->FirstLinestring;
+    while (ln != NULL)
+      {
+	  lns++;
+	  ln = ln->Next;
+      }
+    pg = geom->FirstPolygon;
+    while (pg != NULL)
+      {
+	  pgs++;
+	  pg = pg->Next;
+      }
+    if (pts || lns || pgs)
+	return 0;
+    return 1;
+}
+
 static gaiaGeomCollPtr
 fromGeosGeometry (GEOSContextHandle_t handle, const GEOSGeometry * geos,
 		  const int dimension_model)
@@ -1466,6 +1499,8 @@ fromGeosGeometry (GEOSContextHandle_t handle, const GEOSGeometry * geos,
 		GEOSCoordSeq_getSize (cs, &points);
 #endif
 	    }
+	  if (points <= 0)
+	      goto skip_empty_linestring;
 	  ln = gaiaAddLinestringToGeomColl (gaia, points);
 	  for (iv = 0; iv < (int) points; iv++)
 	    {
@@ -1519,6 +1554,7 @@ fromGeosGeometry (GEOSContextHandle_t handle, const GEOSGeometry * geos,
 		      gaiaSetPoint (ln->Coords, iv, x, y);
 		  }
 	    }
+	skip_empty_linestring:
 	  break;
       case GEOS_POLYGON:
 	  if (dimension_model == GAIA_XY_Z)
@@ -1555,6 +1591,8 @@ fromGeosGeometry (GEOSContextHandle_t handle, const GEOSGeometry * geos,
 		GEOSCoordSeq_getSize (cs, &points);
 #endif
 	    }
+	  if (points <= 0)
+	      goto skip_empty_polygon;
 	  pg = gaiaAddPolygonToGeomColl (gaia, points, holes);
 	  rng = pg->Exterior;
 	  for (iv = 0; iv < (int) points; iv++)
@@ -1682,6 +1720,7 @@ fromGeosGeometry (GEOSContextHandle_t handle, const GEOSGeometry * geos,
 			}
 		  }
 	    }
+	skip_empty_polygon:
 	  break;
       case GEOS_MULTIPOINT:
       case GEOS_MULTILINESTRING:
@@ -2130,6 +2169,11 @@ fromGeosGeometry (GEOSContextHandle_t handle, const GEOSGeometry * geos,
 	    }
 	  break;
       };
+    if (check_empty_geom (gaia))
+      {
+	  gaiaFreeGeomColl (gaia);
+	  return NULL;
+      }
     return gaia;
 }
 

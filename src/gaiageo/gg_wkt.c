@@ -73,7 +73,7 @@ gaiaOutClean (char *buffer)
  * integer numbers
 */
     int integer = 1;
-    for (i = 0; i < strlen (buffer); i++)
+    for (i = 0; i < (int)strlen (buffer); i++)
       {
 	  if (buffer[i] == '.')
 	      integer = 0;

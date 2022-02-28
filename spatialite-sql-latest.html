@@ -127,6 +127,9 @@
 			<tr><td><b>HasGeosAdvanced</b></td>
 				<td>HasGeosAdvanced( void ) : <i>Boolean</i></td>
 				<td colspan="3">TRUE if the underlying library was built enabling <b>GEOSADVANCED</b></td></tr>
+			<tr><td><b>HasGeos3100</b></td>
+				<td>HasGeos3100( void ) : <i>Boolean</i></td>
+				<td colspan="3">TRUE if the underlying library was built enabling <b>GEOS3100</b></td></tr>
 			<tr><td><b>HasGeosTrunk</b></td>
 				<td>HasGeosTrunk( void ) : <i>Boolean</i></td>
 				<td colspan="3">TRUE if the underlying library was built enabling <b>GEOSTRUNK</b></td></tr>
@@ -2362,6 +2365,14 @@ This function only supports Long/Lat coordinates, and will return NULL for any p
 				<td>return the distance between geom1 and geom2 (measured in meters).<br>
 If the <b>use_ellipsoid</b> argument is set to <b>TRUE</b> the precise (but slower) distance will be computed on the Ellipsoid, otherwise will be computed on the Great Circle (approximative, but faster).<hr>
 This function only supports Long/Lat coordinates, and will return NULL for any planar CRS</td></tr>
+			<tr><td><b>DistanceWithin</b></td>
+				<td>DistanceWithin( geom1 <i>Geometry</i> , geom2 <i>Geometry</i>, range <i>Double precision</i> ] ) : <i>Integer</i><hr>
+					ST_DistanceWithin( geom1 <i>Geometry</i> , geom2 <i>Geometry</i>, range <i>Double precision</i> ) : <i>Integer</i></td>
+				<td></td>
+				<td align="center" bgcolor="#f0d0d0">GEOS</td>
+				<td>return TRUE (1) if the distance between <i>geom1</i> and <i>geom2</i> is within the given range.<br>
+				Distances are always expressed in the length unit corresponding to the geoms own SRID<hr>
+				<u>Note</u>: When supported by <b>GEOS3100</b> this function will be much more efficient</td></tr>
 			<tr><td><b>PtDistWithin</b></td>
 				<td>PtDistWithin( geom1 <i>Geometry</i> , geom2 <i>Geometry</i>, range <i>Double precision</i> [, use_spheroid <i>Integer</i> ] ) 
 					: <i>Integer</i></td>
@@ -2798,6 +2809,13 @@ This function only supports Long/Lat coordinates, and will return NULL for any p
 					The returned Geometry will usually be of the <b>MultiPolygon</b> type (a collection of Triangles), but will be a <b>MultiLinestring</b> if the optional <b>edges_only</b> argument is set to <b>TRUE</b><br>
                                         The optional argument <b>tolerance</b> is intended to normalize the input Geometry, suppressing repeated (or too close) Points.<br>
 					NULL is returned on failure.</td></tr>
+			<tr><td><b>ConstrainedDelaunayTriangulation</b></td>
+				<td>ConstrainedDelaunayTriangulation( geom <i>Geometry</i>  ) : <i>Geometry</i><hr>
+					ST_ConstrainedDelaunayTriangulation( geom <i>Geometry</i>  ) : <i>Geometry</i></td>
+				<td></td>
+				<td align="center" bgcolor="#d0d0f0">GEOS-3100</td>
+				<td>return a constrained Delaunay triangulation of the vertices of the given polygon(s).<hr>
+					NULL is returned on failure.</td></tr>
 			<tr><td><b>VoronojDiagram</b></td>
 				<td>VoronojDiagram( geom <i>Geometry</i> [ , edges_only <i>Boolean</i> [ , frame_extra_size <i>Double precision</i> [ , tolerance <i>Double precision</i> ] ] ] ) : <i>Geometry</i><hr>
 					ST_VoronojDiagram( geom <i>Geometry</i> [ , edges_only <i>Boolean</i>  [ , frame_extra_size <i>Double precision</i> [ , tolerance <i>Double precision</i> ] ] ] ) : <i>Geometry</i></td>
@@ -2821,6 +2839,23 @@ This function only supports Long/Lat coordinates, and will return NULL for any p
                                         By setting the optional <b>allow_holes</b> argument to <b>TRUE</b> all <i>interior holes</i> will be preserved.<br>
                                         The optional argument <b>tolerance</b> is intended to normalize the input Geometry, suppressing repeated (or too close) Points.<br>
 					NULL is returned on failure.</td></tr>
+			<tr><td><b>GeosDensify</b></td>
+				<td>GeosDensify( geom <i>Geometry</i> , tolerance <i>Double precision</i> ) : <i>Geometry</i></td>
+				<td></td>
+				<td align="center" bgcolor="#d0d0f0">GEOS-3100</td>
+				<td>return a densified geometry using a given distance tolerance<hr>
+					Additional vertices will be added to every line segment that is greater this <b>tolerance</b>; these vertices will evenly subdivide that segment.
+					Only linear components of input geometry are densified.<br>
+					NULL is returned on failure.</td></tr>
+			<tr><td><b>GeosMakeValid</b></td>
+				<td>GeosMakeValid( geom <i>Geometry</i> [ , keep_collapsed <i>boolean</i>] ) : <i>Geometry</i></td>
+				<td></td>
+				<td align="center" bgcolor="#d0d0f0">GEOS-3100</td>
+				<td>Attempts to make an invalid geometry valid (the GEOS way).<br>
+					If the optional argument <b>keep_collapsed</b> is <b>TRUE</b> all collapsed items (<i>i.e. linestrings reduced to points or polygons reduced to linestrings</i>) will be preserved into the output geometry,
+					otherwise they'll be suppressed (default is <b>TRUE</b>)<br>
+					NULL is returned on failure.<hr>
+					<i>Note</i>: this function is similar to <b>ST_MakeValid()</b> but is based on a completely different algorithm, so results could be very different.</td></tr>
 			<tr><td colspan="5" align="center" bgcolor="#f0f0c0">
 				<h3><a name="p14d">SQL functions that implement spatial operators<br>[RTTOPO features]</a></h3></td></tr>
 			<tr><th bgcolor="#d0d0d0">Function</th>
@@ -2835,7 +2870,8 @@ This function only supports Long/Lat coordinates, and will return NULL for any p
 				<td align="center" bgcolor="#f0d0f0">RTTOPO</td>
 				<td>return a geometric object representing the <i>repaired</i> version of the input Geometry.<br>
                                         If the input Geometry was already valid, then it will be returned exactly as it was.<br>
-					NULL is returned on failure.</td></tr>
+					NULL is returned on failure.<hr>
+					See also: <b>GeosMakeValid()</b></td></tr>
 			<tr><td><b>MakeValidDiscarded</b></td>
 				<td>MakeValidDiscarded( geom <i>Geometry</i> ) : <i>Geometry</i><hr>
 					ST_MakeValidDiscarded( geom <i>Geometry</i> ) : <i>Geometry</i></td>

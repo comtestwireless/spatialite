@@ -760,6 +760,7 @@ infodir
 docdir
 oldincludedir
 includedir
+runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -805,6 +806,7 @@ enable_geosadvanced
 enable_geosreentrant
 with_geosonlyreentrant
 enable_geos370
+enable_geos3100
 enable_rttopo
 enable_libxml2
 enable_minizip
@@ -871,6 +873,7 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
+runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -1123,6 +1126,15 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
+  -runstatedir | --runstatedir | --runstatedi | --runstated \
+  | --runstate | --runstat | --runsta | --runst | --runs \
+  | --run | --ru | --r)
+    ac_prev=runstatedir ;;
+  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
+  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
+  | --run=* | --ru=* | --r=*)
+    runstatedir=$ac_optarg ;;
+
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1260,7 +1272,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir
+		libdir localedir mandir runstatedir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1413,6 +1425,7 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
+  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -1477,6 +1490,7 @@ Optional Features:
   --enable-geosreentrant  enables GEOS reentrant (fully thread safe)
                           [default=yes]
   --enable-geos370        enables GEOS 3.7.0 features [default=yes]
+  --enable-geos3100       enables GEOS 3.10.0 features [default=yes]
   --enable-rttopo         enables RTTOPO support [default=yes]
   --enable-libxml2        enables libxml2 inclusion [default=yes]
   --enable-minizip        enables MiniZIP inclusion [default=yes]
@@ -3178,6 +3192,7 @@ $as_echo "#define NDEBUG 1" >>confdefs.h
 
 
 # config depending options
+
 
 
 
@@ -17371,7 +17386,7 @@ else
 fi
 
 
-ac_config_files="$ac_config_files Makefile src/Makefile src/headers/Makefile src/gaiaaux/Makefile src/gaiaexif/Makefile src/gaiageo/Makefile src/gaiageo/flex/Makefile src/gaiageo/lemon/Makefile src/gaiageo/lemon/lemon_src/Makefile src/geopackage/Makefile src/spatialite/Makefile src/shapefiles/Makefile src/dxf/Makefile src/md5/Makefile src/control_points/Makefile src/cutter/Makefile src/topology/Makefile src/srsinit/Makefile src/srsinit/epsg_update/Makefile src/stored_procedures/Makefile src/connection_cache/Makefile src/connection_cache/generator/Makefile src/virtualtext/Makefile src/wfs/Makefile test/Makefile test/sql_stmt_tests/Makefile test/sql_stmt_geos_tests/Makefile test/sql_stmt_geos_380/Makefile test/sql_stmt_geos_non380/Makefile test/sql_stmt_geosadvanced_tests/Makefile test/sql_stmt_geopackage_tests/Makefile test/sql_stmt_gpkg_epsg492_tests/Makefile test/sql_stmt_gpkg_epsg493_tests/Makefile test/sql_stmt_gpkg_epsg600_tests/Makefile test/sql_stmt_proj_tests/Makefile test/sql_stmt_proj492_tests/Makefile test/sql_stmt_proj493_tests/Makefile test/sql_stmt_proj600_tests/Makefile test/sql_stmt_proj720_tests/Makefile test/sql_stmt_proj600security_tests/Makefile test/sql_stmt_mathsql_tests/Makefile test/sql_stmt_rtgeom_tests/Makefile test/sql_stmt_rttopo_tests/Makefile test/sql_stmt_libxml2_tests/Makefile test/sql_stmt_libxml2_rttopo_tests/Makefile test/sql_stmt_security_tests/Makefile test/sql_stmt_xmlsec_tests/Makefile test/sql_stmt_freexl_tests/Makefile test/sql_stmt_cache_tests/Makefile test/sql_stmt_gpkgcache_tests/Makefile test/sql_stmt_nocache_tests/Makefile test/sql_stmt_gpkgnocache_tests/Makefile test/sql_stmt_voronoj1_tests/Makefile test/sql_stmt_voronoj2_tests/Makefile test/sql_stmt_sequence_tests/Makefile test/sql_stmt_routing_tests/Makefile test/sql_stmt_logfile_tests/Makefile test/sql_stmt_iconv_tests/Makefile test/sql_stmt_proc_tests/Makefile test/sql_stmt_point_geom/Makefile test/sql_stmt_tiny_point/Makefile test/sql_stmt_postgres_tests/Makefile test/sql_stmt_geos370_tests/Makefile test/sql_stmt_renamenew_tests/Makefile test/sql_stmt_renameold_tests/Makefile test/sql_stmt_bufoptsnew_tests/Makefile test/sql_stmt_bufoptsold_tests/Makefile test/sql_stmt_minizip/Makefile test/sql_stmt_zip_proj6/Makefile test/sql_stmt_geos_390/Makefile test/sql_stmt_geos_391/Makefile test/sql_stmt_geos_non390/Makefile test/sql_stmt_rtgeom_390/Makefile test/sql_stmt_rtgeom_non390/Makefile test/sql_stmt_voronoj_390/Makefile test/sql_stmt_voronoj_non390/Makefile examples/Makefile Doxyfile spatialite.pc"
+ac_config_files="$ac_config_files Makefile src/Makefile src/headers/Makefile src/gaiaaux/Makefile src/gaiaexif/Makefile src/gaiageo/Makefile src/gaiageo/flex/Makefile src/gaiageo/lemon/Makefile src/gaiageo/lemon/lemon_src/Makefile src/geopackage/Makefile src/spatialite/Makefile src/shapefiles/Makefile src/dxf/Makefile src/md5/Makefile src/control_points/Makefile src/cutter/Makefile src/topology/Makefile src/srsinit/Makefile src/srsinit/epsg_update/Makefile src/stored_procedures/Makefile src/connection_cache/Makefile src/connection_cache/generator/Makefile src/virtualtext/Makefile src/wfs/Makefile test/Makefile test/sql_stmt_tests/Makefile test/sql_stmt_geos_tests/Makefile test/sql_stmt_geos370_tests/Makefile test/sql_stmt_geos3100_tests/Makefile test/sql_stmt_geos_380/Makefile test/sql_stmt_geos_non380/Makefile test/sql_stmt_geos_390/Makefile test/sql_stmt_geos_non390/Makefile test/sql_stmt_geos_391/Makefile test/sql_stmt_geos_3100/Makefile test/sql_stmt_geos_non3100/Makefile test/sql_stmt_geosadvanced_tests/Makefile test/sql_stmt_geopackage_tests/Makefile test/sql_stmt_gpkg_epsg492_tests/Makefile test/sql_stmt_gpkg_epsg493_tests/Makefile test/sql_stmt_gpkg_epsg600_tests/Makefile test/sql_stmt_proj_tests/Makefile test/sql_stmt_proj492_tests/Makefile test/sql_stmt_proj493_tests/Makefile test/sql_stmt_proj600_tests/Makefile test/sql_stmt_proj720_tests/Makefile test/sql_stmt_proj600security_tests/Makefile test/sql_stmt_mathsql_tests/Makefile test/sql_stmt_rtgeom_tests/Makefile test/sql_stmt_rttopo_tests/Makefile test/sql_stmt_libxml2_tests/Makefile test/sql_stmt_libxml2_rttopo_tests/Makefile test/sql_stmt_security_tests/Makefile test/sql_stmt_xmlsec_tests/Makefile test/sql_stmt_freexl_tests/Makefile test/sql_stmt_cache_tests/Makefile test/sql_stmt_gpkgcache_tests/Makefile test/sql_stmt_nocache_tests/Makefile test/sql_stmt_gpkgnocache_tests/Makefile test/sql_stmt_voronoj1_tests/Makefile test/sql_stmt_voronoj2_tests/Makefile test/sql_stmt_sequence_tests/Makefile test/sql_stmt_routing_tests/Makefile test/sql_stmt_logfile_tests/Makefile test/sql_stmt_iconv_tests/Makefile test/sql_stmt_proc_tests/Makefile test/sql_stmt_point_geom/Makefile test/sql_stmt_tiny_point/Makefile test/sql_stmt_postgres_tests/Makefile test/sql_stmt_renamenew_tests/Makefile test/sql_stmt_renameold_tests/Makefile test/sql_stmt_bufoptsnew_tests/Makefile test/sql_stmt_bufoptsold_tests/Makefile test/sql_stmt_minizip/Makefile test/sql_stmt_zip_proj6/Makefile test/sql_stmt_rtgeom_390/Makefile test/sql_stmt_rtgeom_non390/Makefile test/sql_stmt_voronoj_390/Makefile test/sql_stmt_voronoj_non390/Makefile examples/Makefile Doxyfile spatialite.pc"
 
 
 # exporting the TARGET_CPU string
@@ -18542,6 +18557,79 @@ else
 fi
 
 	  $as_echo "#define GEOS_370 1" >>confdefs.h
+
+  fi
+
+  #-----------------------------------------------------------------------
+  #   --enable-geos3100
+  #
+  # Check whether --enable-geos3100 was given.
+if test "${enable_geos3100+set}" = set; then :
+  enableval=$enable_geos3100;
+else
+  enable_geos370=yes
+fi
+
+  if test x"$enable_geos3100" != "xno"; then
+	  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing GEOSConstrainedDelaunayTriangulation_r" >&5
+$as_echo_n "checking for library containing GEOSConstrainedDelaunayTriangulation_r... " >&6; }
+if ${ac_cv_search_GEOSConstrainedDelaunayTriangulation_r+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char GEOSConstrainedDelaunayTriangulation_r ();
+int
+main ()
+{
+return GEOSConstrainedDelaunayTriangulation_r ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' geos_c; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_search_GEOSConstrainedDelaunayTriangulation_r=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_GEOSConstrainedDelaunayTriangulation_r+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_GEOSConstrainedDelaunayTriangulation_r+:} false; then :
+
+else
+  ac_cv_search_GEOSConstrainedDelaunayTriangulation_r=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_GEOSConstrainedDelaunayTriangulation_r" >&5
+$as_echo "$ac_cv_search_GEOSConstrainedDelaunayTriangulation_r" >&6; }
+ac_res=$ac_cv_search_GEOSConstrainedDelaunayTriangulation_r
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+else
+  as_fn_error $? "'libgeos_c' (>= v.3.10.0) is required but it doesn't seem to be installed on this system. You may need to try re-running configure with a --disable-geos3100 parameter." "$LINENO" 5
+fi
+
+	  $as_echo "#define GEOS_3100 1" >>confdefs.h
 
   fi
 
@@ -20101,8 +20189,15 @@ do
     "test/Makefile") CONFIG_FILES="$CONFIG_FILES test/Makefile" ;;
     "test/sql_stmt_tests/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_tests/Makefile" ;;
     "test/sql_stmt_geos_tests/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_geos_tests/Makefile" ;;
+    "test/sql_stmt_geos370_tests/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_geos370_tests/Makefile" ;;
+    "test/sql_stmt_geos3100_tests/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_geos3100_tests/Makefile" ;;
     "test/sql_stmt_geos_380/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_geos_380/Makefile" ;;
     "test/sql_stmt_geos_non380/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_geos_non380/Makefile" ;;
+    "test/sql_stmt_geos_390/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_geos_390/Makefile" ;;
+    "test/sql_stmt_geos_non390/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_geos_non390/Makefile" ;;
+    "test/sql_stmt_geos_391/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_geos_391/Makefile" ;;
+    "test/sql_stmt_geos_3100/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_geos_3100/Makefile" ;;
+    "test/sql_stmt_geos_non3100/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_geos_non3100/Makefile" ;;
     "test/sql_stmt_geosadvanced_tests/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_geosadvanced_tests/Makefile" ;;
     "test/sql_stmt_geopackage_tests/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_geopackage_tests/Makefile" ;;
     "test/sql_stmt_gpkg_epsg492_tests/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_gpkg_epsg492_tests/Makefile" ;;
@@ -20136,16 +20231,12 @@ do
     "test/sql_stmt_point_geom/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_point_geom/Makefile" ;;
     "test/sql_stmt_tiny_point/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_tiny_point/Makefile" ;;
     "test/sql_stmt_postgres_tests/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_postgres_tests/Makefile" ;;
-    "test/sql_stmt_geos370_tests/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_geos370_tests/Makefile" ;;
     "test/sql_stmt_renamenew_tests/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_renamenew_tests/Makefile" ;;
     "test/sql_stmt_renameold_tests/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_renameold_tests/Makefile" ;;
     "test/sql_stmt_bufoptsnew_tests/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_bufoptsnew_tests/Makefile" ;;
     "test/sql_stmt_bufoptsold_tests/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_bufoptsold_tests/Makefile" ;;
     "test/sql_stmt_minizip/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_minizip/Makefile" ;;
     "test/sql_stmt_zip_proj6/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_zip_proj6/Makefile" ;;
-    "test/sql_stmt_geos_390/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_geos_390/Makefile" ;;
-    "test/sql_stmt_geos_391/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_geos_391/Makefile" ;;
-    "test/sql_stmt_geos_non390/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_geos_non390/Makefile" ;;
     "test/sql_stmt_rtgeom_390/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_rtgeom_390/Makefile" ;;
     "test/sql_stmt_rtgeom_non390/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_rtgeom_non390/Makefile" ;;
     "test/sql_stmt_voronoj_390/Makefile") CONFIG_FILES="$CONFIG_FILES test/sql_stmt_voronoj_390/Makefile" ;;

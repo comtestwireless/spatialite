@@ -153,6 +153,21 @@ EXTRA_DIST = bdmpolyfromtext10.testcase \
 	distance7.testcase \
 	distance8.testcase \
 	distance9.testcase \
+	distwithin10.testcase \
+	distwithin11.testcase \
+	distwithin12.testcase \
+	distwithin13.testcase \
+	distwithin14.testcase \
+	distwithin15.testcase \
+	distwithin1.testcase \
+	distwithin2.testcase \
+	distwithin3.testcase \
+	distwithin4.testcase \
+	distwithin5.testcase \
+	distwithin6.testcase \
+	distwithin7.testcase \
+	distwithin8.testcase \
+	distwithin9.testcase \
 	drapeline1.testcase \
 	drapeline2.testcase \
 	drapeline3.testcase \
@@ -260,12 +275,10 @@ EXTRA_DIST = bdmpolyfromtext10.testcase \
 	isvaliddetail2.testcase \
 	isvaliddetail3.testcase \
 	isvaliddetail4.testcase \
-	isvaliddetail5.testcase \
 	isvalidreason1.testcase \
 	isvalidreason2.testcase \
 	isvalidreason3.testcase \
 	isvalidreason4.testcase \
-	isvalidreason5.testcase \
 	pointonsurface1.testcase \
 	pointonsurface3.testcase \
 	pointonsurface4.testcase \

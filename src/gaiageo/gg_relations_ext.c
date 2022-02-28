@@ -711,6 +711,260 @@ gaiaFrechetDistanceDensify_r (const void *p_cache, gaiaGeomCollPtr geom1,
 
 #endif /* end GEOS_370 conditional */
 
+#ifdef GEOS_3100		/* only if GEOS_3100 support is available */
+
+GAIAGEO_DECLARE gaiaGeomCollPtr
+gaiaGeosDensify (gaiaGeomCollPtr geom, double tolerance)
+{
+/* return a densified geometry using a given distance tolerance. */
+#ifndef GEOS_USE_ONLY_R_API	/* obsolete versions non fully thread-safe */
+    GEOSGeometry *in;
+    GEOSGeometry *out;
+    gaiaGeomCollPtr result = NULL;
+    gaiaResetGeosMsg ();
+    if (!geom)
+	return NULL;
+    if (tolerance <= 0.0)
+	return NULL;
+    in = gaiaToGeos (geom);
+    out = GEOSDensify (in, tolerance);
+    GEOSGeom_destroy (in);
+    if (!out)
+	return NULL;
+    if (geom->DimensionModel == GAIA_XY_Z)
+	result = gaiaFromGeos_XYZ (out);
+    else if (geom->DimensionModel == GAIA_XY_M)
+	result = gaiaFromGeos_XYM (out);
+    else if (geom->DimensionModel == GAIA_XY_Z_M)
+	result = gaiaFromGeos_XYZM (out);
+    else
+	result = gaiaFromGeos_XY (out);
+    GEOSGeom_destroy (out);
+    if (result == NULL)
+	return NULL;
+    result->Srid = geom->Srid;
+#else
+    if (geom == NULL)
+	geom = NULL;		/* silencing stupid compiler warnings */
+#endif
+    return result;
+}
+
+GAIAGEO_DECLARE gaiaGeomCollPtr
+gaiaGeosDensify_r (const void *p_cache, gaiaGeomCollPtr geom, double tolerance)
+{
+/* return a densified geometry using a given distance tolerance. */
+    GEOSGeometry *in;
+    GEOSGeometry *out;
+    gaiaGeomCollPtr result = NULL;
+    struct splite_internal_cache *cache =
+	(struct splite_internal_cache *) p_cache;
+    GEOSContextHandle_t handle = NULL;
+    if (cache == NULL)
+	return 0;
+    if (cache->magic1 != SPATIALITE_CACHE_MAGIC1
+	|| cache->magic2 != SPATIALITE_CACHE_MAGIC2)
+	return 0;
+    handle = cache->GEOS_handle;
+    if (handle == NULL)
+	return 0;
+    gaiaResetGeosMsg_r (cache);
+    if (!geom)
+	return NULL;
+    if (tolerance <= 0.0)
+	return NULL;
+    in = gaiaToGeos_r (cache, geom);
+    out = GEOSDensify_r (handle, in, tolerance);
+    GEOSGeom_destroy_r (handle, in);
+    if (!out)
+	return NULL;
+    if (geom->DimensionModel == GAIA_XY_Z)
+	result = gaiaFromGeos_XYZ_r (cache, out);
+    else if (geom->DimensionModel == GAIA_XY_M)
+	result = gaiaFromGeos_XYM_r (cache, out);
+    else if (geom->DimensionModel == GAIA_XY_Z_M)
+	result = gaiaFromGeos_XYZM_r (cache, out);
+    else
+	result = gaiaFromGeos_XY_r (cache, out);
+    GEOSGeom_destroy (out);
+    if (result == NULL)
+	return NULL;
+    result->Srid = geom->Srid;
+    return result;
+}
+
+GAIAGEO_DECLARE gaiaGeomCollPtr
+gaiaConstrainedDelaunayTriangulation (gaiaGeomCollPtr geom)
+{
+/* Constrained Delaunay Triangulation */
+    gaiaGeomCollPtr result = NULL;
+#ifndef GEOS_USE_ONLY_R_API	/* obsolete versions non fully thread-safe */
+    GEOSGeometry *g1;
+    GEOSGeometry *g2;
+    gaiaResetGeosMsg ();
+    if (!geom)
+	return NULL;
+    g1 = gaiaToGeos (geom);
+    g2 = GEOSConstrainedDelaunayTriangulation (g1);
+    GEOSGeom_destroy (g1);
+    if (!g2)
+	return NULL;
+    if (geom->DimensionModel == GAIA_XY_Z)
+	result = gaiaFromGeos_XYZ (g2);
+    else if (geom->DimensionModel == GAIA_XY_M)
+	result = gaiaFromGeos_XYM (g2);
+    else if (geom->DimensionModel == GAIA_XY_Z_M)
+	result = gaiaFromGeos_XYZM (g2);
+    else
+	result = gaiaFromGeos_XY (g2);
+    GEOSGeom_destroy (g2);
+    if (result == NULL)
+	return NULL;
+    result->Srid = geom->Srid;
+#else
+    if (geom == NULL)
+	geom = NULL;		/* silencing stupid compiler warnings */
+#endif
+    return result;
+}
+
+GAIAGEO_DECLARE gaiaGeomCollPtr
+gaiaConstrainedDelaunayTriangulation_r (const void *p_cache,
+					gaiaGeomCollPtr geom)
+{
+/* Constrained Delaunay Triangulation */
+    GEOSGeometry *g1;
+    GEOSGeometry *g2;
+    gaiaGeomCollPtr result;
+    struct splite_internal_cache *cache =
+	(struct splite_internal_cache *) p_cache;
+    GEOSContextHandle_t handle = NULL;
+    if (cache == NULL)
+	return NULL;
+    if (cache->magic1 != SPATIALITE_CACHE_MAGIC1
+	|| cache->magic2 != SPATIALITE_CACHE_MAGIC2)
+	return NULL;
+    handle = cache->GEOS_handle;
+    if (handle == NULL)
+	return NULL;
+    gaiaResetGeosMsg_r (cache);
+    if (!geom)
+	return NULL;
+    g1 = gaiaToGeos_r (cache, geom);
+    g2 = GEOSConstrainedDelaunayTriangulation_r (handle, g1);
+    GEOSGeom_destroy_r (handle, g1);
+    if (!g2)
+	return NULL;
+    if (geom->DimensionModel == GAIA_XY_Z)
+	result = gaiaFromGeos_XYZ_r (cache, g2);
+    else if (geom->DimensionModel == GAIA_XY_M)
+	result = gaiaFromGeos_XYM_r (cache, g2);
+    else if (geom->DimensionModel == GAIA_XY_Z_M)
+	result = gaiaFromGeos_XYZM_r (cache, g2);
+    else
+	result = gaiaFromGeos_XY_r (cache, g2);
+    GEOSGeom_destroy_r (handle, g2);
+    if (result == NULL)
+	return NULL;
+    result->Srid = geom->Srid;
+    return result;
+}
+
+GAIAGEO_DECLARE gaiaGeomCollPtr
+gaiaGeosMakeValid (gaiaGeomCollPtr geom, int keep_collapsed)
+{
+/* 
+/ Attempts to make an invalid geometry valid
+/ GEOS method: STRUCTURE 
+*/
+    gaiaGeomCollPtr result = NULL;
+#ifndef GEOS_USE_ONLY_R_API	/* obsolete versions non fully thread-safe */
+    GEOSGeometry *g1;
+    GEOSGeometry *g2;
+    GEOSMakeValidParams *params;
+    gaiaResetGeosMsg ();
+    if (!geom)
+	return NULL;
+    g1 = gaiaToGeos (geom);
+    params = GEOSMakeValidParams_create ();
+    GEOSMakeValidParams_setMethod (params, GEOS_MAKE_VALID_STRUCTURE);
+    GEOSMakeValidParams_setKeepCollapsed (params, keep_collapsed);
+    g2 = GEOSMakeValidWithParams (g1, params);
+    GEOSMakeValidParams_destroy (params);
+    GEOSGeom_destroy (g1);
+    if (!g2)
+	return NULL;
+    if (geom->DimensionModel == GAIA_XY_Z)
+	result = gaiaFromGeos_XYZ (g2);
+    else if (geom->DimensionModel == GAIA_XY_M)
+	result = gaiaFromGeos_XYM (g2);
+    else if (geom->DimensionModel == GAIA_XY_Z_M)
+	result = gaiaFromGeos_XYZM (g2);
+    else
+	result = gaiaFromGeos_XY (g2);
+    GEOSGeom_destroy (g2);
+    if (result == NULL)
+	return NULL;
+    result->Srid = geom->Srid;
+#else
+    if (geom == NULL)
+	geom = NULL;		/* silencing stupid compiler warnings */
+#endif
+    return result;
+}
+
+GAIAGEO_DECLARE gaiaGeomCollPtr
+gaiaGeosMakeValid_r (const void *p_cache,
+		     gaiaGeomCollPtr geom, int keep_collapsed)
+{
+/* 
+/ Attempts to make an invalid geometry valid
+/ GEOS method: STRUCTURE 
+*/
+    GEOSGeometry *g1;
+    GEOSGeometry *g2;
+    GEOSMakeValidParams *params;
+    gaiaGeomCollPtr result;
+    struct splite_internal_cache *cache =
+	(struct splite_internal_cache *) p_cache;
+    GEOSContextHandle_t handle = NULL;
+    if (cache == NULL)
+	return NULL;
+    if (cache->magic1 != SPATIALITE_CACHE_MAGIC1
+	|| cache->magic2 != SPATIALITE_CACHE_MAGIC2)
+	return NULL;
+    handle = cache->GEOS_handle;
+    if (handle == NULL)
+	return NULL;
+    gaiaResetGeosMsg_r (cache);
+    if (!geom)
+	return NULL;
+    g1 = gaiaToGeos_r (cache, geom);
+    params = GEOSMakeValidParams_create_r (handle);
+    GEOSMakeValidParams_setMethod_r (handle, params, GEOS_MAKE_VALID_STRUCTURE);
+    GEOSMakeValidParams_setKeepCollapsed_r (handle, params, keep_collapsed);
+    g2 = GEOSMakeValidWithParams_r (handle, g1, params);
+    GEOSMakeValidParams_destroy_r (handle, params);
+    GEOSGeom_destroy_r (handle, g1);
+    if (!g2)
+	return NULL;
+    if (geom->DimensionModel == GAIA_XY_Z)
+	result = gaiaFromGeos_XYZ_r (cache, g2);
+    else if (geom->DimensionModel == GAIA_XY_M)
+	result = gaiaFromGeos_XYM_r (cache, g2);
+    else if (geom->DimensionModel == GAIA_XY_Z_M)
+	result = gaiaFromGeos_XYZM_r (cache, g2);
+    else
+	result = gaiaFromGeos_XY_r (cache, g2);
+    GEOSGeom_destroy_r (handle, g2);
+    if (result == NULL)
+	return NULL;
+    result->Srid = geom->Srid;
+    return result;
+}
+
+#endif /* end GEOS_3100 conditional */
+
 static gaiaGeomCollPtr
 geom_as_lines (gaiaGeomCollPtr geom)
 {
