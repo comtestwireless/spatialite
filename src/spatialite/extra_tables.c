@@ -4880,7 +4880,7 @@ create_iso_metadata_reference (sqlite3 * sqlite)
 	"BEFORE INSERT ON 'ISO_metadata_reference'\nFOR EACH ROW BEGIN\n"
 	"SELECT RAISE(ROLLBACK, 'insert on table ISO_metadata_reference violates constraint: "
 	"timestamp must be a valid time in ISO 8601 ''yyyy-mm-ddThh:mm:ss.cccZ'' form')\n"
-	"WHERE NOT (NEW.timestamp GLOB'[1-2][0-9][0-9][0-9]-[0-1][0-9]-[1-3][0-9]T"
+	"WHERE NOT (NEW.timestamp GLOB'[1-2][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]T"
 	"[0-2][0-9]:[0-5][0-9]:[0-5][0-9].[0-9][0-9][0-9]Z' AND strftime('%s',"
 	"NEW.timestamp) NOT NULL);\nEND";
     ret = sqlite3_exec (sqlite, sql, NULL, NULL, &err_msg);
@@ -4895,7 +4895,7 @@ create_iso_metadata_reference (sqlite3 * sqlite)
 	"FOR EACH ROW BEGIN\n"
 	"SELECT RAISE(ROLLBACK, 'update on table ISO_metadata_reference violates constraint: "
 	"timestamp must be a valid time in ISO 8601 ''yyyy-mm-ddThh:mm:ss.cccZ'' form')\n"
-	"WHERE NOT (NEW.timestamp GLOB'[1-2][0-9][0-9][0-9]-[0-1][0-9]-[1-3][0-9]T"
+	"WHERE NOT (NEW.timestamp GLOB'[1-2][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]T"
 	"[0-2][0-9]:[0-5][0-9]:[0-5][0-9].[0-9][0-9][0-9]Z' AND strftime('%s',"
 	"NEW.timestamp) NOT NULL);\nEND";
     ret = sqlite3_exec (sqlite, sql, NULL, NULL, &err_msg);

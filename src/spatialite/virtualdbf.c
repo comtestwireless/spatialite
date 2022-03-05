@@ -369,7 +369,21 @@ vdbf_best_index (sqlite3_vtab * pVTab, sqlite3_index_info * pIndex)
     *str = '\0';
     for (i = 0; i < pIndex->nConstraint; i++)
       {
-	  if (pIndex->aConstraint[i].usable)
+	  if (pIndex->aConstraint[i].usable &&
+	      /* 2022-02-23 - patch for SQLite 3.38 proposed by Even Rouault */
+	      (pIndex->aConstraint[i].op == SQLITE_INDEX_CONSTRAINT_EQ ||
+	       pIndex->aConstraint[i].op == SQLITE_INDEX_CONSTRAINT_GT ||
+	       pIndex->aConstraint[i].op == SQLITE_INDEX_CONSTRAINT_LE ||
+	       pIndex->aConstraint[i].op == SQLITE_INDEX_CONSTRAINT_LT ||
+	       pIndex->aConstraint[i].op == SQLITE_INDEX_CONSTRAINT_GE ||
+	       pIndex->aConstraint[i].op == SQLITE_INDEX_CONSTRAINT_NE ||
+	       pIndex->aConstraint[i].op == SQLITE_INDEX_CONSTRAINT_ISNOTNULL ||
+	       pIndex->aConstraint[i].op == SQLITE_INDEX_CONSTRAINT_ISNULL
+#ifdef HAVE_DECL_SQLITE_INDEX_CONSTRAINT_LIKE
+	       || pIndex->aConstraint[i].op == SQLITE_INDEX_CONSTRAINT_LIKE
+#endif
+	      ))
+	      /* 2022-02-23 - end patch Even Rouault */
 	    {
 		iArg++;
 		pIndex->aConstraintUsage[i].argvIndex = iArg;

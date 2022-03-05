@@ -800,7 +800,7 @@ geojson_parser_init (geojson_parser_ptr parser, char **error_message)
 	  if (is_string)
 	    {
 		/* consuming a quoted text string */
-		if (c == '"' && prev_char != '/')
+		if (c == '"' && prev_char != '\\')
 		  {
 		      is_string = 0;	/* end string marker */
 		      if (is_first)
@@ -919,9 +919,8 @@ geojson_parser_init (geojson_parser_ptr parser, char **error_message)
 	    }
 	  if (is_second_ready)
 	    {
-		/* should be the beginning of some numeric value */
+		/* should be the beginning of some string value */
 		is_second_ready = 0;
-		is_numeric = 1;
 	    }
 	  if (is_numeric)
 	    {
@@ -977,7 +976,7 @@ geojson_get_property (const char *buf, geojson_stack_ptr stack,
 	  if (is_string)
 	    {
 		/* consuming a quoted text string */
-		if (c == '"' && prev_char != '/')
+		if (c == '"' && prev_char != '\\')
 		  {
 		      is_string = 0;	/* end string marker */
 		      if (is_first)
@@ -1651,44 +1650,21 @@ geojson_sql_create_virtual_table (geojson_parser_ptr parser, const char *table,
 	  xname = gaiaDoubleQuotedSql (xcol);
 	  free (xcol);
 	  type = "TEXT";
-	  if (col->n_null > 0)
-	    {
-		/* NULL values */
-		if (col->n_text > 0 && col->n_int == 0 && col->n_double == 0
-		    && col->n_bool == 0)
-		    type = "TEXT";
-		if (col->n_text == 0 && col->n_int > 0 && col->n_double == 0
-		    && col->n_bool == 0)
-		    type = "INTEGER";
-		if (col->n_text == 0 && (col->n_int > 0 && col->n_bool > 0)
-		    && col->n_double == 0)
-		    type = "INTEGER";
-		if (col->n_text == 0 && col->n_int == 0 && col->n_double > 0
-		    && col->n_bool == 0)
-		    type = "DOUBLE";
-		if (col->n_text == 0 && col->n_int == 0 && col->n_double == 0
-		    && col->n_bool > 0)
-		    type = "BOOLEAN";
-	    }
-	  else
-	    {
-		/* NOT NULL */
-		if (col->n_text > 0 && col->n_int == 0 && col->n_double == 0
-		    && col->n_bool == 0)
-		    type = "TEXT NOT NULL";
-		if (col->n_text == 0 && col->n_int > 0 && col->n_double == 0
-		    && col->n_bool == 0)
-		    type = "INTEGER NOT NULL";
-		if (col->n_text == 0 && (col->n_int > 0 && col->n_bool > 0)
-		    && col->n_double == 0)
-		    type = "INTEGER NOT NULL";
-		if (col->n_text == 0 && col->n_int == 0 && col->n_double > 0
-		    && col->n_bool == 0)
-		    type = "DOUBLE NOT NULL";
-		if (col->n_text == 0 && col->n_int == 0 && col->n_double == 0
-		    && col->n_bool > 0)
-		    type = "BOOLEAN NOT NULL";
-	    }
+	  if (col->n_text > 0 && col->n_int == 0 && col->n_double == 0
+	      && col->n_bool == 0)
+	      type = "TEXT";
+	  if (col->n_text == 0 && col->n_int > 0 && col->n_double == 0
+	      && col->n_bool == 0)
+	      type = "INTEGER";
+	  if (col->n_text == 0 && (col->n_int > 0 && col->n_bool > 0)
+	      && col->n_double == 0)
+	      type = "INTEGER";
+	  if (col->n_text == 0 && col->n_int == 0 && col->n_double > 0
+	      && col->n_bool == 0)
+	      type = "DOUBLE";
+	  if (col->n_text == 0 && col->n_int == 0 && col->n_double == 0
+	      && col->n_bool > 0)
+	      type = "BOOLEAN";
 	  prev = sql;
 	  sql = sqlite3_mprintf ("%s,\n\t\"%s\" %s", prev, xname, type);
 	  free (xname);
@@ -1734,44 +1710,21 @@ geojson_sql_create_table (geojson_parser_ptr parser, const char *table,
 	  xname = gaiaDoubleQuotedSql (xcol);
 	  free (xcol);
 	  type = "TEXT";
-	  if (col->n_null > 0)
-	    {
-		/* NULL values */
-		if (col->n_text > 0 && col->n_int == 0 && col->n_double == 0
-		    && col->n_bool == 0)
-		    type = "TEXT";
-		if (col->n_text == 0 && col->n_int > 0 && col->n_double == 0
-		    && col->n_bool == 0)
-		    type = "INTEGER";
-		if (col->n_text == 0 && (col->n_int > 0 && col->n_bool > 0)
-		    && col->n_double == 0)
-		    type = "INTEGER";
-		if (col->n_text == 0 && col->n_int == 0 && col->n_double > 0
-		    && col->n_bool == 0)
-		    type = "DOUBLE";
-		if (col->n_text == 0 && col->n_int == 0 && col->n_double == 0
-		    && col->n_bool > 0)
-		    type = "BOOLEAN";
-	    }
-	  else
-	    {
-		/* NOT NULL */
-		if (col->n_text > 0 && col->n_int == 0 && col->n_double == 0
-		    && col->n_bool == 0)
-		    type = "TEXT NOT NULL";
-		if (col->n_text == 0 && col->n_int > 0 && col->n_double == 0
-		    && col->n_bool == 0)
-		    type = "INTEGER NOT NULL";
-		if (col->n_text == 0 && (col->n_int > 0 && col->n_bool > 0)
-		    && col->n_double == 0)
-		    type = "INTEGER NOT NULL";
-		if (col->n_text == 0 && col->n_int == 0 && col->n_double > 0
-		    && col->n_bool == 0)
-		    type = "DOUBLE NOT NULL";
-		if (col->n_text == 0 && col->n_int == 0 && col->n_double == 0
-		    && col->n_bool > 0)
-		    type = "BOOLEAN NOT NULL";
-	    }
+	  if (col->n_text > 0 && col->n_int == 0 && col->n_double == 0
+	      && col->n_bool == 0)
+	      type = "TEXT";
+	  if (col->n_text == 0 && col->n_int > 0 && col->n_double == 0
+	      && col->n_bool == 0)
+	      type = "INTEGER";
+	  if (col->n_text == 0 && (col->n_int > 0 && col->n_bool > 0)
+	      && col->n_double == 0)
+	      type = "INTEGER";
+	  if (col->n_text == 0 && col->n_int == 0 && col->n_double > 0
+	      && col->n_bool == 0)
+	      type = "DOUBLE";
+	  if (col->n_text == 0 && col->n_int == 0 && col->n_double == 0
+	      && col->n_bool > 0)
+	      type = "BOOLEAN";
 	  prev = sql;
 	  sql = sqlite3_mprintf ("%s,\n\t\"%s\" %s", prev, xname, type);
 	  free (xname);
@@ -2721,7 +2674,21 @@ vgeojson_best_index (sqlite3_vtab * pVTab, sqlite3_index_info * pIndex)
     *str = '\0';
     for (i = 0; i < pIndex->nConstraint; i++)
       {
-	  if (pIndex->aConstraint[i].usable)
+	  if (pIndex->aConstraint[i].usable &&
+	      /* 2022-02-23 - patch for SQLite 3.38 proposed by Even Rouault */
+	      (pIndex->aConstraint[i].op == SQLITE_INDEX_CONSTRAINT_EQ ||
+	       pIndex->aConstraint[i].op == SQLITE_INDEX_CONSTRAINT_GT ||
+	       pIndex->aConstraint[i].op == SQLITE_INDEX_CONSTRAINT_LE ||
+	       pIndex->aConstraint[i].op == SQLITE_INDEX_CONSTRAINT_LT ||
+	       pIndex->aConstraint[i].op == SQLITE_INDEX_CONSTRAINT_GE ||
+	       pIndex->aConstraint[i].op == SQLITE_INDEX_CONSTRAINT_NE ||
+	       pIndex->aConstraint[i].op == SQLITE_INDEX_CONSTRAINT_ISNOTNULL ||
+	       pIndex->aConstraint[i].op == SQLITE_INDEX_CONSTRAINT_ISNULL
+#ifdef HAVE_DECL_SQLITE_INDEX_CONSTRAINT_LIKE
+	       || pIndex->aConstraint[i].op == SQLITE_INDEX_CONSTRAINT_LIKE
+#endif
+	      ))
+	      /* 2022-02-23 - end patch Even Rouault */
 	    {
 		iArg++;
 		pIndex->aConstraintUsage[i].argvIndex = iArg;
