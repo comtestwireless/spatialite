@@ -2037,6 +2037,8 @@ gaiaGeomCollDistance_r (const void *p_cache, gaiaGeomCollPtr geom1,
     return ret;
 }
 
+#ifdef GEOS_3100		/* only if GEOS_3100 support is available */
+
 GAIAGEO_DECLARE int
 gaiaGeomCollPreparedDistance (const void *p_cache, gaiaGeomCollPtr geom1,
 			      unsigned char *blob1, int size1,
@@ -2087,8 +2089,6 @@ gaiaGeomCollPreparedDistance (const void *p_cache, gaiaGeomCollPtr geom1,
 	*xdist = dist;
     return ret;
 }
-
-#ifdef GEOS_3100		/* only if GEOS_3100 support is available */
 
 GAIAGEO_DECLARE int
 gaiaGeomCollPreparedDistanceWithin (const void *p_cache, gaiaGeomCollPtr geom1,

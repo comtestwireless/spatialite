@@ -582,7 +582,7 @@ do_reload_map_configuration (sqlite3 * sqlite, sqlite3_int64 id,
 	  if (name == NULL)
 	      sqlite3_bind_null (stmt, 1);
 	  else
-	      sqlite3_bind_text (stmt, 1, name, strlen (name), SQLITE_STATIC);
+	      sqlite3_bind_text (stmt, 1, name, strlen (name), free);
 	  sqlite3_bind_blob (stmt, 2, p_blob, n_bytes, SQLITE_STATIC);
 	  sqlite3_bind_int64 (stmt, 3, id);
 	  ret = sqlite3_step (stmt);

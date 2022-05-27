@@ -52,10 +52,10 @@ libspatialite_la_LDFLAGS = -version-info 5:1:0 -no-undefined
 libspatialite_la_LIBADD += -lm
 else 
 if ANDROID
-libspatialite_la_LDFLAGS = -version-info 8:2:2
+libspatialite_la_LDFLAGS = -version-info 9:0:1
 libspatialite_la_LIBADD += -ldl -lm
 else
-libspatialite_la_LDFLAGS = -version-info 8:2:2
+libspatialite_la_LDFLAGS = -version-info 9:0:1
 libspatialite_la_LIBADD += -lpthread -ldl -lm
 endif
 endif
@@ -89,10 +89,10 @@ mod_spatialite_la_LDFLAGS = -module -avoid-version -no-undefined
 mod_spatialite_la_LIBADD += -lm
 else 
 if ANDROID
-mod_spatialite_la_LDFLAGS = -module -version-info 8:0:1
+mod_spatialite_la_LDFLAGS = -module -version-info 9:0:1
 mod_spatialite_la_LIBADD += -ldl -lm
 else
-mod_spatialite_la_LDFLAGS = -module -version-info 8:0:1
+mod_spatialite_la_LDFLAGS = -module -version-info 9:0:1
 mod_spatialite_la_LIBADD += -lpthread -ldl -lm
 endif
 endif
