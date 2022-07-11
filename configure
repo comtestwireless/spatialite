@@ -19759,7 +19759,7 @@ if test ${enable_geos3100+y}
 then :
   enableval=$enable_geos3100;
 else $as_nop
-  enable_geos370=yes
+  enable_geos3100=$enable_geos370
 fi
 
   if test x"$enable_geos3100" != "xno"; then
@@ -19836,7 +19836,7 @@ if test ${enable_geos3110+y}
 then :
   enableval=$enable_geos3110;
 else $as_nop
-  enable_geos3110=yes
+  enable_geos3110=$enable_geos3100
 fi
 
   if test x"$enable_geos3110" != "xno"; then
@@ -19898,7 +19898,7 @@ then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
 
 else $as_nop
-  as_fn_error $? "'libgeos_c' (>= v.3.11.0) is required but it doesn't seem to be installed on this system. You may need to try re-running configure with a --disable-geos3100 parameter." "$LINENO" 5
+  as_fn_error $? "'libgeos_c' (>= v.3.11.0) is required but it doesn't seem to be installed on this system. You may need to try re-running configure with a --disable-geos3110 parameter." "$LINENO" 5
 fi
 
 	  printf "%s\n" "#define GEOS_3110 1" >>confdefs.h

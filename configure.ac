@@ -395,7 +395,7 @@ if test x"$enable_geos" != "xno"; then
   #
   AC_ARG_ENABLE(geos3100, [AS_HELP_STRING(
 	  [--enable-geos3100], [enables GEOS 3.10.0 features [default=yes]])],
-	  [], [enable_geos370=yes])
+	  [], [enable_geos3100=$enable_geos370])
   if test x"$enable_geos3100" != "xno"; then
 	  AC_SEARCH_LIBS(GEOSConstrainedDelaunayTriangulation_r,geos_c,,AC_MSG_ERROR(['libgeos_c' (>= v.3.10.0) is required but it doesn't seem to be installed on this system. You may need to try re-running configure with a --disable-geos3100 parameter.]))
 	  AC_DEFINE(GEOS_3100)
@@ -406,9 +406,9 @@ if test x"$enable_geos" != "xno"; then
   #
   AC_ARG_ENABLE(geos3110, [AS_HELP_STRING(
 	  [--enable-geos3100], [enables GEOS 3.11.0 features [default=yes]])],
-	  [], [enable_geos3110=yes])
+	  [], [enable_geos3110=$enable_geos3100])
   if test x"$enable_geos3110" != "xno"; then
-	  AC_SEARCH_LIBS(GEOSHilbertCode,geos_c,,AC_MSG_ERROR(['libgeos_c' (>= v.3.11.0) is required but it doesn't seem to be installed on this system. You may need to try re-running configure with a --disable-geos3100 parameter.]))
+	  AC_SEARCH_LIBS(GEOSHilbertCode,geos_c,,AC_MSG_ERROR(['libgeos_c' (>= v.3.11.0) is required but it doesn't seem to be installed on this system. You may need to try re-running configure with a --disable-geos3110 parameter.]))
 	  AC_DEFINE(GEOS_3110)
   fi
 
