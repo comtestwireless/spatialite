@@ -965,6 +965,174 @@ gaiaGeosMakeValid_r (const void *p_cache,
 
 #endif /* end GEOS_3100 conditional */
 
+#ifdef GEOS_3110		/* only if GEOS_3110 support is available */
+
+GAIAGEO_DECLARE int
+gaiaHilbertCode (gaiaGeomCollPtr geom1, gaiaGeomCollPtr geom2, int level,
+		 unsigned int *code)
+{
+/* 
+/ Calculate the Hilbert Code of the centroid of a Geometry 
+/ relative to an Extent
+/ Level is the precision of the Hilbert Curve [1-16]
+*/
+    int result = 0;
+#ifndef GEOS_USE_ONLY_R_API	/* obsolete versions non fully thread-safe */
+    GEOSGeometry *g1;
+    GEOSGeometry *g2;
+    gaiaResetGeosMsg ();
+    if (!geom1)
+	return 0;
+    if (!geom2)
+	return 0;
+    g1 = gaiaToGeos (geom1);
+    g2 = gaiaToGeos (geom2);
+    if (level < 1)
+	level = 1;
+    if (level > 16)
+	level = 16;
+    result = GEOSHilbertCode (g1, g2, level, code);
+    GEOSGeom_destroy (g1);
+    GEOSGeom_destroy (g2);
+    return result;
+#else
+    if (geom1 == NULL)
+	geom1 = NULL;		/* silencing stupid compiler warnings */
+    if (geom2 == NULL)
+	geom2 = NULL;		/* silencing stupid compiler warnings */
+#endif
+    return result;
+}
+
+GAIAGEO_DECLARE int
+gaiaHilbertCode_r (const void *p_cache,
+		   gaiaGeomCollPtr geom1, gaiaGeomCollPtr geom2, int level,
+		   unsigned int *code)
+{
+/* 
+/ Calculate the Hilbert Code of the centroid of a Geometry 
+/ relative to an Extent
+/ Level is the precision of the Hilbert Curve [1-16] 
+*/
+    GEOSGeometry *g1;
+    GEOSGeometry *g2;
+    int result = 0;
+    struct splite_internal_cache *cache =
+	(struct splite_internal_cache *) p_cache;
+    GEOSContextHandle_t handle = NULL;
+    if (cache == NULL)
+	return 0;
+    if (cache->magic1 != SPATIALITE_CACHE_MAGIC1
+	|| cache->magic2 != SPATIALITE_CACHE_MAGIC2)
+	return 0;
+    handle = cache->GEOS_handle;
+    if (handle == NULL)
+	return 0;
+    gaiaResetGeosMsg_r (cache);
+    if (!geom1)
+	return 0;
+    if (!geom2)
+	return 0;
+    g1 = gaiaToGeos_r (cache, geom1);
+    g2 = gaiaToGeos_r (cache, geom2);
+    if (level < 1)
+	level = 1;
+    if (level > 16)
+	level = 16;
+    result = GEOSHilbertCode_r (handle, g1, g2, level, code);
+    GEOSGeom_destroy_r (handle, g1);
+    GEOSGeom_destroy_r (handle, g2);
+    return result;
+}
+
+GAIAGEO_DECLARE gaiaGeomCollPtr
+gaiaGeosConcaveHull (gaiaGeomCollPtr geom, double ratio, int allow_holes)
+{
+/* Concave Hull - the GEOS way */
+    gaiaGeomCollPtr result = NULL;
+#ifndef GEOS_USE_ONLY_R_API	/* obsolete versions non fully thread-safe */
+    GEOSGeometry *g1;
+    GEOSGeometry *g2;
+    gaiaResetGeosMsg ();
+    if (!geom)
+	return NULL;
+    if (ratio < 0.0)
+	ratio = 0.0;
+    if (ratio > 1.0)
+	ratio = 1.0;
+    g1 = gaiaToGeos (geom);
+    g2 = GEOSConcaveHull (g1, ratio, allow_holes);
+    GEOSGeom_destroy (g1);
+    if (!g2)
+	return NULL;
+    if (geom->DimensionModel == GAIA_XY_Z)
+	result = gaiaFromGeos_XYZ (g2);
+    else if (geom->DimensionModel == GAIA_XY_M)
+	result = gaiaFromGeos_XYM (g2);
+    else if (geom->DimensionModel == GAIA_XY_Z_M)
+	result = gaiaFromGeos_XYZM (g2);
+    else
+	result = gaiaFromGeos_XY (g2);
+    GEOSGeom_destroy (g2);
+    if (result == NULL)
+	return NULL;
+    result->Srid = geom->Srid;
+    return result;
+#else
+    if (geom1 == NULL)
+	geom1 = NULL;		/* silencing stupid compiler warnings */
+#endif
+    return result;
+}
+
+GAIAGEO_DECLARE gaiaGeomCollPtr
+gaiaGeosConcaveHull_r (const void *p_cache, gaiaGeomCollPtr geom, double ratio,
+		       int allow_holes)
+{
+/* Concave Hull - the GEOS way */
+    GEOSGeometry *g1;
+    GEOSGeometry *g2;
+    gaiaGeomCollPtr result;
+    struct splite_internal_cache *cache =
+	(struct splite_internal_cache *) p_cache;
+    GEOSContextHandle_t handle = NULL;
+    if (cache == NULL)
+	return NULL;
+    if (cache->magic1 != SPATIALITE_CACHE_MAGIC1
+	|| cache->magic2 != SPATIALITE_CACHE_MAGIC2)
+	return NULL;
+    handle = cache->GEOS_handle;
+    if (handle == NULL)
+	return NULL;
+    gaiaResetGeosMsg_r (cache);
+    if (!geom)
+	return NULL;
+    if (ratio < 0.0)
+	ratio = 0.0;
+    if (ratio > 1.0)
+	ratio = 1.0;
+    g1 = gaiaToGeos_r (cache, geom);
+    g2 = GEOSConcaveHull_r (handle, g1, ratio, allow_holes);
+    GEOSGeom_destroy_r (handle, g1);
+    if (!g2)
+	return NULL;
+    if (geom->DimensionModel == GAIA_XY_Z)
+	result = gaiaFromGeos_XYZ_r (cache, g2);
+    else if (geom->DimensionModel == GAIA_XY_M)
+	result = gaiaFromGeos_XYM_r (cache, g2);
+    else if (geom->DimensionModel == GAIA_XY_Z_M)
+	result = gaiaFromGeos_XYZM_r (cache, g2);
+    else
+	result = gaiaFromGeos_XY_r (cache, g2);
+    GEOSGeom_destroy_r (handle, g2);
+    if (result == NULL)
+	return NULL;
+    result->Srid = geom->Srid;
+    return result;
+}
+
+#endif /* end GEOS_3110 conditional */
+
 static gaiaGeomCollPtr
 geom_as_lines (gaiaGeomCollPtr geom)
 {

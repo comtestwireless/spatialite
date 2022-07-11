@@ -19,6 +19,9 @@
 /* Should be defined in order to enable GEOS_3100 support. */
 #define GEOS_3100 1
 
+/* Should be defined in order to enable GEOS_3110 support. */
+#define GEOS_3110 1
+
 /* Should be defined in order to enable GEOS_370 support. */
 #define GEOS_370 1
 
@@ -221,9 +224,7 @@
 /* the Version of this package. */
 #define SPATIALITE_VERSION "5.1.0-devel"
 
-/* Define to 1 if all of the C90 standard headers exist (not just the ones
-   required in a freestanding environment). This macro is provided for
-   backward compatibility; new code need not use it. */
+/* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
 
 /* Define to 1 if your <sys/time.h> declares `struct tm'. */

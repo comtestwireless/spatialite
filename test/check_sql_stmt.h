@@ -760,6 +760,18 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
       {
 	  return result;
       }
+    if (strcmp (geos_version, "0003.0011") >= 0)
+      {
+	  /* GEOS 3.11.0 changed historical beheviour for few tests */
+	  result =
+	      run_subdir_test ("sql_stmt_geos_3110", conn, load_extension, 0);
+      }
+    else
+      {
+	  /* older versions supporting historical beheviour for some tests */
+	  result =
+	      run_subdir_test ("sql_stmt_geos_non3110", conn, load_extension, 0);
+      }
     if (strcmp (geos_version, "0003.0010") >= 0)
       {
 	  /* GEOS 3.10.0 changed historical beheviour for few tests */
@@ -893,6 +905,17 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
       }
 
 #endif /* end GEOS_3100 conditional */
+
+#ifdef GEOS_3110			/* only if GEOS_3110 is supported */
+
+    result =
+	run_subdir_test ("sql_stmt_geos3110_tests", conn, load_extension, 0);
+    if (result != 0)
+      {
+	  return result;
+      }
+
+#endif /* end GEOS_3110 conditional */
 
 #ifdef ENABLE_RTTOPO		/* only if RTTOPO is supported */
     if (legacy)

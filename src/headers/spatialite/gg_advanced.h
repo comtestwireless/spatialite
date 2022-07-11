@@ -3877,7 +3877,7 @@ extern "C"
  \note you are responsible to destroy (before or after) any allocated Geometry,
  this including any Geometry returned by gaiaGeosMakeValid()
 
- \remark \b RTTOPO support required.
+ \remark \b GEOS_3100 support required.
  */
     GAIAGEO_DECLARE gaiaGeomCollPtr gaiaGeosMakeValid (gaiaGeomCollPtr geom,
 						       int keep_discarded);
@@ -3900,13 +3900,109 @@ extern "C"
  \note you are responsible to destroy (before or after) any allocated Geometry,
  this including any Geometry returned by gaiaGeosMakeValid()
 
- \remark \b RTTOPO support required.
+ \remark \b GEOS_3100 support required.
  */
     GAIAGEO_DECLARE gaiaGeomCollPtr gaiaGeosMakeValid_r (const void *p_cache,
 							 gaiaGeomCollPtr geom,
 							 int keep_discarded);
 
 #endif				/* end GEOS_3100 features */
+
+#ifndef DOXYGEN_SHOULD_IGNORE_THIS
+#ifdef GEOS_3110
+#endif
+
+/**
+ Hillbert Code
+
+ \param geom1 the input Geometry object.
+ \param geom2 the Extent
+ \param level integer precision level of the Hilbert Curve [1-16]
+ \param code pointer to an unsigned int where to store the calculated Hilbert Code
+
+ \return 1 on success, 0 on failure. 
+
+ \sa gaiaHilbertCode_r
+
+ \remark \b GEOS_3110 support required.
+ */
+    GAIAGEO_DECLARE int gaiaHilbertCode (gaiaGeomCollPtr geom1,
+					 gaiaGeomCollPtr geom2, int level,
+					 unsigned int *code);
+
+/**
+ Hillbert Code
+
+ \param p_cache a memory pointer returned by spatialite_alloc_connection() 
+ \param geom1 the input Geometry object.
+ \param geom2 the Extent
+ \param level integer precision level of the Hilbert Curve [1-16]
+ \param code pointer to an unsigned int where to store the calculated Hilbert Code
+
+ \return 1 on success, 0 on failure. 
+
+ \sa gaiaHilbertCode
+
+ \remark \b GEOS_3110 support required.
+ */
+    GAIAGEO_DECLARE int gaiaHilbertCode_r (const void *p_cache,
+					   gaiaGeomCollPtr geom1,
+					   gaiaGeomCollPtr geom2, int level,
+					   unsigned int *code);
+
+/**
+ Concave Hull (the GEOS way)
+                                            
+ \param geom pointer to input Geometry object.
+ \param ratio an index ranging from 1.0 (Convex Hull) to 0.0 (maximum concaveness).
+ \param allow_holes if FALSE any interior hole will be suppressed.
+ 
+ \return the pointer to newly created Geometry object (always of the Polygon type): 
+  NULL on failure.
+ \n NULL will be returned if any argument is invalid.
+
+ \sa gaiaGeosConcaveHull_r, gaiaFreeGeomColl, gaiaConcaveHull, gaiaConcaveHull_r
+
+ \note  This function is directly based on GEOSConcaveHull().
+
+ \note you are responsible to destroy (before or after) any allocated Geometry,
+ this including any Geometry returned by gaiaGeosConcaveHull()\n
+ not reentrant and thread unsafe.
+
+ \remark \b GEOS_3110 support required.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr gaiaGeosConcaveHull (gaiaGeomCollPtr geom,
+							 double ratio,
+							 int allow_holes);
+
+/**
+ Concave Hull (the GEOS way)
+                                       
+ \param p_cache a memory pointer returned by spatialite_alloc_connection()         
+ \param geom pointer to input Geometry object.
+ \param ratio an index ranging from 1.0 (Convex Hull) to 0.0 (maximum concaveness).
+ \param allow_holes if FALSE any interior hole will be suppressed.
+ 
+ \return the pointer to newly created Geometry object (always of the Polygon type): 
+  NULL on failure.
+ \n NULL will be returned if any argument is invalid.
+
+ \sa gaiaGeosConcaveHull, gaiaFreeGeomColl, gaiaConcaveHull, gaiaConcaveHull_r
+
+ \note This function is directly based on GEOSConcaveHull_r().
+
+ \note you are responsible to destroy (before or after) any allocated Geometry,
+ this including any Geometry returned by gaiaGeosConcaveHull_r()\n
+ reentrant and thread-safe.
+
+ \remark \b GEOS_3110 support required.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr gaiaGeosConcaveHull_r (const void *p_cache,
+							   gaiaGeomCollPtr geom,
+							   double ratio,
+							   int allow_holes);
+
+#endif				/* end GEOS_3110 features */
 
 #ifndef DOXYGEN_SHOULD_IGNORE_THIS
 #ifdef GEOS_TRUNK
@@ -4035,7 +4131,7 @@ extern "C"
   NULL on failure.
  \n NULL will be returned if any argument is invalid.
 
- \sa gaiaConcaveHull_r, gaiaFreeGeomColl, gaiaDelaunayTriangulation
+ \sa gaiaConcaveHull_r, gaiaFreeGeomColl, gaiaDelaunayTriangulation, gaiaGeosConcaveHull, gaiaGeosConcaveHull_r
 
  \note This function will first create the Delauany Triangulation corresponding
   to input Geometry, determining at the same time the \b standard \b deviation
@@ -4069,7 +4165,7 @@ extern "C"
   NULL on failure.
  \n NULL will be returned if any argument is invalid.
 
- \sa gaiaConcaveHull, gaiaFreeGeomColl, gaiaDelaunayTriangulation
+ \sa gaiaConcaveHull, gaiaFreeGeomColl, gaiaDelaunayTriangulation, gaiaGeosConcaveHull, gaiaGeosConcaveHull_r
 
  \note This function will first create the Delauany Triangulation corresponding
   to input Geometry, determining at the same time the \b standard \b deviation

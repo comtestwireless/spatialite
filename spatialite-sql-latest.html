@@ -130,6 +130,9 @@
 			<tr><td><b>HasGeos3100</b></td>
 				<td>HasGeos3100( void ) : <i>Boolean</i></td>
 				<td colspan="3">TRUE if the underlying library was built enabling <b>GEOS3100</b></td></tr>
+			<tr><td><b>HasGeos3110</b></td>
+				<td>HasGeos3110( void ) : <i>Boolean</i></td>
+				<td colspan="3">TRUE if the underlying library was built enabling <b>GEOS3110</b></td></tr>
 			<tr><td><b>HasGeosTrunk</b></td>
 				<td>HasGeosTrunk( void ) : <i>Boolean</i></td>
 				<td colspan="3">TRUE if the underlying library was built enabling <b>GEOSTRUNK</b></td></tr>
@@ -2856,6 +2859,34 @@ This function only supports Long/Lat coordinates, and will return NULL for any p
 					otherwise they'll be suppressed (default is <b>TRUE</b>)<br>
 					NULL is returned on failure.<hr>
 					<i>Note</i>: this function is similar to <b>ST_MakeValid()</b> but is based on a completely different algorithm, so results could be very different.</td></tr>
+			<tr><td><b>HilbertCode</b></td>
+				<td>HilbertCode( geom <i>Geometry</i> , extent <i>Geometry</i> , level <i>integer</i>] ) : <i>Integer</i></td>
+				<td></td>
+				<td align="center" bgcolor="#d0f0f0">GEOS-3110</td>
+				<td>Calculate the <a href="https://en.wikipedia.org/wiki/Hilbert_curve">Hilbert Code</a> of the centroid of a Geometry relative to an Extent.<br>
+					This allows sorting geometries in a deterministic way, such that similar Hilbert Codes are likely to be near each other in a two-dimensional space.
+					<ul>
+						<li><b>geom</b> is the Geometry to be evaluated.</li>
+						<li><b>extent</b> is the reference Extent.</li>
+						<li><b>level</b> is the level of precision of the Hilbert Curve, ranging from <b>1</b> to <b>16</b></li>
+					</ul>
+					NULL is returned on failure.</td></tr>
+			<tr><td><b>GeosConcaveHull</b></td>
+				<td>GeosConcaveHull( geom <i>Geometry</i> , ratio <i>Double precision</i> [ , allow_holes <i>Boolean</i> ] ) : <i>Geometry</i></td>
+				<td></td>
+				<td align="center" bgcolor="#d0f0f0">GEOS-3110</td>
+				<td>return a geometric object representing the ConcaveHull corresponding to the input Geometry<hr>
+					The input Geometry could have any arbitrary type; eventually all Linestring's / Polygon's vertices will be dissolved into Points, so to implicitly always get a MultiPoint.<br>
+					The returned Geometry will always be of the <b>Polygon</b> or <b>MultiPolygon</b> type.<br>
+                                        <ul>
+											<li><b>ratio</b> is expected to range from <b>1.0</b> to <b>0.0</b>
+											<ul>
+												<li>a value of <b>1.0</b> will produce a Convex Hull.</li>
+												<li>a value of <b>0.0</b> will produce a Hull with maximum concaveness.</li>
+											</ul></li>
+                                        </ul>
+                                        By setting the optional <b>allow_holes</b> argument to <b>TRUE</b> the polygonal output may contain <i>interior holes</i> (by default it's set to <b>FALSE</b>).<br>
+					NULL is returned on failure.</td></tr>
 			<tr><td colspan="5" align="center" bgcolor="#f0f0c0">
 				<h3><a name="p14d">SQL functions that implement spatial operators<br>[RTTOPO features]</a></h3></td></tr>
 			<tr><th bgcolor="#d0d0d0">Function</th>

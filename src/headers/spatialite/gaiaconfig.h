@@ -22,6 +22,9 @@
 /* Should be defined in order to enable GEOS_3100 support. */
 #define GEOS_3100 1
 
+/* Should be defined in order to enable GEOS_3110 support. */
+#define GEOS_3110 1
+
 /* Should be defined in order to enable GEOS_ADVANCED support. */
 #define GEOS_ADVANCED 1
 

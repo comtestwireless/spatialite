@@ -673,8 +673,7 @@ fnct_has_geos_advanced (sqlite3_context * context, int argc,
 }
 
 static void
-fnct_has_geos_3100 (sqlite3_context * context, int argc,
-			sqlite3_value ** argv)
+fnct_has_geos_3100 (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
 /* SQL function:
 / HasGeos3100()
@@ -683,6 +682,22 @@ fnct_has_geos_3100 (sqlite3_context * context, int argc,
 */
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
 #ifdef GEOS_3100		/* GEOS-3100 is supported */
+    sqlite3_result_int (context, 1);
+#else
+    sqlite3_result_int (context, 0);
+#endif
+}
+
+static void
+fnct_has_geos_3110 (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ HasGeos3110()
+/
+/ return 1 if built including GEOS-3110; otherwise 0
+*/
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+#ifdef GEOS_3110		/* GEOS-3100 is supported */
     sqlite3_result_int (context, 1);
 #else
     sqlite3_result_int (context, 0);
@@ -29420,8 +29435,8 @@ fnct_ConstrainedDelaunayTriangulation (sqlite3_context * context, int argc,
 		gaiaFreeGeomColl (result);
 	    }
       }
-      if (geo != NULL)
-    gaiaFreeGeomColl (geo);
+    if (geo != NULL)
+	gaiaFreeGeomColl (geo);
 }
 
 static void
@@ -29497,6 +29512,187 @@ fnct_GeosMakeValid (sqlite3_context * context, int argc, sqlite3_value ** argv)
 }
 
 #endif /* end GEOS_3100 conditional */
+
+#ifdef GEOS_3110		/* only if GEOS_3100 support is available */
+
+static void
+fnct_HilbertCode (sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+/* SQL function:
+/ HilbertCode(BLOBencoded geometry, BLOBencoded extent, int level)
+/
+/ Calculate the Hilbert Code of the centroid of a Geometry
+/ realtive to an extent.
+/ Level is the precision of Hilbert Curve [1-16]
+/ NULL is returned for invalid arguments
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    gaiaGeomCollPtr geo1 = NULL;
+    gaiaGeomCollPtr geo2 = NULL;
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    int level = 0;
+    unsigned int code;
+    int result;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    void *data = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (sqlite3_value_type (argv[1]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (sqlite3_value_type (argv[2]) == SQLITE_INTEGER)
+	level = sqlite3_value_int (argv[2]);
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geo1 =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (geo1 == NULL)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[1]);
+    n_bytes = sqlite3_value_bytes (argv[1]);
+    geo2 =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (geo2 == NULL)
+      {
+	  sqlite3_result_null (context);
+	  gaiaFreeGeomColl (geo1);
+	  return;
+      }
+
+    if (level < 1)
+	level = 1;
+    if (level > 16)
+	level = 16;
+
+    if (data != NULL)
+	result = gaiaHilbertCode_r (data, geo1, geo2, level, &code);
+    else
+	result = gaiaHilbertCode (geo1, geo2, level, &code);
+    if (result == 0)
+	sqlite3_result_null (context);
+    else
+	sqlite3_result_int64 (context, code);
+
+    gaiaFreeGeomColl (geo1);
+    gaiaFreeGeomColl (geo2);
+}
+
+static void
+fnct_GeosConcaveHull (sqlite3_context * context, int argc,
+		      sqlite3_value ** argv)
+{
+/* SQL function:
+/ GeosConcaveHull(BLOBencoded geometry, DOUBLE ratio)
+/ GeosConcaveHull(BLOBencoded geometry, DOUBLE ratio, BOOL allow_holes)
+/
+/ Attempts to build a ConcaveHull using all points/vertices 
+/ found in the input geometry (the GEOS way).
+/ NULL is returned for invalid arguments
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    gaiaGeomCollPtr geo = NULL;
+    gaiaGeomCollPtr result;
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    int tiny_point = 0;
+    double ratio;
+    int allow_holes = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+	  tiny_point = cache->tinyPointEnabled;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (sqlite3_value_type (argv[1]) == SQLITE_INTEGER)
+      {
+	  int intval = sqlite3_value_int (argv[1]);
+	  ratio = intval;
+      }
+    else if (sqlite3_value_type (argv[1]) == SQLITE_FLOAT)
+	ratio = sqlite3_value_double (argv[1]);
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (argc == 3)
+      {
+	  if (sqlite3_value_type (argv[2]) == SQLITE_INTEGER)
+	      allow_holes = sqlite3_value_int (argv[2]);
+	  else
+	    {
+		sqlite3_result_null (context);
+		return;
+	    }
+      }
+    if (ratio < 0.0)
+	ratio = 0.0;
+    if (ratio > 1.0)
+	ratio = 1.0;
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geo =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (geo == NULL)
+	sqlite3_result_null (context);
+    else
+      {
+	  void *data = sqlite3_user_data (context);
+	  if (data != NULL)
+	      result = gaiaGeosConcaveHull_r (data, geo, ratio, allow_holes);
+	  else
+	      result = gaiaGeosConcaveHull (geo, ratio, allow_holes);
+	  if (result == NULL)
+	      sqlite3_result_null (context);
+	  else
+	    {
+		/* builds the BLOB geometry to be returned */
+		int len;
+		unsigned char *p_result = NULL;
+		result->Srid = geo->Srid;
+		gaiaToSpatiaLiteBlobWkbEx2 (result, &p_result, &len,
+					    gpkg_mode, tiny_point);
+		sqlite3_result_blob (context, p_result, len, free);
+		gaiaFreeGeomColl (result);
+	    }
+      }
+    gaiaFreeGeomColl (geo);
+}
+
+#endif /* end GEOS_3110 conditional */
+
 
 static void
 fnct_DistanceWithin (sqlite3_context * context, int argc, sqlite3_value ** argv)
@@ -29589,10 +29785,10 @@ fnct_DistanceWithin (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	    }
 	  sqlite3_result_int (context, result);
       }
-      if (geo1 != NULL)
-    gaiaFreeGeomColl (geo1);
-      if (geo2 != NULL)
-    gaiaFreeGeomColl (geo2);
+    if (geo1 != NULL)
+	gaiaFreeGeomColl (geo1);
+    if (geo2 != NULL)
+	gaiaFreeGeomColl (geo2);
 }
 
 static void
@@ -48929,6 +49125,9 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "HasGeos3100", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_has_geos_3100, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "HasGeos3110", 0,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
+				fnct_has_geos_3110, 0, 0, 0);
     sqlite3_create_function_v2 (db, "HasGeosTrunk", 0,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, 0,
 				fnct_has_geos_trunk, 0, 0, 0);
@@ -52761,6 +52960,18 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_GeosMakeValid, 0, 0, 0);
 #endif /* end GEOS_3100 conditional */
+
+#ifdef GEOS_3110		/* only if GEOS_3110 support is available */
+    sqlite3_create_function_v2 (db, "HilbertCode", 3,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_HilbertCode, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "GeosConcaveHull", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_GeosConcaveHull, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "GeosConcaveHull", 3,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_GeosConcaveHull, 0, 0, 0);
+#endif /* end GEOS_3110 conditional */
 
     sqlite3_create_function_v2 (db, "DistanceWithin", 3,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
