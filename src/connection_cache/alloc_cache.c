@@ -488,6 +488,7 @@ spatialite_alloc_reentrant ()
     const char *proj_db_path = NULL;
 #ifdef _WIN32
     char *win_prefix = NULL;
+    int is_proj_data = 0;
 #endif
 #endif
 
@@ -513,8 +514,38 @@ spatialite_alloc_reentrant ()
 #ifdef PROJ_NEW			/* supporting new PROJ.6 */
     cache->PROJ_handle = proj_context_create ();
     proj_log_func (cache->PROJ_handle, cache, gaia_proj_log_funct);	/* installing an error handler routine */
-    if (getenv ("PROJ_LIB") != NULL)
-	proj_db = sqlite3_mprintf ("%s/proj.db", getenv ("PROJ_LIB"));
+
+    /* 
+     * older versions of PROJ supported the env-var named PROJ_LIB
+     * starting since version 9.1.0 this env-var will be renamed as PROJ_DATA;
+     *          PROJ_LIB will continue to be supported as well but it will
+     *          become deprecated.
+     * and finally, starting since v.9.10.0 PROJ_LIB will be no longer supported
+     * 
+     * ======================================================================
+     * 
+     * the following patch will accommodate for all this
+     * (sandro: 2022-08-05)
+     *  
+     */
+    if (getenv ("PROJ_DATA") != NULL)
+      {
+	  /* searching first for PROJ_DATA */
+	  proj_db = sqlite3_mprintf ("%s/proj.db", getenv ("PROJ_DATA"));
+#ifdef _WIN32
+	  is_proj_data = 1;
+#endif
+      }
+    else if (getenv ("PROJ_LIB") != NULL)
+      {
+	  /* second chance: searching for PROJ_LIB */
+	  proj_db = sqlite3_mprintf ("%s/proj.db", getenv ("PROJ_LIB"));
+#ifdef _WIN32
+	  is_proj_data = 0;
+#endif
+      }
+    /* end sandro 2022-08-05 */
+
     if (proj_db != NULL)
       {
 	  proj_context_set_database_path (cache->PROJ_handle, proj_db,
@@ -589,12 +620,22 @@ spatialite_alloc_reentrant ()
 #endif
   skip_win:
     proj_db_path = proj_context_get_database_path (cache->PROJ_handle);
-#ifdef _WIN32			/* only for Windows - setting PROJ_LIB */
+#ifdef _WIN32			/* only for Windows - setting PROJ_LIB or PROJ_DATA */
     if (proj_set_ext_var && win_prefix && proj_db_path)
       {
-	  char *proj_lib = sqlite3_mprintf ("PROJ_LIB=%s", win_prefix);
-	  _putenv (proj_lib);
-	  sqlite3_free (proj_lib);
+	  /*
+	   * completing the patch for PROJ_LIB vs PROJ_DATA
+	   * 
+	   * (sandro: 2022-08-05)
+	   */
+	  char *proj_envvar;
+	  if (is_proj_data)
+	      proj_envvar = sqlite3_mprintf ("PROJ_DATA=%s", win_prefix);
+	  else
+	      proj_envvar = sqlite3_mprintf ("PROJ_LIB=%s", win_prefix);
+	  _putenv (proj_envvar);
+	  sqlite3_free (proj_envvar);
+	  /* end sandro 2022-08-05 */
       }
     if (win_prefix != NULL)
 	sqlite3_free (win_prefix);
