@@ -25176,11 +25176,10 @@ length_common (const void *p_cache, sqlite3_context * context, int argc,
 					l = gaiaGeodesicTotalLength (a,
 								     b,
 								     rf,
-								     line->DimensionModel,
 								     line->
-								     Coords,
-								     line->
-								     Points);
+								     DimensionModel,
+								     line->Coords,
+								     line->Points);
 					if (l < 0.0)
 					  {
 					      length = -1.0;
@@ -25203,12 +25202,9 @@ length_common (const void *p_cache, sqlite3_context * context, int argc,
 					      l = gaiaGeodesicTotalLength (a,
 									   b,
 									   rf,
-									   ring->
-									   DimensionModel,
-									   ring->
-									   Coords,
-									   ring->
-									   Points);
+									   ring->DimensionModel,
+									   ring->Coords,
+									   ring->Points);
 					      if (l < 0.0)
 						{
 						    length = -1.0;
@@ -26368,11 +26364,11 @@ fnct_Circularity (sqlite3_context * context, int argc, sqlite3_value ** argv)
 		  {
 #ifdef ENABLE_RTTOPO		/* only if RTTOPO is enabled */
 		      perimeter = gaiaGeodesicTotalLength (a, b, rf,
-							   pg->Exterior->
-							   DimensionModel,
+							   pg->
+							   Exterior->DimensionModel,
 							   pg->Exterior->Coords,
-							   pg->Exterior->
-							   Points);
+							   pg->
+							   Exterior->Points);
 		      if (perimeter < 0.0)
 			  ret = 0;
 		      else
@@ -40129,13 +40125,15 @@ fnct_ImportDBF (sqlite3_context * context, int argc, sqlite3_value ** argv)
     charset = (char *) sqlite3_value_text (argv[2]);
     if (argc > 3)
       {
-	  if (sqlite3_value_type (argv[3]) != SQLITE_TEXT)
+	  if (sqlite3_value_type (argv[3]) == SQLITE_TEXT)
+	      pk_column = (char *) sqlite3_value_text (argv[3]);
+	  else if (sqlite3_value_type (argv[3]) == SQLITE_NULL)
+	      ;
+	  else
 	    {
 		sqlite3_result_null (context);
 		return;
 	    }
-	  else
-	      pk_column = (char *) sqlite3_value_text (argv[3]);
       }
     if (argc > 4)
       {
@@ -40337,33 +40335,39 @@ fnct_ImportSHP (sqlite3_context * context, int argc, sqlite3_value ** argv)
       }
     if (argc > 4)
       {
-	  if (sqlite3_value_type (argv[4]) != SQLITE_TEXT)
+	  if (sqlite3_value_type (argv[4]) == SQLITE_TEXT)
+	      geo_column = (char *) sqlite3_value_text (argv[4]);
+	  else if (sqlite3_value_type (argv[4]) == SQLITE_NULL)
+	      ;
+	  else
 	    {
 		sqlite3_result_null (context);
 		return;
 	    }
-	  else
-	      geo_column = (char *) sqlite3_value_text (argv[4]);
       }
     if (argc > 5)
       {
-	  if (sqlite3_value_type (argv[5]) != SQLITE_TEXT)
+	  if (sqlite3_value_type (argv[5]) == SQLITE_TEXT)
+	      pk_column = (char *) sqlite3_value_text (argv[5]);
+	  else if (sqlite3_value_type (argv[5]) == SQLITE_NULL)
+	      ;
+	  else
 	    {
 		sqlite3_result_null (context);
 		return;
 	    }
-	  else
-	      pk_column = (char *) sqlite3_value_text (argv[5]);
       }
     if (argc > 6)
       {
-	  if (sqlite3_value_type (argv[6]) != SQLITE_TEXT)
+	  if (sqlite3_value_type (argv[6]) == SQLITE_TEXT)
+	      geom_type = (char *) sqlite3_value_text (argv[6]);
+	  else if (sqlite3_value_type (argv[6]) == SQLITE_NULL)
+	      ;
+	  else
 	    {
 		sqlite3_result_null (context);
 		return;
 	    }
-	  else
-	      geom_type = (char *) sqlite3_value_text (argv[6]);
       }
     if (argc > 7)
       {
@@ -41472,8 +41476,7 @@ fnct_GeodesicLength (sqlite3_context * context, int argc, sqlite3_value ** argv)
 				  /* interior Rings */
 				  ring = polyg->Interiors + ib;
 				  l = gaiaGeodesicTotalLength (a, b, rf,
-							       ring->
-							       DimensionModel,
+							       ring->DimensionModel,
 							       ring->Coords,
 							       ring->Points);
 				  if (l < 0.0)
@@ -41567,8 +41570,7 @@ fnct_GreatCircleLength (sqlite3_context * context, int argc,
 			    ring = polyg->Exterior;
 			    length +=
 				gaiaGreatCircleTotalLength (a, b,
-							    ring->
-							    DimensionModel,
+							    ring->DimensionModel,
 							    ring->Coords,
 							    ring->Points);
 			    for (ib = 0; ib < polyg->NumInteriors; ib++)
@@ -41577,8 +41579,7 @@ fnct_GreatCircleLength (sqlite3_context * context, int argc,
 				  ring = polyg->Interiors + ib;
 				  length +=
 				      gaiaGreatCircleTotalLength (a, b,
-								  ring->
-								  DimensionModel,
+								  ring->DimensionModel,
 								  ring->Coords,
 								  ring->Points);
 			      }

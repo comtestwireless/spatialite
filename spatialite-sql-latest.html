@@ -6341,12 +6341,12 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				<li>Optional arguments:
 				<ul>
 					<li><b>srid</b> EPSG SRID value; <i>-1</i> by default.</li>
-					<li><b>geom_column</b> name to assigned to the Geometry column; <i>Geometry</i> by default.</li>
+					<li><b>geom_column</b> name to assigned to the Geometry column; <i>Geometry</i> by default (it can legitimately be <b>NULL</b>).</li>
 					<li><b>pk_column</b> name of a DBF column to be used in the Primary Key role; an <i>INTEGER AUTOINCREMENT</i> 
-					PK will be created by default.</li>
+					PK will be created by default (it can legitimately be <b>NULL</b>).</li>
 					<li><b>geometry_type</b> one between: <i>AUTO</i>, <i>POINT|Z|M|ZM</i>, <i>LINESTRING|Z|M|ZM</i>,
 						<i>POLYGON|Z|M|ZM</i>, <i>MULTIPOINT|Z|M|ZM</i>, <i>LINESTRING|Z|M|ZM</i>, <i>MULTIPOLYGON|Z|M|ZM</i>;
-						 by default <i>AUTO</i>.</li>
+						 by default <i>AUTO</i> (it can legitimately be <b>NULL</b>).</li>
 					<li><b>coerce2D</b> boolean flag: casting to 2D or not; <i>0</i> by default.</li>
 					<li><b>compressed</b> boolean flag; compressed geometries or not; <i>0</i> by default.</li>
 					<li><b>spatial_index</b> boolean flag: immediately building a Spatial Index or not; <i>0</i> by default.</li>
@@ -6363,7 +6363,7 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				</ul></li>
 				</ul>
 				<hr>
-				Will return the total number of imported rows.<br> <b>NULL</b> will be returned on invalid arguments.<hr>
+				Will return the total number of imported rows.<br> <b>NULL</b> will be returned on invalid arguments or on any other error condition.<hr>
                 <u>Please note well</u>: this SQL function opens the door to many potential security issues, and thus is always <i>disabled by default</i>.<br>
                 Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to enable this function.</td></tr>
 			<tr><td><b>ImportZipSHP</b></td>
@@ -6428,7 +6428,7 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				<li>Optional arguments:
 				<ul>
 					<li><b>pk_column</b> name of a DBF column to be used in the Primary Key role; an <i>INTEGER AUTOINCREMENT</i> 
-					PK will be created by default.</li>
+					PK will be created by default (it can legitimately be <b>NULL</b>).</li>
 					<li><b>text_dates</b> boolean flag: interpreting DBF dates as plaintext or not: <i>0</i> by default
 					(i.e. as <i>Julian Day</i>).</li>
 					<li><b>colname_case</b> one between:<ul>
@@ -6439,7 +6439,7 @@ the return type is Integer, with a return value of 1 for TRUE, 0 for FALSE</td><
 				</ul></li>
 				</ul>
 				<hr>
-				Will return the total number of imported rows.<br> <b>NULL</b> will be returned on invalid arguments.<hr>
+				Will return the total number of imported rows.<br> <b>NULL</b> will be returned on invalid arguments or on any other error condition.<hr>
                 <u>Please note well</u>: this SQL function opens the door to many potential security issues, and thus is always <i>disabled by default</i>.<br>
                 Explicitly setting the environment variable <b>SPATIALITE_SECURITY=relaxed</b> is absolutely required in order to enable this function.</td></tr>
 			<tr><td><b>ImportZipDBF</b></td>

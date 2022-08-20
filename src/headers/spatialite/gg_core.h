@@ -1281,7 +1281,7 @@ extern "C"
 
  \param geom pointer to Geometry object
 
- \return 0 if the Geometry is empty: otherwise any other different value.
+ \return 0 if the Geometry is not empty: otherwise any other different value.
 
  \note an empty Geometry is a Geometry not containing any elementary
  item: i.e. no Points, no Linestrings and no Polygons at all.
