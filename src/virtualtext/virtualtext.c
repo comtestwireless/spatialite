@@ -1195,7 +1195,7 @@ vrttxt_is_scientific_double (const char *value, char decimal_separator)
 	    }
 	  else if ((*p >= 'A' && *p <= 'Z') || (*p >= 'a' && *p <= 'z'))
 	    {
-		if (*p == 'E' || *p == 'e')
+		if ((*p == 'E' || *p == 'e') && digit2 > 0)
 		    exp++;
 		else
 		    invalid++;
@@ -1214,6 +1214,8 @@ vrttxt_is_scientific_double (const char *value, char decimal_separator)
 		else if (points)
 		    digit2++;
 	    }
+	  else
+	      invalid++;
 	  p++;
       }
     if (digit2 >= 0 && exp == 1 && (sign == 0 || sign == 1) && digit3
