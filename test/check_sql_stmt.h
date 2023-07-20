@@ -703,11 +703,18 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
     if (!legacy)
       {
 	  int is_720_or_later = 0;
+	  int is_900_or_later = 0;
 	  if (PROJ_VERSION_MAJOR > 7)
 	      is_720_or_later = 1;
 	  else if (PROJ_VERSION_MAJOR == 7 && PROJ_VERSION_MINOR >= 2)
 	      is_720_or_later = 1;
-	  if (is_720_or_later)
+	  if (PROJ_VERSION_MAJOR >= 9)
+	      is_900_or_later = 1;
+	  if (is_900_or_later)
+	      result =
+		  run_subdir_test ("sql_stmt_proj900_tests", conn,
+				   load_extension, 0);
+	  else if (is_720_or_later)
 	      result =
 		  run_subdir_test ("sql_stmt_proj720_tests", conn,
 				   load_extension, 0);

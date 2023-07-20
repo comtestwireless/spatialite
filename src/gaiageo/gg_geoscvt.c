@@ -1405,6 +1405,8 @@ fromGeosGeometry (GEOSContextHandle_t handle, const GEOSGeometry * geos,
     else
 	type = GEOSGeomTypeId (geos);
 #endif
+	if (type < 0)
+	return NULL;
     switch (type)
       {
       case GEOS_POINT:

@@ -167,6 +167,7 @@ AC_CONFIG_FILES([Makefile \
 		test/sql_stmt_proj493_tests/Makefile \
 		test/sql_stmt_proj600_tests/Makefile \
 		test/sql_stmt_proj720_tests/Makefile \
+		test/sql_stmt_proj900_tests/Makefile \
 		test/sql_stmt_proj600security_tests/Makefile \
 		test/sql_stmt_mathsql_tests/Makefile \
 		test/sql_stmt_rtgeom_tests/Makefile \

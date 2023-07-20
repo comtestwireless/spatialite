@@ -2920,6 +2920,285 @@ extern "C"
 						      double *dist);
 
 /**
+ Calculates the minimum rotated rectangular POLYGON which encloses the input geometry
+
+ \param geom pointer to input Geometry object
+
+ \return NULL on failure: the minimum rotated rectangle on success.
+
+ \sa gaiaMinimumRotatedRectangle_r
+
+ \note not reentrant and thread unsafe.
+
+ \remark \b GEOS-ADVANCED support required.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr gaiaMinimumRotatedRectangle (gaiaGeomCollPtr
+								 geom);
+
+/**
+ Calculates the minimum rotated rectangular POLYGON which encloses the input geometry
+
+ \param p_cache a memory pointer returned by spatialite_alloc_connection()
+ \param geom pointer to input Geometry object
+
+ \return NULL on failure: the minimum rotated rectangle on success.
+
+ \sa gaiaMinimumRotatedRectangle
+
+ \note reentrant and thread-safe.
+
+ \remark \b GEOS-ADVANCED support required.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr gaiaMinimumRotatedRectangle_r (const void
+								   *p_cache,
+								   gaiaGeomCollPtr
+								   geom);
+
+/**
+ Constructs the Maximum Inscribed Circle for a  polygonal geometry, up to a specified tolerance.
+
+ \param geom pointer to input Geometry object
+ \param tolerance approximation factor
+
+ \return NULL on failure: the maximum inscribed circle on success.
+
+ \sa gaiaMaximumInscribedCircle_r
+
+ \note not reentrant and thread unsafe.
+
+ \remark \b GEOS-ADVANCED support required.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr gaiaMaximumInscribedCircle (gaiaGeomCollPtr
+								geom,
+								double
+								tolerance);
+
+/**
+ Constructs the Maximum Inscribed Circle for a  polygonal geometry, up to a specified tolerance.
+
+ \param p_cache a memory pointer returned by spatialite_alloc_connection()
+ \param geom pointer to input Geometry object
+ \param tolerance approximation factor
+
+ \return 0 on failure: the maximum inscribed circle on success.
+
+ \sa gaiaMaximumInscribedCircle
+
+ \note reentrant and thread-safe.
+
+ \remark \b GEOS-ADVANCED support required.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr gaiaMaximumInscribedCircle_r (const void
+								  *p_cache,
+								  gaiaGeomCollPtr
+								  geom,
+								  double
+								  tolerance);
+
+/**
+ Constructs the Minimum Bounding Circle for a  generic geometry.
+
+ \param geom pointer to input Geometry object
+ \param radius on completion this variable will contain the radius of the circle
+ \param center on completion this variable will contain the cntre of the circle
+ (POINT Geometry)
+
+ \return NULL on failure: the minimum bounding circle on success.
+
+ \sa gaiaMinimumBoundingCircle_r
+
+ \note not reentrant and thread unsafe.
+
+ \note you are responsible to destroy (before or after) any allocated Geometry,
+ this including the Geometry returned by gaiaMinumumBoundingCircle() and the
+ POINT Geometry corresponding to the Center
+
+ \remark \b GEOS-ADVANCED support required.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr gaiaMinimumBoundingCircle (gaiaGeomCollPtr
+							       geom,
+							       double *radius,
+							       gaiaGeomCollPtr *
+							       center);
+
+/**
+ Constructs the Minimum Bounding Circle for a generic geometry.
+
+ \param p_cache a memory pointer returned by spatialite_alloc_connection()
+ \param geom pointer to input Geometry object
+ \param radius on completion this variable will contain the radius of the circle
+ \param center on completion this variable will contain the cntre of the circle
+ (POINT Geometry)
+
+ \return NULL on failure: the minimum bounding circle on success.
+
+ \sa gaiaMinimumBoundingCircle
+
+ \note reentrant and thread-safe.
+
+ \note you are responsible to destroy (before or after) any allocated Geometry,
+ this including the Geometry returned by gaiaMinumumBoundingCircle() and the
+ POINT Geometry corresponding to the Center
+
+ \remark \b GEOS-ADVANCED support required.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr gaiaMinimumBoundingCircle_r (const void
+								 *p_cache,
+								 gaiaGeomCollPtr
+								 geom,
+								 double *radius,
+								 gaiaGeomCollPtr
+								 * center);
+
+/**
+ Constructs the Largest Empty Circle for a set of obstacle geometries, up to a specified tolerance.
+
+ \param geom pointer to input Geometry object
+ \param tolerance approximation factor
+
+ \return NULL on failure: the maximum inscribed circle on success.
+
+ \sa gaiaLargestEmptyCircle_r
+
+ \note not reentrant and thread unsafe.
+
+ \remark \b GEOS-ADVANCED support required.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr gaiaLargestEmptyCircle (gaiaGeomCollPtr
+							    geom,
+							    gaiaGeomCollPtr
+							    boundary,
+							    double tolerance);
+
+/**
+ Constructs the Largest Empty Circle for a set of obstacle geometries, up to a specified tolerance.
+
+ \param p_cache a memory pointer returned by spatialite_alloc_connection()
+ \param geom pointer to input Geometry object
+ \param tolerance approximation factor
+
+ \return NULL on failure: the maximum inscribed circle on success.
+
+ \sa gaiaLargestEmptyCircle
+
+ \note reentrant and thread-safe.
+
+ \remark \b GEOS-ADVANCED support required.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr gaiaLargestEmptyCircle_r (const void
+							      *p_cache,
+							      gaiaGeomCollPtr
+							      geom,
+							      gaiaGeomCollPtr
+							      boundary,
+							      double tolerance);
+
+/**
+ Returns a LINESTRING geometry which represents the minimum diameter of the geometry
+
+ \param geom pointer to input Geometry object
+
+ \return NULL on failure: the minimum width Linestring on success.
+
+ \sa gaiaMinimumWidth_r
+
+ \note not reentrant and thread unsafe.
+
+ \remark \b GEOS-ADVANCED support required.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr gaiaMinimumWidth (gaiaGeomCollPtr geom);
+
+/**
+ Returns a LINESTRING geometry which represents the minimum diameter of the geometry
+
+ \param p_cache a memory pointer returned by spatialite_alloc_connection()
+ \param geom pointer to input Geometry object
+
+ \return NULL on failure: the minimum width Linestring on success.
+
+ \sa gaiaMinimumWidth
+
+ \note reentrant and thread-safe.
+
+ \remark \b GEOS-ADVANCED support required.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr gaiaMinimumWidth_r (const void *p_cache,
+							gaiaGeomCollPtr geom);
+
+/**
+ Computes the minimum clearance of a geometry.  
+
+ \param geom pointer to input Geometry object
+ \param clearance on succesfull completion this pointer will reference the
+  computed clearance value
+
+ \return ZERO (0) on failure: any other value on success
+
+ \sa gaiaMinimumClearance_r, gaiaMinimumClearanceLine, gaiaMinimumClearanceLine_r
+
+ \note not reentrant and thread unsafe.
+
+ \remark \b GEOS-ADVANCED support required.
+ */
+    GAIAGEO_DECLARE int gaiaMinimumClearance (gaiaGeomCollPtr geom,
+					      double *clearance);
+
+/**
+ Computes the minimum clearance of a geometry.
+
+ \param p_cache a memory pointer returned by spatialite_alloc_connection()
+ \param geom pointer to input Geometry object
+ \param clearance on succesfull completion this pointer will reference the
+  computed clearance value
+
+ \return ZERO (0) on failure: any other value on success
+
+ \sa gaiaMinimumClearance_r, gaiaMinimumClearanceLine, gaiaMinimumClearanceLine_r
+
+ \note reentrant and thread-safe.
+
+ \remark \b GEOS-ADVANCED support required.
+ */
+    GAIAGEO_DECLARE int gaiaMinimumClearance_r (const void *p_cache,
+						gaiaGeomCollPtr geom,
+						double *clearance);
+
+/**
+ Returns a LINESTRING geometry which represents the minimum clearance of a geometry
+
+ \param geom pointer to input Geometry object
+
+ \return NULL on failure: the minimum clearance Linestring on success.
+
+ \sa gaiaMinimumClearance, gaiaMinimumClearance_r, gaiaMinimumClearanceLine_r
+
+ \note not reentrant and thread unsafe.
+
+ \remark \b GEOS-ADVANCED support required.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr gaiaMinimumClearanceLine (gaiaGeomCollPtr
+							      geom);
+
+/**
+ Returns a LINESTRING geometry which represents the minimum clearance of a geometry
+
+ \param p_cache a memory pointer returned by spatialite_alloc_connection()
+ \param geom pointer to input Geometry object
+
+ \return NULL on failure: the minimum clearance Linestring on success.
+
+ \sa gaiaMinimumClearance, gaiaMinimumClearance_r, gaiaMinimumClearanceLine
+
+ \note reentrant and thread-safe.
+
+ \remark \b GEOS-ADVANCED support required.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr gaiaMinimumClearanceLine_r (const void
+								*p_cache,
+								gaiaGeomCollPtr
+								geom);
+
+/**
  Spatial operator: Offset Curve
 
  \param geom the input Geometry object

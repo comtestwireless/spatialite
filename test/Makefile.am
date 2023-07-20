@@ -231,6 +231,7 @@ SUBDIRS = sql_stmt_geosadvanced_tests sql_stmt_geos_tests \
 	sql_stmt_mathsql_tests sql_stmt_proj_tests \
 	sql_stmt_proj492_tests sql_stmt_proj493_tests \
 	sql_stmt_proj600security_tests sql_stmt_proj720_tests \
+	sql_stmt_proj900_tests \
 	sql_stmt_zip_proj6 sql_stmt_minizip \
 	sql_stmt_proj600_tests sql_stmt_security_tests \
 	sql_stmt_tests sql_stmt_xmlsec_tests \

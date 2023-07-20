@@ -997,7 +997,7 @@ gaiaParseDMS (const char *dms, double *longitude, double *latitude)
     if (*p >= '0' && *p <= '9')
       {
 	  consume_int (p, &p_end, &lat_d);
-	  if (lat_d < 0 && lat_d > 90)
+	  if (lat_d < 0 || lat_d > 90)
 	      return 0;
 	  p = p_end;
       }
@@ -1014,7 +1014,7 @@ gaiaParseDMS (const char *dms, double *longitude, double *latitude)
     if (*p >= '0' && *p <= '9')
       {
 	  consume_int (p, &p_end, &lat_m);
-	  if (lat_m < 0 && lat_m >= 60)
+	  if (lat_m < 0 || lat_m >= 60)
 	      return 0;
 	  p = p_end;
       }
@@ -1031,7 +1031,7 @@ gaiaParseDMS (const char *dms, double *longitude, double *latitude)
     if (*p >= '0' && *p <= '9')
       {
 	  consume_float (p, &p_end, &lat_s);
-	  if (lat_s < 0.0 && lat_s >= 60.0)
+	  if (lat_s < 0.0 || lat_s >= 60.0)
 	      return 0;
 	  p = p_end;
       }
@@ -1075,7 +1075,7 @@ gaiaParseDMS (const char *dms, double *longitude, double *latitude)
     if (*p >= '0' && *p <= '9')
       {
 	  consume_int (p, &p_end, &long_d);
-	  if (long_d < 0 && long_d > 90)
+	  if (long_d < 0 || long_d > 90)
 	      return 0;
 	  p = p_end;
       }
@@ -1092,7 +1092,7 @@ gaiaParseDMS (const char *dms, double *longitude, double *latitude)
     if (*p >= '0' && *p <= '9')
       {
 	  consume_int (p, &p_end, &long_m);
-	  if (long_m < 0 && long_m >= 60)
+	  if (long_m < 0 || long_m >= 60)
 	      return 0;
 	  p = p_end;
       }
@@ -1109,7 +1109,7 @@ gaiaParseDMS (const char *dms, double *longitude, double *latitude)
     if (*p >= '0' && *p <= '9')
       {
 	  consume_float (p, &p_end, &long_s);
-	  if (long_s < 0.0 && long_s >= 60.0)
+	  if (long_s < 0.0 || long_s >= 60.0)
 	      return 0;
 	  p = p_end;
       }

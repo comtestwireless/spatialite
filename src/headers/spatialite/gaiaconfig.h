@@ -20,7 +20,7 @@
 #define GEOS_370 1
 
 /* Should be defined in order to enable GEOS_3100 support. */
-#define GEOS_3100 1
+/* #undef GEOS_3100 */
 
 /* Should be defined in order to enable GEOS_3110 support. */
 /* #undef GEOS_3110 */

@@ -317,7 +317,7 @@ gaiaCurvosityIndex (const void *p_cache, gaiaLinestringPtr ln, int extra_points)
     int iv;
     int ov;
     gaiaGeomCollPtr geo = NULL;
-    gaiaLinestringPtr refln;
+    gaiaLinestringPtr refln = NULL;
     double refline_length;
     double line_length =
 	gaiaMeasureLength (ln->DimensionModel, ln->Coords, ln->Points);
@@ -406,6 +406,7 @@ gaiaCurvosityIndex (const void *p_cache, gaiaLinestringPtr ln, int extra_points)
     gaiaSetPoint (refln->Coords, ov, x, y);
     refline_length =
 	gaiaMeasureLength (refln->DimensionModel, refln->Coords, refln->Points);
+	gaiaFreeLinestring(refln);
     return (refline_length / line_length);
 
   error:
@@ -415,6 +416,8 @@ gaiaCurvosityIndex (const void *p_cache, gaiaLinestringPtr ln, int extra_points)
 	  geo->LastLinestring = NULL;
 	  gaiaFreeGeomColl (geo);
       }	      
+    if (refln != NULL)
+	gaiaFreeLinestring(refln);
 #endif /* end including GEOS */
     return -1.0;
 }

@@ -2499,36 +2499,6 @@ This function only supports Long/Lat coordinates, and will return NULL for any p
 				<td>return a geometric object that is the convex hull of geom</td></tr>
 			<tr><td colspan="5" align="center" bgcolor="#f0f0c0">
 				<h3><a name="p14b">SQL functions that implement spatial operators<br>[GEOS specific features]</a></h3></td></tr>
-			<tr><td><b>HausdorffDistance</b></td>
-				<td>HausdorffDistance( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> ) : <i>Double precision</i><hr>
-					HausdorffDistance( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> , densify_fract <i>Double precision</i> ) : <i>Double precision</i><hr>
-					ST_HausdorffDistance( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> ) : <i>Double precision</i><hr>
-					ST_HausdorffDistance( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> , densify_fract <i>Double precision</i> ) : <i>Double precision</i></td>
-				<td></td>
-				<td align="center" bgcolor="#f0d0d0">GEOS</td>
-				<td>return the Hausdorff distance between geom1 and geom2<br>
-				<a href="http://en.wikipedia.org/wiki/Hausdorff_distance">learn more</a><hr>
-				the optional argument <b>densify_fract</b> is the fraction (in the range <b>0.0 / 1.0</b>) by which to densify
-				each segment. Each segment will be split into a number of equal-lenght subsegments, whose fraction of the total
-				length is closest to the given fraction.<br>
-				The smaller <b>densify_fract</b> we specify, the more acurate Hausdorff distance we get. 
-				But, the computation time and the memory usage increase with the square of the number of subsegments.<hr>
-				The second form of this SQL function (supporting <b>densify_fract</b>) is only available when using <b>GEOS 3.7.0</b> (or any subsequent version).</td></tr>
-			<tr><td><b>FrechetDistance</b></td>
-				<td>FrechetDistance( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> ) : <i>Double precision</i><hr>
-					FrechetDistance( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> , densify_fract <i>Double precision</i> ) : <i>Double precision</i><hr>
-					ST_FrechetDistance( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> ) : <i>Double precision</i><hr>
-					ST_FrechetDistance( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> , densify_fract <i>Double precision</i> ) : <i>Double precision</i></td>
-				<td></td>
-				<td align="center" bgcolor="#f0d0d0">GEOS</td>
-				<td>return the Fréchet distance between geom1 and geom2<br>
-				<a href="https://en.wikipedia.org/wiki/Fr%C3%A9chet_distance">learn more</a><hr>
-				the optional argument <b>densify_fract</b> is the fraction (in the range <b>0.0 / 1.0</b>) by which to densify
-				each segment. Each segment will be split into a number of equal-lenght subsegments, whose fraction of the total
-				length is closest to the given fraction.<br>
-				The smaller <b>densify_fract</b> we specify, the more acurate Fréchet distance we get. 
-				But, the computation time and the memory usage increase with the square of the number of subsegments.<hr>
-				This SQL function is only available when using <b>GEOS 3.7.0</b> (or any subsequent version).</td></tr>
 			<tr><td><b>OffestCurve</b></td>
 				<td>OffsetCurve( geom <i>Curve</i> , radius <i>Double precision</i> ) : <i>Curve</i><hr>
 					ST_OffsetCurve( geom <i>Curve</i> , radius <i>Double precision</i> ) : <i>Curve</i></td>
@@ -2842,6 +2812,128 @@ This function only supports Long/Lat coordinates, and will return NULL for any p
                                         By setting the optional <b>allow_holes</b> argument to <b>TRUE</b> all <i>interior holes</i> will be preserved.<br>
                                         The optional argument <b>tolerance</b> is intended to normalize the input Geometry, suppressing repeated (or too close) Points.<br>
 					NULL is returned on failure.</td></tr>
+			<tr><td><b>HausdorffDistance</b></td>
+				<td>HausdorffDistance( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> ) : <i>Double precision</i><hr>
+					HausdorffDistance( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> , densify_fract <i>Double precision</i> ) : <i>Double precision</i><hr>
+					ST_HausdorffDistance( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> ) : <i>Double precision</i><hr>
+					ST_HausdorffDistance( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> , densify_fract <i>Double precision</i> ) : <i>Double precision</i></td>
+				<td></td>
+				<td align="center" bgcolor="#f0d0b0">GEOS-advanced</td>
+				<td>return the Hausdorff distance between geom1 and geom2<br>
+				<a href="http://en.wikipedia.org/wiki/Hausdorff_distance">learn more</a><hr>
+				the optional argument <b>densify_fract</b> is the fraction (in the range <b>0.0 / 1.0</b>) by which to densify
+				each segment. Each segment will be split into a number of equal-lenght subsegments, whose fraction of the total
+				length is closest to the given fraction.<br>
+				The smaller <b>densify_fract</b> we specify, the more acurate Hausdorff distance we get. 
+				But, the computation time and the memory usage increase with the square of the number of subsegments.<hr>
+				The second form of this SQL function (supporting <b>densify_fract</b>) is only available when using <b>GEOS 3.7.0</b> (or any subsequent version).</td></tr>
+			<tr><td><b>FrechetDistance</b></td>
+				<td>FrechetDistance( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> ) : <i>Double precision</i><hr>
+					FrechetDistance( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> , densify_fract <i>Double precision</i> ) : <i>Double precision</i><hr>
+					ST_FrechetDistance( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> ) : <i>Double precision</i><hr>
+					ST_FrechetDistance( geom1 <i>Geometry</i> , geom2 <i>Geometry</i> , densify_fract <i>Double precision</i> ) : <i>Double precision</i></td>
+				<td></td>
+				<td align="center" bgcolor="#f0d0b0">GEOS-advanced</td>
+				<td>return the Fréchet distance between geom1 and geom2<br>
+				<a href="https://en.wikipedia.org/wiki/Fr%C3%A9chet_distance">learn more</a><hr>
+				the optional argument <b>densify_fract</b> is the fraction (in the range <b>0.0 / 1.0</b>) by which to densify
+				each segment. Each segment will be split into a number of equal-lenght subsegments, whose fraction of the total
+				length is closest to the given fraction.<br>
+				The smaller <b>densify_fract</b> we specify, the more acurate Fréchet distance we get. 
+				But, the computation time and the memory usage increase with the square of the number of subsegments.<hr>
+				This SQL function is only available when using <b>GEOS 3.7.0</b> (or any subsequent version).</td></tr>
+			<tr><td><b>GEOSMinimumRotatedRectangle</b></td>
+				<td>GEOSMinimumRotatedRectangle( geom <i>Geometry</i> ) : <i>Geometry</i></td>
+				<td></td>
+				<td align="center" bgcolor="#f0d0b0">GEOS-advanced</td>
+				<td>Returns the minimum rotated rectangular POLYGON which encloses the input geometry.<br>
+				The rectangle has width equal to the minimum diameter, and a longer length.<br>
+				If the convex hull of the input is degenerate (a line or point) a LINESTRING or POINT is returned.<br>
+				The minimum rotated rectangle can be used as an extremely generalized representation for the given geometry.<br>
+				NULL is returned on failure.<hr>
+				This SQL function is only available when using <b>GEOS 3.7.0</b> (or any subsequent version).</td></tr>
+			<tr><td><b>GEOSMaximumInscribedCircle</b></td>
+				<td>GEOSMaximumInscribedCircle( geom <i>Geometry</i> , tolerance <i>Double precision</i> )  : <i>Geometry</i></td>
+				<td></td>
+				<td align="center" bgcolor="#f0d0b0">GEOS-advanced</td>
+				<td>Constructs the Maximum Inscribed Circle for a  polygonal geometry, up to a specified tolerance.<br>
+				The Maximum Inscribed Circle is determined by a point in the interior of the area
+				which has the farthest distance from the area boundary, along with a boundary point at that distance.<br>
+				A cartographic use case is to determine a suitable point  * to place a map label within a polygon.<br>
+				The radius length of the Maximum Inscribed Circle is a  measure of how "narrow" a polygon is.
+				It is the distance at which the negative buffer becomes empty.<br>
+				The function supports polygons with holes and multipolygons.<br>
+				The implementation uses a successive-approximation technique over a grid of square cells covering the area geometry.
+				The grid is refined using a branch-and-bound algorithm. Point containment and distance are computed in a performant way by using spatial indexes.<hr>
+				Returns a two-point linestring, with one point at the center of the inscribed circle and the other on the boundary of the inscribed circle..<br>
+				NULL is returned on failure.<hr>
+				This SQL function is only available when using <b>GEOS 3.7.0</b> (or any subsequent version).</td></tr>
+			<tr><td><b>GEOSMinimumBoundingCircle</b></td>
+				<td>GEOSMinimumBoundingCircle( geom <i>Geometry</i> )  : <i>Geometry</i></td>
+				<td></td>
+				<td align="center" bgcolor="#f0d0b0">GEOS-advanced</td>
+				<td>Constructs the Minimum Bounding Circle for a  generic geometry.<br>
+				The Minimum Bounding Circle is the smallest circle that contains the input.<hr>
+				Returns a two-point linestring, with one point at the center of the bounding circle and the other on the boundary of the bounding circle.<br>
+				NULL is returned on failure.<hr>
+				This SQL function is only available when using <b>GEOS 3.7.0</b> (or any subsequent version).</td></tr>
+			<tr><td><b>GEOSMinimumBoundingRadius</b></td>
+				<td>GEOSMinimumBoundingRadius( geom <i>Geometry</i> )  : <i>Double precision</i></td>
+				<td></td>
+				<td align="center" bgcolor="#f0d0b0">GEOS-advanced</td>
+				<td>Returns the Radius of the Minimum Bounding Circle for a  generic geometry.<br>
+				NULL is returned on failure.<hr>
+				This SQL function is only available when using <b>GEOS 3.7.0</b> (or any subsequent version).</td></tr>
+			<tr><td><b>GEOSMinimumBoundingCenter</b></td>
+				<td>GEOSMinimumBoundingCenter( geom <i>Geometry</i> )  : <i>Geometry</i></td>
+				<td></td>
+				<td align="center" bgcolor="#f0d0b0">GEOS-advanced</td>
+				<td>Returns a POINT Geometry corresponding to the Center of the Minimum Bounding Circle for a  generic geometry.<br>
+				NULL is returned on failure.<hr>
+				This SQL function is only available when using <b>GEOS 3.7.0</b> (or any subsequent version).</td></tr>
+			<tr><td><b>GEOSLargestEmptyCircle</b></td>
+				<td>GEOSLargestEmptyCircle( geom <i>Geometry</i> , tolerance <i>Double precision</i> )  : <i>Geometry</i></td>
+				<td></td>
+				<td align="center" bgcolor="#f0d0b0">GEOS-advanced</td>
+				<td>Constructs the Largest Empty Circle for a set of obstacle geometries, up to a specified tolerance.
+				The obstacles are point and line geometries.<br>
+				The Largest Empty Circle is the largest circle which has its center in the convex hull of the
+				obstacles (the boundary), and whose interior does not intersect with any obstacle.<br>
+				The circle center is the point in the interior of the boundary which has the farthest distance from the obstacles (up to tolerance).<br> 
+				The circle is determined by the center point and a point lying on an obstacle indicating the circle radius.<br>
+				The implementation uses a successive-approximation technique over a grid of square cells covering the area geometry.
+				The grid is refined using a branch-and-bound algorithm. Point containment and distance are computed in a performant way by using spatial indexes.<hr>
+				Returns a two-point linestring, with one point at the center of the inscribed circle and the other on the boundary of the inscribed circle..<br>
+				NULL is returned on failure.<hr>
+				This SQL function is only available when using <b>GEOS 3.7.0</b> (or any subsequent version).</td></tr>
+			<tr><td><b>GEOSMinimumWidth</b></td>
+				<td>GEOSMinimumWidth( geom <i>Geometry</i> )  : <i>Geometry</i></td>
+				<td></td>
+				<td align="center" bgcolor="#f0d0b0">GEOS-advanced</td>
+				<td>Returns a LINESTRING geometry which represents the minimum diameter of the geometry.<br>
+				The minimum diameter is defined to be the width of the smallest band that contains the geometry, 
+				where a band is a strip of the plane defined by two parallel lines.<br>
+				This can be thought of as the smallest hole that the geometry can be moved through, with a single rotation.<br>
+				NULL is returned on failure.<hr>
+				This SQL function is only available when using <b>GEOS 3.7.0</b> (or any subsequent version).</td></tr>
+			<tr><td><b>GEOSMinimumClearance</b></td>
+				<td>GEOSMinimumClearance( geom <i>Geometry</i> )  : <i>Double precision</i></td>
+				<td></td>
+				<td align="center" bgcolor="#f0d0b0">GEOS-advanced</td>
+				<td>Computes the minimum clearance of a geometry.<br>
+				The minimum clearance is the smallest amount by which a vertex could be move to produce an invalid 
+				polygon, a non-simple linestring, or a multipoint with repeated points.<br>
+				If the minimum clearance cannot be defined for a geometry (such as with a single point, or a multipoint
+				whose points are identical, a value of Infinity will be calculated.<br>
+				NULL is returned on failure.<hr>
+				This SQL function is only available when using <b>GEOS 3.7.0</b> (or any subsequent version).</td></tr>
+			<tr><td><b>GEOSMinimumClearanceLine</b></td>
+				<td>GEOSMinimumClearanceLine( geom <i>Geometry</i> ) : <i>Geometry</i></td>
+				<td></td>
+				<td align="center" bgcolor="#f0d0b0">GEOS-advanced</td>
+				<td>Returns a LineString whose endpoints define the minimum clearance of a geometry.<br>
+				NULL is returned on failure, or if the geometry has no minimum clearance (as e.g. a POINT)<hr>
+				This SQL function is only available when using <b>GEOS 3.7.0</b> (or any subsequent version).</td></tr>
 			<tr><td><b>GeosDensify</b></td>
 				<td>GeosDensify( geom <i>Geometry</i> , tolerance <i>Double precision</i> ) : <i>Geometry</i></td>
 				<td></td>

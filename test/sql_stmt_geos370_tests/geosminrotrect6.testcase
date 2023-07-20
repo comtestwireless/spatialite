@@ -1,0 +1,7 @@
+GEOSMinimumRotatedRectangle - VALID BLOB Geometry
+:memory: #use in-memory database
+SELECT AsText(OrientedEnvelope(GeomFromText('MULTIPOINT ((0 0), (-1 -1), (3 2))')))
+1 # rows (not including the header row)
+1 # columns
+AsText(OrientedEnvelope(GeomFromText('MULTIPOINT ((0 0), (-1 -1), (3 2))')))
+POLYGON((3 2, 2.88 2.16, -1.12 -0.84, -1 -1, 3 2))
