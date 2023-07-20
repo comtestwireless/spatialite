@@ -29,4 +29,14 @@ EXTRA_DIST = geosdensify1.testcase \
 	constrdelaunay4.testcase \
 	constrdelaunay6.testcase \
 	constrdelaunay7.testcase \
-	constrdelaunay8.testcase
+	constrdelaunay8.testcase \
+	reduce_precision1.testcase \
+	reduce_precision2.testcase \
+	reduce_precision3.testcase \
+	reduce_precision4.testcase \
+	reduce_precision5.testcase \
+	reduce_precision6.testcase \
+	reduce_precision7.testcase \
+	reduce_precision8.testcase \
+	reduce_precision9.testcase \
+	reduce_precision10.testcase 

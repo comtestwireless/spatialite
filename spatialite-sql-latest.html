@@ -2852,6 +2852,12 @@ This function only supports Long/Lat coordinates, and will return NULL for any p
 				The minimum rotated rectangle can be used as an extremely generalized representation for the given geometry.<br>
 				NULL is returned on failure.<hr>
 				This SQL function is only available when using <b>GEOS 3.7.0</b> (or any subsequent version).</td></tr>
+			<tr><td><b>OrientedEnvelope</b></td>
+				<td>OrientedEnvelope( geom <i>Geometry</i> ) : <i>Geometry</i><hr>
+				ST_OrientedEnvelope( geom <i>Geometry</i> ) : <i>Geometry</i></td>
+				<td></td>
+				<td align="center" bgcolor="#f0d0b0">GEOS-advanced</td>
+				<td>Just an alias-name  for <b>GEOSMinimumRotatedRectangle()</b>.</td></tr>
 			<tr><td><b>GEOSMaximumInscribedCircle</b></td>
 				<td>GEOSMaximumInscribedCircle( geom <i>Geometry</i> , tolerance <i>Double precision</i> )  : <i>Geometry</i></td>
 				<td></td>
@@ -2951,6 +2957,14 @@ This function only supports Long/Lat coordinates, and will return NULL for any p
 					otherwise they'll be suppressed (default is <b>TRUE</b>)<br>
 					NULL is returned on failure.<hr>
 					<i>Note</i>: this function is similar to <b>ST_MakeValid()</b> but is based on a completely different algorithm, so results could be very different.</td></tr>
+			<tr><td><b>ReducePrecision</b></td>
+				<td>ReducePrecision( geom <i>Geometry</i> , grid_size <i>Double precision</i> ) : <i>Geometry</i><hr>
+				ST_ReducePrecision( geom <i>Geometry</i> , grid_size <i>Double precision</i> ) : <i>Geometry</i></td>
+				<td></td>
+				<td align="center" bgcolor="#d0d0f0">GEOS-3100</td>
+				<td>Change the coordinate precision of a geometry.<br>
+				The output will be a valid Geometry.<br>
+				NULL is returned on failure.</td></tr>
 			<tr><td><b>HilbertCode</b></td>
 				<td>HilbertCode( geom <i>Geometry</i> , extent <i>Geometry</i> , level <i>integer</i>] ) : <i>Integer</i></td>
 				<td></td>

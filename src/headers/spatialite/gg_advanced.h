@@ -4185,6 +4185,46 @@ extern "C"
 							 gaiaGeomCollPtr geom,
 							 int keep_discarded);
 
+/**
+ Change the coordinate precision of a geometry.
+
+ \param geom the input Geometry object.
+ \param grid_size the gridSize cell size of grid to round coordinates to,
+ or 0 for FLOATING precision
+
+ \return the pointer to newly created Geometry object: NULL on failure.
+
+ \sa gaiaFreeGeomColl, gaiaReducePrecision_r
+
+ \note you are responsible to destroy (before or after) any allocated Geometry,
+ this including any Geometry returned by gaiaReducePrecision()
+
+ \remark \b GEOS_3100 support required.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr gaiaReducePrecision (gaiaGeomCollPtr geom,
+							 double grid_size);
+
+/**
+ Change the coordinate precision of a geometry.
+
+ \param p_cache a memory pointer returned by spatialite_alloc_connection() 
+ \param geom the input Geometry object.
+ \param grid_size the gridSize cell size of grid to round coordinates to,
+ or 0 for FLOATING precision
+
+ \return the pointer to newly created Geometry object: NULL on failure.
+
+ \sa gaiaFreeGeomColl, gaiaReducePrecision
+
+ \note you are responsible to destroy (before or after) any allocated Geometry,
+ this including any Geometry returned by gaiaReducePrecision()
+
+ \remark \b GEOS_3100 support required.
+ */
+    GAIAGEO_DECLARE gaiaGeomCollPtr gaiaReducePrecision_r (const void *p_cache,
+							   gaiaGeomCollPtr geom,
+							   double grid_size);
+
 #endif				/* end GEOS_3100 features */
 
 #ifndef DOXYGEN_SHOULD_IGNORE_THIS

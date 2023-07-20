@@ -1671,6 +1671,88 @@ gaiaGeosMakeValid_r (const void *p_cache,
     return result;
 }
 
+GAIAGEO_DECLARE gaiaGeomCollPtr
+gaiaReducePrecision (gaiaGeomCollPtr geom, double grid_size)
+{
+/* 
+/ Attempts to change the coordinate precision of a geometry.
+*/
+    gaiaGeomCollPtr result = NULL;
+#ifndef GEOS_USE_ONLY_R_API	/* obsolete versions non fully thread-safe */
+    GEOSGeometry *g1;
+    GEOSGeometry *g2;
+    gaiaResetGeosMsg ();
+    if (!geom)
+	return NULL;
+    g1 = gaiaToGeos (geom);
+    g2 = GEOSGeom_setPrecision (g1, grid_size, GEOS_PREC_VALID_OUTPUT);
+    GEOSGeom_destroy (g1);
+    if (!g2)
+	return NULL;
+    if (geom->DimensionModel == GAIA_XY_Z)
+	result = gaiaFromGeos_XYZ (g2);
+    else if (geom->DimensionModel == GAIA_XY_M)
+	result = gaiaFromGeos_XYM (g2);
+    else if (geom->DimensionModel == GAIA_XY_Z_M)
+	result = gaiaFromGeos_XYZM (g2);
+    else
+	result = gaiaFromGeos_XY (g2);
+    GEOSGeom_destroy (g2);
+    if (result == NULL)
+	return NULL;
+    result->Srid = geom->Srid;
+#else
+    if (geom == NULL)
+	geom = NULL;		/* silencing stupid compiler warnings */
+#endif
+    return result;
+}
+
+GAIAGEO_DECLARE gaiaGeomCollPtr
+gaiaReducePrecision_r (const void *p_cache,
+		       gaiaGeomCollPtr geom, double grid_size)
+{
+/* 
+/ Attempts to change the coordinate precision of a geometry.
+*/
+    GEOSGeometry *g1;
+    GEOSGeometry *g2;
+    gaiaGeomCollPtr result;
+    struct splite_internal_cache *cache =
+	(struct splite_internal_cache *) p_cache;
+    GEOSContextHandle_t handle = NULL;
+    if (cache == NULL)
+	return NULL;
+    if (cache->magic1 != SPATIALITE_CACHE_MAGIC1
+	|| cache->magic2 != SPATIALITE_CACHE_MAGIC2)
+	return NULL;
+    handle = cache->GEOS_handle;
+    if (handle == NULL)
+	return NULL;
+    gaiaResetGeosMsg_r (cache);
+    if (!geom)
+	return NULL;
+    g1 = gaiaToGeos_r (cache, geom);
+    g2 = GEOSGeom_setPrecision_r (handle, g1, grid_size,
+				  GEOS_PREC_VALID_OUTPUT);
+    GEOSGeom_destroy_r (handle, g1);
+    if (!g2)
+	return NULL;
+    if (geom->DimensionModel == GAIA_XY_Z)
+	result = gaiaFromGeos_XYZ_r (cache, g2);
+    else if (geom->DimensionModel == GAIA_XY_M)
+	result = gaiaFromGeos_XYM_r (cache, g2);
+    else if (geom->DimensionModel == GAIA_XY_Z_M)
+	result = gaiaFromGeos_XYZM_r (cache, g2);
+    else
+	result = gaiaFromGeos_XY_r (cache, g2);
+    GEOSGeom_destroy_r (handle, g2);
+    if (result == NULL)
+	return NULL;
+    result->Srid = geom->Srid;
+    return result;
+}
+
 #endif /* end GEOS_3100 conditional */
 
 #ifdef GEOS_3110		/* only if GEOS_3110 support is available */
