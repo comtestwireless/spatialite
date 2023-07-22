@@ -703,16 +703,18 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
     if (!legacy)
       {
 	  int is_720_or_later = 0;
-	  int is_900_or_later = 0;
+	  int is_910_or_later = 0;
 	  if (PROJ_VERSION_MAJOR > 7)
 	      is_720_or_later = 1;
 	  else if (PROJ_VERSION_MAJOR == 7 && PROJ_VERSION_MINOR >= 2)
 	      is_720_or_later = 1;
-	  if (PROJ_VERSION_MAJOR >= 9)
-	      is_900_or_later = 1;
-	  if (is_900_or_later)
+	  if (PROJ_VERSION_MAJOR > 9)
+	      is_910_or_later = 1;
+	  else if (PROJ_VERSION_MAJOR == 9 && PROJ_VERSION_MINOR >= 1)
+	      is_910_or_later = 1;
+	  if (is_910_or_later)
 	      result =
-		  run_subdir_test ("sql_stmt_proj900_tests", conn,
+		  run_subdir_test ("sql_stmt_proj910_tests", conn,
 				   load_extension, 0);
 	  else if (is_720_or_later)
 	      result =
@@ -766,6 +768,18 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
     if (result != 0)
       {
 	  return result;
+      }
+    if (strcmp (geos_version, "0003.0012") >= 0)
+      {
+	  /* GEOS 3.12.0 changed historical beheviour for few tests */
+	  result =
+	      run_subdir_test ("sql_stmt_geos_3120", conn, load_extension, 0);
+      }
+    else
+      {
+	  /* older versions supporting historical beheviour for some tests */
+	  result =
+	      run_subdir_test ("sql_stmt_geos_non3120", conn, load_extension, 0);
       }
     if (strcmp (geos_version, "0003.0011") >= 0)
       {

@@ -1093,6 +1093,18 @@ fromRTGeomIncremental (const RTCTX * ctx, gaiaGeomCollPtr gaia,
 		      break;
 		  case RTPOLYGONTYPE:
 		      rtpoly = (RTPOLY *) rtg2;
+
+		      /* 
+		       * sandro 2023-08-22
+		       * 
+		       * critical patch required by GEOS 3.12.0
+		       * that declares invalid POLYGONs without any RING
+		       * 
+		       */
+		      if (rtpoly->nrings <= 0)
+			  continue;
+		      /* end sandro 2023-07-22 */
+
 		      has_z = 0;
 		      has_m = 0;
 		      pa = rtpoly->rings[0];

@@ -454,10 +454,6 @@ EXTRA_DIST = bdmpolyfromtext10.testcase \
 	union15.testcase \
 	union16.testcase \
 	union1.testcase \
-	union21.testcase \
-	union22.testcase \
-	union23.testcase \
-	union24.testcase \
 	union25.testcase \
 	union26.testcase \
 	union27.testcase \
@@ -629,7 +625,6 @@ EXTRA_DIST = bdmpolyfromtext10.testcase \
 	linemerge6.testcase \
 	linemerge7.testcase \
 	linemerge8.testcase \
-	linemerge9.testcase \
 	linesnodes10.testcase \
 	linesnodes11.testcase \
 	linesnodes12.testcase \

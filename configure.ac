@@ -157,6 +157,8 @@ AC_CONFIG_FILES([Makefile \
 		test/sql_stmt_geos_non3100/Makefile \
 		test/sql_stmt_geos_3110/Makefile \
 		test/sql_stmt_geos_non3110/Makefile \
+		test/sql_stmt_geos_3120/Makefile \
+		test/sql_stmt_geos_non3120/Makefile \
 		test/sql_stmt_geosadvanced_tests/Makefile \
 		test/sql_stmt_geopackage_tests/Makefile \
 		test/sql_stmt_gpkg_epsg492_tests/Makefile \
@@ -167,7 +169,7 @@ AC_CONFIG_FILES([Makefile \
 		test/sql_stmt_proj493_tests/Makefile \
 		test/sql_stmt_proj600_tests/Makefile \
 		test/sql_stmt_proj720_tests/Makefile \
-		test/sql_stmt_proj900_tests/Makefile \
+		test/sql_stmt_proj910_tests/Makefile \
 		test/sql_stmt_proj600security_tests/Makefile \
 		test/sql_stmt_mathsql_tests/Makefile \
 		test/sql_stmt_rtgeom_tests/Makefile \
