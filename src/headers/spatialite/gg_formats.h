@@ -1167,13 +1167,30 @@ extern "C"
 
  \param out_buf pointer to dynamically growing Text buffer
  \param version GML version
+ \params flippd if TURE the X and Y axes order will be: Y first, X second
  \param precision decimal digits to be used for coordinates
  \param geom pointer to Geometry object
 
- \sa gaiaParseGml
+ \sa gaiaParseGml. gaiaOutGml
 
  \note if \e version is set to \b 3, then GMLv3 will be used;
  in any other case GMLv2 will be assumed by default.
+ */
+    GAIAGEO_DECLARE void gaiaOutGml_ex (gaiaOutBufferPtr out_buf, int version,
+					int flipped, int precision,
+					gaiaGeomCollPtr geom);
+
+/**
+ Encodes a Geometry object into GML notation
+
+ \param out_buf pointer to dynamically growing Text buffer
+ \param version GML version
+ \param precision decimal digits to be used for coordinates
+ \param geom pointer to Geometry object
+
+ \sa gaiaParseGml, gaiaOutGml_ex
+
+ \note it's simply an alias for gaiaOutGml_ex with FLIPPED set to FALSE.
  */
     GAIAGEO_DECLARE void gaiaOutGml (gaiaOutBufferPtr out_buf, int version,
 				     int precision, gaiaGeomCollPtr geom);

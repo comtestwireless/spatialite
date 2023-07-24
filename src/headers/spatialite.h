@@ -1240,7 +1240,7 @@ extern "C"
   and latitudes (as required by RFC 7946); FALSE if they are in some
   other (undefined) CRS
  \param m_coords TRUE if M-values will be exported as ordinary coordinates;
- FALSE for strict RFC 4796 conformance (no M-Values at all)
+ FALSE for strict RFC 7946 conformance (no M-Values at all)
  \param indent TRUE if the GeoJSON file will be properly indented for enhanced
  human readibility; FALSE if the GeoJSON file will be in a single monolithic
  line without blank spaces.

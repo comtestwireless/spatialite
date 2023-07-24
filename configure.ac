@@ -464,7 +464,7 @@ AC_ARG_ENABLE(geopackage, [AS_HELP_STRING(
 if test x"$enable_geopackage" != "xno"; then
   AC_DEFINE(ENABLE_GEOPACKAGE)
 fi
-AM_CONDITIONAL([ENABLE_GEOPACKAGE], [test x"$enable_geopackage" == "xyes"])
+AM_CONDITIONAL([ENABLE_GEOPACKAGE], [test x"$enable_geopackage" = "xyes"])
 
 #-----------------------------------------------------------------------
 

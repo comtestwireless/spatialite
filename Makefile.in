@@ -198,7 +198,7 @@ am__DIST_COMMON = $(srcdir)/Doxyfile.in $(srcdir)/Makefile.in \
 	$(srcdir)/fakeconfig.h.in $(srcdir)/spatialite.pc.in \
 	$(top_srcdir)/./src/headers/spatialite/gaiaconfig-msvc.h.in \
 	$(top_srcdir)/./src/headers/spatialite/gaiaconfig.h.in AUTHORS \
-	COPYING INSTALL README compile config.guess config.sub depcomp \
+	COPYING INSTALL README compile config.guess config.sub \
 	install-sh ltmain.sh missing
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
@@ -291,6 +291,7 @@ LIBXML2_LIBS = @LIBXML2_LIBS@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
+LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@

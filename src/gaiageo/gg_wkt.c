@@ -73,7 +73,7 @@ gaiaOutClean (char *buffer)
  * integer numbers
 */
     int integer = 1;
-    for (i = 0; i < (int)strlen (buffer); i++)
+    for (i = 0; i < (int) strlen (buffer); i++)
       {
 	  if (buffer[i] == '.')
 	      integer = 0;
@@ -91,8 +91,8 @@ gaiaOutClean (char *buffer)
       }
     if (buffer[i] == '.')
 	buffer[i] = '\0';
-	
-final_clean:
+
+  final_clean:
     if (strcmp (buffer, "-0") == 0)
       {
 	  /* avoiding to return embarassing NEGATIVE ZEROes */
@@ -3241,6 +3241,17 @@ gaiaOutGml (gaiaOutBufferPtr out_buf, int version, int precision,
 {
 /*
 / prints the GML representation of current geometry
+/ jusrt an alias name for gaiaOutGml_ex with FLIPPED=FALSE
+*/
+    gaiaOutGml_ex (out_buf, version, 0, precision, geom);
+}
+
+GAIAGEO_DECLARE void
+gaiaOutGml_ex (gaiaOutBufferPtr out_buf, int version, int flipped,
+	       int precision, gaiaGeomCollPtr geom)
+{
+/*
+/ prints the GML representation of current geometry
 / *result* returns the encoded GML or NULL if any error is encountered
 */
     gaiaPointPtr point;
@@ -3278,7 +3289,9 @@ gaiaOutGml (gaiaOutBufferPtr out_buf, int version, int precision,
 	  if (geom->Srid <= 0)
 	      strcpy (buf, "<gml:MultiPoint>");
 	  else
-	      sprintf (buf, "<gml:MultiPoint srsName=\"EPSG:%d\">", geom->Srid);
+	      sprintf (buf,
+		       "<gml:MultiPoint srsName=\"urn:ogc:def:crs:EPSG:%d\">",
+		       geom->Srid);
 	  break;
       case GAIA_MULTILINESTRING:
 	  if (version == 3)
@@ -3286,7 +3299,8 @@ gaiaOutGml (gaiaOutBufferPtr out_buf, int version, int precision,
 		if (geom->Srid <= 0)
 		    strcpy (buf, "<gml:MultiCurve>");
 		else
-		    sprintf (buf, "<gml:MultiCurve srsName=\"EPSG:%d\">",
+		    sprintf (buf,
+			     "<gml:MultiCurve srsName=\"urn:ogc:def:crs:EPSG:%d\">",
 			     geom->Srid);
 	    }
 	  else
@@ -3295,7 +3309,7 @@ gaiaOutGml (gaiaOutBufferPtr out_buf, int version, int precision,
 		    strcpy (buf, "<gml:MultiLineString>");
 		else
 		    sprintf (buf,
-			     "<gml:MultiLineString srsName=\"EPSG:%d\">",
+			     "<gml:MultiLineString srsName=\"urn:ogc:def:crs:EPSG:%d\">",
 			     geom->Srid);
 	    }
 	  break;
@@ -3305,7 +3319,8 @@ gaiaOutGml (gaiaOutBufferPtr out_buf, int version, int precision,
 		if (geom->Srid <= 0)
 		    strcpy (buf, "<gml:MultiSurface>");
 		else
-		    sprintf (buf, "<gml:MultiSurface srsName=\"EPSG:%d\">",
+		    sprintf (buf,
+			     "<gml:MultiSurface srsName=\"urn:ogc:def:crs:EPSG:%d\">",
 			     geom->Srid);
 	    }
 	  else
@@ -3313,7 +3328,8 @@ gaiaOutGml (gaiaOutBufferPtr out_buf, int version, int precision,
 		if (geom->Srid <= 0)
 		    strcpy (buf, "<gml:MultiPolygon>");
 		else
-		    sprintf (buf, "<gml:MultiPolygon srsName=\"EPSG:%d\">",
+		    sprintf (buf,
+			     "<gml:MultiPolygon srsName=\"urn:ogc:def:crs:EPSG:%d\">",
 			     geom->Srid);
 	    }
 	  break;
@@ -3321,7 +3337,8 @@ gaiaOutGml (gaiaOutBufferPtr out_buf, int version, int precision,
 	  if (geom->Srid <= 0)
 	      strcpy (buf, "<gml:MultiGeometry>");
 	  else
-	      sprintf (buf, "<gml:MultiGeometry srsName=\"EPSG:%d\">",
+	      sprintf (buf,
+		       "<gml:MultiGeometry srsName=\"urn:ogc:def:crs:EPSG:%d\">",
 		       geom->Srid);
 	  is_coll = 1;
 	  break;
@@ -3344,7 +3361,8 @@ gaiaOutGml (gaiaOutBufferPtr out_buf, int version, int precision,
 		if (geom->Srid <= 0)
 		    strcpy (buf, "<gml:Point>");
 		else
-		    sprintf (buf, "<gml:Point srsName=\"EPSG:%d\">",
+		    sprintf (buf,
+			     "<gml:Point srsName=\"urn:ogc:def:crs:EPSG:%d\">",
 			     geom->Srid);
 	    }
 	  if (version == 3)
@@ -3358,9 +3376,17 @@ gaiaOutGml (gaiaOutBufferPtr out_buf, int version, int precision,
 	  else
 	      strcat (buf, "<gml:coordinates>");
 	  gaiaAppendToOutBuffer (out_buf, buf);
-	  buf_x = sqlite3_mprintf ("%.*f", precision, point->X);
+	  if (flipped)
+	    {
+		buf_x = sqlite3_mprintf ("%.*f", precision, point->Y);
+		buf_y = sqlite3_mprintf ("%.*f", precision, point->X);
+	    }
+	  else
+	    {
+		buf_x = sqlite3_mprintf ("%.*f", precision, point->X);
+		buf_y = sqlite3_mprintf ("%.*f", precision, point->Y);
+	    }
 	  gaiaOutClean (buf_x);
-	  buf_y = sqlite3_mprintf ("%.*f", precision, point->Y);
 	  gaiaOutClean (buf_y);
 	  if (point->DimensionModel == GAIA_XY_Z
 	      || point->DimensionModel == GAIA_XY_Z_M)
@@ -3454,7 +3480,8 @@ gaiaOutGml (gaiaOutBufferPtr out_buf, int version, int precision,
 		      if (geom->Srid <= 0)
 			  strcpy (buf, "<gml:Curve>");
 		      else
-			  sprintf (buf, "<gml:Curve srsName=\"EPSG:%d\">",
+			  sprintf (buf,
+				   "<gml:Curve srsName=\"urn:ogc:def:crs:EPSG:%d\">",
 				   geom->Srid);
 		      strcat (buf, "<gml:segments>");
 		      strcat (buf, "<gml:LineStringSegment>");
@@ -3469,7 +3496,8 @@ gaiaOutGml (gaiaOutBufferPtr out_buf, int version, int precision,
 		      if (geom->Srid <= 0)
 			  strcpy (buf, "<gml:LineString>");
 		      else
-			  sprintf (buf, "<gml:LineString srsName=\"EPSG:%d\">",
+			  sprintf (buf,
+				   "<gml:LineString srsName=\"urn:ogc:def:crs:EPSG:%d\">",
 				   geom->Srid);
 		      strcat (buf, "<gml:coordinates>");
 		  }
@@ -3504,9 +3532,17 @@ gaiaOutGml (gaiaOutBufferPtr out_buf, int version, int precision,
 		    strcpy (buf, " ");
 		if (has_z)
 		  {
-		      buf_x = sqlite3_mprintf ("%.*f", precision, x);
+		      if (flipped)
+			{
+			    buf_x = sqlite3_mprintf ("%.*f", precision, y);
+			    buf_y = sqlite3_mprintf ("%.*f", precision, x);
+			}
+		      else
+			{
+			    buf_x = sqlite3_mprintf ("%.*f", precision, x);
+			    buf_y = sqlite3_mprintf ("%.*f", precision, y);
+			}
 		      gaiaOutClean (buf_x);
-		      buf_y = sqlite3_mprintf ("%.*f", precision, y);
 		      gaiaOutClean (buf_y);
 		      buf_z = sqlite3_mprintf ("%.*f", precision, z);
 		      gaiaOutClean (buf_z);
@@ -3531,9 +3567,17 @@ gaiaOutGml (gaiaOutBufferPtr out_buf, int version, int precision,
 		  }
 		else
 		  {
-		      buf_x = sqlite3_mprintf ("%.*f", precision, x);
+		      if (flipped)
+			{
+			    buf_x = sqlite3_mprintf ("%.*f", precision, y);
+			    buf_y = sqlite3_mprintf ("%.*f", precision, x);
+			}
+		      else
+			{
+			    buf_x = sqlite3_mprintf ("%.*f", precision, x);
+			    buf_y = sqlite3_mprintf ("%.*f", precision, y);
+			}
 		      gaiaOutClean (buf_x);
-		      buf_y = sqlite3_mprintf ("%.*f", precision, y);
 		      gaiaOutClean (buf_y);
 		      if (version == 3)
 			{
@@ -3633,7 +3677,8 @@ gaiaOutGml (gaiaOutBufferPtr out_buf, int version, int precision,
 		if (geom->Srid <= 0)
 		    strcpy (buf, "<gml:Polygon>");
 		else
-		    sprintf (buf, "<gml:Polygon srsName=\"EPSG:%d\">",
+		    sprintf (buf,
+			     "<gml:Polygon srsName=\"urn:ogc:def:crs:EPSG:%d\">",
 			     geom->Srid);
 		if (version == 3)
 		  {
@@ -3682,9 +3727,17 @@ gaiaOutGml (gaiaOutBufferPtr out_buf, int version, int precision,
 		    strcpy (buf, " ");
 		if (has_z)
 		  {
-		      buf_x = sqlite3_mprintf ("%.*f", precision, x);
+		      if (flipped)
+			{
+			    buf_x = sqlite3_mprintf ("%.*f", precision, y);
+			    buf_y = sqlite3_mprintf ("%.*f", precision, x);
+			}
+		      else
+			{
+			    buf_x = sqlite3_mprintf ("%.*f", precision, x);
+			    buf_y = sqlite3_mprintf ("%.*f", precision, y);
+			}
 		      gaiaOutClean (buf_x);
-		      buf_y = sqlite3_mprintf ("%.*f", precision, y);
 		      gaiaOutClean (buf_y);
 		      buf_z = sqlite3_mprintf ("%.*f", precision, z);
 		      gaiaOutClean (buf_z);
@@ -3709,9 +3762,17 @@ gaiaOutGml (gaiaOutBufferPtr out_buf, int version, int precision,
 		  }
 		else
 		  {
-		      buf_x = sqlite3_mprintf ("%.*f", precision, x);
+		      if (flipped)
+			{
+			    buf_x = sqlite3_mprintf ("%.*f", precision, y);
+			    buf_y = sqlite3_mprintf ("%.*f", precision, x);
+			}
+		      else
+			{
+			    buf_x = sqlite3_mprintf ("%.*f", precision, x);
+			    buf_y = sqlite3_mprintf ("%.*f", precision, y);
+			}
 		      gaiaOutClean (buf_x);
-		      buf_y = sqlite3_mprintf ("%.*f", precision, y);
 		      gaiaOutClean (buf_y);
 		      if (version == 3)
 			{
@@ -3795,9 +3856,21 @@ gaiaOutGml (gaiaOutBufferPtr out_buf, int version, int precision,
 			  strcpy (buf, " ");
 		      if (has_z)
 			{
-			    buf_x = sqlite3_mprintf ("%.*f", precision, x);
+			    if (flipped)
+			      {
+				  buf_x =
+				      sqlite3_mprintf ("%.*f", precision, y);
+				  buf_y =
+				      sqlite3_mprintf ("%.*f", precision, x);
+			      }
+			    else
+			      {
+				  buf_x =
+				      sqlite3_mprintf ("%.*f", precision, x);
+				  buf_y =
+				      sqlite3_mprintf ("%.*f", precision, y);
+			      }
 			    gaiaOutClean (buf_x);
-			    buf_y = sqlite3_mprintf ("%.*f", precision, y);
 			    gaiaOutClean (buf_y);
 			    buf_z = sqlite3_mprintf ("%.*f", precision, z);
 			    gaiaOutClean (buf_z);
@@ -3822,9 +3895,21 @@ gaiaOutGml (gaiaOutBufferPtr out_buf, int version, int precision,
 			}
 		      else
 			{
-			    buf_x = sqlite3_mprintf ("%.*f", precision, x);
+			    if (flipped)
+			      {
+				  buf_x =
+				      sqlite3_mprintf ("%.*f", precision, y);
+				  buf_y =
+				      sqlite3_mprintf ("%.*f", precision, x);
+			      }
+			    else
+			      {
+				  buf_x =
+				      sqlite3_mprintf ("%.*f", precision, x);
+				  buf_y =
+				      sqlite3_mprintf ("%.*f", precision, y);
+			      }
 			    gaiaOutClean (buf_x);
-			    buf_y = sqlite3_mprintf ("%.*f", precision, y);
 			    gaiaOutClean (buf_y);
 			    if (version == 3)
 			      {
