@@ -326,7 +326,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CFLAGS = -I@srcdir@/../src/headers 
-AM_LDFLAGS = -L../src -lspatialite -lm $(GCOV_FLAGS)
+AM_LDFLAGS = -L../src -lspatialite -lsqlite3 -lm $(GCOV_FLAGS)
 MOSTLYCLEANFILES = *.gcna *.gcno *.gcda
 EXTRA_DIST = examples.doxy
 all: all-am

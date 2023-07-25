@@ -26,26 +26,6 @@ EXTRA_DIST = frechetdistance1.testcase \
 	frechetdistdens7.testcase \
 	frechetdistdens8.testcase \
 	frechetdistdens9.testcase \
-	geosemptycircle1.testcase \
-	geosemptycircle2.testcase \
-	geosemptycircle3.testcase \
-	geosemptycircle4.testcase \
-	geosemptycircle5.testcase \
-	geosemptycircle6.testcase \
-	geosemptycircle7.testcase \
-	geosemptycircle8.testcase \
-	geosemptycircle9.testcase \
-	geosemptycircle10.testcase \
-	geosmaxcircle1.testcase \
-	geosmaxcircle2.testcase \
-	geosmaxcircle3.testcase \
-	geosmaxcircle4.testcase \
-	geosmaxcircle5.testcase \
-	geosmaxcircle6.testcase \
-	geosmaxcircle7.testcase \
-	geosmaxcircle8.testcase \
-	geosmaxcircle9.testcase \
-	geosmaxcircle10.testcase \
 	geosminboundcenter1.testcase \
 	geosminboundcenter2.testcase \
 	geosminboundcenter3.testcase \

@@ -53611,9 +53611,6 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_GEOSMinimumRotatedRectangle, 0, 0, 0);
 
-    sqlite3_create_function_v2 (db, "GEOSMaximumInscribedCircle", 2,
-				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
-				fnct_GEOSMaximumInscribedCircle, 0, 0, 0);
     sqlite3_create_function_v2 (db, "GEOSMinimumBoundingCircle", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_GEOSMinimumBoundingCircle, 0, 0, 0);
@@ -53629,9 +53626,6 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "ST_MinimumBoundingCenter", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_GEOSMinimumBoundingCenter, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "GEOSLargestEmptyCircle", 2,
-				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
-				fnct_GEOSLargestEmptyCircle, 0, 0, 0);
     sqlite3_create_function_v2 (db, "GEOSMinimumWidth", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_GEOSMinimumWidth, 0, 0, 0);
@@ -53659,6 +53653,12 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "GeosMakeValid", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_GeosMakeValid, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "GEOSMaximumInscribedCircle", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_GEOSMaximumInscribedCircle, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "GEOSLargestEmptyCircle", 2,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_GEOSLargestEmptyCircle, 0, 0, 0);
     sqlite3_create_function_v2 (db, "ReducePrecision", 2,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_ReducePrecision, 0, 0, 0);

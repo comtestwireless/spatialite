@@ -804,125 +804,6 @@ gaiaMinimumRotatedRectangle_r (const void *p_cache, gaiaGeomCollPtr geom)
 }
 
 GAIAGEO_DECLARE gaiaGeomCollPtr
-gaiaMaximumInscribedCircle (gaiaGeomCollPtr geom, double tolerance)
-{
-/* 
-/ Constructs the Maximum Inscribed Circle for a  polygonal geometry, 
-/ up to a specified tolerance.
-/ The Maximum Inscribed Circle is determined by a point in the interior 
-/ of the area which has the farthest distance from the area boundary, 
-/ along with a boundary point at that distance.
-/ In the context of geography the center of the Maximum Inscribed Circle 
-/ is known as the Pole of Inaccessibility. 
-/ A cartographic use case is to determine a suitable point to place a 
-/ map label within a polygon.
-/ The radius length of the Maximum Inscribed Circle is a  measure of 
-/ how "narrow" a polygon is. 
-/ It is the distance at which the negative buffer becomes empty.
-/ The class supports polygons with holes and multipolygons.
-/ The implementation uses a successive-approximation technique over a 
-/ grid of square cells covering the area geometry.
-/ The grid is refined using a branch-and-bound algorithm. 
-/ Point containment and distance are computed in a performant way by 
-/ using spatial indexes.
-/ Returns a two-point linestring, with one point at the center of the 
-/ inscribed circle and the other on the boundary of the inscribed circle.
-*/
-#ifndef GEOS_USE_ONLY_R_API	/* obsolete versions non fully thread-safe */
-    GEOSGeometry *in;
-    GEOSGeometry *out;
-    gaiaGeomCollPtr result = NULL;
-    gaiaResetGeosMsg ();
-    if (!geom)
-	return NULL;
-    in = gaiaToGeos (geom);
-    out = GEOSMaximumInscribedCircle (in, tolerance);
-    GEOSGeom_destroy (in);
-    if (!out)
-	return NULL;
-    if (geom->DimensionModel == GAIA_XY_Z)
-	result = gaiaFromGeos_XYZ (out);
-    else if (geom->DimensionModel == GAIA_XY_M)
-	result = gaiaFromGeos_XYM (out);
-    else if (geom->DimensionModel == GAIA_XY_Z_M)
-	result = gaiaFromGeos_XYZM (out);
-    else
-	result = gaiaFromGeos_XY (out);
-    GEOSGeom_destroy (out);
-    if (result == NULL)
-	return NULL;
-    result->Srid = geom->Srid;
-#else
-    if (geom == NULL || tolerance == NULL)
-	geom = NULL;		/* silencing stupid compiler warnings */
-#endif
-    return result;
-}
-
-GAIAGEO_DECLARE gaiaGeomCollPtr
-gaiaMaximumInscribedCircle_r (const void *p_cache, gaiaGeomCollPtr geom,
-			      double tolerance)
-{
-/* 
-/ Constructs the Maximum Inscribed Circle for a  polygonal geometry, 
-/ up to a specified tolerance.
-/ The Maximum Inscribed Circle is determined by a point in the interior 
-/ of the area which has the farthest distance from the area boundary, 
-/ along with a boundary point at that distance.
-/ In the context of geography the center of the Maximum Inscribed Circle 
-/ is known as the Pole of Inaccessibility. 
-/ A cartographic use case is to determine a suitable point to place a 
-/ map label within a polygon.
-/ The radius length of the Maximum Inscribed Circle is a  measure of 
-/ how "narrow" a polygon is. 
-/ It is the distance at which the negative buffer becomes empty.
-/ The class supports polygons with holes and multipolygons.
-/ The implementation uses a successive-approximation technique over a 
-/ grid of square cells covering the area geometry.
-/ The grid is refined using a branch-and-bound algorithm. 
-/ Point containment and distance are computed in a performant way by 
-/ using spatial indexes.
-/ Returns a two-point linestring, with one point at the center of the 
-/ inscribed circle and the other on the boundary of the inscribed circle.
-*/
-    GEOSGeometry *in;
-    GEOSGeometry *out;
-    gaiaGeomCollPtr result = NULL;
-    struct splite_internal_cache *cache =
-	(struct splite_internal_cache *) p_cache;
-    GEOSContextHandle_t handle = NULL;
-    if (cache == NULL)
-	return 0;
-    if (cache->magic1 != SPATIALITE_CACHE_MAGIC1
-	|| cache->magic2 != SPATIALITE_CACHE_MAGIC2)
-	return 0;
-    handle = cache->GEOS_handle;
-    if (handle == NULL)
-	return 0;
-    gaiaResetGeosMsg_r (cache);
-    if (!geom)
-	return NULL;
-    in = gaiaToGeos_r (cache, geom);
-    out = GEOSMaximumInscribedCircle_r (handle, in, tolerance);
-    GEOSGeom_destroy (in);
-    if (!out)
-	return NULL;
-    if (geom->DimensionModel == GAIA_XY_Z)
-	result = gaiaFromGeos_XYZ_r (cache, out);
-    else if (geom->DimensionModel == GAIA_XY_M)
-	result = gaiaFromGeos_XYM_r (cache, out);
-    else if (geom->DimensionModel == GAIA_XY_Z_M)
-	result = gaiaFromGeos_XYZM_r (cache, out);
-    else
-	result = gaiaFromGeos_XY_r (cache, out);
-    GEOSGeom_destroy (out);
-    if (result == NULL)
-	return NULL;
-    result->Srid = geom->Srid;
-    return result;
-}
-
-GAIAGEO_DECLARE gaiaGeomCollPtr
 gaiaMinimumBoundingCircle (gaiaGeomCollPtr geom, double *xradius,
 			   gaiaGeomCollPtr * xcenter)
 {
@@ -1068,103 +949,6 @@ gaiaMinimumBoundingCircle_r (const void *p_cache, gaiaGeomCollPtr geom,
     else
 	gaiaFreeGeomColl (center);
     return geo;
-}
-
-GAIAGEO_DECLARE gaiaGeomCollPtr
-gaiaLargestEmptyCircle (gaiaGeomCollPtr geom, gaiaGeomCollPtr boundary,
-			double tolerance)
-{
-/* 
-/ Returns a LINESTRING geometry which represents the minimum diameter of the geometry.
-/ The minimum diameter is defined to be the width of the smallest band that
-/ contains the geometry, where a band is a strip of the plane defined
-/ by two parallel lines. This can be thought of as the smallest hole that 
-/ the geometry can be moved through, with a single rotation.
-*/
-#ifndef GEOS_USE_ONLY_R_API	/* obsolete versions non fully thread-safe */
-    GEOSGeometry *in;
-    GEOSGeometry *bdry;
-    GEOSGeometry *out;
-    gaiaGeomCollPtr result = NULL;
-    gaiaResetGeosMsg ();
-    if (!geom || !boundary)
-	return NULL;
-    in = gaiaToGeos (geom);
-    bdry = gaiaToGeos (boundary);
-    out = GEOSLargestEmptyCircle (in, bdry, tolerance);
-    GEOSGeom_destroy (in);
-    GEOSGeom_destroy (bdry);
-    if (!out)
-	return NULL;
-    if (geom->DimensionModel == GAIA_XY_Z)
-	result = gaiaFromGeos_XYZ (out);
-    else if (geom->DimensionModel == GAIA_XY_M)
-	result = gaiaFromGeos_XYM (out);
-    else if (geom->DimensionModel == GAIA_XY_Z_M)
-	result = gaiaFromGeos_XYZM (out);
-    else
-	result = gaiaFromGeos_XY (out);
-    GEOSGeom_destroy (out);
-    if (result == NULL)
-	return NULL;
-    result->Srid = geom->Srid;
-#else
-    if (geom == NULL || boundary == NULL || tolerance == NULL)
-	geom = NULL;		/* silencing stupid compiler warnings */
-#endif
-    return result;
-}
-
-GAIAGEO_DECLARE gaiaGeomCollPtr
-gaiaLargestEmptyCircle_r (const void *p_cache, gaiaGeomCollPtr geom,
-			  gaiaGeomCollPtr boundary, double tolerance)
-{
-/* 
-/ Returns a LINESTRING geometry which represents the minimum diameter of the geometry.
-/ The minimum diameter is defined to be the width of the smallest band that
-/ contains the geometry, where a band is a strip of the plane defined
-/ by two parallel lines. This can be thought of as the smallest hole that 
-/ the geometry can be moved through, with a single rotation.
-*/
-    GEOSGeometry *in;
-    GEOSGeometry *bdry;
-    GEOSGeometry *out;
-    gaiaGeomCollPtr result = NULL;
-    struct splite_internal_cache *cache =
-	(struct splite_internal_cache *) p_cache;
-    GEOSContextHandle_t handle = NULL;
-    if (cache == NULL)
-	return 0;
-    if (cache->magic1 != SPATIALITE_CACHE_MAGIC1
-	|| cache->magic2 != SPATIALITE_CACHE_MAGIC2)
-	return 0;
-    handle = cache->GEOS_handle;
-    if (handle == NULL)
-	return 0;
-    gaiaResetGeosMsg_r (cache);
-    if (!geom || !boundary)
-	return NULL;
-    in = gaiaToGeos_r (cache, geom);
-    bdry = gaiaToGeos_r (cache, boundary);
-    out = GEOSLargestEmptyCircle_r (handle, in, bdry, tolerance);
-    GEOSGeom_destroy (in);
-    GEOSGeom_destroy (bdry);
-
-    if (!out)
-	return NULL;
-    if (geom->DimensionModel == GAIA_XY_Z)
-	result = gaiaFromGeos_XYZ_r (cache, out);
-    else if (geom->DimensionModel == GAIA_XY_M)
-	result = gaiaFromGeos_XYM_r (cache, out);
-    else if (geom->DimensionModel == GAIA_XY_Z_M)
-	result = gaiaFromGeos_XYZM_r (cache, out);
-    else
-	result = gaiaFromGeos_XY_r (cache, out);
-    GEOSGeom_destroy (out);
-    if (result == NULL)
-	return NULL;
-    result->Srid = geom->Srid;
-    return result;
 }
 
 GAIAGEO_DECLARE gaiaGeomCollPtr
@@ -1665,6 +1449,222 @@ gaiaGeosMakeValid_r (const void *p_cache,
     else
 	result = gaiaFromGeos_XY_r (cache, g2);
     GEOSGeom_destroy_r (handle, g2);
+    if (result == NULL)
+	return NULL;
+    result->Srid = geom->Srid;
+    return result;
+}
+
+GAIAGEO_DECLARE gaiaGeomCollPtr
+gaiaMaximumInscribedCircle (gaiaGeomCollPtr geom, double tolerance)
+{
+/* 
+/ Constructs the Maximum Inscribed Circle for a  polygonal geometry, 
+/ up to a specified tolerance.
+/ The Maximum Inscribed Circle is determined by a point in the interior 
+/ of the area which has the farthest distance from the area boundary, 
+/ along with a boundary point at that distance.
+/ In the context of geography the center of the Maximum Inscribed Circle 
+/ is known as the Pole of Inaccessibility. 
+/ A cartographic use case is to determine a suitable point to place a 
+/ map label within a polygon.
+/ The radius length of the Maximum Inscribed Circle is a  measure of 
+/ how "narrow" a polygon is. 
+/ It is the distance at which the negative buffer becomes empty.
+/ The class supports polygons with holes and multipolygons.
+/ The implementation uses a successive-approximation technique over a 
+/ grid of square cells covering the area geometry.
+/ The grid is refined using a branch-and-bound algorithm. 
+/ Point containment and distance are computed in a performant way by 
+/ using spatial indexes.
+/ Returns a two-point linestring, with one point at the center of the 
+/ inscribed circle and the other on the boundary of the inscribed circle.
+*/
+#ifndef GEOS_USE_ONLY_R_API	/* obsolete versions non fully thread-safe */
+    GEOSGeometry *in;
+    GEOSGeometry *out;
+    gaiaGeomCollPtr result = NULL;
+    gaiaResetGeosMsg ();
+    if (!geom)
+	return NULL;
+    in = gaiaToGeos (geom);
+    out = GEOSMaximumInscribedCircle (in, tolerance);
+    GEOSGeom_destroy (in);
+    if (!out)
+	return NULL;
+    if (geom->DimensionModel == GAIA_XY_Z)
+	result = gaiaFromGeos_XYZ (out);
+    else if (geom->DimensionModel == GAIA_XY_M)
+	result = gaiaFromGeos_XYM (out);
+    else if (geom->DimensionModel == GAIA_XY_Z_M)
+	result = gaiaFromGeos_XYZM (out);
+    else
+	result = gaiaFromGeos_XY (out);
+    GEOSGeom_destroy (out);
+    if (result == NULL)
+	return NULL;
+    result->Srid = geom->Srid;
+#else
+    if (geom == NULL || tolerance == NULL)
+	geom = NULL;		/* silencing stupid compiler warnings */
+#endif
+    return result;
+}
+
+GAIAGEO_DECLARE gaiaGeomCollPtr
+gaiaMaximumInscribedCircle_r (const void *p_cache, gaiaGeomCollPtr geom,
+			      double tolerance)
+{
+/* 
+/ Constructs the Maximum Inscribed Circle for a  polygonal geometry, 
+/ up to a specified tolerance.
+/ The Maximum Inscribed Circle is determined by a point in the interior 
+/ of the area which has the farthest distance from the area boundary, 
+/ along with a boundary point at that distance.
+/ In the context of geography the center of the Maximum Inscribed Circle 
+/ is known as the Pole of Inaccessibility. 
+/ A cartographic use case is to determine a suitable point to place a 
+/ map label within a polygon.
+/ The radius length of the Maximum Inscribed Circle is a  measure of 
+/ how "narrow" a polygon is. 
+/ It is the distance at which the negative buffer becomes empty.
+/ The class supports polygons with holes and multipolygons.
+/ The implementation uses a successive-approximation technique over a 
+/ grid of square cells covering the area geometry.
+/ The grid is refined using a branch-and-bound algorithm. 
+/ Point containment and distance are computed in a performant way by 
+/ using spatial indexes.
+/ Returns a two-point linestring, with one point at the center of the 
+/ inscribed circle and the other on the boundary of the inscribed circle.
+*/
+    GEOSGeometry *in;
+    GEOSGeometry *out;
+    gaiaGeomCollPtr result = NULL;
+    struct splite_internal_cache *cache =
+	(struct splite_internal_cache *) p_cache;
+    GEOSContextHandle_t handle = NULL;
+    if (cache == NULL)
+	return 0;
+    if (cache->magic1 != SPATIALITE_CACHE_MAGIC1
+	|| cache->magic2 != SPATIALITE_CACHE_MAGIC2)
+	return 0;
+    handle = cache->GEOS_handle;
+    if (handle == NULL)
+	return 0;
+    gaiaResetGeosMsg_r (cache);
+    if (!geom)
+	return NULL;
+    in = gaiaToGeos_r (cache, geom);
+    out = GEOSMaximumInscribedCircle_r (handle, in, tolerance);
+    GEOSGeom_destroy (in);
+    if (!out)
+	return NULL;
+    if (geom->DimensionModel == GAIA_XY_Z)
+	result = gaiaFromGeos_XYZ_r (cache, out);
+    else if (geom->DimensionModel == GAIA_XY_M)
+	result = gaiaFromGeos_XYM_r (cache, out);
+    else if (geom->DimensionModel == GAIA_XY_Z_M)
+	result = gaiaFromGeos_XYZM_r (cache, out);
+    else
+	result = gaiaFromGeos_XY_r (cache, out);
+    GEOSGeom_destroy (out);
+    if (result == NULL)
+	return NULL;
+    result->Srid = geom->Srid;
+    return result;
+}
+
+GAIAGEO_DECLARE gaiaGeomCollPtr
+gaiaLargestEmptyCircle (gaiaGeomCollPtr geom, gaiaGeomCollPtr boundary,
+			double tolerance)
+{
+/* 
+/ Returns a LINESTRING geometry which represents the minimum diameter of the geometry.
+/ The minimum diameter is defined to be the width of the smallest band that
+/ contains the geometry, where a band is a strip of the plane defined
+/ by two parallel lines. This can be thought of as the smallest hole that 
+/ the geometry can be moved through, with a single rotation.
+*/
+#ifndef GEOS_USE_ONLY_R_API	/* obsolete versions non fully thread-safe */
+    GEOSGeometry *in;
+    GEOSGeometry *bdry;
+    GEOSGeometry *out;
+    gaiaGeomCollPtr result = NULL;
+    gaiaResetGeosMsg ();
+    if (!geom || !boundary)
+	return NULL;
+    in = gaiaToGeos (geom);
+    bdry = gaiaToGeos (boundary);
+    out = GEOSLargestEmptyCircle (in, bdry, tolerance);
+    GEOSGeom_destroy (in);
+    GEOSGeom_destroy (bdry);
+    if (!out)
+	return NULL;
+    if (geom->DimensionModel == GAIA_XY_Z)
+	result = gaiaFromGeos_XYZ (out);
+    else if (geom->DimensionModel == GAIA_XY_M)
+	result = gaiaFromGeos_XYM (out);
+    else if (geom->DimensionModel == GAIA_XY_Z_M)
+	result = gaiaFromGeos_XYZM (out);
+    else
+	result = gaiaFromGeos_XY (out);
+    GEOSGeom_destroy (out);
+    if (result == NULL)
+	return NULL;
+    result->Srid = geom->Srid;
+#else
+    if (geom == NULL || boundary == NULL || tolerance == NULL)
+	geom = NULL;		/* silencing stupid compiler warnings */
+#endif
+    return result;
+}
+
+GAIAGEO_DECLARE gaiaGeomCollPtr
+gaiaLargestEmptyCircle_r (const void *p_cache, gaiaGeomCollPtr geom,
+			  gaiaGeomCollPtr boundary, double tolerance)
+{
+/* 
+/ Returns a LINESTRING geometry which represents the minimum diameter of the geometry.
+/ The minimum diameter is defined to be the width of the smallest band that
+/ contains the geometry, where a band is a strip of the plane defined
+/ by two parallel lines. This can be thought of as the smallest hole that 
+/ the geometry can be moved through, with a single rotation.
+*/
+    GEOSGeometry *in;
+    GEOSGeometry *bdry;
+    GEOSGeometry *out;
+    gaiaGeomCollPtr result = NULL;
+    struct splite_internal_cache *cache =
+	(struct splite_internal_cache *) p_cache;
+    GEOSContextHandle_t handle = NULL;
+    if (cache == NULL)
+	return 0;
+    if (cache->magic1 != SPATIALITE_CACHE_MAGIC1
+	|| cache->magic2 != SPATIALITE_CACHE_MAGIC2)
+	return 0;
+    handle = cache->GEOS_handle;
+    if (handle == NULL)
+	return 0;
+    gaiaResetGeosMsg_r (cache);
+    if (!geom || !boundary)
+	return NULL;
+    in = gaiaToGeos_r (cache, geom);
+    bdry = gaiaToGeos_r (cache, boundary);
+    out = GEOSLargestEmptyCircle_r (handle, in, bdry, tolerance);
+    GEOSGeom_destroy (in);
+    GEOSGeom_destroy (bdry);
+
+    if (!out)
+	return NULL;
+    if (geom->DimensionModel == GAIA_XY_Z)
+	result = gaiaFromGeos_XYZ_r (cache, out);
+    else if (geom->DimensionModel == GAIA_XY_M)
+	result = gaiaFromGeos_XYM_r (cache, out);
+    else if (geom->DimensionModel == GAIA_XY_Z_M)
+	result = gaiaFromGeos_XYZM_r (cache, out);
+    else
+	result = gaiaFromGeos_XY_r (cache, out);
+    GEOSGeom_destroy (out);
     if (result == NULL)
 	return NULL;
     result->Srid = geom->Srid;

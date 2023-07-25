@@ -203,7 +203,7 @@
 #define PACKAGE_NAME "libspatialite"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "libspatialite 5.1.0-RC0"
+#define PACKAGE_STRING "libspatialite 5.1.0-RC1"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "libspatialite"
@@ -212,7 +212,7 @@
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "5.1.0-RC0"
+#define PACKAGE_VERSION "5.1.0-RC1"
 
 /* Should be defined in order to enable PROJ.6 support. */
 #define PROJ_NEW 1
@@ -221,7 +221,7 @@
 #define SPATIALITE_TARGET_CPU "x86_64-redhat-linux"
 
 /* the Version of this package. */
-#define SPATIALITE_VERSION "5.1.0-RC0"
+#define SPATIALITE_VERSION "5.1.0-RC1"
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1

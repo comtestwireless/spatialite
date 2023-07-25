@@ -115,9 +115,9 @@ endif
 AM_CFLAGS = -I@srcdir@/../src/headers -I@srcdir@
 
 if MINGW
-AM_LDFLAGS = -L../src -lspatialite -lm -lxml2 $(GCOV_FLAGS)
+AM_LDFLAGS = -L../src -lspatialite -lsqlite3 -lm -lxml2 $(GCOV_FLAGS)
 else 
-AM_LDFLAGS = -L../src -lpthread -lspatialite -lm -lxml2 $(GCOV_FLAGS)
+AM_LDFLAGS = -L../src -lpthread -lspatialite -lsqlite3 -lm -lxml2 $(GCOV_FLAGS)
 endif
 
 TESTS = $(check_PROGRAMS)

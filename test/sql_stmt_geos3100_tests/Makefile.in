@@ -270,6 +270,16 @@ EXTRA_DIST = geosdensify1.testcase \
 	geosdensify7.testcase \
 	geosdensify7.testcase \
 	geosdensify7.testcase \
+	geosemptycircle1.testcase \
+	geosemptycircle2.testcase \
+	geosemptycircle3.testcase \
+	geosemptycircle4.testcase \
+	geosemptycircle5.testcase \
+	geosemptycircle6.testcase \
+	geosemptycircle7.testcase \
+	geosemptycircle8.testcase \
+	geosemptycircle9.testcase \
+	geosemptycircle10.testcase \
 	geosmakevalid1.testcase \
 	geosmakevalid2.testcase \
 	geosmakevalid3.testcase \
@@ -284,6 +294,16 @@ EXTRA_DIST = geosdensify1.testcase \
 	geosmakevalid12.testcase \
 	geosmakevalid13.testcase \
 	geosmakevalid14.testcase \
+	geosmaxcircle1.testcase \
+	geosmaxcircle2.testcase \
+	geosmaxcircle3.testcase \
+	geosmaxcircle4.testcase \
+	geosmaxcircle5.testcase \
+	geosmaxcircle6.testcase \
+	geosmaxcircle7.testcase \
+	geosmaxcircle8.testcase \
+	geosmaxcircle9.testcase \
+	geosmaxcircle10.testcase \
 	constrdelaunay1.testcase \
 	constrdelaunay2.testcase \
 	constrdelaunay3.testcase \
