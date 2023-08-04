@@ -2,7 +2,7 @@
 
  virtualrouting.c -- SQLite3 extension [VIRTUAL TABLE Routing - shortest path]
 
- version 5.0, 2020 August 1
+ version 5.1.0, 2023 August 4
 
  Author: Sandro Furieri a.furieri@lqt.it
 
@@ -24,7 +24,7 @@ The Original Code is the SpatiaLite library
 
 The Initial Developer of the Original Code is Alessandro Furieri
  
-Portions created by the Initial Developer are Copyright (C) 2016-2021
+Portions created by the Initial Developer are Copyright (C) 2016-2024
 the Initial Developer. All Rights Reserved.
 
 Contributor(s):

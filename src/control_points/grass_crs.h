@@ -3,7 +3,7 @@
  grass_crs.h -- private header file required by source file derived from
                 Grass GIS
     
- version 5.0, 2020 August 1
+ version 5.1.0, 2023 August 4
 
  Author: Sandro Furieri a.furieri@lqt.it
 

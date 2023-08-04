@@ -2,7 +2,7 @@
 
  spatialite.c -- SQLite3 spatial extension
 
- version 5.0, 2020 August 1
+ version 5.1.0, 2023 August 4
 
  Author: Sandro Furieri a.furieri@lqt.it
 
@@ -24,7 +24,7 @@ The Original Code is the SpatiaLite library
 
 The Initial Developer of the Original Code is Alessandro Furieri
  
-Portions created by the Initial Developer are Copyright (C) 2008-2021
+Portions created by the Initial Developer are Copyright (C) 2008-2023
 the Initial Developer. All Rights Reserved.
 
 Contributor(s):
@@ -29364,81 +29364,6 @@ fnct_GEOSMinimumRotatedRectangle (sqlite3_context * context, int argc,
 }
 
 static void
-fnct_GEOSMaximumInscribedCircle (sqlite3_context * context, int argc,
-				 sqlite3_value ** argv)
-{
-/* SQL function:
-/ GEOSMaximumInscribedCircle(BLOBencoded geom, double tolerance)
-/
-/ Constructs the Maximum Inscribed Circle for a  polygonal geometry, 
-/ up to a specified tolerance.
-*/
-    unsigned char *p_blob;
-    int n_bytes;
-    double tolerance;
-    int int_value;
-    gaiaGeomCollPtr geom = NULL;
-    gaiaGeomCollPtr result;
-    int gpkg_amphibious = 0;
-    int gpkg_mode = 0;
-    int tiny_point = 0;
-    struct splite_internal_cache *cache = sqlite3_user_data (context);
-    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
-    if (cache != NULL)
-      {
-	  gpkg_amphibious = cache->gpkg_amphibious_mode;
-	  gpkg_mode = cache->gpkg_mode;
-	  tiny_point = cache->tinyPointEnabled;
-      }
-    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
-      {
-	  sqlite3_result_null (context);
-	  return;
-      }
-    if (sqlite3_value_type (argv[1]) == SQLITE_FLOAT)
-	tolerance = sqlite3_value_double (argv[1]);
-    else if (sqlite3_value_type (argv[1]) == SQLITE_INTEGER)
-      {
-	  int_value = sqlite3_value_int (argv[1]);
-	  tolerance = int_value;
-      }
-    else
-      {
-	  sqlite3_result_null (context);
-	  return;
-      }
-    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
-    n_bytes = sqlite3_value_bytes (argv[0]);
-    geom =
-	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
-				     gpkg_amphibious);
-    if (!geom)
-	sqlite3_result_null (context);
-    else
-      {
-	  void *data = sqlite3_user_data (context);
-	  if (data != NULL)
-	      result = gaiaMaximumInscribedCircle_r (data, geom, tolerance);
-	  else
-	      result = gaiaMaximumInscribedCircle (geom, tolerance);
-	  if (!result)
-	      sqlite3_result_null (context);
-	  else
-	    {
-		/* builds the BLOB geometry to be returned */
-		int len;
-		unsigned char *p_result = NULL;
-		result->Srid = geom->Srid;
-		gaiaToSpatiaLiteBlobWkbEx2 (result, &p_result, &len,
-					    gpkg_mode, tiny_point);
-		sqlite3_result_blob (context, p_result, len, free);
-		gaiaFreeGeomColl (result);
-	    }
-      }
-    gaiaFreeGeomColl (geom);
-}
-
-static void
 fnct_GEOSMinimumBoundingCircle (sqlite3_context * context, int argc,
 				sqlite3_value ** argv)
 {
@@ -29606,93 +29531,6 @@ fnct_GEOSMinimumBoundingCenter (sqlite3_context * context, int argc,
 					    gpkg_mode, tiny_point);
 		sqlite3_result_blob (context, p_result, len, free);
 		gaiaFreeGeomColl (center);
-	    }
-      }
-    gaiaFreeGeomColl (geom);
-}
-
-static void
-fnct_GEOSLargestEmptyCircle (sqlite3_context * context, int argc,
-			     sqlite3_value ** argv)
-{
-/* SQL function:
-/ GEOSLargestEmptyCircle(BLOBencoded geom, double tolerance)
-/
-/ Constructs the Largest Empty Circle for a set of obstacle geometries, 
-/ up to a specified tolerance.
-*/
-    unsigned char *p_blob;
-    int n_bytes;
-    double tolerance;
-    int int_value;
-    gaiaGeomCollPtr geom = NULL;
-    gaiaGeomCollPtr boundary = NULL;
-    gaiaGeomCollPtr result;
-    int gpkg_amphibious = 0;
-    int gpkg_mode = 0;
-    int tiny_point = 0;
-    struct splite_internal_cache *cache = sqlite3_user_data (context);
-    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
-    if (cache != NULL)
-      {
-	  gpkg_amphibious = cache->gpkg_amphibious_mode;
-	  gpkg_mode = cache->gpkg_mode;
-	  tiny_point = cache->tinyPointEnabled;
-      }
-    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
-      {
-	  sqlite3_result_null (context);
-	  return;
-      }
-    if (sqlite3_value_type (argv[1]) == SQLITE_FLOAT)
-	tolerance = sqlite3_value_double (argv[1]);
-    else if (sqlite3_value_type (argv[1]) == SQLITE_INTEGER)
-      {
-	  int_value = sqlite3_value_int (argv[1]);
-	  tolerance = int_value;
-      }
-    else
-      {
-	  sqlite3_result_null (context);
-	  return;
-      }
-    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
-    n_bytes = sqlite3_value_bytes (argv[0]);
-    geom =
-	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
-				     gpkg_amphibious);
-    if (geom)
-      {
-	  /* building the Boundary */
-	  void *data = sqlite3_user_data (context);
-	  if (data != NULL)
-	      boundary = gaiaConvexHull_r (data, geom);
-	  else
-	      boundary = gaiaConvexHull (geom);
-      }
-    if (!boundary)
-	sqlite3_result_null (context);
-    else
-      {
-	  void *data = sqlite3_user_data (context);
-	  if (data != NULL)
-	      result =
-		  gaiaLargestEmptyCircle_r (data, geom, boundary, tolerance);
-	  else
-	      result = gaiaLargestEmptyCircle (geom, boundary, tolerance);
-	  gaiaFreeGeomColl (boundary);
-	  if (!result)
-	      sqlite3_result_null (context);
-	  else
-	    {
-		/* builds the BLOB geometry to be returned */
-		int len;
-		unsigned char *p_result = NULL;
-		result->Srid = geom->Srid;
-		gaiaToSpatiaLiteBlobWkbEx2 (result, &p_result, &len,
-					    gpkg_mode, tiny_point);
-		sqlite3_result_blob (context, p_result, len, free);
-		gaiaFreeGeomColl (result);
 	    }
       }
     gaiaFreeGeomColl (geom);
@@ -30086,6 +29924,168 @@ fnct_GeosMakeValid (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	    }
       }
     gaiaFreeGeomColl (geo);
+}
+
+static void
+fnct_GEOSMaximumInscribedCircle (sqlite3_context * context, int argc,
+				 sqlite3_value ** argv)
+{
+/* SQL function:
+/ GEOSMaximumInscribedCircle(BLOBencoded geom, double tolerance)
+/
+/ Constructs the Maximum Inscribed Circle for a  polygonal geometry, 
+/ up to a specified tolerance.
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    double tolerance;
+    int int_value;
+    gaiaGeomCollPtr geom = NULL;
+    gaiaGeomCollPtr result;
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    int tiny_point = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+	  tiny_point = cache->tinyPointEnabled;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (sqlite3_value_type (argv[1]) == SQLITE_FLOAT)
+	tolerance = sqlite3_value_double (argv[1]);
+    else if (sqlite3_value_type (argv[1]) == SQLITE_INTEGER)
+      {
+	  int_value = sqlite3_value_int (argv[1]);
+	  tolerance = int_value;
+      }
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geom =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (!geom)
+	sqlite3_result_null (context);
+    else
+      {
+	  void *data = sqlite3_user_data (context);
+	  if (data != NULL)
+	      result = gaiaMaximumInscribedCircle_r (data, geom, tolerance);
+	  else
+	      result = gaiaMaximumInscribedCircle (geom, tolerance);
+	  if (!result)
+	      sqlite3_result_null (context);
+	  else
+	    {
+		/* builds the BLOB geometry to be returned */
+		int len;
+		unsigned char *p_result = NULL;
+		result->Srid = geom->Srid;
+		gaiaToSpatiaLiteBlobWkbEx2 (result, &p_result, &len,
+					    gpkg_mode, tiny_point);
+		sqlite3_result_blob (context, p_result, len, free);
+		gaiaFreeGeomColl (result);
+	    }
+      }
+    gaiaFreeGeomColl (geom);
+}
+
+static void
+fnct_GEOSLargestEmptyCircle (sqlite3_context * context, int argc,
+			     sqlite3_value ** argv)
+{
+/* SQL function:
+/ GEOSLargestEmptyCircle(BLOBencoded geom, double tolerance)
+/
+/ Constructs the Largest Empty Circle for a set of obstacle geometries, 
+/ up to a specified tolerance.
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    double tolerance;
+    int int_value;
+    gaiaGeomCollPtr geom = NULL;
+    gaiaGeomCollPtr boundary = NULL;
+    gaiaGeomCollPtr result;
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    int tiny_point = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+	  tiny_point = cache->tinyPointEnabled;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    if (sqlite3_value_type (argv[1]) == SQLITE_FLOAT)
+	tolerance = sqlite3_value_double (argv[1]);
+    else if (sqlite3_value_type (argv[1]) == SQLITE_INTEGER)
+      {
+	  int_value = sqlite3_value_int (argv[1]);
+	  tolerance = int_value;
+      }
+    else
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geom =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (geom)
+      {
+	  /* building the Boundary */
+	  void *data = sqlite3_user_data (context);
+	  if (data != NULL)
+	      boundary = gaiaConvexHull_r (data, geom);
+	  else
+	      boundary = gaiaConvexHull (geom);
+      }
+    if (!boundary)
+	sqlite3_result_null (context);
+    else
+      {
+	  void *data = sqlite3_user_data (context);
+	  if (data != NULL)
+	      result =
+		  gaiaLargestEmptyCircle_r (data, geom, boundary, tolerance);
+	  else
+	      result = gaiaLargestEmptyCircle (geom, boundary, tolerance);
+	  gaiaFreeGeomColl (boundary);
+	  if (!result)
+	      sqlite3_result_null (context);
+	  else
+	    {
+		/* builds the BLOB geometry to be returned */
+		int len;
+		unsigned char *p_result = NULL;
+		result->Srid = geom->Srid;
+		gaiaToSpatiaLiteBlobWkbEx2 (result, &p_result, &len,
+					    gpkg_mode, tiny_point);
+		sqlite3_result_blob (context, p_result, len, free);
+		gaiaFreeGeomColl (result);
+	    }
+      }
+    gaiaFreeGeomColl (geom);
 }
 
 static void
