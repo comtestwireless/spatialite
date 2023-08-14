@@ -25,6 +25,9 @@
 /* Should be defined in order to enable GEOS_370 support. */
 #define GEOS_370 1
 
+/* Should be defined in order to enable GEOS_390 support. */
+/* #undef GEOS_390 */
+
 /* Should be defined in order to enable GEOS_ADVANCED support. */
 #define GEOS_ADVANCED 1
 
@@ -203,7 +206,7 @@
 #define PACKAGE_NAME "libspatialite"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "libspatialite 5.1.0"
+#define PACKAGE_STRING "libspatialite 5.1.1-rc0"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "libspatialite"
@@ -212,7 +215,7 @@
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "5.1.0"
+#define PACKAGE_VERSION "5.1.1-rc0"
 
 /* Should be defined in order to enable PROJ.6 support. */
 #define PROJ_NEW 1
@@ -221,7 +224,7 @@
 #define SPATIALITE_TARGET_CPU "x86_64-redhat-linux"
 
 /* the Version of this package. */
-#define SPATIALITE_VERSION "5.1.0"
+#define SPATIALITE_VERSION "5.1.1-rc0"
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1

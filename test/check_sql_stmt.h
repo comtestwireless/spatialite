@@ -916,6 +916,17 @@ run_all_testcases (struct db_conn *conn, int load_extension, int legacy)
 
 #endif /* end GEOS_370 conditional */
 
+#ifdef GEOS_390			/* only if GEOS_390 is supported */
+
+    result =
+	run_subdir_test ("sql_stmt_geos390_tests", conn, load_extension, 0);
+    if (result != 0)
+      {
+	  return result;
+      }
+
+#endif /* end GEOS_390 conditional */
+
 #ifdef GEOS_3100			/* only if GEOS_3100 is supported */
 
     result =

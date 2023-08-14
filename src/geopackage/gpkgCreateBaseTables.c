@@ -276,24 +276,31 @@ fnct_gpkgCreateBaseTables (sqlite3_context * context, int argc,
 	    "SELECT RAISE(ABORT, 'update on table gpkg_metadata_reference violates constraint: column name must be defined for the specified table when reference_scope is \"column\" or \"row/col\"')\n"
 	    "WHERE (NEW.reference_scope IN ('column','row/col') AND NOT NEW.table_name IN (SELECT name FROM SQLITE_MASTER WHERE type = 'table' AND name = NEW.table_name AND sql LIKE ('%' || NEW.column_name || '%')));\n"
 	    "END",
+	/* sandro 2023.08-12
+	 * 
+	 * accepting a patche by Pieter Roggemans
+	 * it seems that these Triggers are no longer required
+	 * due to possible issues on tables with no-ROWID 
 
-	"CREATE TRIGGER 'gpkg_metadata_reference_row_id_value_insert'\n"
-	    "BEFORE INSERT ON 'gpkg_metadata_reference'\n"
-	    "FOR EACH ROW BEGIN\n"
-	    "SELECT RAISE(ABORT, 'insert on table gpkg_metadata_reference violates constraint: row_id_value must be NULL when reference_scope is \"geopackage\", \"table\" or \"column\"')\n"
-	    "WHERE NEW.reference_scope IN ('geopackage','table','column') AND NEW.row_id_value IS NOT NULL;\n"
-	    "SELECT RAISE(ABORT, 'insert on table gpkg_metadata_reference violates constraint: row_id_value must exist in specified table when reference_scope is \"row\" or \"row/col\"')\n"
-	    "WHERE NEW.reference_scope IN ('row','row/col') AND NOT EXISTS (SELECT rowid FROM (SELECT NEW.table_name AS table_name) WHERE rowid = NEW.row_id_value);\n"
-	    "END",
+	 "CREATE TRIGGER 'gpkg_metadata_reference_row_id_value_insert'\n"
+	 "BEFORE INSERT ON 'gpkg_metadata_reference'\n"
+	 "FOR EACH ROW BEGIN\n"
+	 "SELECT RAISE(ABORT, 'insert on table gpkg_metadata_reference violates constraint: row_id_value must be NULL when reference_scope is \"geopackage\", \"table\" or \"column\"')\n"
+	 "WHERE NEW.reference_scope IN ('geopackage','table','column') AND NEW.row_id_value IS NOT NULL;\n"
+	 "SELECT RAISE(ABORT, 'insert on table gpkg_metadata_reference violates constraint: row_id_value must exist in specified table when reference_scope is \"row\" or \"row/col\"')\n"
+	 "WHERE NEW.reference_scope IN ('row','row/col') AND NOT EXISTS (SELECT rowid FROM (SELECT NEW.table_name AS table_name) WHERE rowid = NEW.row_id_value);\n"
+	 "END",
 
-	"CREATE TRIGGER 'gpkg_metadata_reference_row_id_value_update'\n"
-	    "BEFORE UPDATE OF 'row_id_value' ON 'gpkg_metadata_reference'\n"
-	    "FOR EACH ROW BEGIN\n"
-	    "SELECT RAISE(ABORT, 'update on table gpkg_metadata_reference violates constraint: row_id_value must be NULL when reference_scope is \"geopackage\", \"table\" or \"column\"')\n"
-	    "WHERE NEW.reference_scope IN ('geopackage','table','column') AND NEW.row_id_value IS NOT NULL;\n"
-	    "SELECT RAISE(ABORT, 'update on table gpkg_metadata_reference violates constraint: row_id_value must exist in specified table when reference_scope is \"row\" or \"row/col\"')\n"
-	    "WHERE NEW.reference_scope IN ('row','row/col') AND NOT EXISTS (SELECT rowid FROM (SELECT NEW.table_name AS table_name) WHERE rowid = NEW.row_id_value);\n"
-	    "END",
+	 "CREATE TRIGGER 'gpkg_metadata_reference_row_id_value_update'\n"
+	 "BEFORE UPDATE OF 'row_id_value' ON 'gpkg_metadata_reference'\n"
+	 "FOR EACH ROW BEGIN\n"
+	 "SELECT RAISE(ABORT, 'update on table gpkg_metadata_reference violates constraint: row_id_value must be NULL when reference_scope is \"geopackage\", \"table\" or \"column\"')\n"
+	 "WHERE NEW.reference_scope IN ('geopackage','table','column') AND NEW.row_id_value IS NOT NULL;\n"
+	 "SELECT RAISE(ABORT, 'update on table gpkg_metadata_reference violates constraint: row_id_value must exist in specified table when reference_scope is \"row\" or \"row/col\"')\n"
+	 "WHERE NEW.reference_scope IN ('row','row/col') AND NOT EXISTS (SELECT rowid FROM (SELECT NEW.table_name AS table_name) WHERE rowid = NEW.row_id_value);\n"
+	 "END",
+	 *
+	 * end Sandro 2023-08-12 */
 
 	"CREATE TRIGGER 'gpkg_metadata_reference_timestamp_insert'\n"
 	    "BEFORE INSERT ON 'gpkg_metadata_reference'\n"

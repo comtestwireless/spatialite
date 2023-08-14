@@ -222,9 +222,9 @@ EXTRA_DIST = fnmatch_impl4win.h \
 SUBDIRS = sql_stmt_geosadvanced_tests sql_stmt_geos_tests \
 	sql_stmt_geos_380 sql_stmt_geos_non380 \
 	sql_stmt_geos_390 sql_stmt_geos_non390 sql_stmt_geos_391 \
-	sql_stmt_geos370_tests sql_stmt_geos3100_tests \
-	sql_stmt_geos_3100 sql_stmt_geos_non3100 \
-	sql_stmt_geos3110_tests \
+	sql_stmt_geos370_tests sql_stmt_geos390_tests \
+	sql_stmt_geos3100_tests sql_stmt_geos_3100 \
+	sql_stmt_geos_non3100 sql_stmt_geos3110_tests \
 	sql_stmt_geos_3110 sql_stmt_geos_non3110 \
 	sql_stmt_geos_3120 sql_stmt_geos_non3120 \
 	sql_stmt_libxml2_tests sql_stmt_rtgeom_tests \

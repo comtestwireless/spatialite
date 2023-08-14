@@ -65,4 +65,4 @@
 #define SPATIALITE_TARGET_CPU "x86_64-redhat-linux"
 
 /* the Version of this package */
-#define SPATIALITE_VERSION "5.1.0"
+#define SPATIALITE_VERSION "5.1.1-rc0"

@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT(libspatialite, 5.1.0, a.furieri@lqt.it)
+AC_INIT(libspatialite, 5.1.1-rc0, a.furieri@lqt.it)
 AC_LANG(C)
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -37,6 +37,8 @@ AH_TEMPLATE([GEOS_ONLY_REENTRANT],
             [Should be defined in order to fully disable GEOS non-thread-safe API.])
 AH_TEMPLATE([GEOS_370],
             [Should be defined in order to enable GEOS_370 support.])
+AH_TEMPLATE([GEOS_390],
+            [Should be defined in order to enable GEOS_390 support.])
 AH_TEMPLATE([GEOS_3100],
             [Should be defined in order to enable GEOS_3100 support.])
 AH_TEMPLATE([GEOS_3110],
@@ -146,6 +148,7 @@ AC_CONFIG_FILES([Makefile \
 		test/sql_stmt_tests/Makefile \
 		test/sql_stmt_geos_tests/Makefile \
 		test/sql_stmt_geos370_tests/Makefile \
+		test/sql_stmt_geos390_tests/Makefile \
 		test/sql_stmt_geos3100_tests/Makefile \
 		test/sql_stmt_geos3110_tests/Makefile \
 		test/sql_stmt_geos_380/Makefile \
@@ -392,13 +395,24 @@ if test x"$enable_geos" != "xno"; then
 	  AC_SEARCH_LIBS(GEOSFrechetDistance_r,geos_c,,AC_MSG_ERROR(['libgeos_c' (>= v.3.7.0) is required but it doesn't seem to be installed on this system. You may need to try re-running configure with a --disable-geos370 parameter.]))
 	  AC_DEFINE(GEOS_370)
   fi
+  
+  #-----------------------------------------------------------------------
+  #   --enable-geos390
+  #
+  AC_ARG_ENABLE(geos390, [AS_HELP_STRING(
+	  [--enable-geos390], [enables GEOS 3.9.0 features [default=yes]])],
+	  [], [enable_geos390=$enable_geos370])
+  if test x"$enable_geos390" != "xno"; then
+	  AC_SEARCH_LIBS(GEOSLargestEmptyCircle_r,geos_c,,AC_MSG_ERROR(['libgeos_c' (>= v.3.9.0) is required but it doesn't seem to be installed on this system. You may need to try re-running configure with a --disable-geos390 parameter.]))
+	  AC_DEFINE(GEOS_390)
+  fi
 
   #-----------------------------------------------------------------------
   #   --enable-geos3100
   #
   AC_ARG_ENABLE(geos3100, [AS_HELP_STRING(
 	  [--enable-geos3100], [enables GEOS 3.10.0 features [default=yes]])],
-	  [], [enable_geos3100=$enable_geos370])
+	  [], [enable_geos3100=$enable_geos390])
   if test x"$enable_geos3100" != "xno"; then
 	  AC_SEARCH_LIBS(GEOSConstrainedDelaunayTriangulation_r,geos_c,,AC_MSG_ERROR(['libgeos_c' (>= v.3.10.0) is required but it doesn't seem to be installed on this system. You may need to try re-running configure with a --disable-geos3100 parameter.]))
 	  AC_DEFINE(GEOS_3100)

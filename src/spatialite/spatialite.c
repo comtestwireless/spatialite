@@ -29364,6 +29364,180 @@ fnct_GEOSMinimumRotatedRectangle (sqlite3_context * context, int argc,
 }
 
 static void
+fnct_GEOSMinimumWidth (sqlite3_context * context, int argc,
+		       sqlite3_value ** argv)
+{
+/* SQL function:
+/ GEOSGEOSMinimumWidth(BLOBencoded geom)
+/
+/ Constructs the Minimum Width (a Linestring) for a  generic geometry
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    gaiaGeomCollPtr geom = NULL;
+    gaiaGeomCollPtr result;
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    int tiny_point = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+	  tiny_point = cache->tinyPointEnabled;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geom =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (!geom)
+	sqlite3_result_null (context);
+    else
+      {
+	  void *data = sqlite3_user_data (context);
+	  if (data != NULL)
+	      result = gaiaMinimumWidth_r (data, geom);
+	  else
+	      result = gaiaMinimumWidth (geom);
+	  if (!result)
+	      sqlite3_result_null (context);
+	  else
+	    {
+		/* builds the BLOB geometry to be returned */
+		int len;
+		unsigned char *p_result = NULL;
+		result->Srid = geom->Srid;
+		gaiaToSpatiaLiteBlobWkbEx2 (result, &p_result, &len,
+					    gpkg_mode, tiny_point);
+		sqlite3_result_blob (context, p_result, len, free);
+		gaiaFreeGeomColl (result);
+	    }
+      }
+    gaiaFreeGeomColl (geom);
+}
+
+static void
+fnct_GEOSMinimumClearance (sqlite3_context * context, int argc,
+			   sqlite3_value ** argv)
+{
+/* SQL function:
+/ GEOSMinimumClearance(BLOBencoded geom) 
+/
+/ Computes the minimum clearance of a geometry 
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    gaiaGeomCollPtr geom = NULL;
+    double result;
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geom =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (!geom)
+	sqlite3_result_null (context);
+    else
+      {
+	  int ret;
+	  void *data = sqlite3_user_data (context);
+	  if (data != NULL)
+	      ret = gaiaMinimumClearance_r (data, geom, &result);
+	  else
+	      ret = gaiaMinimumClearance (geom, &result);
+	  if (!ret)
+	      sqlite3_result_null (context);
+	  else
+	      sqlite3_result_double (context, result);
+      }
+    gaiaFreeGeomColl (geom);
+}
+
+static void
+fnct_GEOSMinimumClearanceLine (sqlite3_context * context, int argc,
+			       sqlite3_value ** argv)
+{
+/* SQL function:
+/ GEOSMinimumClearanceLine(BLOBencoded geom)
+/
+/ Constructs a LineString whose endpoints define the minimum clearance of a geometry 
+*/
+    unsigned char *p_blob;
+    int n_bytes;
+    gaiaGeomCollPtr geom = NULL;
+    gaiaGeomCollPtr result;
+    int gpkg_amphibious = 0;
+    int gpkg_mode = 0;
+    int tiny_point = 0;
+    struct splite_internal_cache *cache = sqlite3_user_data (context);
+    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
+    if (cache != NULL)
+      {
+	  gpkg_amphibious = cache->gpkg_amphibious_mode;
+	  gpkg_mode = cache->gpkg_mode;
+	  tiny_point = cache->tinyPointEnabled;
+      }
+    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
+      {
+	  sqlite3_result_null (context);
+	  return;
+      }
+    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
+    n_bytes = sqlite3_value_bytes (argv[0]);
+    geom =
+	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
+				     gpkg_amphibious);
+    if (!geom)
+	sqlite3_result_null (context);
+    else
+      {
+	  void *data = sqlite3_user_data (context);
+	  if (data != NULL)
+	      result = gaiaMinimumClearanceLine_r (data, geom);
+	  else
+	      result = gaiaMinimumClearanceLine (geom);
+	  if (!result)
+	      sqlite3_result_null (context);
+	  else
+	    {
+		/* builds the BLOB geometry to be returned */
+		int len;
+		unsigned char *p_result = NULL;
+		result->Srid = geom->Srid;
+		gaiaToSpatiaLiteBlobWkbEx2 (result, &p_result, &len,
+					    gpkg_mode, tiny_point);
+		sqlite3_result_blob (context, p_result, len, free);
+		gaiaFreeGeomColl (result);
+	    }
+      }
+    gaiaFreeGeomColl (geom);
+}
+
+#endif /* end GEOS_370 conditional */
+
+#ifdef GEOS_390			/* only if GEOS_390 support is available */
+
+static void
 fnct_GEOSMinimumBoundingCircle (sqlite3_context * context, int argc,
 				sqlite3_value ** argv)
 {
@@ -29536,177 +29710,7 @@ fnct_GEOSMinimumBoundingCenter (sqlite3_context * context, int argc,
     gaiaFreeGeomColl (geom);
 }
 
-static void
-fnct_GEOSMinimumWidth (sqlite3_context * context, int argc,
-		       sqlite3_value ** argv)
-{
-/* SQL function:
-/ GEOSGEOSMinimumWidth(BLOBencoded geom)
-/
-/ Constructs the Minimum Width (a Linestring) for a  generic geometry
-*/
-    unsigned char *p_blob;
-    int n_bytes;
-    gaiaGeomCollPtr geom = NULL;
-    gaiaGeomCollPtr result;
-    int gpkg_amphibious = 0;
-    int gpkg_mode = 0;
-    int tiny_point = 0;
-    struct splite_internal_cache *cache = sqlite3_user_data (context);
-    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
-    if (cache != NULL)
-      {
-	  gpkg_amphibious = cache->gpkg_amphibious_mode;
-	  gpkg_mode = cache->gpkg_mode;
-	  tiny_point = cache->tinyPointEnabled;
-      }
-    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
-      {
-	  sqlite3_result_null (context);
-	  return;
-      }
-    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
-    n_bytes = sqlite3_value_bytes (argv[0]);
-    geom =
-	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
-				     gpkg_amphibious);
-    if (!geom)
-	sqlite3_result_null (context);
-    else
-      {
-	  void *data = sqlite3_user_data (context);
-	  if (data != NULL)
-	      result = gaiaMinimumWidth_r (data, geom);
-	  else
-	      result = gaiaMinimumWidth (geom);
-	  if (!result)
-	      sqlite3_result_null (context);
-	  else
-	    {
-		/* builds the BLOB geometry to be returned */
-		int len;
-		unsigned char *p_result = NULL;
-		result->Srid = geom->Srid;
-		gaiaToSpatiaLiteBlobWkbEx2 (result, &p_result, &len,
-					    gpkg_mode, tiny_point);
-		sqlite3_result_blob (context, p_result, len, free);
-		gaiaFreeGeomColl (result);
-	    }
-      }
-    gaiaFreeGeomColl (geom);
-}
-
-static void
-fnct_GEOSMinimumClearance (sqlite3_context * context, int argc,
-			   sqlite3_value ** argv)
-{
-/* SQL function:
-/ GEOSMinimumClearance(BLOBencoded geom) 
-/
-/ Computes the minimum clearance of a geometry 
-*/
-    unsigned char *p_blob;
-    int n_bytes;
-    gaiaGeomCollPtr geom = NULL;
-    double result;
-    int gpkg_amphibious = 0;
-    int gpkg_mode = 0;
-    struct splite_internal_cache *cache = sqlite3_user_data (context);
-    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
-    if (cache != NULL)
-      {
-	  gpkg_amphibious = cache->gpkg_amphibious_mode;
-	  gpkg_mode = cache->gpkg_mode;
-      }
-    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
-      {
-	  sqlite3_result_null (context);
-	  return;
-      }
-    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
-    n_bytes = sqlite3_value_bytes (argv[0]);
-    geom =
-	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
-				     gpkg_amphibious);
-    if (!geom)
-	sqlite3_result_null (context);
-    else
-      {
-	  int ret;
-	  void *data = sqlite3_user_data (context);
-	  if (data != NULL)
-	      ret = gaiaMinimumClearance_r (data, geom, &result);
-	  else
-	      ret = gaiaMinimumClearance (geom, &result);
-	  if (!ret)
-	      sqlite3_result_null (context);
-	  else
-	      sqlite3_result_double (context, result);
-      }
-    gaiaFreeGeomColl (geom);
-}
-
-static void
-fnct_GEOSMinimumClearanceLine (sqlite3_context * context, int argc,
-			       sqlite3_value ** argv)
-{
-/* SQL function:
-/ GEOSMinimumClearanceLine(BLOBencoded geom)
-/
-/ Constructs a LineString whose endpoints define the minimum clearance of a geometry 
-*/
-    unsigned char *p_blob;
-    int n_bytes;
-    gaiaGeomCollPtr geom = NULL;
-    gaiaGeomCollPtr result;
-    int gpkg_amphibious = 0;
-    int gpkg_mode = 0;
-    int tiny_point = 0;
-    struct splite_internal_cache *cache = sqlite3_user_data (context);
-    GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
-    if (cache != NULL)
-      {
-	  gpkg_amphibious = cache->gpkg_amphibious_mode;
-	  gpkg_mode = cache->gpkg_mode;
-	  tiny_point = cache->tinyPointEnabled;
-      }
-    if (sqlite3_value_type (argv[0]) != SQLITE_BLOB)
-      {
-	  sqlite3_result_null (context);
-	  return;
-      }
-    p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
-    n_bytes = sqlite3_value_bytes (argv[0]);
-    geom =
-	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
-				     gpkg_amphibious);
-    if (!geom)
-	sqlite3_result_null (context);
-    else
-      {
-	  void *data = sqlite3_user_data (context);
-	  if (data != NULL)
-	      result = gaiaMinimumClearanceLine_r (data, geom);
-	  else
-	      result = gaiaMinimumClearanceLine (geom);
-	  if (!result)
-	      sqlite3_result_null (context);
-	  else
-	    {
-		/* builds the BLOB geometry to be returned */
-		int len;
-		unsigned char *p_result = NULL;
-		result->Srid = geom->Srid;
-		gaiaToSpatiaLiteBlobWkbEx2 (result, &p_result, &len,
-					    gpkg_mode, tiny_point);
-		sqlite3_result_blob (context, p_result, len, free);
-		gaiaFreeGeomColl (result);
-	    }
-      }
-    gaiaFreeGeomColl (geom);
-}
-
-#endif /* end GEOS_370 conditional */
+#endif /* end GEOS_390 conditional */
 
 #ifdef GEOS_3100		/* only if GEOS_3100 support is available */
 
@@ -53611,6 +53615,18 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_GEOSMinimumRotatedRectangle, 0, 0, 0);
 
+    sqlite3_create_function_v2 (db, "GEOSMinimumWidth", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_GEOSMinimumWidth, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "GEOSMinimumClearanceLine", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_GEOSMinimumClearanceLine, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "GEOSMinimumClearance", 1,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_GEOSMinimumClearance, 0, 0, 0);
+#endif /* end GEOS_370 conditional */
+
+#ifdef GEOS_390			/* only if GEOS_370 support is available */
     sqlite3_create_function_v2 (db, "GEOSMinimumBoundingCircle", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_GEOSMinimumBoundingCircle, 0, 0, 0);
@@ -53626,16 +53642,7 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "ST_MinimumBoundingCenter", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_GEOSMinimumBoundingCenter, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "GEOSMinimumWidth", 1,
-				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
-				fnct_GEOSMinimumWidth, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "GEOSMinimumClearanceLine", 1,
-				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
-				fnct_GEOSMinimumClearanceLine, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "GEOSMinimumClearance", 1,
-				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
-				fnct_GEOSMinimumClearance, 0, 0, 0);
-#endif /* end GEOS_370 conditional */
+#endif /* end GEOS_390 conditional */
 
 #ifdef GEOS_3100		/* only if GEOS_3100 support is available */
     sqlite3_create_function_v2 (db, "GeosDensify", 2,

@@ -735,6 +735,19 @@ do_knn2_query (sqlite3_vtab_cursor * pCursor)
 		      sqlite3_int64 rowid = sqlite3_column_int64 (stmt, 0);
 		      double dist_crs = sqlite3_column_double (stmt, 1);
 		      double dist_m = sqlite3_column_double (stmt, 2);
+
+		      /*
+		       * sandro 2023-08-12
+		       * 
+		       * patch suggested by Antonio Valanzano:
+		       * considering only Points within the search radius
+		       */
+
+		      if (dist_crs > x_radius)
+			  continue;
+
+		      /* end sandro 2023-08-12 */
+
 		      item->rowid = rowid;
 		      item->dist_crs = dist_crs;
 		      item->dist_m = dist_m;

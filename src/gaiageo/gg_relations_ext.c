@@ -804,154 +804,6 @@ gaiaMinimumRotatedRectangle_r (const void *p_cache, gaiaGeomCollPtr geom)
 }
 
 GAIAGEO_DECLARE gaiaGeomCollPtr
-gaiaMinimumBoundingCircle (gaiaGeomCollPtr geom, double *xradius,
-			   gaiaGeomCollPtr * xcenter)
-{
-/* 
-/ Returns the Minimum Bounding Circle for a  generic geometry, 
-/ * xradius will point to the Radius vaiue of the circle
-/ * xcenter will point to the POINT Geometry corresponding to the center
-/   of the circle
-*/
-    gaiaGeomCollPtr geo = NULL;
-    gaiaGeomCollPtr center = NULL;
-#ifndef GEOS_USE_ONLY_R_API	/* obsolete versions non fully thread-safe */
-    GEOSGeometry *g1;
-    GEOSGeometry *g2;
-    GEOSGeometry *g3;
-    double radius;
-    gaiaResetGeosMsg ();
-    if (xradius != NULL)
-	*xradius = 0.0;
-    if (xcenter != NULL)
-	*xcenter = NULL;
-    if (!geom)
-	return NULL;
-    g1 = gaiaToGeos (geom);
-    g2 = GEOSMinimumBoundingCircle (g1, &radius, &g3);
-    GEOSGeom_destroy (g1);
-    if (!g2)
-	return NULL;
-    if (!g3)
-	return NULL;
-    if (geom->DimensionModel == GAIA_XY_Z)
-	center = gaiaFromGeos_XYZ (g3);
-    else if (geom->DimensionModel == GAIA_XY_M)
-	center = gaiaFromGeos_XYM (g3);
-    else if (geom->DimensionModel == GAIA_XY_Z_M)
-	center = gaiaFromGeos_XYZM (g3);
-    else
-	center = gaiaFromGeos_XY (g3);
-    GEOSGeom_destroy (g3);
-    if (geom->DimensionModel == GAIA_XY_Z)
-	geo = gaiaFromGeos_XYZ (g2);
-    else if (geom->DimensionModel == GAIA_XY_M)
-	geo = gaiaFromGeos_XYM (g2);
-    else if (geom->DimensionModel == GAIA_XY_Z_M)
-	geo = gaiaFromGeos_XYZM (g2);
-    else
-	geo = gaiaFromGeos_XY (g2);
-    GEOSGeom_destroy (g2);
-    if (geo == NULL || center == NULL)
-      {
-	  if (geo != NULL)
-	      gaiaFreeGeomColl (geo);
-	  if (center != NULL)
-	      gaiaFreeGeomColl (center);
-	  return NULL;
-      }
-    geo->Srid = geom->Srid;
-    if (xradius != NULL)
-	*xradius = radius;
-    if (xcenter != NULL)
-	*xcenter = center;
-    else
-	gaiaFreeGeomColl (center);
-#else
-    if (geom == NULL || center == NULL)
-	geom = NULL;		/* silencing stupid compiler warnings */
-#endif
-    return geo;
-}
-
-GAIAGEO_DECLARE gaiaGeomCollPtr
-gaiaMinimumBoundingCircle_r (const void *p_cache, gaiaGeomCollPtr geom,
-			     double *xradius, gaiaGeomCollPtr * xcenter)
-{
-/* 
-/ Returns the Minimum Bounding Circle for a  generic geometry, 
-/ * xradius will point to the Radius vaiue of the circle
-/ * xcenter will point to the POINT Geometry corresponding to the center
-/   of the circle
-*/
-    gaiaGeomCollPtr geo;
-    gaiaGeomCollPtr center;
-    GEOSGeometry *g1;
-    GEOSGeometry *g2;
-    GEOSGeometry *g3;
-    double radius;
-    struct splite_internal_cache *cache =
-	(struct splite_internal_cache *) p_cache;
-    GEOSContextHandle_t handle = NULL;
-    if (xradius != NULL)
-	*xradius = 0.0;
-    if (xcenter != NULL)
-	*xcenter = NULL;
-    if (cache == NULL)
-	return NULL;
-    if (cache->magic1 != SPATIALITE_CACHE_MAGIC1
-	|| cache->magic2 != SPATIALITE_CACHE_MAGIC2)
-	return NULL;
-    handle = cache->GEOS_handle;
-    if (handle == NULL)
-	return NULL;
-    gaiaResetGeosMsg_r (cache);
-    if (!geom)
-	return NULL;
-    g1 = gaiaToGeos_r (cache, geom);
-    g2 = GEOSMinimumBoundingCircle_r (handle, g1, &radius, &g3);
-    GEOSGeom_destroy_r (handle, g1);
-    if (!g2)
-	return NULL;
-    if (!g3)
-	return NULL;
-    if (geom->DimensionModel == GAIA_XY_Z)
-	center = gaiaFromGeos_XYZ_r (cache, g3);
-    else if (geom->DimensionModel == GAIA_XY_M)
-	center = gaiaFromGeos_XYM_r (cache, g3);
-    else if (geom->DimensionModel == GAIA_XY_Z_M)
-	center = gaiaFromGeos_XYZM_r (cache, g3);
-    else
-	center = gaiaFromGeos_XY_r (cache, g3);
-    GEOSGeom_destroy_r (handle, g3);
-    if (geom->DimensionModel == GAIA_XY_Z)
-	geo = gaiaFromGeos_XYZ_r (cache, g2);
-    else if (geom->DimensionModel == GAIA_XY_M)
-	geo = gaiaFromGeos_XYM_r (cache, g2);
-    else if (geom->DimensionModel == GAIA_XY_Z_M)
-	geo = gaiaFromGeos_XYZM_r (cache, g2);
-    else
-	geo = gaiaFromGeos_XY_r (cache, g2);
-    GEOSGeom_destroy_r (handle, g2);
-    if (geo == NULL || center == NULL)
-      {
-	  if (geo != NULL)
-	      gaiaFreeGeomColl (geo);
-	  if (center != NULL)
-	      gaiaFreeGeomColl (center);
-	  return NULL;
-      }
-    geo->Srid = geom->Srid;
-    if (xradius != NULL)
-	*xradius = radius;
-    if (xcenter != NULL)
-	*xcenter = center;
-    else
-	gaiaFreeGeomColl (center);
-    return geo;
-}
-
-GAIAGEO_DECLARE gaiaGeomCollPtr
 gaiaMinimumWidth (gaiaGeomCollPtr geom)
 {
 /* 
@@ -1202,6 +1054,158 @@ gaiaMinimumClearanceLine_r (const void *p_cache, gaiaGeomCollPtr geom)
 }
 
 #endif /* end GEOS_370 conditional */
+
+#ifdef GEOS_390			/* only if GEOS_390 support is available */
+
+GAIAGEO_DECLARE gaiaGeomCollPtr
+gaiaMinimumBoundingCircle (gaiaGeomCollPtr geom, double *xradius,
+			   gaiaGeomCollPtr * xcenter)
+{
+/* 
+/ Returns the Minimum Bounding Circle for a  generic geometry, 
+/ * xradius will point to the Radius vaiue of the circle
+/ * xcenter will point to the POINT Geometry corresponding to the center
+/   of the circle
+*/
+    gaiaGeomCollPtr geo = NULL;
+    gaiaGeomCollPtr center = NULL;
+#ifndef GEOS_USE_ONLY_R_API	/* obsolete versions non fully thread-safe */
+    GEOSGeometry *g1;
+    GEOSGeometry *g2;
+    GEOSGeometry *g3;
+    double radius;
+    gaiaResetGeosMsg ();
+    if (xradius != NULL)
+	*xradius = 0.0;
+    if (xcenter != NULL)
+	*xcenter = NULL;
+    if (!geom)
+	return NULL;
+    g1 = gaiaToGeos (geom);
+    g2 = GEOSMinimumBoundingCircle (g1, &radius, &g3);
+    GEOSGeom_destroy (g1);
+    if (!g2)
+	return NULL;
+    if (!g3)
+	return NULL;
+    if (geom->DimensionModel == GAIA_XY_Z)
+	center = gaiaFromGeos_XYZ (g3);
+    else if (geom->DimensionModel == GAIA_XY_M)
+	center = gaiaFromGeos_XYM (g3);
+    else if (geom->DimensionModel == GAIA_XY_Z_M)
+	center = gaiaFromGeos_XYZM (g3);
+    else
+	center = gaiaFromGeos_XY (g3);
+    GEOSGeom_destroy (g3);
+    if (geom->DimensionModel == GAIA_XY_Z)
+	geo = gaiaFromGeos_XYZ (g2);
+    else if (geom->DimensionModel == GAIA_XY_M)
+	geo = gaiaFromGeos_XYM (g2);
+    else if (geom->DimensionModel == GAIA_XY_Z_M)
+	geo = gaiaFromGeos_XYZM (g2);
+    else
+	geo = gaiaFromGeos_XY (g2);
+    GEOSGeom_destroy (g2);
+    if (geo == NULL || center == NULL)
+      {
+	  if (geo != NULL)
+	      gaiaFreeGeomColl (geo);
+	  if (center != NULL)
+	      gaiaFreeGeomColl (center);
+	  return NULL;
+      }
+    geo->Srid = geom->Srid;
+    if (xradius != NULL)
+	*xradius = radius;
+    if (xcenter != NULL)
+	*xcenter = center;
+    else
+	gaiaFreeGeomColl (center);
+#else
+    if (geom == NULL || center == NULL)
+	geom = NULL;		/* silencing stupid compiler warnings */
+#endif
+    return geo;
+}
+
+GAIAGEO_DECLARE gaiaGeomCollPtr
+gaiaMinimumBoundingCircle_r (const void *p_cache, gaiaGeomCollPtr geom,
+			     double *xradius, gaiaGeomCollPtr * xcenter)
+{
+/* 
+/ Returns the Minimum Bounding Circle for a  generic geometry, 
+/ * xradius will point to the Radius vaiue of the circle
+/ * xcenter will point to the POINT Geometry corresponding to the center
+/   of the circle
+*/
+    gaiaGeomCollPtr geo;
+    gaiaGeomCollPtr center;
+    GEOSGeometry *g1;
+    GEOSGeometry *g2;
+    GEOSGeometry *g3;
+    double radius;
+    struct splite_internal_cache *cache =
+	(struct splite_internal_cache *) p_cache;
+    GEOSContextHandle_t handle = NULL;
+    if (xradius != NULL)
+	*xradius = 0.0;
+    if (xcenter != NULL)
+	*xcenter = NULL;
+    if (cache == NULL)
+	return NULL;
+    if (cache->magic1 != SPATIALITE_CACHE_MAGIC1
+	|| cache->magic2 != SPATIALITE_CACHE_MAGIC2)
+	return NULL;
+    handle = cache->GEOS_handle;
+    if (handle == NULL)
+	return NULL;
+    gaiaResetGeosMsg_r (cache);
+    if (!geom)
+	return NULL;
+    g1 = gaiaToGeos_r (cache, geom);
+    g2 = GEOSMinimumBoundingCircle_r (handle, g1, &radius, &g3);
+    GEOSGeom_destroy_r (handle, g1);
+    if (!g2)
+	return NULL;
+    if (!g3)
+	return NULL;
+    if (geom->DimensionModel == GAIA_XY_Z)
+	center = gaiaFromGeos_XYZ_r (cache, g3);
+    else if (geom->DimensionModel == GAIA_XY_M)
+	center = gaiaFromGeos_XYM_r (cache, g3);
+    else if (geom->DimensionModel == GAIA_XY_Z_M)
+	center = gaiaFromGeos_XYZM_r (cache, g3);
+    else
+	center = gaiaFromGeos_XY_r (cache, g3);
+    GEOSGeom_destroy_r (handle, g3);
+    if (geom->DimensionModel == GAIA_XY_Z)
+	geo = gaiaFromGeos_XYZ_r (cache, g2);
+    else if (geom->DimensionModel == GAIA_XY_M)
+	geo = gaiaFromGeos_XYM_r (cache, g2);
+    else if (geom->DimensionModel == GAIA_XY_Z_M)
+	geo = gaiaFromGeos_XYZM_r (cache, g2);
+    else
+	geo = gaiaFromGeos_XY_r (cache, g2);
+    GEOSGeom_destroy_r (handle, g2);
+    if (geo == NULL || center == NULL)
+      {
+	  if (geo != NULL)
+	      gaiaFreeGeomColl (geo);
+	  if (center != NULL)
+	      gaiaFreeGeomColl (center);
+	  return NULL;
+      }
+    geo->Srid = geom->Srid;
+    if (xradius != NULL)
+	*xradius = radius;
+    if (xcenter != NULL)
+	*xcenter = center;
+    else
+	gaiaFreeGeomColl (center);
+    return geo;
+}
+
+#endif /* end GEOS_390 conditional */
 
 #ifdef GEOS_3100		/* only if GEOS_3100 support is available */
 
