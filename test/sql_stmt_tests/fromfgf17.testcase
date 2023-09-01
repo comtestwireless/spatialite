@@ -1,0 +1,7 @@
+From FGF - POLYGON XYZM
+:memory:
+SELECT AsText(GeomFromFGF(AsFGF(GeomFromText('POLYGON ZM((0 0 1 2, 10 0 2 3, 10 10 3 4, 0 10 4 5, 0 0 1 2), (1 1 5 6, 2 1 6 7, 2 2 7 8, 1 2 8 9, 1 1 5 6))'))))
+1 # rows
+1 # column
+AsText(GeomFromFGF(AsFGF(GeomFromText('POLYGON ZM((0 0 1 2, 10 0 2 3, 10 10 3 4, 0 10 4 5, 0 0 1 2), (1 1 5 6, 2 1 6 7, 2 2 7 8, 1 2 8 9, 1 1 5 6))'))))
+POLYGON ZM((0 0 1 2, 10 0 2 3, 10 10 3 4, 0 10 4 5, 0 0 1 2), (1 1 5 6, 2 1 6 7, 2 2 7 8, 1 2 8 9, 1 1 5 6))

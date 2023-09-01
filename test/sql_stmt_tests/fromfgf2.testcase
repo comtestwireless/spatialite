@@ -1,0 +1,7 @@
+From FGF - DOUBLE geom
+:memory:
+SELECT GeomFromFGF(1.5)
+1 # rows
+1 # column
+GeomFromFGF(1.5)
+(NULL)

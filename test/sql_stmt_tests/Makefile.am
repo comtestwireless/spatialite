@@ -78,13 +78,6 @@ EXTRA_DIST = addpoint10.testcase \
 	asewkb9.testcase \
 	asfgf1.testcase \
 	asfgf2.testcase \
-	asfgf3.testcase \
-	asfgf4.testcase \
-	asfgf5.testcase \
-	asfgf6.testcase \
-	asfgf7.testcase \
-	asfgf8.testcase \
-	asfgf9.testcase \
 	asgeojson1.testcase \
 	asgeojson2.testcase \
 	asgeojson3.testcase \
@@ -906,6 +899,40 @@ EXTRA_DIST = addpoint10.testcase \
 	forcenull7.testcase \
 	forcenull8.testcase \
 	forcenull9.testcase \
+	fromfgf1.testcase \
+	fromfgf2.testcase \
+	fromfgf3.testcase \
+	fromfgf4.testcase \
+	fromfgf5.testcase \
+	fromfgf6.testcase \
+	fromfgf7.testcase \
+	fromfgf8.testcase \
+	fromfgf9.testcase \
+	fromfgf10.testcase \
+	fromfgf11.testcase \
+	fromfgf12.testcase \
+	fromfgf13.testcase \
+	fromfgf14.testcase \
+	fromfgf15.testcase \
+	fromfgf16.testcase \
+	fromfgf17.testcase \
+	fromfgf18.testcase \
+	fromfgf19.testcase \
+	fromfgf20.testcase \
+	fromfgf21.testcase \
+	fromfgf22.testcase \
+	fromfgf23.testcase \
+	fromfgf24.testcase \
+	fromfgf25.testcase \
+	fromfgf26.testcase \
+	fromfgf27.testcase \
+	fromfgf28.testcase \
+	fromfgf29.testcase \
+	fromfgf30.testcase \
+	fromfgf31.testcase \
+	fromfgf32.testcase \
+	fromfgf33.testcase \
+	fromfgf34.testcase \
 	fromewkt10.testcase \
 	fromewkt11.testcase \
 	fromewkt12.testcase \

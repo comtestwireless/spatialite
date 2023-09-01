@@ -991,9 +991,7 @@ vfdo_insert_row (VirtualFDOPtr p_vt, sqlite3_int64 * rowid, int argc,
 					  }
 					break;
 				    case FDO_OGR_FGF:
-					gaiaToFgf (geom, &blob_wkb, &size,
-						   *(p_vt->CoordDimensions +
-						     ig));
+					gaiaToFgf (geom, &blob_wkb, &size);
 					if (blob_wkb)
 					    sqlite3_bind_blob (stmt, i - 1,
 							       blob_wkb, size,
@@ -1229,9 +1227,7 @@ vfdo_update_row (VirtualFDOPtr p_vt, sqlite3_int64 rowid, int argc,
 					  }
 					break;
 				    case FDO_OGR_FGF:
-					gaiaToFgf (geom, &blob_wkb, &size,
-						   *(p_vt->CoordDimensions +
-						     ig));
+					gaiaToFgf (geom, &blob_wkb, &size);
 					if (blob_wkb)
 					    sqlite3_bind_blob (stmt, i - 1,
 							       blob_wkb, size,

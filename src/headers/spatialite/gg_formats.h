@@ -879,7 +879,6 @@ extern "C"
  \param result on completion will containt a pointer to the FGF buffer [BLOB]:
  NULL on failure.
  \param size on completion this variable will contain the BLOB's size (in bytes)
- \param coord_dims one of: GAIA_XY, GAIA_XY_Z, GAIA_XY_M, GAIA_XY_ZM
 
  \sa gaiaFromFgf
 
@@ -888,8 +887,7 @@ extern "C"
  of memory cleanup via buffer binding].
  */
     GAIAGEO_DECLARE void gaiaToFgf (gaiaGeomCollPtr geom,
-				    unsigned char **result, int *size,
-				    int coord_dims);
+				    unsigned char **result, int *size);
 
 /**
  Creates a Geometry object from WKT notation

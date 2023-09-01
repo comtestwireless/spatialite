@@ -1,0 +1,7 @@
+From FGF - MULTILINESTRING XYZM
+:memory:
+SELECT AsText(GeomFromFGF(AsFGF(GeomFromText('MULTILINESTRING ZM((1 2 10 11, 3 4 20 21), (5 6 30 31, 7 8 40 41))'))))
+1 # rows
+1 # column
+AsText(GeomFromFGF(AsFGF(GeomFromText('MULTILINESTRING ZM((1 2 10 11, 3 4 20 21), (5 6 30 31, 7 8 40 41))'))))
+MULTILINESTRING ZM((1 2 10 11, 3 4 20 21), (5 6 30 31, 7 8 40 41))

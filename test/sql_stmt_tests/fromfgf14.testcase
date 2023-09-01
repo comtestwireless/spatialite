@@ -1,0 +1,7 @@
+From FGF - POLYGON XY
+:memory:
+SELECT AsText(GeomFromFGF(AsFGF(GeomFromText('POLYGON((0 0, 10 0, 10 10, 0 10, 0 0), (1 1, 2 1, 2 2, 1 2, 1 1))'))))
+1 # rows
+1 # column
+AsText(GeomFromFGF(AsFGF(GeomFromText('POLYGON((0 0, 10 0, 10 10, 0 10, 0 0), (1 1, 2 1, 2 2, 1 2, 1 1))'))))
+POLYGON((0 0, 10 0, 10 10, 0 10, 0 0), (1 1, 2 1, 2 2, 1 2, 1 1))

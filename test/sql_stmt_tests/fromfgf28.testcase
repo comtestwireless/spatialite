@@ -1,0 +1,7 @@
+From FGF - MULTIPOLYGON XYZ
+:memory:
+SELECT AsText(GeomFromFGF(AsFGF(GeomFromText('MULTIPOLYGON Z(((0 0 10, 1 0 11, 1 1 12, 0 1 13, 0 0 10)), ((10 10 20, 11 10 21, 11 11 22, 10 11 23, 10 10 20)))'))))
+1 # rows
+1 # column
+AsText(GeomFromFGF(AsFGF(GeomFromText('MULTIPOLYGON Z(((0 0 10, 1 0 11, 1 1 12, 0 1 13, 0 0 10)), ((10 10 20, 11 10 21, 11 11 22, 10 11 23, 10 10 20)))'))))
+MULTIPOLYGON Z(((0 0 10, 1 0 11, 1 1 12, 0 1 13, 0 0 10)), ((10 10 20, 11 10 21, 11 11 22, 10 11 23, 10 10 20)))

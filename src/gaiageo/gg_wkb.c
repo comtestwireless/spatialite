@@ -5640,27 +5640,55 @@ gaiaToEWKB (gaiaOutBufferPtr out_buf, gaiaGeomCollPtr geom)
 }
 
 static int
-coordDimsFromFgf (int endian_arch, const unsigned char *blob, unsigned int size,
-		  int *type)
+checkFgfTypeDims (int fgf_type, int fgf_dims, int *type, int *dims)
 {
-/* decoding the coordinate Dimensions for an FGF Geometry */
-    int coord_dims;
-    if (size < 4)
-	return 0;
-    coord_dims = gaiaImport32 (blob, GAIA_LITTLE_ENDIAN, endian_arch);
-    *type = coord_dims;
-    switch (coord_dims)
+/* validating Type and coordinate Dimensions for an FGF Geometry */
+    int t = -1;
+    int d = -1;
+    switch (fgf_type)
       {
-      case GAIA_XY:
-	  return 2;
-      case GAIA_XY_M:
-      case GAIA_XY_Z:
-	  return 3;
-      case GAIA_XY_Z_M:
-	  return 4;
-      default:
-	  return 0;
-      }
+      case 1:
+	  t = GAIA_POINT;
+	  break;
+      case 2:
+	  t = GAIA_LINESTRING;
+	  break;
+      case 3:
+	  t = GAIA_POLYGON;
+	  break;
+      case 4:
+	  t = GAIA_MULTIPOINT;
+	  break;
+      case 5:
+	  t = GAIA_MULTILINESTRING;
+	  break;
+      case 6:
+	  t = GAIA_MULTIPOLYGON;
+	  break;
+      case 7:
+	  t = GAIA_GEOMETRYCOLLECTION;
+	  break;
+      };
+    switch (fgf_dims)
+      {
+      case 0:
+	  d = GAIA_XY;
+	  break;
+      case 1:
+	  d = GAIA_XY_Z;
+	  break;
+      case 2:
+	  d = GAIA_XY_M;
+	  break;
+      case 3:
+	  d = GAIA_XY_Z_M;
+	  break;
+      };
+    if (t < 0 || d < 0)
+	return 0;
+    *type = t;
+    *dims = d;
+    return 1;
 }
 
 static int
@@ -5674,60 +5702,91 @@ pointFromFgf (gaiaGeomCollPtr geom, int endian_arch, const unsigned char *blob,
     double m;
     unsigned int sz = size;
     const unsigned char *ptr = blob;
-    int coord_dims;
-    int type;
-/* checking Geometry Type */
-    if (sz < 4)
+    int t;
+    int d;
+    int geom_type;
+    int dims;
+    int ndims;
+
+/* checking Geometry Type and Dims */
+    if (sz < 8)
 	return 0;
-    if (gaiaImport32 (ptr, GAIA_LITTLE_ENDIAN, endian_arch) != GAIA_POINT)
+    t = gaiaImport32 (ptr, GAIA_LITTLE_ENDIAN, endian_arch);
+    d = gaiaImport32 (ptr + 4, GAIA_LITTLE_ENDIAN, endian_arch);
+    if (!checkFgfTypeDims (t, d, &geom_type, &dims))
 	return 0;
-    ptr += 4;
-    sz -= 4;
-/* checking size */
-    if (sz < 4)
+    if (geom_type != GAIA_POINT)
 	return 0;
-    coord_dims = coordDimsFromFgf (endian_arch, ptr, size, &type);
-    if (!coord_dims)
-	return 0;
-    ptr += 4;
-    sz -= 4;
-    if (sz < (coord_dims * sizeof (double)))
+    ptr += 8;
+    sz -= 8;
+
+    if (dims == GAIA_XY_Z_M)
+	ndims = 4;
+    else if (dims == GAIA_XY_Z || dims == GAIA_XY_M)
+	ndims = 3;
+    else
+	ndims = 2;
+    if (sz < ((unsigned int)ndims * 8))
 	return 0;
     if (consumed)
-	*consumed = coord_dims * sizeof (double);
-    if (type == GAIA_XY_Z)
+	*consumed = 8 + (ndims * 8);
+    if (dims == GAIA_XY_Z)
       {
-	  /* building the POINTZ */
+	  /* parsing a POINT Z */
 	  x = gaiaImport64 (ptr, GAIA_LITTLE_ENDIAN, endian_arch);
 	  y = gaiaImport64 (ptr + 8, GAIA_LITTLE_ENDIAN, endian_arch);
-	  z = gaiaImport64 (ptr + 8, GAIA_LITTLE_ENDIAN, endian_arch);
-	  gaiaAddPointToGeomCollXYZ (geom, x, y, z);
+	  z = gaiaImport64 (ptr + 16, GAIA_LITTLE_ENDIAN, endian_arch);
+	  m = 0.0;
       }
-    else if (type == GAIA_XY_M)
+    else if (dims == GAIA_XY_M)
       {
-	  /* building the POINTM */
+	  /* parsing the POINTM */
 	  x = gaiaImport64 (ptr, GAIA_LITTLE_ENDIAN, endian_arch);
 	  y = gaiaImport64 (ptr + 8, GAIA_LITTLE_ENDIAN, endian_arch);
-	  m = gaiaImport64 (ptr + 8, GAIA_LITTLE_ENDIAN, endian_arch);
-	  gaiaAddPointToGeomCollXYM (geom, x, y, m);
+	  m = gaiaImport64 (ptr + 16, GAIA_LITTLE_ENDIAN, endian_arch);
+	  z = 0.0;
       }
-    else if (type == GAIA_XY_Z_M)
+    else if (dims == GAIA_XY_Z_M)
       {
-	  /* building the POINTZM */
+	  /* parsing the POINTZM */
 	  x = gaiaImport64 (ptr, GAIA_LITTLE_ENDIAN, endian_arch);
 	  y = gaiaImport64 (ptr + 8, GAIA_LITTLE_ENDIAN, endian_arch);
-	  z = gaiaImport64 (ptr + 8, GAIA_LITTLE_ENDIAN, endian_arch);
-	  m = gaiaImport64 (ptr + 8, GAIA_LITTLE_ENDIAN, endian_arch);
-	  gaiaAddPointToGeomCollXYZM (geom, x, y, z, m);
+	  z = gaiaImport64 (ptr + 16, GAIA_LITTLE_ENDIAN, endian_arch);
+	  m = gaiaImport64 (ptr + 24, GAIA_LITTLE_ENDIAN, endian_arch);
       }
     else
       {
-	  /* building the POINT */
+	  /* parsing the POINT */
 	  x = gaiaImport64 (ptr, GAIA_LITTLE_ENDIAN, endian_arch);
 	  y = gaiaImport64 (ptr + 8, GAIA_LITTLE_ENDIAN, endian_arch);
-	  gaiaAddPointToGeomColl (geom, x, y);
+	  z = 0.0;
+	  m = 0.0;
       }
+
+    if (geom->DimensionModel == GAIA_XY_Z_M)
+	gaiaAddPointToGeomCollXYZM (geom, x, y, z, m);
+    else if (geom->DimensionModel == GAIA_XY_Z)
+	gaiaAddPointToGeomCollXYZ (geom, x, y, z);
+    else if (geom->DimensionModel == GAIA_XY_M)
+	gaiaAddPointToGeomCollXYM (geom, x, y, m);
+    else
+	gaiaAddPointToGeomColl (geom, x, y);
     return 1;
+}
+
+static void
+setFgfVertex (int dims, double *coords, int iv, double x, double y, double z,
+	      double m)
+{
+/* setting an FGF vertex accorignly to dimensions */
+    if (dims == GAIA_XY_Z_M)
+	gaiaSetPointXYZM (coords, iv, x, y, z, m);
+    if (dims == GAIA_XY_Z)
+	gaiaSetPointXYZ (coords, iv, x, y, z);
+    if (dims == GAIA_XY_M)
+	gaiaSetPointXYM (coords, iv, x, y, m);
+    if (dims == GAIA_XY)
+	gaiaSetPoint (coords, iv, x, y);
 }
 
 static int
@@ -5741,95 +5800,99 @@ linestringFromFgf (gaiaGeomCollPtr geom, int endian_arch,
     int iv;
     double x;
     double y;
+    double z;
+    double m;
     unsigned int ln_sz;
     unsigned int sz = size;
     const unsigned char *ptr = blob;
-    int coord_dims;
-    int type;
-/* checking Geometry Type */
-    if (sz < 4)
+    int t;
+    int d;
+    int geom_type;
+    int dims;
+    int ndims;
+
+/* checking Geometry Type and Dims */
+    if (sz < 8)
 	return 0;
-    if (gaiaImport32 (ptr, GAIA_LITTLE_ENDIAN, endian_arch) != GAIA_LINESTRING)
+    t = gaiaImport32 (ptr, GAIA_LITTLE_ENDIAN, endian_arch);
+    d = gaiaImport32 (ptr + 4, GAIA_LITTLE_ENDIAN, endian_arch);
+    if (!checkFgfTypeDims (t, d, &geom_type, &dims))
 	return 0;
-    ptr += 4;
-    sz -= 4;
-/* checking size */
-    coord_dims = coordDimsFromFgf (endian_arch, ptr, size, &type);
-    if (!coord_dims)
+    if (geom_type != GAIA_LINESTRING)
 	return 0;
-    ptr += 4;
-    sz -= 4;
+    ptr += 8;
+    sz -= 8;
+    if (dims == GAIA_XY_Z_M)
+	ndims = 4;
+    else if (dims == GAIA_XY_Z || dims == GAIA_XY_M)
+	ndims = 3;
+    else
+	ndims = 2;
+
 /* how many points are there ? */
     if (sz < 4)
 	return 0;
     pts = gaiaImport32 (ptr, GAIA_LITTLE_ENDIAN, endian_arch);
     ptr += 4;
     sz -= 4;
-    if (pts < 2)
-	return 0;
-    ln_sz = pts * coord_dims * sizeof (double);
+    ln_sz = pts * ndims * sizeof (double);
     if (sz < ln_sz)
 	return 0;
     if (consumed)
-	*consumed = (12 + ln_sz);
-    if (type == GAIA_XY_Z)
+	*consumed = 12 + (pts * (ndims * 8));
+
+    ln = gaiaAddLinestringToGeomColl (geom, pts);
+    if (dims == GAIA_XY_Z)
       {
-	  /* building the LINESTRINGZ */
-	  geom->DimensionModel = GAIA_XY_Z;
-	  ln = gaiaAddLinestringToGeomColl (geom, pts);
+	  /* parsing the LINESTRINGZ */
 	  for (iv = 0; iv < pts; iv++)
 	    {
-		/* inserting vertices into the linestring */
 		x = gaiaImport64 (ptr, GAIA_LITTLE_ENDIAN, endian_arch);
-		y = gaiaImport64 (ptr + sizeof (double), GAIA_LITTLE_ENDIAN,
-				  endian_arch);
-		ptr += (coord_dims * sizeof (double));
-		gaiaSetPoint (ln->Coords, iv, x, y);
+		y = gaiaImport64 (ptr + 8, GAIA_LITTLE_ENDIAN, endian_arch);
+		z = gaiaImport64 (ptr + 16, GAIA_LITTLE_ENDIAN, endian_arch);
+		m = 0.0;
+		ptr += 24;
+		setFgfVertex (dims, ln->Coords, iv, x, y, z, m);
 	    }
       }
-    else if (type == GAIA_XY_M)
+    else if (dims == GAIA_XY_M)
       {
-	  /* building the LINESTRINGM */
-	  geom->DimensionModel = GAIA_XY_M;
-	  ln = gaiaAddLinestringToGeomColl (geom, pts);
+	  /* parsing the LINESTRINGM */
 	  for (iv = 0; iv < pts; iv++)
 	    {
-		/* inserting vertices into the linestring */
 		x = gaiaImport64 (ptr, GAIA_LITTLE_ENDIAN, endian_arch);
-		y = gaiaImport64 (ptr + sizeof (double), GAIA_LITTLE_ENDIAN,
-				  endian_arch);
-		ptr += (coord_dims * sizeof (double));
-		gaiaSetPoint (ln->Coords, iv, x, y);
+		y = gaiaImport64 (ptr + 8, GAIA_LITTLE_ENDIAN, endian_arch);
+		m = gaiaImport64 (ptr + 16, GAIA_LITTLE_ENDIAN, endian_arch);
+		z = 0.0;
+		ptr += 24;
+		setFgfVertex (dims, ln->Coords, iv, x, y, z, m);
 	    }
       }
-    else if (type == GAIA_XY_Z_M)
+    else if (dims == GAIA_XY_Z_M)
       {
-	  /* building the LINESTRINGZM */
-	  geom->DimensionModel = GAIA_XY_Z_M;
-	  ln = gaiaAddLinestringToGeomColl (geom, pts);
+	  /* parsing the LINESTRINGZM */
 	  for (iv = 0; iv < pts; iv++)
 	    {
-		/* inserting vertices into the linestring */
 		x = gaiaImport64 (ptr, GAIA_LITTLE_ENDIAN, endian_arch);
-		y = gaiaImport64 (ptr + sizeof (double), GAIA_LITTLE_ENDIAN,
-				  endian_arch);
-		ptr += (coord_dims * sizeof (double));
-		gaiaSetPoint (ln->Coords, iv, x, y);
+		y = gaiaImport64 (ptr + 8, GAIA_LITTLE_ENDIAN, endian_arch);
+		z = gaiaImport64 (ptr + 16, GAIA_LITTLE_ENDIAN, endian_arch);
+		m = gaiaImport64 (ptr + 24, GAIA_LITTLE_ENDIAN, endian_arch);
+		ptr += 32;
+		setFgfVertex (dims, ln->Coords, iv, x, y, z, m);
 	    }
       }
     else
       {
-	  /* building the LINESTRING */
-	  geom->DimensionModel = GAIA_XY;
-	  ln = gaiaAddLinestringToGeomColl (geom, pts);
+	  /* parsing the LINESTRING */
 	  for (iv = 0; iv < pts; iv++)
 	    {
-		/* inserting vertices into the linestring */
 		x = gaiaImport64 (ptr, GAIA_LITTLE_ENDIAN, endian_arch);
 		y = gaiaImport64 (ptr + sizeof (double), GAIA_LITTLE_ENDIAN,
 				  endian_arch);
-		ptr += (coord_dims * sizeof (double));
-		gaiaSetPoint (ln->Coords, iv, x, y);
+		z = 0.0;
+		m = 0.0;
+		ptr += 16;
+		setFgfVertex (dims, ln->Coords, iv, x, y, z, m);
 	    }
       }
     return 1;
@@ -5854,24 +5917,32 @@ polygonFromFgf (gaiaGeomCollPtr geom, int endian_arch,
     unsigned int rng_sz;
     unsigned int sz = size;
     const unsigned char *ptr = blob;
-    int coord_dims;
-    int type;
+    int t;
+    int d;
+    int geom_type;
+    int dims;
+    int ndims;
     unsigned int bytes = 0;
-/* checking Geometry Type */
-    if (sz < 4)
+
+/* checking Geometry Type and Dims */
+    if (sz < 8)
 	return 0;
-    if (gaiaImport32 (ptr, GAIA_LITTLE_ENDIAN, endian_arch) != GAIA_POLYGON)
+    t = gaiaImport32 (ptr, GAIA_LITTLE_ENDIAN, endian_arch);
+    d = gaiaImport32 (ptr + 4, GAIA_LITTLE_ENDIAN, endian_arch);
+    if (!checkFgfTypeDims (t, d, &geom_type, &dims))
 	return 0;
-    ptr += 4;
-    sz -= 4;
-    bytes += 4;
-/* checking size */
-    coord_dims = coordDimsFromFgf (endian_arch, ptr, size, &type);
-    if (!coord_dims)
+    if (geom_type != GAIA_POLYGON)
 	return 0;
-    ptr += 4;
-    sz -= 4;
-    bytes += 4;
+    ptr += 8;
+    sz -= 8;
+    bytes += 8;
+    if (dims == GAIA_XY_Z_M)
+	ndims = 4;
+    else if (dims == GAIA_XY_Z || dims == GAIA_XY_M)
+	ndims = 3;
+    else
+	ndims = 2;
+
 /* how many rings are there ? */
     if (sz < 4)
 	return 0;
@@ -5881,6 +5952,7 @@ polygonFromFgf (gaiaGeomCollPtr geom, int endian_arch,
     bytes += 4;
     if (rings < 1)
 	return 0;
+
     for (ir = 0; ir < rings; ir++)
       {
 	  /* fetching Polygon's rings */
@@ -5890,169 +5962,173 @@ polygonFromFgf (gaiaGeomCollPtr geom, int endian_arch,
 	  ptr += 4;
 	  sz -= 4;
 	  bytes += 4;
-	  if (pts < 4)
-	      return 0;
-	  rng_sz = pts * coord_dims * sizeof (double);
+	  rng_sz = pts * ndims * 8;
 	  if (sz < rng_sz)
 	      return 0;
 	  bytes += rng_sz;
-	  if (type == GAIA_XY_Z)
+
+	  if (ir == 0)
+	    {
+		/* creating the Polygon */
+		pg = gaiaAddPolygonToGeomColl (geom, pts, rings - 1);
+	    }
+	  if (dims == GAIA_XY_Z)
 	    {
 		/* POLYGONZ */
-		geom->DimensionModel = GAIA_XY_Z;
 		if (ir == 0)
 		  {
-		      /* building the EXTERIOR RING */
-		      pg = gaiaAddPolygonToGeomColl (geom, pts, rings - 1);
+		      /* parsing the EXTERIOR RING */
 		      rng = pg->Exterior;
 		      for (iv = 0; iv < pts; iv++)
 			{
 			    /* inserting vertices into the EXTERIOR Ring */
 			    x = gaiaImport64 (ptr, GAIA_LITTLE_ENDIAN,
 					      endian_arch);
-			    y = gaiaImport64 (ptr + sizeof (double),
+			    y = gaiaImport64 (ptr + 8,
 					      GAIA_LITTLE_ENDIAN, endian_arch);
-			    z = gaiaImport64 (ptr + (sizeof (double) * 2),
+			    z = gaiaImport64 (ptr + 16,
 					      GAIA_LITTLE_ENDIAN, endian_arch);
-			    ptr += (coord_dims * sizeof (double));
-			    gaiaSetPointXYZ (rng->Coords, iv, x, y, z);
+			    m = 0.0;
+			    ptr += 24;
+			    setFgfVertex (dims, rng->Coords, iv, x, y, z, m);
 			}
 		  }
 		else
 		  {
-		      /* building an INTERIOR RING */
+		      /* parsing an INTERIOR RING */
 		      rng = gaiaAddInteriorRing (pg, ir - 1, pts);
 		      for (iv = 0; iv < pts; iv++)
 			{
 			    /* inserting vertices into some INTERIOR Ring */
 			    x = gaiaImport64 (ptr, GAIA_LITTLE_ENDIAN,
 					      endian_arch);
-			    y = gaiaImport64 (ptr + sizeof (double),
+			    y = gaiaImport64 (ptr + 8,
 					      GAIA_LITTLE_ENDIAN, endian_arch);
-			    z = gaiaImport64 (ptr + (sizeof (double) * 2),
+			    z = gaiaImport64 (ptr + 16,
 					      GAIA_LITTLE_ENDIAN, endian_arch);
-			    ptr += (coord_dims * sizeof (double));
-			    gaiaSetPointXYZ (rng->Coords, iv, x, y, z);
+			    m = 0.0;
+			    ptr += 24;
+			    setFgfVertex (dims, rng->Coords, iv, x, y, z, m);
 			}
 		  }
 	    }
-	  if (type == GAIA_XY_M)
+	  else if (dims == GAIA_XY_M)
 	    {
 		/* POLYGONM */
-		geom->DimensionModel = GAIA_XY_M;
 		if (ir == 0)
 		  {
-		      /* building the EXTERIOR RING */
-		      pg = gaiaAddPolygonToGeomColl (geom, pts, rings - 1);
+		      /* parsing the EXTERIOR RING */
 		      rng = pg->Exterior;
 		      for (iv = 0; iv < pts; iv++)
 			{
 			    /* inserting vertices into the EXTERIOR Ring */
 			    x = gaiaImport64 (ptr, GAIA_LITTLE_ENDIAN,
 					      endian_arch);
-			    y = gaiaImport64 (ptr + sizeof (double),
+			    y = gaiaImport64 (ptr + 8,
 					      GAIA_LITTLE_ENDIAN, endian_arch);
-			    m = gaiaImport64 (ptr + (sizeof (double) * 2),
+			    m = gaiaImport64 (ptr + 16,
 					      GAIA_LITTLE_ENDIAN, endian_arch);
-			    ptr += (coord_dims * sizeof (double));
-			    gaiaSetPointXYM (rng->Coords, iv, x, y, m);
+			    z = 0.0;
+			    ptr += 24;
+			    setFgfVertex (dims, rng->Coords, iv, x, y, z, m);
 			}
 		  }
 		else
 		  {
-		      /* building an INTERIOR RING */
+		      /* parsing an INTERIOR RING */
 		      rng = gaiaAddInteriorRing (pg, ir - 1, pts);
 		      for (iv = 0; iv < pts; iv++)
 			{
 			    /* inserting vertices into some INTERIOR Ring */
 			    x = gaiaImport64 (ptr, GAIA_LITTLE_ENDIAN,
 					      endian_arch);
-			    y = gaiaImport64 (ptr + sizeof (double),
+			    y = gaiaImport64 (ptr + 8,
 					      GAIA_LITTLE_ENDIAN, endian_arch);
-			    m = gaiaImport64 (ptr + (sizeof (double) * 2),
+			    m = gaiaImport64 (ptr + 16,
 					      GAIA_LITTLE_ENDIAN, endian_arch);
-			    ptr += (coord_dims * sizeof (double));
-			    gaiaSetPointXYM (rng->Coords, iv, x, y, m);
+			    z = 0.0;
+			    ptr += 24;
+			    setFgfVertex (dims, rng->Coords, iv, x, y, z, m);
 			}
 		  }
 	    }
-	  else if (type == GAIA_XY_Z_M)
+	  else if (dims == GAIA_XY_Z_M)
 	    {
 		/* POLYGONZM */
-		geom->DimensionModel = GAIA_XY_Z_M;
 		if (ir == 0)
 		  {
-		      /* building the EXTERIOR RING */
-		      pg = gaiaAddPolygonToGeomColl (geom, pts, rings - 1);
+		      /* parsing the EXTERIOR RING */
 		      rng = pg->Exterior;
 		      for (iv = 0; iv < pts; iv++)
 			{
 			    /* inserting vertices into the EXTERIOR Ring */
 			    x = gaiaImport64 (ptr, GAIA_LITTLE_ENDIAN,
 					      endian_arch);
-			    y = gaiaImport64 (ptr + sizeof (double),
+			    y = gaiaImport64 (ptr + 8,
 					      GAIA_LITTLE_ENDIAN, endian_arch);
-			    z = gaiaImport64 (ptr + (sizeof (double) * 2),
+			    z = gaiaImport64 (ptr + 16,
 					      GAIA_LITTLE_ENDIAN, endian_arch);
-			    m = gaiaImport64 (ptr + (sizeof (double) * 3),
+			    m = gaiaImport64 (ptr + 24,
 					      GAIA_LITTLE_ENDIAN, endian_arch);
-			    ptr += (coord_dims * sizeof (double));
-			    gaiaSetPointXYZM (rng->Coords, iv, x, y, z, m);
+			    ptr += 32;
+			    setFgfVertex (dims, rng->Coords, iv, x, y, z, m);
 			}
 		  }
 		else
 		  {
-		      /* building an INTERIOR RING */
+		      /* parsing an INTERIOR RING */
 		      rng = gaiaAddInteriorRing (pg, ir - 1, pts);
 		      for (iv = 0; iv < pts; iv++)
 			{
 			    /* inserting vertices into some INTERIOR Ring */
 			    x = gaiaImport64 (ptr, GAIA_LITTLE_ENDIAN,
 					      endian_arch);
-			    y = gaiaImport64 (ptr + sizeof (double),
+			    y = gaiaImport64 (ptr + 8,
 					      GAIA_LITTLE_ENDIAN, endian_arch);
-			    z = gaiaImport64 (ptr + (sizeof (double) * 2),
+			    z = gaiaImport64 (ptr + 16,
 					      GAIA_LITTLE_ENDIAN, endian_arch);
-			    m = gaiaImport64 (ptr + (sizeof (double) * 3),
+			    m = gaiaImport64 (ptr + 24,
 					      GAIA_LITTLE_ENDIAN, endian_arch);
-			    ptr += (coord_dims * sizeof (double));
-			    gaiaSetPointXYZM (rng->Coords, iv, x, y, z, m);
+			    ptr += 32;
+			    setFgfVertex (dims, rng->Coords, iv, x, y, z, m);
 			}
 		  }
 	    }
 	  else
 	    {
 		/* POLYGON */
-		geom->DimensionModel = GAIA_XY;
 		if (ir == 0)
 		  {
-		      /* building the EXTERIOR RING */
-		      pg = gaiaAddPolygonToGeomColl (geom, pts, rings - 1);
+		      /* parsing the EXTERIOR RING */
 		      rng = pg->Exterior;
 		      for (iv = 0; iv < pts; iv++)
 			{
 			    /* inserting vertices into the EXTERIOR Ring */
 			    x = gaiaImport64 (ptr, GAIA_LITTLE_ENDIAN,
 					      endian_arch);
-			    y = gaiaImport64 (ptr + sizeof (double),
+			    y = gaiaImport64 (ptr + 8,
 					      GAIA_LITTLE_ENDIAN, endian_arch);
-			    ptr += (coord_dims * sizeof (double));
-			    gaiaSetPoint (rng->Coords, iv, x, y);
+			    z = 0.0;
+			    m = 0.0;
+			    ptr += 16;
+			    setFgfVertex (dims, rng->Coords, iv, x, y, z, m);
 			}
 		  }
 		else
 		  {
-		      /* building an INTERIOR RING */
+		      /* parsing an INTERIOR RING */
 		      rng = gaiaAddInteriorRing (pg, ir - 1, pts);
 		      for (iv = 0; iv < pts; iv++)
 			{
 			    /* inserting vertices into some INTERIOR Ring */
 			    x = gaiaImport64 (ptr, GAIA_LITTLE_ENDIAN,
 					      endian_arch);
-			    y = gaiaImport64 (ptr + sizeof (double),
+			    y = gaiaImport64 (ptr + 8,
 					      GAIA_LITTLE_ENDIAN, endian_arch);
-			    ptr += (coord_dims * sizeof (double));
-			    gaiaSetPoint (rng->Coords, iv, x, y);
+			    z = 0.0;
+			    m = 0.0;
+			    ptr += 16;
+			    setFgfVertex (dims, rng->Coords, iv, x, y, z, m);
 			}
 		  }
 	    }
@@ -6235,14 +6311,40 @@ gaiaFromFgf (const unsigned char *blob, unsigned int size)
 {
 /* decoding from FGF to GEOMETRY  */
     gaiaGeomCollPtr geom = NULL;
+    int t;
+    int d;
     int geom_type;
+    int dims;
     int endian_arch = gaiaEndianArch ();
-    if (size < 4)
+    if (size < 16)
 	return NULL;
-/* checking FGF type */
-    geom_type = gaiaImport32 (blob, GAIA_LITTLE_ENDIAN, endian_arch);
-    geom = gaiaAllocGeomColl ();
+
+/* checking FGF type and dimensions */
+    t = gaiaImport32 (blob, GAIA_LITTLE_ENDIAN, endian_arch);
+    if (t == 1 || t == 2 || t == 3)
+    {
+		/* elementary: POINT, LINESTRING or POLYGON */
+    d = gaiaImport32 (blob + 4, GAIA_LITTLE_ENDIAN, endian_arch);
+}
+else
+{
+	/* multiple elements */
+    d = gaiaImport32 (blob + 12, GAIA_LITTLE_ENDIAN, endian_arch);
+}
+    if (!checkFgfTypeDims (t, d, &geom_type, &dims))
+	return NULL;
+
+/* allocating a Gaia Geometry accordingly to declared Dims */
+    if (dims == GAIA_XY_Z_M)
+	geom = gaiaAllocGeomCollXYZM ();
+    else if (dims == GAIA_XY_Z)
+	geom = gaiaAllocGeomCollXYZ ();
+    else if (dims == GAIA_XY_M)
+	geom = gaiaAllocGeomCollXYM ();
+    else
+	geom = gaiaAllocGeomColl ();
     geom->DeclaredType = geom_type;
+
     switch (geom_type)
       {
       case GAIA_POINT:
@@ -6273,16 +6375,13 @@ gaiaFromFgf (const unsigned char *blob, unsigned int size)
 	  if (geomCollectionFromFgf (geom, endian_arch, blob, size))
 	      return geom;
 	  break;
-      default:			/* unsupported geometry type */
-	  break;
       };
     gaiaFreeGeomColl (geom);
     return NULL;
 }
 
 GAIAGEO_DECLARE void
-gaiaToFgf (gaiaGeomCollPtr geom, unsigned char **result, int *size,
-	   int coord_dims)
+gaiaToFgf (gaiaGeomCollPtr geom, unsigned char **result, int *size)
 {
 /* builds the FGF representation for this GEOMETRY */
     int ib;
@@ -6297,6 +6396,7 @@ gaiaToFgf (gaiaGeomCollPtr geom, unsigned char **result, int *size,
     int n_polygons = 0;
     int type;
     int n_coords;
+    int flag_dims;
     unsigned char *ptr;
     int sz = 0;
     gaiaPointPtr pt;
@@ -6307,17 +6407,25 @@ gaiaToFgf (gaiaGeomCollPtr geom, unsigned char **result, int *size,
     gaiaLinestringPtr line = NULL;
     gaiaPolygonPtr polyg = NULL;
     int endian_arch = gaiaEndianArch ();
+
     gaiaMbrGeometry (geom);
-    switch (coord_dims)
+    switch (geom->DimensionModel)
       {
+	  /* determining the Dimensions */
       case GAIA_XY:
+	  flag_dims = 0;
 	  n_coords = 2;
 	  break;
-      case GAIA_XY_M:
       case GAIA_XY_Z:
+	  flag_dims = 1;
+	  n_coords = 3;
+	  break;
+      case GAIA_XY_M:
+	  flag_dims = 2;
 	  n_coords = 3;
 	  break;
       case GAIA_XY_Z_M:
+	  flag_dims = 3;
 	  n_coords = 4;
 	  break;
       default:
@@ -6358,78 +6466,77 @@ gaiaToFgf (gaiaGeomCollPtr geom, unsigned char **result, int *size,
     if (n_points == 1 && n_linestrings == 0 && n_polygons == 0)
       {
 	  if (geom->DeclaredType == GAIA_MULTIPOINT)
-	      type = GAIA_MULTIPOINT;
+	      type = 4;
 	  else if (geom->DeclaredType == GAIA_GEOMETRYCOLLECTION)
-	      type = GAIA_GEOMETRYCOLLECTION;
+	      type = 7;
 	  else
-	      type = GAIA_POINT;
+	      type = 1;
       }
     else if (n_points > 1 && n_linestrings == 0 && n_polygons == 0)
       {
 	  if (geom->DeclaredType == GAIA_GEOMETRYCOLLECTION)
-	      type = GAIA_GEOMETRYCOLLECTION;
+	      type = 7;
 	  else
-	      type = GAIA_MULTIPOINT;
+	      type = 4;
       }
     else if (n_points == 0 && n_linestrings == 1 && n_polygons == 0)
       {
 	  if (geom->DeclaredType == GAIA_MULTILINESTRING)
-	      type = GAIA_MULTILINESTRING;
+	      type = 5;
 	  else if (geom->DeclaredType == GAIA_GEOMETRYCOLLECTION)
-	      type = GAIA_GEOMETRYCOLLECTION;
+	      type = 7;
 	  else
-	      type = GAIA_LINESTRING;
+	      type = 2;
       }
     else if (n_points == 0 && n_linestrings > 1 && n_polygons == 0)
       {
 	  if (geom->DeclaredType == GAIA_GEOMETRYCOLLECTION)
-	      type = GAIA_GEOMETRYCOLLECTION;
+	      type = 7;
 	  else
-	      type = GAIA_MULTILINESTRING;
+	      type = 5;
       }
     else if (n_points == 0 && n_linestrings == 0 && n_polygons == 1)
       {
 	  if (geom->DeclaredType == GAIA_MULTIPOLYGON)
-	      type = GAIA_MULTIPOLYGON;
+	      type = 6;
 	  else if (geom->DeclaredType == GAIA_GEOMETRYCOLLECTION)
-	      type = GAIA_GEOMETRYCOLLECTION;
+	      type = 7;
 	  else
-	      type = GAIA_POLYGON;
+	      type = 3;
       }
     else if (n_points == 0 && n_linestrings == 0 && n_polygons > 1)
       {
 	  if (geom->DeclaredType == GAIA_GEOMETRYCOLLECTION)
-	      type = GAIA_GEOMETRYCOLLECTION;
+	      type = 7;
 	  else
-	      type = GAIA_MULTIPOLYGON;
+	      type = 6;
       }
     else
-	type = GAIA_GEOMETRYCOLLECTION;
+	type = 7;
 /* and now we compute the size of FGF */
-    if (type == GAIA_MULTIPOINT || type == GAIA_MULTILINESTRING
-	|| type == GAIA_MULTIPOLYGON || type == GAIA_GEOMETRYCOLLECTION)
+    if (type == 4 || type == 5 || type == 6 || type == 7)
 	sz += 8;
     point = geom->FirstPoint;
     while (point)
       {
-	  sz += (8 + (n_coords * sizeof (double)));	/* the size of each POINT */
+	  sz += (8 + (n_coords * 8));	/* the size of each POINT */
 	  point = point->Next;
       }
     line = geom->FirstLinestring;
     while (line)
       {
-	  sz += (12 + ((n_coords * sizeof (double)) * line->Points));	/* # points + [x,y] for each vertex */
+	  sz += (12 + ((n_coords * 8) * line->Points));	/* # points + [x,y] for each vertex */
 	  line = line->Next;
       }
     polyg = geom->FirstPolygon;
     while (polyg)
       {
 	  rng = polyg->Exterior;
-	  sz += (16 + ((n_coords * sizeof (double)) * rng->Points));	/* # rings + # points + [x.y] array - exterior ring */
+	  sz += (16 + ((n_coords * 8) * rng->Points));	/* # rings + # points + [x.y] array - exterior ring */
 	  for (ib = 0; ib < polyg->NumInteriors; ib++)
 	    {
 		rng = polyg->Interiors + ib;
-		sz += (4 + ((n_coords * sizeof (double)) * rng->Points));	/* # points + [x,y] array - interior ring */
+		sz += (4 + ((n_coords * 8) * rng->Points));	/* # points + [x,y] array - interior ring */
 	    }
 	  polyg = polyg->Next;
       }
@@ -6437,8 +6544,7 @@ gaiaToFgf (gaiaGeomCollPtr geom, unsigned char **result, int *size,
     ptr = malloc (sz);
     *result = ptr;
 /* and finally we build the FGF */
-    if (type == GAIA_MULTIPOINT || type == GAIA_MULTILINESTRING
-	|| type == GAIA_MULTIPOLYGON || type == GAIA_GEOMETRYCOLLECTION)
+    if (type == 4 || type == 5 || type == 6 || type == 7)
       {
 	  gaiaExport32 (ptr, type, GAIA_LITTLE_ENDIAN, endian_arch);	/* Geometry Type */
 	  ptr += 4;
@@ -6448,28 +6554,31 @@ gaiaToFgf (gaiaGeomCollPtr geom, unsigned char **result, int *size,
     point = geom->FirstPoint;
     while (point)
       {
-	  gaiaExport32 (ptr, GAIA_POINT, GAIA_LITTLE_ENDIAN, endian_arch);	/* the CLASS TYPE for this element */
+	  gaiaExport32 (ptr, 1, GAIA_LITTLE_ENDIAN, endian_arch);	/* the CLASS TYPE for this element */
 	  ptr += 4;
-	  gaiaExport32 (ptr, coord_dims, GAIA_LITTLE_ENDIAN, endian_arch);	/* the CoordDimension */
+	  gaiaExport32 (ptr, flag_dims, GAIA_LITTLE_ENDIAN, endian_arch);	/* the CoordDimension flag */
 	  ptr += 4;
 	  gaiaExport64 (ptr, point->X, GAIA_LITTLE_ENDIAN, endian_arch);	/* X */
 	  ptr += 8;
 	  gaiaExport64 (ptr, point->Y, GAIA_LITTLE_ENDIAN, endian_arch);	/* Y */
 	  ptr += 8;
-	  if (n_coords > 2)
+	  if (flag_dims == 1)
 	    {
-		/* the third coordinate [Z or M] */
-		if (coord_dims == GAIA_XY_Z || coord_dims == GAIA_XY_Z_M)
-		    gaiaExport64 (ptr, point->Z, GAIA_LITTLE_ENDIAN,
-				  endian_arch);
-		else
-		    gaiaExport64 (ptr, point->M, GAIA_LITTLE_ENDIAN,
-				  endian_arch);
+		/* XYZ */
+		gaiaExport64 (ptr, point->Z, GAIA_LITTLE_ENDIAN, endian_arch);
 		ptr += 8;
 	    }
-	  if (n_coords > 3)
+	  else if (flag_dims == 2)
 	    {
-		/* the fourth coordinate [M] */
+		/*XYM */
+		gaiaExport64 (ptr, point->M, GAIA_LITTLE_ENDIAN, endian_arch);
+		ptr += 8;
+	    }
+	  else if (flag_dims == 3)
+	    {
+		/* XYZM */
+		gaiaExport64 (ptr, point->Z, GAIA_LITTLE_ENDIAN, endian_arch);
+		ptr += 8;
 		gaiaExport64 (ptr, point->M, GAIA_LITTLE_ENDIAN, endian_arch);
 		ptr += 8;
 	    }
@@ -6480,7 +6589,7 @@ gaiaToFgf (gaiaGeomCollPtr geom, unsigned char **result, int *size,
       {
 	  gaiaExport32 (ptr, GAIA_LINESTRING, GAIA_LITTLE_ENDIAN, endian_arch);	/* the CLASS TYPE for this element */
 	  ptr += 4;
-	  gaiaExport32 (ptr, coord_dims, GAIA_LITTLE_ENDIAN, endian_arch);	/* the CoordDimension */
+	  gaiaExport32 (ptr, flag_dims, GAIA_LITTLE_ENDIAN, endian_arch);	/* the CoordDimension flag */
 	  ptr += 4;
 	  gaiaExport32 (ptr, line->Points, GAIA_LITTLE_ENDIAN, endian_arch);	/* # points */
 	  ptr += 4;
@@ -6508,20 +6617,23 @@ gaiaToFgf (gaiaGeomCollPtr geom, unsigned char **result, int *size,
 		ptr += 8;
 		gaiaExport64 (ptr, y, GAIA_LITTLE_ENDIAN, endian_arch);	/* Y */
 		ptr += 8;
-		if (n_coords > 2)
+		if (flag_dims == 1)
 		  {
-		      /* the third coordinate [Z or M] */
-		      if (coord_dims == GAIA_XY_Z || coord_dims == GAIA_XY_Z_M)
-			  gaiaExport64 (ptr, z, GAIA_LITTLE_ENDIAN,
-					endian_arch);
-		      else
-			  gaiaExport64 (ptr, m, GAIA_LITTLE_ENDIAN,
-					endian_arch);
+		      /* XYZ */
+		      gaiaExport64 (ptr, z, GAIA_LITTLE_ENDIAN, endian_arch);
 		      ptr += 8;
 		  }
-		if (n_coords > 3)
+		else if (flag_dims == 2)
 		  {
-		      /* the fourth coordinate [M]; */
+		      /*XYM */
+		      gaiaExport64 (ptr, m, GAIA_LITTLE_ENDIAN, endian_arch);
+		      ptr += 8;
+		  }
+		else if (flag_dims == 3)
+		  {
+		      /* XYZM */
+		      gaiaExport64 (ptr, z, GAIA_LITTLE_ENDIAN, endian_arch);
+		      ptr += 8;
 		      gaiaExport64 (ptr, m, GAIA_LITTLE_ENDIAN, endian_arch);
 		      ptr += 8;
 		  }
@@ -6533,7 +6645,7 @@ gaiaToFgf (gaiaGeomCollPtr geom, unsigned char **result, int *size,
       {
 	  gaiaExport32 (ptr, GAIA_POLYGON, GAIA_LITTLE_ENDIAN, endian_arch);	/* the CLASS TYPE for this element */
 	  ptr += 4;
-	  gaiaExport32 (ptr, coord_dims, GAIA_LITTLE_ENDIAN, endian_arch);	/* the CoordDimension */
+	  gaiaExport32 (ptr, flag_dims, GAIA_LITTLE_ENDIAN, endian_arch);	/* the CoordDimension flag */
 	  ptr += 4;
 	  gaiaExport32 (ptr, polyg->NumInteriors + 1, GAIA_LITTLE_ENDIAN, endian_arch);	/* # rings */
 	  ptr += 4;
@@ -6564,20 +6676,23 @@ gaiaToFgf (gaiaGeomCollPtr geom, unsigned char **result, int *size,
 		ptr += 8;
 		gaiaExport64 (ptr, y, GAIA_LITTLE_ENDIAN, endian_arch);	/* Y - exterior ring */
 		ptr += 8;
-		if (n_coords > 2)
+		if (flag_dims == 1)
 		  {
-		      /* the third coordinate [Z or M] */
-		      if (coord_dims == GAIA_XY_Z || coord_dims == GAIA_XY_Z_M)
-			  gaiaExport64 (ptr, z, GAIA_LITTLE_ENDIAN,
-					endian_arch);
-		      else
-			  gaiaExport64 (ptr, m, GAIA_LITTLE_ENDIAN,
-					endian_arch);
+		      /* XYZ */
+		      gaiaExport64 (ptr, z, GAIA_LITTLE_ENDIAN, endian_arch);
 		      ptr += 8;
 		  }
-		if (n_coords > 3)
+		else if (flag_dims == 2)
 		  {
-		      /* the fourth coordinate [M] */
+		      /*XYM */
+		      gaiaExport64 (ptr, m, GAIA_LITTLE_ENDIAN, endian_arch);
+		      ptr += 8;
+		  }
+		else if (flag_dims == 3)
+		  {
+		      /* XYZM */
+		      gaiaExport64 (ptr, z, GAIA_LITTLE_ENDIAN, endian_arch);
+		      ptr += 8;
 		      gaiaExport64 (ptr, m, GAIA_LITTLE_ENDIAN, endian_arch);
 		      ptr += 8;
 		  }
@@ -6611,21 +6726,26 @@ gaiaToFgf (gaiaGeomCollPtr geom, unsigned char **result, int *size,
 		      ptr += 8;
 		      gaiaExport64 (ptr, y, GAIA_LITTLE_ENDIAN, endian_arch);	/* Y - interior ring */
 		      ptr += 8;
-		      if (n_coords > 2)
+		      if (flag_dims == 1)
 			{
-			    /* the third coordinate [Z or M]; defaulting to ZERO */
-			    if (coord_dims == GAIA_XY_Z
-				|| coord_dims == GAIA_XY_Z_M)
-				gaiaExport64 (ptr, z, GAIA_LITTLE_ENDIAN,
-					      endian_arch);
-			    else
-				gaiaExport64 (ptr, m, GAIA_LITTLE_ENDIAN,
-					      endian_arch);
+			    /* XYZ */
+			    gaiaExport64 (ptr, z, GAIA_LITTLE_ENDIAN,
+					  endian_arch);
 			    ptr += 8;
 			}
-		      if (n_coords > 3)
+		      else if (flag_dims == 2)
 			{
-			    /* the fourth coordinate [M] */
+			    /*XYM */
+			    gaiaExport64 (ptr, m, GAIA_LITTLE_ENDIAN,
+					  endian_arch);
+			    ptr += 8;
+			}
+		      else if (flag_dims == 3)
+			{
+			    /* XYZM */
+			    gaiaExport64 (ptr, z, GAIA_LITTLE_ENDIAN,
+					  endian_arch);
+			    ptr += 8;
 			    gaiaExport64 (ptr, m, GAIA_LITTLE_ENDIAN,
 					  endian_arch);
 			    ptr += 8;

@@ -1,0 +1,7 @@
+From FGF - POINT XYM
+:memory:
+SELECT AsText(GeomFromFGF(AsFGF(GeomFromText('POINT M(1 2 3)'))))
+1 # rows
+1 # column
+AsText(GeomFromFGF(AsFGF(GeomFromText('POINT M(1 2 3)'))))
+POINT M(1 2 3)

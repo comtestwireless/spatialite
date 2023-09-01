@@ -1,0 +1,7 @@
+From FGF - INT geom
+:memory:
+SELECT GeomFromFGF(1)
+1 # rows
+1 # column
+GeomFromFGF(1)
+(NULL)

@@ -1,0 +1,7 @@
+From FGF - TEXT geom
+:memory:
+SELECT GeomFromFGF('fgf')
+1 # rows
+1 # column
+GeomFromFGF('fgf')
+(NULL)

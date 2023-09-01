@@ -12037,7 +12037,7 @@ static void
 fnct_AsFGF (sqlite3_context * context, int argc, sqlite3_value ** argv)
 {
 /* SQL function:
-/ AsFGF(BLOB encoded geometry, int dims)
+/ AsFGF(BLOB encoded geometry)
 /
 / returns the corresponding FGF encoded value
 / or NULL if any error is encountered
@@ -12047,7 +12047,6 @@ fnct_AsFGF (sqlite3_context * context, int argc, sqlite3_value ** argv)
     int len;
     unsigned char *p_result = NULL;
     gaiaGeomCollPtr geo = NULL;
-    int coord_dims;
     int gpkg_amphibious = 0;
     int gpkg_mode = 0;
     struct splite_internal_cache *cache = sqlite3_user_data (context);
@@ -12064,24 +12063,6 @@ fnct_AsFGF (sqlite3_context * context, int argc, sqlite3_value ** argv)
       }
     p_blob = (unsigned char *) sqlite3_value_blob (argv[0]);
     n_bytes = sqlite3_value_bytes (argv[0]);
-    if (sqlite3_value_type (argv[1]) != SQLITE_INTEGER)
-      {
-	  spatialite_e
-	      ("AsFGF() error: argument 2 [geom_coords] is not of the Integer type\n");
-	  sqlite3_result_null (context);
-	  return;
-      }
-    coord_dims = sqlite3_value_int (argv[1]);
-    if (coord_dims
-	== 0 || coord_dims == 1 || coord_dims == 2 || coord_dims == 3)
-	;
-    else
-      {
-	  spatialite_e
-	      ("AsFGF() error: argument 2 [geom_coords] out of range [0,1,2,3]\n");
-	  sqlite3_result_null (context);
-	  return;
-      }
     geo =
 	gaiaFromSpatiaLiteBlobWkbEx (p_blob, n_bytes, gpkg_mode,
 				     gpkg_amphibious);
@@ -12089,7 +12070,7 @@ fnct_AsFGF (sqlite3_context * context, int argc, sqlite3_value ** argv)
 	sqlite3_result_null (context);
     else
       {
-	  gaiaToFgf (geo, &p_result, &len, coord_dims);
+	  gaiaToFgf (geo, &p_result, &len);
 	  if (!p_result)
 	      sqlite3_result_null (context);
 	  else
@@ -50322,7 +50303,7 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
     sqlite3_create_function_v2 (db, "GeomFromKml", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_FromKml, 0, 0, 0);
-    sqlite3_create_function_v2 (db, "AsFGF", 2,
+    sqlite3_create_function_v2 (db, "AsFGF", 1,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_AsFGF, 0, 0, 0);
     sqlite3_create_function_v2 (db, "GeomFromEWKB", 1,

@@ -26,7 +26,7 @@
 #define GEOS_370 1
 
 /* Should be defined in order to enable GEOS_390 support. */
-/* #undef GEOS_390 */
+#define GEOS_390 1
 
 /* Should be defined in order to enable GEOS_ADVANCED support. */
 #define GEOS_ADVANCED 1

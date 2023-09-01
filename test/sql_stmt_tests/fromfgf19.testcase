@@ -1,0 +1,7 @@
+From FGF - MULTIPOINT XYZ
+:memory:
+SELECT AsText(GeomFromFGF(AsFGF(GeomFromText('MULTIPOINT Z(1 2 10, 3 4 20)'))))
+1 # rows
+1 # column
+AsText(GeomFromFGF(AsFGF(GeomFromText('MULTIPOINT Z(1 2 10, 3 4 20)'))))
+MULTIPOINT Z(1 2 10, 3 4 20)
