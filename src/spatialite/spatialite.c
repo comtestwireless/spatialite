@@ -25167,10 +25167,11 @@ length_common (const void *p_cache, sqlite3_context * context, int argc,
 					l = gaiaGeodesicTotalLength (a,
 								     b,
 								     rf,
+								     line->DimensionModel,
 								     line->
-								     DimensionModel,
-								     line->Coords,
-								     line->Points);
+								     Coords,
+								     line->
+								     Points);
 					if (l < 0.0)
 					  {
 					      length = -1.0;
@@ -25193,9 +25194,12 @@ length_common (const void *p_cache, sqlite3_context * context, int argc,
 					      l = gaiaGeodesicTotalLength (a,
 									   b,
 									   rf,
-									   ring->DimensionModel,
-									   ring->Coords,
-									   ring->Points);
+									   ring->
+									   DimensionModel,
+									   ring->
+									   Coords,
+									   ring->
+									   Points);
 					      if (l < 0.0)
 						{
 						    length = -1.0;
@@ -26360,11 +26364,11 @@ fnct_Circularity (sqlite3_context * context, int argc, sqlite3_value ** argv)
 		  {
 #ifdef ENABLE_RTTOPO		/* only if RTTOPO is enabled */
 		      perimeter = gaiaGeodesicTotalLength (a, b, rf,
-							   pg->
-							   Exterior->DimensionModel,
+							   pg->Exterior->
+							   DimensionModel,
 							   pg->Exterior->Coords,
-							   pg->
-							   Exterior->Points);
+							   pg->Exterior->
+							   Points);
 		      if (perimeter < 0.0)
 			  ret = 0;
 		      else
@@ -34128,6 +34132,10 @@ fnct_Cutter (sqlite3_context * context, int argc, sqlite3_value ** argv)
 / ST_Cutter(TEXT in_db_prefix, TEXT input_table, TEXT input_geom,
 /              TEXT blade_db_prefix, TEXT blade_table, TEXT blade_geom,
 /              TEXT output_table, INT transaction, INT ram_temp_store)
+/ ST_Cutter(TEXT in_db_prefix, TEXT input_table, TEXT input_geom,
+/              TEXT blade_db_prefix, TEXT blade_table, TEXT blade_geom,
+/              TEXT output_table, INT transaction, INT ram_temp_store,
+/              INT default_null_blade)
 /
 / the "input" table-geometry is expected to be declared as POINT,
 / LINESTRING, POLYGON, MULTIPOINT, MULTILINESTRING or MULTIPOLYGON
@@ -34167,6 +34175,7 @@ fnct_Cutter (sqlite3_context * context, int argc, sqlite3_value ** argv)
     const char *output_table = NULL;
     int transaction = 0;
     int ram_tmp_store = 0;
+    int default_null_blade = 0;
     char **message = NULL;
     struct splite_internal_cache *cache = sqlite3_user_data (context);
     GAIA_UNUSED ();		/* LCOV_EXCL_LINE */
@@ -34250,12 +34259,22 @@ fnct_Cutter (sqlite3_context * context, int argc, sqlite3_value ** argv)
 		return;
 	    }
       }
+    if (argc == 10)
+      {
+	  if (sqlite3_value_type (argv[9]) == SQLITE_INTEGER)
+	      default_null_blade = sqlite3_value_int (argv[9]);
+	  else
+	    {
+		sqlite3_result_int (context, -1);
+		return;
+	    }
+      }
 
     sqlite = sqlite3_context_db_handle (context);
     ret =
 	gaiaCutter (sqlite, cache, in_db_prefix, input_table, input_geom,
 		    blade_db_prefix, blade_table, blade_geom, output_table,
-		    transaction, ram_tmp_store, message);
+		    transaction, ram_tmp_store, default_null_blade, message);
 
     sqlite3_result_int (context, ret);
 }
@@ -42120,7 +42139,8 @@ fnct_GeodesicLength (sqlite3_context * context, int argc, sqlite3_value ** argv)
 				  /* interior Rings */
 				  ring = polyg->Interiors + ib;
 				  l = gaiaGeodesicTotalLength (a, b, rf,
-							       ring->DimensionModel,
+							       ring->
+							       DimensionModel,
 							       ring->Coords,
 							       ring->Points);
 				  if (l < 0.0)
@@ -42214,7 +42234,8 @@ fnct_GreatCircleLength (sqlite3_context * context, int argc,
 			    ring = polyg->Exterior;
 			    length +=
 				gaiaGreatCircleTotalLength (a, b,
-							    ring->DimensionModel,
+							    ring->
+							    DimensionModel,
 							    ring->Coords,
 							    ring->Points);
 			    for (ib = 0; ib < polyg->NumInteriors; ib++)
@@ -42223,7 +42244,8 @@ fnct_GreatCircleLength (sqlite3_context * context, int argc,
 				  ring = polyg->Interiors + ib;
 				  length +=
 				      gaiaGreatCircleTotalLength (a, b,
-								  ring->DimensionModel,
+								  ring->
+								  DimensionModel,
 								  ring->Coords,
 								  ring->Points);
 			      }
@@ -54067,6 +54089,9 @@ register_spatialite_sql_functions (void *p_db, const void *p_cache)
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_Cutter, 0, 0, 0);
     sqlite3_create_function_v2 (db, "ST_Cutter", 9,
+				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
+				fnct_Cutter, 0, 0, 0);
+    sqlite3_create_function_v2 (db, "ST_Cutter", 10,
 				SQLITE_UTF8 | SQLITE_DETERMINISTIC, cache,
 				fnct_Cutter, 0, 0, 0);
     sqlite3_create_function_v2 (db, "GetCutterMessage", 0,

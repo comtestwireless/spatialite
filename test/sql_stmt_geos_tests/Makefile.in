@@ -393,6 +393,11 @@ EXTRA_DIST = bdmpolyfromtext10.testcase \
 	cutter13.testcase \
 	cutter14.testcase \
 	cutter15.testcase \
+	cutter16.testcase \
+	cutter17.testcase \
+	cutter18.testcase \
+	cutter19.testcase \
+	cutter20.testcase \
 	difference10.testcase \
 	difference11.testcase \
 	difference12.testcase \

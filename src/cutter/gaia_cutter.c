@@ -946,7 +946,8 @@ do_check_blade (sqlite3 * handle, const char *db_prefix, const char *table,
 
 static int
 do_check_nulls (sqlite3 * handle, const char *db_prefix, const char *table,
-		const char *geom, const char *which, char **message)
+		const char *geom, const char *which, int default_null_blade,
+		char **message)
 {
 /* testing for NULL PK values and NULL Geoms */
     int ret;
@@ -1065,10 +1066,15 @@ do_check_nulls (sqlite3 * handle, const char *db_prefix, const char *table,
       }
     if (!count)
       {
-	  sql = sqlite3_mprintf ("Invalid %s: empty table !!!", which);
-	  do_update_message (message, sql);
-	  sqlite3_free (sql);
-	  goto error;
+	  if (strcmp (which, "BLADE") == 0 && default_null_blade)
+	      ;
+	  else
+	    {
+		sql = sqlite3_mprintf ("Invalid %s: empty table !!!", which);
+		do_update_message (message, sql);
+		sqlite3_free (sql);
+		goto error;
+	    }
       }
 
     return 1;
@@ -7341,8 +7347,8 @@ do_finish_output (struct output_table *tbl, sqlite3 * handle,
 			      case SQLITE_TEXT:
 				  sqlite3_bind_text (stmt_out, icol,
 						     var->value.textValue,
-						     strlen (var->
-							     value.textValue),
+						     strlen (var->value.
+							     textValue),
 						     SQLITE_STATIC);
 				  break;
 			      default:
@@ -7489,7 +7495,7 @@ gaiaCutter (sqlite3 * handle, const void *cache, const char *xin_db_prefix,
 	    const char *input_table, const char *xinput_geom,
 	    const char *xblade_db_prefix, const char *blade_table,
 	    const char *xblade_geom, const char *out_table, int transaction,
-	    int ram_tmp_store, char **message)
+	    int ram_tmp_store, int default_null_blade, char **message)
 {
 /* main Cutter tool implementation */
     const char *in_db_prefix = "MAIN";
@@ -7552,10 +7558,11 @@ gaiaCutter (sqlite3 * handle, const void *cache, const char *xin_db_prefix,
 	  goto end;
       }
     if (!do_check_nulls
-	(handle, in_db_prefix, input_table, input_geom, "INPUT", message))
+	(handle, in_db_prefix, input_table, input_geom, "INPUT", 0, message))
 	goto end;
     if (!do_check_nulls
-	(handle, blade_db_prefix, blade_table, blade_geom, "BLADE", message))
+	(handle, blade_db_prefix, blade_table, blade_geom, "BLADE",
+	 default_null_blade, message))
 	goto end;
 
 /* determining the Output Table layout */

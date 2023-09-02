@@ -93,12 +93,12 @@ static struct sqlite3_module my_knn2_module;
 
 typedef struct VKnn2ItemStruct
 {
-/* a Feature item into the KNN2 array */
-    int ok;
+/* a Feature item into the KNN2 linked list */
     sqlite3_int64 rowid;
     double radius;
     double dist_crs;
     double dist_m;
+    struct VKnn2ItemStruct *next;
 } VKnn2Item;
 typedef VKnn2Item *VKnn2ItemPtr;
 
@@ -116,7 +116,8 @@ typedef struct VKnn2ContextStruct
     double point_y;
     double radius;
     int expand;
-    VKnn2ItemPtr knn2_array;
+    VKnn2ItemPtr knn2_first;
+    VKnn2ItemPtr knn2_last;
     int max_items;
     int next_item;
 } VKnn2Context;
@@ -160,7 +161,8 @@ vknn2_empty_context (VKnn2ContextPtr ctx)
     ctx->radius = 0.0;
     ctx->expand = 0;
     ctx->max_items = 0;
-    ctx->knn2_array = NULL;
+    ctx->knn2_first = NULL;
+    ctx->knn2_last = NULL;
     ctx->next_item = 0;
 }
 
@@ -171,6 +173,58 @@ vknn2_create_context (void)
     VKnn2ContextPtr ctx = malloc (sizeof (VKnn2Context));
     vknn2_empty_context (ctx);
     return ctx;
+}
+
+static void
+vknn2_clear_items (VKnn2ContextPtr ctx)
+{
+/* freeing a KNN2 list of items */
+    VKnn2ItemPtr pK;
+    VKnn2ItemPtr pKn;
+    pK = ctx->knn2_first;
+    while (pK != NULL)
+      {
+	  pKn = pK->next;
+	  free (pK);
+	  pK = pKn;
+      }
+}
+
+static void
+vknn2_add_item (VKnn2ContextPtr ctx, sqlite3_int64 rowid, double dist_crs,
+		double dist_m, double radius)
+{
+/* inserting an item into the KNN2 linked list */
+    VKnn2ItemPtr item = malloc (sizeof (VKnn2Item));
+    item->rowid = rowid;
+    item->dist_crs = dist_crs;
+    item->dist_m = dist_m;
+    item->radius = radius;
+    item->next = NULL;
+
+    if (ctx->knn2_first == NULL)
+	ctx->knn2_first = item;
+    if (ctx->knn2_last != NULL)
+	ctx->knn2_last->next = item;
+    ctx->knn2_last = item;
+    ctx->next_item++;
+}
+
+static VKnn2ItemPtr
+vknn2_find_item (VKnn2ContextPtr ctx, int idx)
+{
+/* finding a KNN2 item by its relative position into the linked list */
+    VKnn2ItemPtr pK;
+    int cnt = 0;
+    pK = ctx->knn2_first;
+    while (pK != NULL)
+      {
+	  if (cnt == idx)
+	      return pK;
+	  cnt++;
+	  pK = pK->next;
+      }
+    return NULL;
 }
 
 static void
@@ -187,8 +241,7 @@ vknn2_reset_context (VKnn2ContextPtr ctx)
 	free (ctx->column_name);
     if (ctx->blob != NULL)
 	free (ctx->blob);
-    if (ctx->knn2_array != NULL)
-	free (ctx->knn2_array);
+    vknn2_clear_items (ctx);
     vknn2_empty_context (ctx);
 }
 
@@ -196,18 +249,10 @@ static void
 vknn2_clear_context (VKnn2ContextPtr ctx)
 {
 /* clearing a KNN2 context */
-    int i;
     ctx->next_item = 0;
-    for (i = 0; i < ctx->max_items; i++)
-      {
-	  /* initializing the KNN2 array */
-	  VKnn2ItemPtr item = ctx->knn2_array + i;
-	  item->ok = 0;
-	  item->rowid = 0;
-	  item->radius = DBL_MAX;
-	  item->dist_crs = DBL_MAX;
-	  item->dist_m = DBL_MAX;
-      }
+    vknn2_clear_items (ctx);
+    ctx->knn2_first = NULL;
+    ctx->knn2_last = NULL;
 }
 
 static void
@@ -235,17 +280,8 @@ vknn2_init_context (VKnn2ContextPtr ctx, const char *db_prefix,
     ctx->radius = radius;
     ctx->max_items = max_items;
     ctx->expand = expand;
-    ctx->knn2_array = malloc (sizeof (VKnn2Item) * max_items);
-    for (i = 0; i < max_items; i++)
-      {
-	  /* initializing the KNN2 array */
-	  VKnn2ItemPtr item = ctx->knn2_array + i;
-	  item->ok = 0;
-	  item->rowid = 0;
-	  item->radius = DBL_MAX;
-	  item->dist_crs = DBL_MAX;
-	  item->dist_m = DBL_MAX;
-      }
+    ctx->knn2_first = NULL;
+    ctx->knn2_last = NULL;
     ctx->next_item = 0;
     ctx->valid = 1;
 }
@@ -669,6 +705,7 @@ do_knn2_query (sqlite3_vtab_cursor * pCursor)
     int ret;
     sqlite3_stmt *stmt = NULL;
     int iterations = 0;
+    double prev_dist = 0.0;
 
     if (ctx->valid == 0)
 	return 0;
@@ -701,7 +738,7 @@ do_knn2_query (sqlite3_vtab_cursor * pCursor)
 	       "WHERE f_table_name = %Q AND f_geometry_column = %Q AND "
 	       "search_frame = BuildCircleMbr(?, ?, ?)) "
 	       "ORDER BY 3 ASC LIMIT %d", xcolumn, xcolumn, xdb_prefix, xtable,
-	       idxtable, ctx->column_name, ctx->max_items);
+	       idxtable, ctx->column_name, ctx->max_items * 2);
       }
     sqlite3_free (idxtable);
     free (xdb_prefix);
@@ -731,7 +768,6 @@ do_knn2_query (sqlite3_vtab_cursor * pCursor)
 		    break;	/* end of result set */
 		if (ret == SQLITE_ROW)
 		  {
-		      VKnn2ItemPtr item = ctx->knn2_array + ctx->next_item;
 		      sqlite3_int64 rowid = sqlite3_column_int64 (stmt, 0);
 		      double dist_crs = sqlite3_column_double (stmt, 1);
 		      double dist_m = sqlite3_column_double (stmt, 2);
@@ -748,14 +784,21 @@ do_knn2_query (sqlite3_vtab_cursor * pCursor)
 
 		      /* end sandro 2023-08-12 */
 
-		      item->rowid = rowid;
-		      item->dist_crs = dist_crs;
-		      item->dist_m = dist_m;
-		      item->radius = radius;
-		      item->ok = 1;
-		      ctx->next_item += 1;
-		      if (ctx->next_item >= ctx->max_items)
-			  break;
+		      if (dist_m != prev_dist)
+			{
+			    /* 
+			     * sandro 2023-09-01
+			     * 
+			     * patch suggested by Antonio Valanzano:
+			     * we'll expand the resultset eventually exceeding max_items
+			     * untill we found further item presenting the same distance
+			     */
+			    if (ctx->next_item >= ctx->max_items)
+				break;
+			}
+
+		      vknn2_add_item (ctx, rowid, dist_crs, dist_m, radius);
+		      prev_dist = dist_m;
 		  }
 		else
 		    break;
@@ -1218,7 +1261,7 @@ vknn2_column (sqlite3_vtab_cursor * pCursor, sqlite3_context * pContext,
     if (column)
 	column = column;	/* unused arg warning suppression */
     if (cursor->CurrentIndex < ctx->next_item)
-	item = ctx->knn2_array + cursor->CurrentIndex;
+	item = vknn2_find_item (ctx, cursor->CurrentIndex);
     if (column == 0)
       {
 	  /* the DB Prefix column */

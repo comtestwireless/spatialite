@@ -1956,6 +1956,8 @@ extern "C"
  a SQL Transaction.
  \param ram_tmp_store boolean: if set to TRUE all TEMPORARY tables
  and indices will be created in RAM, otherwise in a file.
+ \param default_null_blade boolean: is set to TRUE in the case of
+ an empty blade_table a default NULL Blade will be assumed.
  \param message pointer to a string buffer; if not NULL it will point
  on completion an eventual error message.
  
@@ -1973,7 +1975,7 @@ extern "C"
 				       const char *blade_geom,
 				       const char *output_table,
 				       int transaction, int ram_tmp_store,
-				       char **message);
+				       int default_null_blade, char **message);
 
 /**
   Will attempt to create the Routing Nodes columns for a spatial table
