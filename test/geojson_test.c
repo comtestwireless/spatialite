@@ -56,15 +56,6 @@ do_test (sqlite3 * handle)
     int ret;
     char *err_msg = NULL;
 
-    ret = sqlite3_exec (handle, "PRAGMA foreign_keys=1", NULL, NULL, &err_msg);
-    if (ret != SQLITE_OK)
-      {
-	  fprintf (stderr, "PRAGMA foreign_keys=1 error: %s\n", err_msg);
-	  sqlite3_free (err_msg);
-	  sqlite3_close (handle);
-	  return -2;
-      }
-
     ret =
 	sqlite3_exec (handle, "SELECT InitSpatialMetadataFull(1)", NULL, NULL,
 		      &err_msg);
@@ -140,6 +131,7 @@ main (int argc, char *argv[])
 
     int ret;
     sqlite3 *handle;
+    char *err_msg = NULL;
     void *cache = spatialite_alloc_connection ();
     char *old_SPATIALITE_SECURITY_ENV = NULL;
 #ifdef _WIN32
@@ -163,6 +155,23 @@ main (int argc, char *argv[])
       {
 	  fprintf (stderr, "cannot open in-memory database: %s\n",
 		   sqlite3_errmsg (handle));
+	  sqlite3_close (handle);
+	  return -1;
+      }
+
+    ret = sqlite3_exec (handle, "PRAGMA trusted_schema=0", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA trusted_schema=0 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  sqlite3_close (handle);
+	  return -1;
+      }
+    ret = sqlite3_exec (handle, "PRAGMA foreign_keys=1", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA foreign_keys=1 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
 	  sqlite3_close (handle);
 	  return -1;
       }
@@ -195,6 +204,23 @@ main (int argc, char *argv[])
 		   sqlite3_errmsg (handle));
 	  sqlite3_close (handle);
 	  return -62;
+      }
+
+    ret = sqlite3_exec (handle, "PRAGMA trusted_schema=0", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA trusted_schema=0 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  sqlite3_close (handle);
+	  return -1;
+      }
+    ret = sqlite3_exec (handle, "PRAGMA foreign_keys=1", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA foreign_keys=1 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  sqlite3_close (handle);
+	  return -1;
       }
 
     ret = do_test (handle);

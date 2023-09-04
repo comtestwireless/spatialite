@@ -395,6 +395,23 @@ main (int argc, char *argv[])
 	  return -1;
       }
 
+    ret = sqlite3_exec (handle, "PRAGMA trusted_schema=0", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA trusted_schema=0 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  sqlite3_close (handle);
+	  return -1;
+      }
+    ret = sqlite3_exec (handle, "PRAGMA foreign_keys=1", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA foreign_keys=1 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  sqlite3_close (handle);
+	  return -1;
+      }
+
     spatialite_init_ex (handle, cache, 0);
 
     ret =
@@ -442,6 +459,23 @@ main (int argc, char *argv[])
       {
 	  fprintf (stderr, "cannot open legacy v.3.0.1 database: %s\n",
 		   sqlite3_errmsg (handle));
+	  sqlite3_close (handle);
+	  return -1;
+      }
+
+    ret = sqlite3_exec (handle, "PRAGMA trusted_schema=0", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA trusted_schema=0 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  sqlite3_close (handle);
+	  return -1;
+      }
+    ret = sqlite3_exec (handle, "PRAGMA foreign_keys=1", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA foreign_keys=1 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
 	  sqlite3_close (handle);
 	  return -1;
       }

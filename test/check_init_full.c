@@ -74,6 +74,23 @@ main (int argc, char *argv[])
 	  return -1;
       }
 
+    ret = sqlite3_exec (handle, "PRAGMA trusted_schema=0", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA trusted_schema=0 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  sqlite3_close (handle);
+	  return -1;
+      }
+    ret = sqlite3_exec (handle, "PRAGMA foreign_keys=1", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA foreign_keys=1 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  sqlite3_close (handle);
+	  return -1;
+      }
+
     spatialite_init_ex (handle, cache, 0);
 
     ret =
@@ -135,6 +152,23 @@ main (int argc, char *argv[])
 	  return -6;
       }
 
+    ret = sqlite3_exec (handle, "PRAGMA trusted_schema=0", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA trusted_schema=0 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  sqlite3_close (handle);
+	  return -1;
+      }
+    ret = sqlite3_exec (handle, "PRAGMA foreign_keys=1", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA foreign_keys=1 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  sqlite3_close (handle);
+	  return -1;
+      }
+
     spatialite_init_ex (handle, cache, 0);
 
     ret =
@@ -182,6 +216,23 @@ main (int argc, char *argv[])
 		   sqlite3_errmsg (handle));
 	  sqlite3_close (handle);
 	  return -11;
+      }
+
+    ret = sqlite3_exec (handle, "PRAGMA trusted_schema=0", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA trusted_schema=0 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  sqlite3_close (handle);
+	  return -1;
+      }
+    ret = sqlite3_exec (handle, "PRAGMA foreign_keys=1", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA foreign_keys=1 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  sqlite3_close (handle);
+	  return -1;
       }
 
     spatialite_init_ex (handle, cache, 0);
@@ -284,6 +335,23 @@ main (int argc, char *argv[])
 		   sqlite3_errmsg (handle));
 	  sqlite3_close (handle);
 	  return -22;
+      }
+
+    ret = sqlite3_exec (handle, "PRAGMA trusted_schema=0", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA trusted_schema=0 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  sqlite3_close (handle);
+	  return -1;
+      }
+    ret = sqlite3_exec (handle, "PRAGMA foreign_keys=1", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA foreign_keys=1 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  sqlite3_close (handle);
+	  return -1;
       }
 
     spatialite_init_ex (handle, cache, 0);
@@ -389,6 +457,23 @@ main (int argc, char *argv[])
 		   sqlite3_errmsg (handle));
 	  sqlite3_close (handle);
 	  return -33;
+      }
+
+    ret = sqlite3_exec (handle, "PRAGMA trusted_schema=0", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA trusted_schema=0 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  sqlite3_close (handle);
+	  return -1;
+      }
+    ret = sqlite3_exec (handle, "PRAGMA foreign_keys=1", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA foreign_keys=1 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  sqlite3_close (handle);
+	  return -1;
       }
 
     spatialite_init_ex (handle, cache, 0);

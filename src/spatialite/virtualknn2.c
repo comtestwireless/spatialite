@@ -882,6 +882,7 @@ vknn2_connect (sqlite3 * db, void *pAux, int argc, const char *const *argv,
 	       sqlite3_vtab ** ppVTab, char **pzErr)
 {
 /* connects the virtual table - simply aliases vknn2_create() */
+	sqlite3_vtab_config(db, SQLITE_INNOCUOUS);
     return vknn2_create (db, pAux, argc, argv, ppVTab, pzErr);
 }
 

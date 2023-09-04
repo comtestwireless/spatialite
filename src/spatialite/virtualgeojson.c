@@ -2656,6 +2656,7 @@ vgeojson_connect (sqlite3 * db, void *pAux, int argc, const char *const *argv,
 		  sqlite3_vtab ** ppVTab, char **pzErr)
 {
 /* connects the virtual table to some GeoJSON file - simply aliases vgeojson_create() */
+	sqlite3_vtab_config(db, SQLITE_INNOCUOUS);
     return vgeojson_create (db, pAux, argc, argv, ppVTab, pzErr);
 }
 

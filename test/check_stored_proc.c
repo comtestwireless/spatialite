@@ -211,6 +211,7 @@ do_level1_tests (sqlite3 * handle, int *retcode)
 	"CREATE TABLE @output_2@ AS\n"
 	"SELECT @col_4@, @col_5@ FROM @table_2@ WHERE @col_6@ = @value_2@;\n\n"
 	".echo off\n\n" "--\n-- end comment\n--\n\n'))";
+fprintf(stderr, "%s\n", sql);
     ret = sqlite3_get_table (handle, sql, &results, &rows, &columns, &err_msg);
     if (ret != SQLITE_OK)
       {
@@ -228,6 +229,7 @@ do_level1_tests (sqlite3 * handle, int *retcode)
 	  *retcode = -13;
 	  return 0;
       }
+fprintf(stderr, "\nresult=%d\n", atoi((*(results + 1))));
     if (atoi (*(results + 1)) != 1)
       {
 	  fprintf (stderr, "StoredProc_Register() #2 unexpected failure\n");
@@ -2133,16 +2135,24 @@ main (int argc, char *argv[])
 	  return -1;
       }
 
-    spatialite_init_ex (handle, cache, 0);
-
+    ret = sqlite3_exec (handle, "PRAGMA trusted_schema=0", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA trusted_schema=0 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  sqlite3_close (handle);
+	  return -1;
+      }
     ret = sqlite3_exec (handle, "PRAGMA foreign_keys=1", NULL, NULL, &err_msg);
     if (ret != SQLITE_OK)
       {
 	  fprintf (stderr, "PRAGMA foreign_keys=1 error: %s\n", err_msg);
 	  sqlite3_free (err_msg);
 	  sqlite3_close (handle);
-	  return -2;
+	  return -1;
       }
+
+    spatialite_init_ex (handle, cache, 0);
 
     ret =
 	sqlite3_exec (handle, "SELECT InitSpatialMetadataFull(1)", NULL, NULL,

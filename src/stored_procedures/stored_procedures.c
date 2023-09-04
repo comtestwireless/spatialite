@@ -1329,7 +1329,6 @@ gaia_stored_proc_store (sqlite3 * handle, const void *cache, const char *name,
     sqlite3_stmt *stmt;
     int ret;
     stored_proc_reset_error (cache);
-
     sql =
 	"INSERT INTO stored_procedures(name, title, sql_proc) VALUES (?, ?, ?)";
     ret = sqlite3_prepare_v2 (handle, sql, strlen (sql), &stmt, NULL);

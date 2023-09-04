@@ -469,6 +469,7 @@ int
 main (int argc, char *argv[])
 {
     sqlite3 *db_handle;
+    char *err_msg = NULL;
     int ret;
     const char *sql;
     void *cache = NULL;
@@ -500,6 +501,24 @@ main (int argc, char *argv[])
 	  spatialite_shutdown ();
 	  return -1;
       }
+
+    ret = sqlite3_exec (db_handle, "PRAGMA trusted_schema=0", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA trusted_schema=0 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  sqlite3_close (db_handle);
+	  return -1;
+      }
+    ret = sqlite3_exec (db_handle, "PRAGMA foreign_keys=1", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA foreign_keys=1 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  sqlite3_close (db_handle);
+	  return -1;
+      }
+      
     spatialite_init_ex (db_handle, cache, 0);
 
     if (!test_table (db_handle, "pt2d"))

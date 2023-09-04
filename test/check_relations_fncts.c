@@ -63,6 +63,7 @@ test_extra_mode ()
 #ifndef OMIT_GEOS		/* only if GEOS is supported */
     int ret;
     sqlite3 *handle;
+    char *err_msg = NULL;
     int result;
     int returnValue = 0;
     gaiaGeomCollPtr geom_pt1;
@@ -84,6 +85,23 @@ test_extra_mode ()
       {
 	  fprintf (stderr, "cannot open in-memory db: %s\n",
 		   sqlite3_errmsg (handle));
+	  sqlite3_close (handle);
+	  return -101;
+      }
+
+    ret = sqlite3_exec (handle, "PRAGMA trusted_schema=0", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA trusted_schema=0 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  sqlite3_close (handle);
+	  return -101;
+      }
+    ret = sqlite3_exec (handle, "PRAGMA foreign_keys=1", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA foreign_keys=1 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
 	  sqlite3_close (handle);
 	  return -101;
       }
@@ -382,6 +400,7 @@ test_current_mode ()
 #ifndef OMIT_GEOS		/* only if GEOS is supported */
     int ret;
     sqlite3 *handle;
+    char *err_msg = NULL;
     int result;
     double resultDouble;
     int returnValue = 0;
@@ -404,6 +423,23 @@ test_current_mode ()
       {
 	  fprintf (stderr, "cannot open in-memory db: %s\n",
 		   sqlite3_errmsg (handle));
+	  sqlite3_close (handle);
+	  return -1;
+      }
+
+    ret = sqlite3_exec (handle, "PRAGMA trusted_schema=0", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA trusted_schema=0 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  sqlite3_close (handle);
+	  return -1;
+      }
+    ret = sqlite3_exec (handle, "PRAGMA foreign_keys=1", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA foreign_keys=1 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
 	  sqlite3_close (handle);
 	  return -1;
       }
@@ -1277,6 +1313,7 @@ test_legacy_mode ()
 #ifndef OMIT_GEOS		/* only if GEOS is supported */
     int ret;
     sqlite3 *handle;
+    char *err_msg = NULL;
     int result;
     double resultDouble;
     int returnValue = 0;
@@ -1300,6 +1337,23 @@ test_legacy_mode ()
       {
 	  fprintf (stderr, "cannot open in-memory db: %s\n",
 		   sqlite3_errmsg (handle));
+	  sqlite3_close (handle);
+	  return -1;
+      }
+
+    ret = sqlite3_exec (handle, "PRAGMA trusted_schema=0", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA trusted_schema=0 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  sqlite3_close (handle);
+	  return -1;
+      }
+    ret = sqlite3_exec (handle, "PRAGMA foreign_keys=1", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA foreign_keys=1 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
 	  sqlite3_close (handle);
 	  return -1;
       }

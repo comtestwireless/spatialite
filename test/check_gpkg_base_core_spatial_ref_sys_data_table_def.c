@@ -83,6 +83,24 @@ main (int argc UNUSED, char *argv[]UNUSED)
     /*
        ret = sqlite3_open_v2 ("check_gpkg_base_core_spatial_ref_sys_data_table_def.sqlite", &db_handle, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
      */
+
+    ret = sqlite3_exec (db_handle, "PRAGMA trusted_schema=0", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA trusted_schema=0 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  sqlite3_close (db_handle);
+	  return -1;
+      }
+    ret = sqlite3_exec (db_handle, "PRAGMA foreign_keys=1", NULL, NULL, &err_msg);
+    if (ret != SQLITE_OK)
+      {
+	  fprintf (stderr, "PRAGMA foreign_keys=1 error: %s\n", err_msg);
+	  sqlite3_free (err_msg);
+	  sqlite3_close (db_handle);
+	  return -1;
+      }
+      
     spatialite_init_ex (db_handle, cache, 0);
     if (ret != SQLITE_OK)
       {
