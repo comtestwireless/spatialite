@@ -137,7 +137,7 @@ AUTOMAKE = ${SHELL} /home/sandro/fossil/libspatialite/missing automake-1.16
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -Wall -Wextra -Wunused -pedantic -g -O0
+CFLAGS = -g -O2 -fprofile-arcs -ftest-coverage -g
 CPP = gcc -E
 CPPFLAGS = 
 CXX = g++
@@ -196,7 +196,7 @@ PACKAGE_VERSION = 5.1.1-rc0
 PATH_SEPARATOR = :
 PKG_CONFIG = /usr/bin/pkg-config
 PKG_CONFIG_LIBDIR = 
-PKG_CONFIG_PATH = /usr/local/lib/pkgconfig
+PKG_CONFIG_PATH = 
 RANLIB = ranlib
 SED = /usr/bin/sed
 SET_MAKE = 

@@ -1137,8 +1137,24 @@ EXTRA_DIST = addpoint10.testcase \
 	fromWkb24.testcase \
 	fromWkb25.testcase \
 	fromWkb26.testcase \
+	fromWkb27.testcase \
+	fromWkb28.testcase \
+	fromWkb29.testcase \
 	fromWkb2.testcase \
+	fromWkb30.testcase \
+	fromWkb31.testcase \
+	fromWkb32.testcase \
+	fromWkb33.testcase \
+	fromWkb34.testcase \
+	fromWkb35.testcase \
+	fromWkb36.testcase \
+	fromWkb37.testcase \
+	fromWkb38.testcase \
+	fromWkb39.testcase \
 	fromWkb3.testcase \
+	fromWkb40.testcase \
+	fromWkb41.testcase \
+	fromWkb42.testcase \
 	fromWkb4.testcase \
 	fromWkb5.testcase \
 	fromWkb6.testcase \

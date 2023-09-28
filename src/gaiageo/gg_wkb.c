@@ -453,6 +453,589 @@ ParseWkbPolygonZM (gaiaGeomCollPtr geo)
 }
 
 static void
+ParseWkbMultiPoint (gaiaGeomCollPtr geo)
+{
+/* decodes a MULTIPOINT from WKB */
+    int ig;
+    int n_pts;
+    int g_type;
+    if (geo->size < geo->offset + 4)
+	return;
+    n_pts =
+	gaiaImport32 (geo->blob + geo->offset, geo->endian, geo->endian_arch);
+    geo->offset += 4;
+    for (ig = 0; ig < n_pts; ig++)
+      {
+	  /* parsing all Points one by one */
+	  if (geo->size < geo->offset + 5)
+	      return;
+	  /* vanilla WKB could be encoded as mixed big-/little-endian sub-items */
+	  if (*(geo->blob + geo->offset) == 0x01)
+	      geo->endian = GAIA_LITTLE_ENDIAN;
+	  else
+	      geo->endian = GAIA_BIG_ENDIAN;
+	  g_type =
+	      gaiaImport32 (geo->blob + geo->offset + 1, geo->endian,
+			    geo->endian_arch);
+	  geo->offset += 5;
+	  if (g_type == GAIA_POINT)
+	      ParseWkbPoint (geo);
+      }
+}
+
+static void
+ParseWkbMultiLine (gaiaGeomCollPtr geo)
+{
+/* decodes a MULTILINESTRING from WKB */
+    int ig;
+    int n_lns;
+    int g_type;
+    if (geo->size < geo->offset + 4)
+	return;
+    n_lns =
+	gaiaImport32 (geo->blob + geo->offset, geo->endian, geo->endian_arch);
+    geo->offset += 4;
+    for (ig = 0; ig < n_lns; ig++)
+      {
+	  /* parsing all Linestrings one by one */
+	  if (geo->size < geo->offset + 5)
+	      return;
+	  /* vanilla WKB could be encoded as mixed big-/little-endian sub-items */
+	  if (*(geo->blob + geo->offset) == 0x01)
+	      geo->endian = GAIA_LITTLE_ENDIAN;
+	  else
+	      geo->endian = GAIA_BIG_ENDIAN;
+	  g_type =
+	      gaiaImport32 (geo->blob + geo->offset + 1, geo->endian,
+			    geo->endian_arch);
+	  geo->offset += 5;
+	  if (g_type == GAIA_LINESTRING)
+	      ParseWkbLine (geo);
+      }
+}
+
+static void
+ParseWkbMultiPolygon (gaiaGeomCollPtr geo)
+{
+/* decodes a MULTIPOLYGON from WKB */
+    int ig;
+    int n_pgs;
+    int g_type;
+    if (geo->size < geo->offset + 4)
+	return;
+    n_pgs =
+	gaiaImport32 (geo->blob + geo->offset, geo->endian, geo->endian_arch);
+    geo->offset += 4;
+    for (ig = 0; ig < n_pgs; ig++)
+      {
+	  /* parsing all Polygons one by one */
+	  if (geo->size < geo->offset + 5)
+	      return;
+	  /* vanilla WKB could be encoded as mixed big-/little-endian sub-items */
+	  if (*(geo->blob + geo->offset) == 0x01)
+	      geo->endian = GAIA_LITTLE_ENDIAN;
+	  else
+	      geo->endian = GAIA_BIG_ENDIAN;
+	  g_type =
+	      gaiaImport32 (geo->blob + geo->offset + 1, geo->endian,
+			    geo->endian_arch);
+	  geo->offset += 5;
+	  if (g_type == GAIA_POLYGON)
+	      ParseWkbPolygon (geo);
+      }
+}
+
+static void
+ParseWkbGeomColl (gaiaGeomCollPtr geo)
+{
+/* decodes a GEOMETRYCOLLECTION from WKB */
+    int ig;
+    int n_geoms;
+    if (geo->size < geo->offset + 4)
+	return;
+    n_geoms =
+	gaiaImport32 (geo->blob + geo->offset, geo->endian, geo->endian_arch);
+    geo->offset += 4;
+    for (ig = 0; ig < n_geoms; ig++)
+      {
+	  int g_type;
+	  if (geo->size < geo->offset + 5)
+	      return;
+	  /* vanilla WKB could be encoded as mixed big-/little-endian sub-items */
+	  if (*(geo->blob + geo->offset) == 0x01)
+	      geo->endian = GAIA_LITTLE_ENDIAN;
+	  else
+	      geo->endian = GAIA_BIG_ENDIAN;
+	  g_type =
+	      gaiaImport32 (geo->blob + geo->offset + 1, geo->endian,
+			    geo->endian_arch);
+	  geo->offset += 5;
+	  switch (g_type)
+	    {
+	    case GAIA_POINT:
+		ParseWkbPoint (geo);
+		break;
+	    case GAIA_LINESTRING:
+		ParseWkbLine (geo);
+		break;
+	    case GAIA_POLYGON:
+		ParseWkbPolygon (geo);
+		break;
+	    case GAIA_MULTIPOINT:
+		ParseWkbMultiPoint (geo);
+		break;
+	    case GAIA_MULTILINESTRING:
+		ParseWkbMultiLine (geo);
+		break;
+	    case GAIA_MULTIPOLYGON:
+		ParseWkbMultiPolygon (geo);
+		break;
+	    case GAIA_GEOMETRYCOLLECTION:
+		ParseWkbGeomColl (geo);
+		break;
+	    };
+      }
+}
+
+static void
+ParseWkbMultiPointZ (gaiaGeomCollPtr geo)
+{
+/* decodes a MULTIPOINTZ from WKB */
+    int ig;
+    int n_pts;
+    int g_type;
+    if (geo->size < geo->offset + 4)
+	return;
+    n_pts =
+	gaiaImport32 (geo->blob + geo->offset, geo->endian, geo->endian_arch);
+    geo->offset += 4;
+    for (ig = 0; ig < n_pts; ig++)
+      {
+	  /* parsing all Points one by one */
+	  if (geo->size < geo->offset + 5)
+	      return;
+	  /* vanilla WKB could be encoded as mixed big-/little-endian sub-items */
+	  if (*(geo->blob + geo->offset) == 0x01)
+	      geo->endian = GAIA_LITTLE_ENDIAN;
+	  else
+	      geo->endian = GAIA_BIG_ENDIAN;
+	  g_type =
+	      gaiaImport32 (geo->blob + geo->offset + 1, geo->endian,
+			    geo->endian_arch);
+	  geo->offset += 5;
+	  if (g_type == GAIA_POINTZ)
+	  ParseWkbPointZ (geo);
+      }
+}
+
+static void
+ParseWkbMultiLineZ (gaiaGeomCollPtr geo)
+{
+/* decodes a MULTILINESTRINGZ from WKB */
+    int ig;
+    int n_lns;
+    int g_type;
+    if (geo->size < geo->offset + 4)
+	return;
+    n_lns =
+	gaiaImport32 (geo->blob + geo->offset, geo->endian, geo->endian_arch);
+    geo->offset += 4;
+    for (ig = 0; ig < n_lns; ig++)
+      {
+	  /* parsing all Linestrings one by one */
+	  if (geo->size < geo->offset + 5)
+	      return;
+	  /* vanilla WKB could be encoded as mixed big-/little-endian sub-items */
+	  if (*(geo->blob + geo->offset) == 0x01)
+	      geo->endian = GAIA_LITTLE_ENDIAN;
+	  else
+	      geo->endian = GAIA_BIG_ENDIAN;
+	  g_type =
+	      gaiaImport32 (geo->blob + geo->offset + 1, geo->endian,
+			    geo->endian_arch);
+	  geo->offset += 5;
+	  if (g_type == GAIA_LINESTRINGZ)
+	  ParseWkbLineZ (geo);
+      }
+}
+
+static void
+ParseWkbMultiPolygonZ (gaiaGeomCollPtr geo)
+{
+/* decodes a MULTIPOLYGONZ from WKB */
+    int ig;
+    int n_pgs;
+    int g_type;
+    if (geo->size < geo->offset + 4)
+	return;
+    n_pgs =
+	gaiaImport32 (geo->blob + geo->offset, geo->endian, geo->endian_arch);
+    geo->offset += 4;
+    for (ig = 0; ig < n_pgs; ig++)
+      {
+	  /* parsing all Polygons one by one */
+	  if (geo->size < geo->offset + 5)
+	      return;
+	  /* vanilla WKB could be encoded as mixed big-/little-endian sub-items */
+	  if (*(geo->blob + geo->offset) == 0x01)
+	      geo->endian = GAIA_LITTLE_ENDIAN;
+	  else
+	      geo->endian = GAIA_BIG_ENDIAN;
+	  g_type =
+	      gaiaImport32 (geo->blob + geo->offset + 1, geo->endian,
+			    geo->endian_arch);
+	  geo->offset += 5;
+	  if (g_type == GAIA_POLYGONZ)
+	  ParseWkbPolygonZ (geo);
+      }
+}
+
+static void
+ParseWkbGeomCollZ (gaiaGeomCollPtr geo)
+{
+/* decodes a GEOMETRYCOLLECTIONZ from WKB */
+    int ig;
+    int n_geoms;
+    if (geo->size < geo->offset + 4)
+	return;
+    n_geoms =
+	gaiaImport32 (geo->blob + geo->offset, geo->endian, geo->endian_arch);
+    geo->offset += 4;
+    for (ig = 0; ig < n_geoms; ig++)
+      {
+	  /* parsing all Geometries one by one */
+	  int g_type;
+	  if (geo->size < geo->offset + 5)
+	      return;
+	  /* vanilla WKB could be encoded as mixed big-/little-endian sub-items */
+	  if (*(geo->blob + geo->offset) == 0x01)
+	      geo->endian = GAIA_LITTLE_ENDIAN;
+	  else
+	      geo->endian = GAIA_BIG_ENDIAN;
+	  g_type =
+	      gaiaImport32 (geo->blob + geo->offset + 1, geo->endian,
+			    geo->endian_arch);
+	  geo->offset += 5;
+	  switch (g_type)
+	    {
+	    case GAIA_POINTZ:
+		ParseWkbPointZ (geo);
+		break;
+	    case GAIA_LINESTRINGZ:
+		ParseWkbLineZ (geo);
+		break;
+	    case GAIA_POLYGONZ:
+		ParseWkbPolygonZ (geo);
+		break;
+	    case GAIA_MULTIPOINTZ:
+		ParseWkbMultiPointZ (geo);
+		break;
+	    case GAIA_MULTILINESTRINGZ:
+		ParseWkbMultiLineZ (geo);
+		break;
+	    case GAIA_MULTIPOLYGONZ:
+		ParseWkbMultiPolygonZ (geo);
+		break;
+	    case GAIA_GEOMETRYCOLLECTIONZ:
+		ParseWkbGeomCollZ (geo);
+		break;
+	    };
+      }
+}
+
+static void
+ParseWkbMultiPointM (gaiaGeomCollPtr geo)
+{
+/* decodes a MULTIPOINTM from WKB */
+    int ig;
+    int n_pts;
+    int g_type;
+    if (geo->size < geo->offset + 4)
+	return;
+    n_pts =
+	gaiaImport32 (geo->blob + geo->offset, geo->endian, geo->endian_arch);
+    geo->offset += 4;
+    for (ig = 0; ig < n_pts; ig++)
+      {
+	  /* parsing all Points one by one */
+	  if (geo->size < geo->offset + 5)
+	      return;
+	  /* vanilla WKB could be encoded as mixed big-/little-endian sub-items */
+	  if (*(geo->blob + geo->offset) == 0x01)
+	      geo->endian = GAIA_LITTLE_ENDIAN;
+	  else
+	      geo->endian = GAIA_BIG_ENDIAN;
+	  g_type =
+	      gaiaImport32 (geo->blob + geo->offset + 1, geo->endian,
+			    geo->endian_arch);
+	  geo->offset += 5;
+	  if (g_type == GAIA_POINTM)
+	  ParseWkbPointM (geo);
+      }
+}
+
+static void
+ParseWkbMultiLineM (gaiaGeomCollPtr geo)
+{
+/* decodes a MULTILINESTRINGM from WKB */
+    int ig;
+    int n_lns;
+    int g_type;
+    if (geo->size < geo->offset + 4)
+	return;
+    n_lns =
+	gaiaImport32 (geo->blob + geo->offset, geo->endian, geo->endian_arch);
+    geo->offset += 4;
+    for (ig = 0; ig < n_lns; ig++)
+      {
+	  /* parsing all Linestrings one by one */
+	  if (geo->size < geo->offset + 5)
+	      return;
+	  /* vanilla WKB could be encoded as mixed big-/little-endian sub-items */
+	  if (*(geo->blob + geo->offset) == 0x01)
+	      geo->endian = GAIA_LITTLE_ENDIAN;
+	  else
+	      geo->endian = GAIA_BIG_ENDIAN;
+	  g_type =
+	      gaiaImport32 (geo->blob + geo->offset + 1, geo->endian,
+			    geo->endian_arch);
+	  geo->offset += 5;
+	  if (g_type == GAIA_LINESTRINGM)
+	  ParseWkbLineM (geo);
+      }
+}
+
+static void
+ParseWkbMultiPolygonM (gaiaGeomCollPtr geo)
+{
+/* decodes a MULTIPOLYGONM from WKB */
+    int ig;
+    int n_pgs;
+    int g_type;
+    if (geo->size < geo->offset + 4)
+	return;
+    n_pgs =
+	gaiaImport32 (geo->blob + geo->offset, geo->endian, geo->endian_arch);
+    geo->offset += 4;
+    for (ig = 0; ig < n_pgs; ig++)
+      {
+	  /* parsing all Polygons one by one */
+	  if (geo->size < geo->offset + 5)
+	      return;
+	  /* vanilla WKB could be encoded as mixed big-/little-endian sub-items */
+	  if (*(geo->blob + geo->offset) == 0x01)
+	      geo->endian = GAIA_LITTLE_ENDIAN;
+	  else
+	      geo->endian = GAIA_BIG_ENDIAN;
+	  g_type =
+	      gaiaImport32 (geo->blob + geo->offset + 1, geo->endian,
+			    geo->endian_arch);
+	  geo->offset += 5;
+	  if (g_type == GAIA_POLYGONM)
+	  ParseWkbPolygonM (geo);
+      }
+}
+
+static void
+ParseWkbGeomCollM (gaiaGeomCollPtr geo)
+{
+/* decodes a GEOMETRYCOLLECTIONM from WKB */
+    int ig;
+    int n_geoms;
+    if (geo->size < geo->offset + 4)
+	return;
+    n_geoms =
+	gaiaImport32 (geo->blob + geo->offset, geo->endian, geo->endian_arch);
+    geo->offset += 4;
+    for (ig = 0; ig < n_geoms; ig++)
+      {
+	  /* parsing all Geometries one by one */
+	  int g_type;
+	  if (geo->size < geo->offset + 5)
+	      return;
+	  /* vanilla WKB could be encoded as mixed big-/little-endian sub-items */
+	  if (*(geo->blob + geo->offset) == 0x01)
+	      geo->endian = GAIA_LITTLE_ENDIAN;
+	  else
+	      geo->endian = GAIA_BIG_ENDIAN;
+	  g_type =
+	      gaiaImport32 (geo->blob + geo->offset + 1, geo->endian,
+			    geo->endian_arch);
+	  geo->offset += 5;
+	  switch (g_type)
+	    {
+	    case GAIA_POINTM:
+		ParseWkbPointM (geo);
+		break;
+	    case GAIA_LINESTRINGM:
+		ParseWkbLineM (geo);
+		break;
+	    case GAIA_POLYGONM:
+		ParseWkbPolygonM (geo);
+		break;
+	    case GAIA_MULTIPOINTM:
+		ParseWkbMultiPointM (geo);
+		break;
+	    case GAIA_MULTILINESTRINGM:
+		ParseWkbMultiLineM (geo);
+		break;
+	    case GAIA_MULTIPOLYGONM:
+		ParseWkbMultiPolygonM (geo);
+		break;
+	    case GAIA_GEOMETRYCOLLECTIONM:
+		ParseWkbGeomCollM (geo);
+		break;
+	    };
+      }
+}
+
+static void
+ParseWkbMultiPointZM (gaiaGeomCollPtr geo)
+{
+/* decodes a MULTIPOINTZM from WKB */
+    int ig;
+    int n_pts;
+    int g_type;
+    if (geo->size < geo->offset + 4)
+	return;
+    n_pts =
+	gaiaImport32 (geo->blob + geo->offset, geo->endian, geo->endian_arch);
+    geo->offset += 4;
+    for (ig = 0; ig < n_pts; ig++)
+      {
+	  /* parsing all Points one by one */
+	  if (geo->size < geo->offset + 5)
+	      return;
+	  /* vanilla WKB could be encoded as mixed big-/little-endian sub-items */
+	  if (*(geo->blob + geo->offset) == 0x01)
+	      geo->endian = GAIA_LITTLE_ENDIAN;
+	  else
+	      geo->endian = GAIA_BIG_ENDIAN;
+	  g_type =
+	      gaiaImport32 (geo->blob + geo->offset + 1, geo->endian,
+			    geo->endian_arch);
+	  geo->offset += 5;
+	  if (g_type == GAIA_POINTZM)
+	  ParseWkbPointZM (geo);
+      }
+}
+
+static void
+ParseWkbMultiLineZM (gaiaGeomCollPtr geo)
+{
+/* decodes a MULTILINESTRINGZM from WKB */
+    int ig;
+    int n_lns;
+    int g_type;
+    if (geo->size < geo->offset + 4)
+	return;
+    n_lns =
+	gaiaImport32 (geo->blob + geo->offset, geo->endian, geo->endian_arch);
+    geo->offset += 4;
+    for (ig = 0; ig < n_lns; ig++)
+      {
+	  /* parsing all Linestrings one by one */
+	  if (geo->size < geo->offset + 5)
+	      return;
+	  /* vanilla WKB could be encoded as mixed big-/little-endian sub-items */
+	  if (*(geo->blob + geo->offset) == 0x01)
+	      geo->endian = GAIA_LITTLE_ENDIAN;
+	  else
+	      geo->endian = GAIA_BIG_ENDIAN;
+	  g_type =
+	      gaiaImport32 (geo->blob + geo->offset + 1, geo->endian,
+			    geo->endian_arch);
+	  geo->offset += 5;
+	  if (g_type == GAIA_LINESTRINGZM)
+	  ParseWkbLineZM (geo);
+      }
+}
+
+static void
+ParseWkbMultiPolygonZM (gaiaGeomCollPtr geo)
+{
+/* decodes a MULTIPOLYGONZM from WKB */
+    int ig;
+    int n_pgs;
+    int g_type;
+    if (geo->size < geo->offset + 4)
+	return;
+    n_pgs =
+	gaiaImport32 (geo->blob + geo->offset, geo->endian, geo->endian_arch);
+    geo->offset += 4;
+    for (ig = 0; ig < n_pgs; ig++)
+      {
+	  /* parsing all Polygons one by one */
+	  if (geo->size < geo->offset + 5)
+	      return;
+	  /* vanilla WKB could be encoded as mixed big-/little-endian sub-items */
+	  if (*(geo->blob + geo->offset) == 0x01)
+	      geo->endian = GAIA_LITTLE_ENDIAN;
+	  else
+	      geo->endian = GAIA_BIG_ENDIAN;
+	  g_type =
+	      gaiaImport32 (geo->blob + geo->offset + 1, geo->endian,
+			    geo->endian_arch);
+	  geo->offset += 5;
+	  if (g_type == GAIA_POLYGONZM)
+	  ParseWkbPolygonZM (geo);
+      }
+}
+
+static void
+ParseWkbGeomCollZM (gaiaGeomCollPtr geo)
+{
+/* decodes a GEOMETRYCOLLECTIONZM from WKB */
+    int ig;
+    int n_geoms;
+    if (geo->size < geo->offset + 4)
+	return;
+    n_geoms =
+	gaiaImport32 (geo->blob + geo->offset, geo->endian, geo->endian_arch);
+    geo->offset += 4;
+    for (ig = 0; ig < n_geoms; ig++)
+      {
+	  /* parsing all Geometries one by one */
+	  int g_type;
+	  if (geo->size < geo->offset + 5)
+	      return;
+	  /* vanilla WKB could be encoded as mixed big-/little-endian sub-items */
+	  if (*(geo->blob + geo->offset) == 0x01)
+	      geo->endian = GAIA_LITTLE_ENDIAN;
+	  else
+	      geo->endian = GAIA_BIG_ENDIAN;
+	  g_type =
+	      gaiaImport32 (geo->blob + geo->offset + 1, geo->endian,
+			    geo->endian_arch);
+	  geo->offset += 5;
+	  switch (g_type)
+	    {
+	    case GAIA_POINTZM:
+		ParseWkbPointZM (geo);
+		break;
+	    case GAIA_LINESTRINGZM:
+		ParseWkbLineZM (geo);
+		break;
+	    case GAIA_POLYGONZM:
+		ParseWkbPolygonZM (geo);
+		break;
+	    case GAIA_MULTIPOINTZM:
+		ParseWkbMultiPointZM (geo);
+		break;
+	    case GAIA_MULTILINESTRINGZM:
+		ParseWkbMultiLineZM (geo);
+		break;
+	    case GAIA_MULTIPOLYGONZM:
+		ParseWkbMultiPolygonZM (geo);
+		break;
+	    case GAIA_GEOMETRYCOLLECTIONZM:
+		ParseWkbGeomCollZM (geo);
+		break;
+	    };
+      }
+}
+
+static void
 ParseCompressedWkbLine (gaiaGeomCollPtr geo)
 {
 /* decodes a COMPRESSED LINESTRING from WKB */
@@ -1041,6 +1624,56 @@ ParseWkbGeometry (gaiaGeomCollPtr geo, int isWKB)
 	    case GAIA_POLYGONZM:
 		ParseWkbPolygonZM (geo);
 		break;
+
+	    case GAIA_MULTIPOINT:
+		ParseWkbMultiPoint (geo);
+		break;
+	    case GAIA_MULTIPOINTZ:
+		ParseWkbMultiPointZ (geo);
+		break;
+	    case GAIA_MULTIPOINTM:
+		ParseWkbMultiPointM (geo);
+		break;
+	    case GAIA_MULTIPOINTZM:
+		ParseWkbMultiPointZM (geo);
+		break;
+	    case GAIA_MULTILINESTRING:
+		ParseWkbMultiLine (geo);
+		break;
+	    case GAIA_MULTILINESTRINGZ:
+		ParseWkbMultiLineZ (geo);
+		break;
+	    case GAIA_MULTILINESTRINGM:
+		ParseWkbMultiLineM (geo);
+		break;
+	    case GAIA_MULTILINESTRINGZM:
+		ParseWkbMultiLineZM (geo);
+		break;
+	    case GAIA_MULTIPOLYGON:
+		ParseWkbMultiPolygon (geo);
+		break;
+	    case GAIA_MULTIPOLYGONZ:
+		ParseWkbMultiPolygonZ (geo);
+		break;
+	    case GAIA_MULTIPOLYGONM:
+		ParseWkbMultiPolygonM (geo);
+		break;
+	    case GAIA_MULTIPOLYGONZM:
+		ParseWkbMultiPolygonZM (geo);
+		break;
+	    case GAIA_GEOMETRYCOLLECTION:
+		ParseWkbGeomColl (geo);
+		break;
+	    case GAIA_GEOMETRYCOLLECTIONZ:
+		ParseWkbGeomCollZ (geo);
+		break;
+	    case GAIA_GEOMETRYCOLLECTIONM:
+		ParseWkbGeomCollM (geo);
+		break;
+	    case GAIA_GEOMETRYCOLLECTIONZM:
+		ParseWkbGeomCollZM (geo);
+		break;
+
 	    case GAIA_COMPRESSED_LINESTRING:
 		ParseCompressedWkbLine (geo);
 		break;
@@ -5726,7 +6359,7 @@ pointFromFgf (gaiaGeomCollPtr geom, int endian_arch, const unsigned char *blob,
 	ndims = 3;
     else
 	ndims = 2;
-    if (sz < ((unsigned int)ndims * 8))
+    if (sz < ((unsigned int) ndims * 8))
 	return 0;
     if (consumed)
 	*consumed = 8 + (ndims * 8);
@@ -6322,15 +6955,15 @@ gaiaFromFgf (const unsigned char *blob, unsigned int size)
 /* checking FGF type and dimensions */
     t = gaiaImport32 (blob, GAIA_LITTLE_ENDIAN, endian_arch);
     if (t == 1 || t == 2 || t == 3)
-    {
-		/* elementary: POINT, LINESTRING or POLYGON */
-    d = gaiaImport32 (blob + 4, GAIA_LITTLE_ENDIAN, endian_arch);
-}
-else
-{
-	/* multiple elements */
-    d = gaiaImport32 (blob + 12, GAIA_LITTLE_ENDIAN, endian_arch);
-}
+      {
+	  /* elementary: POINT, LINESTRING or POLYGON */
+	  d = gaiaImport32 (blob + 4, GAIA_LITTLE_ENDIAN, endian_arch);
+      }
+    else
+      {
+	  /* multiple elements */
+	  d = gaiaImport32 (blob + 12, GAIA_LITTLE_ENDIAN, endian_arch);
+      }
     if (!checkFgfTypeDims (t, d, &geom_type, &dims))
 	return NULL;
 

@@ -351,7 +351,7 @@ vdbf_connect (sqlite3 * db, void *pAux, int argc, const char *const *argv,
 	      sqlite3_vtab ** ppVTab, char **pzErr)
 {
 /* connects the virtual table to some DBF - simply aliases vdbf_create() */
-	sqlite3_vtab_config(db, SQLITE_INNOCUOUS);
+	sqlite3_vtab_config(db, SQLITE_VTAB_INNOCUOUS);
     return vdbf_create (db, pAux, argc, argv, ppVTab, pzErr);
 }
 

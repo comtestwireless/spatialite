@@ -830,7 +830,7 @@ vgpkg_connect (sqlite3 * db, void *pAux, int argc, const char *const *argv,
 	       sqlite3_vtab ** ppVTab, char **pzErr)
 {
 /* connects the virtual table to some shapefile - simply aliases vgpkg_create() */
-	sqlite3_vtab_config(db, SQLITE_INNOCUOUS);
+	sqlite3_vtab_config(db, SQLITE_VTAB_INNOCUOUS);
     return vgpkg_create (db, pAux, argc, argv, ppVTab, pzErr);
 }
 
