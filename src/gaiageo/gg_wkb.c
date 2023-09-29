@@ -624,7 +624,7 @@ ParseWkbMultiPointZ (gaiaGeomCollPtr geo)
 			    geo->endian_arch);
 	  geo->offset += 5;
 	  if (g_type == GAIA_POINTZ)
-	  ParseWkbPointZ (geo);
+	      ParseWkbPointZ (geo);
       }
 }
 
@@ -655,7 +655,7 @@ ParseWkbMultiLineZ (gaiaGeomCollPtr geo)
 			    geo->endian_arch);
 	  geo->offset += 5;
 	  if (g_type == GAIA_LINESTRINGZ)
-	  ParseWkbLineZ (geo);
+	      ParseWkbLineZ (geo);
       }
 }
 
@@ -686,7 +686,7 @@ ParseWkbMultiPolygonZ (gaiaGeomCollPtr geo)
 			    geo->endian_arch);
 	  geo->offset += 5;
 	  if (g_type == GAIA_POLYGONZ)
-	  ParseWkbPolygonZ (geo);
+	      ParseWkbPolygonZ (geo);
       }
 }
 
@@ -770,7 +770,7 @@ ParseWkbMultiPointM (gaiaGeomCollPtr geo)
 			    geo->endian_arch);
 	  geo->offset += 5;
 	  if (g_type == GAIA_POINTM)
-	  ParseWkbPointM (geo);
+	      ParseWkbPointM (geo);
       }
 }
 
@@ -801,7 +801,7 @@ ParseWkbMultiLineM (gaiaGeomCollPtr geo)
 			    geo->endian_arch);
 	  geo->offset += 5;
 	  if (g_type == GAIA_LINESTRINGM)
-	  ParseWkbLineM (geo);
+	      ParseWkbLineM (geo);
       }
 }
 
@@ -832,7 +832,7 @@ ParseWkbMultiPolygonM (gaiaGeomCollPtr geo)
 			    geo->endian_arch);
 	  geo->offset += 5;
 	  if (g_type == GAIA_POLYGONM)
-	  ParseWkbPolygonM (geo);
+	      ParseWkbPolygonM (geo);
       }
 }
 
@@ -916,7 +916,7 @@ ParseWkbMultiPointZM (gaiaGeomCollPtr geo)
 			    geo->endian_arch);
 	  geo->offset += 5;
 	  if (g_type == GAIA_POINTZM)
-	  ParseWkbPointZM (geo);
+	      ParseWkbPointZM (geo);
       }
 }
 
@@ -947,7 +947,7 @@ ParseWkbMultiLineZM (gaiaGeomCollPtr geo)
 			    geo->endian_arch);
 	  geo->offset += 5;
 	  if (g_type == GAIA_LINESTRINGZM)
-	  ParseWkbLineZM (geo);
+	      ParseWkbLineZM (geo);
       }
 }
 
@@ -978,7 +978,7 @@ ParseWkbMultiPolygonZM (gaiaGeomCollPtr geo)
 			    geo->endian_arch);
 	  geo->offset += 5;
 	  if (g_type == GAIA_POLYGONZM)
-	  ParseWkbPolygonZM (geo);
+	      ParseWkbPolygonZM (geo);
       }
 }
 
@@ -1624,7 +1624,6 @@ ParseWkbGeometry (gaiaGeomCollPtr geo, int isWKB)
 	    case GAIA_POLYGONZM:
 		ParseWkbPolygonZM (geo);
 		break;
-
 	    case GAIA_MULTIPOINT:
 		ParseWkbMultiPoint (geo);
 		break;
@@ -1673,7 +1672,6 @@ ParseWkbGeometry (gaiaGeomCollPtr geo, int isWKB)
 	    case GAIA_GEOMETRYCOLLECTIONZM:
 		ParseWkbGeomCollZM (geo);
 		break;
-
 	    case GAIA_COMPRESSED_LINESTRING:
 		ParseCompressedWkbLine (geo);
 		break;
@@ -5339,6 +5337,120 @@ gaiaEwkbGetPolygon (gaiaGeomCollPtr geom, unsigned char *blob,
 }
 
 GAIAGEO_DECLARE int
+gaiaEwkbGetMultiPoint (gaiaGeomCollPtr geom, unsigned char *blob,
+		       int offset, int blob_size, int endian, int endian_arch,
+		       int dims)
+{
+/* decodes a MULTIPOINT from PostGIS EWKB binary GEOMETRY */
+    int entities;
+    int type;
+    unsigned char xtype[4];
+    int ie;
+    int off;
+    if (blob_size < offset + 4)
+	return -1;
+    entities = gaiaImport32 (blob + offset, endian, endian_arch);
+    offset += 4;
+    for (ie = 0; ie < entities; ie++)
+      {
+	  if (blob_size < offset + 5)
+	      return -1;
+	  memcpy (xtype, blob + offset + 1, 4);
+	  if (endian)
+	      xtype[3] = 0x00;
+	  else
+	      xtype[0] = 0x00;
+	  type = gaiaImport32 (xtype, endian, endian_arch);
+	  offset += 5;
+	  if (type != GAIA_POINT)
+	      return -1;
+	  off =
+	      gaiaEwkbGetPoint (geom, blob, offset, blob_size, endian,
+				endian_arch, dims);
+	  if (off < 0)
+	      return -1;
+	  offset = off;
+      }
+    return offset;
+}
+
+GAIAGEO_DECLARE int
+gaiaEwkbGetMultiLinestring (gaiaGeomCollPtr geom, unsigned char *blob,
+			    int offset, int blob_size, int endian,
+			    int endian_arch, int dims)
+{
+/* decodes a MULTILINESTRING from PostGIS EWKB binary GEOMETRY */
+    int entities;
+    int type;
+    unsigned char xtype[4];
+    int ie;
+    int off;
+    if (blob_size < offset + 4)
+	return -1;
+    entities = gaiaImport32 (blob + offset, endian, endian_arch);
+    offset += 4;
+    for (ie = 0; ie < entities; ie++)
+      {
+	  if (blob_size < offset + 5)
+	      return -1;
+	  memcpy (xtype, blob + offset + 1, 4);
+	  if (endian)
+	      xtype[3] = 0x00;
+	  else
+	      xtype[0] = 0x00;
+	  type = gaiaImport32 (xtype, endian, endian_arch);
+	  offset += 5;
+	  if (type != GAIA_LINESTRING)
+	      return -1;
+	  off =
+	      gaiaEwkbGetLinestring (geom, blob, offset, blob_size,
+				     endian, endian_arch, dims);
+	  if (off < 0)
+	      return -1;
+	  offset = off;
+      }
+    return offset;
+}
+
+GAIAGEO_DECLARE int
+gaiaEwkbGetMultiPolygon (gaiaGeomCollPtr geom, unsigned char *blob,
+			 int offset, int blob_size, int endian, int endian_arch,
+			 int dims)
+{
+/* decodes a MULTIPOLYGON from PostGIS EWKB binary GEOMETRY */
+    int entities;
+    int type;
+    unsigned char xtype[4];
+    int ie;
+    int off;
+    if (blob_size < offset + 4)
+	return -1;
+    entities = gaiaImport32 (blob + offset, endian, endian_arch);
+    offset += 4;
+    for (ie = 0; ie < entities; ie++)
+      {
+	  if (blob_size < offset + 5)
+	      return -1;
+	  memcpy (xtype, blob + offset + 1, 4);
+	  if (endian)
+	      xtype[3] = 0x00;
+	  else
+	      xtype[0] = 0x00;
+	  type = gaiaImport32 (xtype, endian, endian_arch);
+	  offset += 5;
+	  if (type != GAIA_POLYGON)
+	      return -1;
+	  off =
+	      gaiaEwkbGetPolygon (geom, blob, offset, blob_size, endian,
+				  endian_arch, dims);
+	  if (off < 0)
+	      return -1;
+	  offset = off;
+      }
+    return offset;
+}
+
+GAIAGEO_DECLARE int
 gaiaEwkbGetMultiGeometry (gaiaGeomCollPtr geom, unsigned char *blob,
 			  int offset, int blob_size, int endian,
 			  int endian_arch, int dims)
@@ -5386,6 +5498,38 @@ gaiaEwkbGetMultiGeometry (gaiaGeomCollPtr geom, unsigned char *blob,
 		off =
 		    gaiaEwkbGetPolygon (geom, blob, offset, blob_size, endian,
 					endian_arch, dims);
+		if (off < 0)
+		    return -1;
+		offset = off;
+		break;
+	    case GAIA_MULTIPOINT:
+		off =
+		    gaiaEwkbGetMultiPoint (geom, blob, offset, blob_size,
+					   endian, endian_arch, dims);
+		if (off < 0)
+		    return -1;
+		offset = off;
+		break;
+	    case GAIA_MULTILINESTRING:
+		off =
+		    gaiaEwkbGetMultiLinestring (geom, blob, offset, blob_size,
+						endian, endian_arch, dims);
+		if (off < 0)
+		    return -1;
+		offset = off;
+		break;
+	    case GAIA_MULTIPOLYGON:
+		off =
+		    gaiaEwkbGetMultiPolygon (geom, blob, offset, blob_size,
+					     endian, endian_arch, dims);
+		if (off < 0)
+		    return -1;
+		offset = off;
+		break;
+	    case GAIA_GEOMETRYCOLLECTION:
+		off =
+		    gaiaEwkbGetMultiGeometry (geom, blob, offset, blob_size,
+					      endian, endian_arch, dims);
 		if (off < 0)
 		    return -1;
 		offset = off;
