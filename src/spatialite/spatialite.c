@@ -145,6 +145,22 @@ Regione Toscana - Settore Sistema Informativo Territoriale ed Ambientale
 #define LINESTRING_MAX_SEGMENT_LENGTH	2
 #define LINESTRING_AVG_SEGMENT_LENGTH	3
 
+struct recover_rtree
+{
+/* an aux struct for recovering R*Trees */
+    char *table;
+    char *column;
+    int to_be_fixed;
+    struct recover_rtree *next;
+};
+
+struct recover_rtree_multi
+{
+/* a list of aux structs for recovering R*Trees */
+    struct recover_rtree *first;
+    struct recover_rtree *last;
+};
+
 struct gaia_geom_chain_item
 {
 /* a struct used to store a chain item */
@@ -8356,10 +8372,7 @@ recover_spatial_index (sqlite3 * sqlite, const unsigned char *table,
 {
 /* attempting to rebuild an R*Tree */
     char *sql_statement;
-    char *errMsg = NULL;
     int ret;
-    char *idx_name;
-    char *xidx_name;
     char sql[1024];
     int is_defined = 0;
     sqlite3_stmt *stmt;
@@ -8398,17 +8411,7 @@ recover_spatial_index (sqlite3 * sqlite, const unsigned char *table,
     if (!is_defined)
 	return -1;
 
-/* erasing the R*Tree table */
-    idx_name = sqlite3_mprintf ("idx_%s_%s", table, geom);
-    xidx_name = gaiaDoubleQuotedSql (idx_name);
-    sqlite3_free (idx_name);
-    sql_statement = sqlite3_mprintf ("DELETE FROM \"%s\"", xidx_name);
-    free (xidx_name);
-    ret = sqlite3_exec (sqlite, sql_statement, NULL, NULL, &errMsg);
-    sqlite3_free (sql_statement);
-    if (ret != SQLITE_OK)
-	goto error;
-/* populating the R*Tree table from scratch */
+/* creating and populating the R*Tree table from scratch */
     status = buildSpatialIndexEx (sqlite, table, (const char *) geom);
     if (status == 0)
 	;
@@ -8433,10 +8436,45 @@ recover_spatial_index (sqlite3 * sqlite, const unsigned char *table,
     updateSpatiaLiteHistory (sqlite, (const char *) table,
 			     (const char *) geom, sql);
     return 1;
-  error:
-    spatialite_e ("RecoverSpatialIndex() error: \"%s\"\n", errMsg);
-    sqlite3_free (errMsg);
-    return 0;
+}
+
+static void
+add_to_recover_rtree_list (struct recover_rtree_multi *multi,
+			   const unsigned char *table,
+			   const unsigned char *column, int to_be_fixed)
+{
+/* inserting an RTree to be recovered into the list */
+    struct recover_rtree *rtree = malloc (sizeof (struct recover_rtree));
+    rtree->table = sqlite3_mprintf ("%s", table);
+    rtree->column = sqlite3_mprintf ("%s", column);
+    rtree->to_be_fixed = to_be_fixed;
+    rtree->next = NULL;
+
+    if (multi->first == NULL)
+	multi->first = rtree;
+    if (multi->last != NULL)
+	multi->last->next = rtree;
+    multi->last = rtree;
+}
+
+static void
+delete_recover_rtree_list (struct recover_rtree_multi *multi)
+{
+/* removing all items from the list */
+    struct recover_rtree *rtree;
+    struct recover_rtree *rtreeN;
+
+    rtree = multi->first;
+    while (rtree != NULL)
+      {
+	  rtreeN = rtree->next;
+	  if (rtree->table != NULL)
+	      sqlite3_free (rtree->table);
+	  if (rtree->column != NULL)
+	      sqlite3_free (rtree->column);
+	  free (rtree);
+	  rtree = rtreeN;
+      }
 }
 
 static int
@@ -8451,7 +8489,11 @@ recover_any_spatial_index (sqlite3 * sqlite, int no_check)
     int to_be_fixed;
     int rowid_column = 0;
     int without_rowid = 0;
-    sqlite3_stmt *stmt;
+    sqlite3_stmt *stmt = NULL;
+    struct recover_rtree_multi multi;
+    struct recover_rtree *rtree;
+    multi.first = NULL;
+    multi.last = NULL;
 
 /* retrieving any defined R*Tree */
     strcpy (sql,
@@ -8462,6 +8504,7 @@ recover_any_spatial_index (sqlite3 * sqlite, int no_check)
       {
 	  spatialite_e ("RecoverSpatialIndex SQL error: %s\n",
 			sqlite3_errmsg (sqlite));
+	  delete_recover_rtree_list (&multi);
 	  return -1;
       }
     while (1)
@@ -8493,38 +8536,57 @@ recover_any_spatial_index (sqlite3 * sqlite, int no_check)
 			    to_be_fixed = 0;
 			}
 		  }
-		if (to_be_fixed)
-		  {
-		      /* rebuilding the Spatial Index */
-		      status = recover_spatial_index (sqlite, table, column);
-		      if (status < 0)
-			{
-			    /* some unexpected error occurred */
-			    if (status == -2)
-				rowid_column = 1;
-			    if (status == -3)
-				without_rowid = 1;
-			    goto fatal_error;
-			}
-		      else if (status == 0)
-			  goto error;
-		  }
+		add_to_recover_rtree_list (&multi, table, column, to_be_fixed);
 	    }
 	  else
 	    {
 		spatialite_e ("sqlite3_step() error: %s\n",
 			      sqlite3_errmsg (sqlite));
 		sqlite3_finalize (stmt);
+		delete_recover_rtree_list (&multi);
 		return -1;
 	    }
       }
     sqlite3_finalize (stmt);
+    stmt = NULL;
+
+    rtree = multi.first;
+    while (rtree != NULL)
+      {
+	  /* scanning the list of RTres to be recovered */
+	  if (rtree->to_be_fixed)
+	    {
+		/* rebuilding the Spatial Index */
+		status =
+		    recover_spatial_index (sqlite,
+					   (const unsigned char *) rtree->table,
+					   (const unsigned char *)
+					   rtree->column);
+		if (status < 0)
+		  {
+		      /* some unexpected error occurred */
+		      if (status == -2)
+			  rowid_column = 1;
+		      if (status == -3)
+			  without_rowid = 1;
+		      goto fatal_error;
+		  }
+		else if (status == 0)
+		    goto error;
+	    }
+	  rtree = rtree->next;
+      }
+    delete_recover_rtree_list (&multi);
     return 1;
   error:
-    sqlite3_finalize (stmt);
+    if (stmt != NULL)
+	sqlite3_finalize (stmt);
+    delete_recover_rtree_list (&multi);
     return 0;
   fatal_error:
-    sqlite3_finalize (stmt);
+    if (stmt != NULL)
+	sqlite3_finalize (stmt);
+    delete_recover_rtree_list (&multi);
     if (rowid_column)
 	return -2;
     if (without_rowid)
@@ -25167,10 +25229,11 @@ length_common (const void *p_cache, sqlite3_context * context, int argc,
 					l = gaiaGeodesicTotalLength (a,
 								     b,
 								     rf,
+								     line->DimensionModel,
 								     line->
-								     DimensionModel,
-								     line->Coords,
-								     line->Points);
+								     Coords,
+								     line->
+								     Points);
 					if (l < 0.0)
 					  {
 					      length = -1.0;
@@ -25193,9 +25256,12 @@ length_common (const void *p_cache, sqlite3_context * context, int argc,
 					      l = gaiaGeodesicTotalLength (a,
 									   b,
 									   rf,
-									   ring->DimensionModel,
-									   ring->Coords,
-									   ring->Points);
+									   ring->
+									   DimensionModel,
+									   ring->
+									   Coords,
+									   ring->
+									   Points);
 					      if (l < 0.0)
 						{
 						    length = -1.0;
@@ -26360,11 +26426,11 @@ fnct_Circularity (sqlite3_context * context, int argc, sqlite3_value ** argv)
 		  {
 #ifdef ENABLE_RTTOPO		/* only if RTTOPO is enabled */
 		      perimeter = gaiaGeodesicTotalLength (a, b, rf,
-							   pg->
-							   Exterior->DimensionModel,
+							   pg->Exterior->
+							   DimensionModel,
 							   pg->Exterior->Coords,
-							   pg->
-							   Exterior->Points);
+							   pg->Exterior->
+							   Points);
 		      if (perimeter < 0.0)
 			  ret = 0;
 		      else
@@ -42135,7 +42201,8 @@ fnct_GeodesicLength (sqlite3_context * context, int argc, sqlite3_value ** argv)
 				  /* interior Rings */
 				  ring = polyg->Interiors + ib;
 				  l = gaiaGeodesicTotalLength (a, b, rf,
-							       ring->DimensionModel,
+							       ring->
+							       DimensionModel,
 							       ring->Coords,
 							       ring->Points);
 				  if (l < 0.0)
@@ -42229,7 +42296,8 @@ fnct_GreatCircleLength (sqlite3_context * context, int argc,
 			    ring = polyg->Exterior;
 			    length +=
 				gaiaGreatCircleTotalLength (a, b,
-							    ring->DimensionModel,
+							    ring->
+							    DimensionModel,
 							    ring->Coords,
 							    ring->Points);
 			    for (ib = 0; ib < polyg->NumInteriors; ib++)
@@ -42238,7 +42306,8 @@ fnct_GreatCircleLength (sqlite3_context * context, int argc,
 				  ring = polyg->Interiors + ib;
 				  length +=
 				      gaiaGreatCircleTotalLength (a, b,
-								  ring->DimensionModel,
+								  ring->
+								  DimensionModel,
 								  ring->Coords,
 								  ring->Points);
 			      }

@@ -1587,6 +1587,8 @@ extern "C"
 						   const char *point_name,
 						   const char *pk_name,
 						   const char *pos_name);
+						   
+	SPATIALITE_PRIVATE int RTreeBulkLoad(sqlite3* sqlite, const char *table, const char *column);
 
 #ifdef __cplusplus
 }

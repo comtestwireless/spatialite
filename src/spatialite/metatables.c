@@ -73,6 +73,21 @@ the terms of any one of the MPL, the GPL or the LGPL.
 #define strcasecmp	_stricmp
 #endif /* not WIN32 */
 
+struct upgrade_rtree
+{
+/* an aux struct for UpgradeGeometryTriggers */
+    char *table;
+    char *column;
+    struct upgrade_rtree *next;
+};
+
+struct upgrade_rtree_multi
+{
+/* a list of aux structs for UpgradeGeometryTriggers */
+    struct upgrade_rtree *first;
+    struct upgrade_rtree *last;
+};
+
 struct rtree_envelope
 {
     int valid;
@@ -3677,6 +3692,43 @@ createTemporaryGeometryColumns (void *p_sqlite, const char *db_prefix)
     return 1;
 }
 
+static void
+add_to_upgrade_rtree_list (struct upgrade_rtree_multi *multi,
+			   const char *table, const char *column)
+{
+/* inserting an RTree to be upgradeed into the list */
+    struct upgrade_rtree *rtree = malloc (sizeof (struct upgrade_rtree));
+    rtree->table = sqlite3_mprintf ("%s", table);
+    rtree->column = sqlite3_mprintf ("%s", column);
+    rtree->next = NULL;
+
+    if (multi->first == NULL)
+	multi->first = rtree;
+    if (multi->last != NULL)
+	multi->last->next = rtree;
+    multi->last = rtree;
+}
+
+static void
+delete_upgrade_rtree_list (struct upgrade_rtree_multi *multi)
+{
+/* removing all items from the list */
+    struct upgrade_rtree *rtree;
+    struct upgrade_rtree *rtreeN;
+
+    rtree = multi->first;
+    while (rtree != NULL)
+      {
+	  rtreeN = rtree->next;
+	  if (rtree->table != NULL)
+	      sqlite3_free (rtree->table);
+	  if (rtree->column != NULL)
+	      sqlite3_free (rtree->column);
+	  free (rtree);
+	  rtree = rtreeN;
+      }
+}
+
 SPATIALITE_PRIVATE int
 upgradeGeometryTriggers (void *p_sqlite)
 {
@@ -3687,6 +3739,10 @@ upgradeGeometryTriggers (void *p_sqlite)
     char *sql_statement;
     int retcode = 0;
     int metadata_version = checkSpatialMetaData (sqlite);
+    struct upgrade_rtree_multi multi;
+    struct upgrade_rtree *rtree;
+    multi.first = NULL;
+    multi.last = NULL;
     if (metadata_version < 3)
 	return 0;
 
@@ -3716,8 +3772,8 @@ upgradeGeometryTriggers (void *p_sqlite)
 		    (const char *) sqlite3_column_text (stmt, 0);
 		const char *column =
 		    (const char *) sqlite3_column_text (stmt, 1);
-		updateGeometryTriggers (sqlite, table, column);
 		retcode = 1;
+		add_to_upgrade_rtree_list (&multi, table, column);
 	    }
 	  else
 	    {
@@ -3726,7 +3782,52 @@ upgradeGeometryTriggers (void *p_sqlite)
 	    }
       }
     ret = sqlite3_finalize (stmt);
+
+    rtree = multi.first;
+    while (rtree != NULL)
+      {
+	  updateGeometryTriggers (sqlite, rtree->table, rtree->column);
+	  rtree = rtree->next;
+      }
+    delete_upgrade_rtree_list (&multi);
     return retcode;
+}
+
+static int
+test_populated_geotable (sqlite3 * sqlite, const char *table,
+			 const char *column)
+{
+/* testing if the GeoTable is already been populated */
+    char *sql;
+    int ret;
+    int ok = 0;
+    int i;
+    char **results;
+    int rows;
+    int columns;
+    char *quoted_table = gaiaDoubleQuotedSql (table);
+    char *quoted_column = gaiaDoubleQuotedSql (column);
+    sql =
+	sqlite3_mprintf ("SELECT \"%s\" FROM \"%s\" LIMIT 5", quoted_column,
+			 quoted_table);
+    ret = sqlite3_get_table (sqlite, sql, &results, &rows, &columns, NULL);
+    sqlite3_free (sql);
+    free (quoted_table);
+    free (quoted_column);
+    if (ret != SQLITE_OK)
+	return 0;
+    if (rows < 1)
+	;
+    else
+      {
+	  for (i = 1; i <= rows; i++)
+	    {
+		/* OK, there is at least one row in this table */
+		ok = 1;
+	    }
+      }
+    sqlite3_free_table (results);
+    return ok;
 }
 
 SPATIALITE_PRIVATE void
@@ -4622,18 +4723,30 @@ updateGeometryTriggers (void *p_sqlite, const char *table, const char *column)
 	    {
 		/* building RTree SpatialIndex */
 		int status;
-		raw = sqlite3_mprintf ("idx_%s_%s", curr_idx->TableName,
-				       curr_idx->ColumnName);
-		quoted_rtree = gaiaDoubleQuotedSql (raw);
-		sqlite3_free (raw);
-		sql_statement = sqlite3_mprintf ("CREATE VIRTUAL TABLE \"%s\" "
-						 "USING rtree(pkid, xmin, xmax, ymin, ymax)",
-						 quoted_rtree);
-		free (quoted_rtree);
-		ret = sqlite3_exec (sqlite, sql_statement, NULL, NULL, &errMsg);
-		sqlite3_free (sql_statement);
-		if (ret != SQLITE_OK)
-		    goto error;
+		if (metadata_version == 3 && test_populated_geotable
+		    (sqlite, curr_idx->TableName, curr_idx->ColumnName) > 0)
+		  {
+		      /* populated table: the SpatialIndex will be created by RTreeBulkLoad */
+		  }
+		else
+		  {
+		      /* empty table: immediately creating the SpatialIndex */
+		      raw = sqlite3_mprintf ("idx_%s_%s", curr_idx->TableName,
+					     curr_idx->ColumnName);
+		      quoted_rtree = gaiaDoubleQuotedSql (raw);
+		      sqlite3_free (raw);
+		      sql_statement =
+			  sqlite3_mprintf ("CREATE VIRTUAL TABLE \"%s\" "
+					   "USING rtree(pkid, xmin, xmax, ymin, ymax)",
+					   quoted_rtree);
+		      free (quoted_rtree);
+		      ret =
+			  sqlite3_exec (sqlite, sql_statement, NULL, NULL,
+					&errMsg);
+		      sqlite3_free (sql_statement);
+		      if (ret != SQLITE_OK)
+			  goto error;
+		  }
 		status = buildSpatialIndexEx (sqlite,
 					      (unsigned char
 					       *) (curr_idx->TableName),
@@ -4649,7 +4762,7 @@ updateGeometryTriggers (void *p_sqlite, const char *table, const char *column)
 		      else
 			  errMsg =
 			      sqlite3_mprintf
-			      ("SpatialIndex error: unable to rebuild the T*Tree");
+			      ("SpatialIndex error: unable to rebuild the R*Tree");
 		      goto error;
 		  }
 	    }
@@ -5091,7 +5204,7 @@ updateTemporaryGeometryTriggers (void *p_sqlite, const char *db_prefix,
 		      else
 			  errMsg =
 			      sqlite3_mprintf
-			      ("TemporarySpatialIndex error: unable to rebuild the T*Tree");
+			      ("TemporarySpatialIndex error: unable to rebuild the R*Tree");
 		      goto error;
 		  }
 	    }
@@ -5278,13 +5391,7 @@ buildSpatialIndexEx (void *p_sqlite, const unsigned char *table,
 {
 /* loading a SpatialIndex [RTree] */
     sqlite3 *sqlite = (sqlite3 *) p_sqlite;
-    char *raw;
-    char *quoted_rtree;
-    char *quoted_table;
-    char *quoted_column;
-    char *sql_statement;
-    char *errMsg = NULL;
-    int ret;
+    int metadata_version = checkSpatialMetaData (sqlite);
 
     if (!validateRowid (sqlite, (const char *) table))
       {
@@ -5294,28 +5401,168 @@ buildSpatialIndexEx (void *p_sqlite, const unsigned char *table,
 	  return -2;
       }
 
-    raw = sqlite3_mprintf ("idx_%s_%s", table, column);
-    quoted_rtree = gaiaDoubleQuotedSql (raw);
-    sqlite3_free (raw);
-    quoted_table = gaiaDoubleQuotedSql ((const char *) table);
-    quoted_column = gaiaDoubleQuotedSql (column);
-    sql_statement = sqlite3_mprintf ("INSERT INTO \"%s\" "
-				     "(pkid, xmin, xmax, ymin, ymax) "
-				     "SELECT ROWID, MbrMinX(\"%s\"), MbrMaxX(\"%s\"), MbrMinY(\"%s\"), MbrMaxY(\"%s\") "
-				     "FROM \"%s\" WHERE MbrMinX(\"%s\") IS NOT NULL",
-				     quoted_rtree, quoted_column, quoted_column,
-				     quoted_column, quoted_column, quoted_table,
-				     quoted_column);
-    free (quoted_rtree);
-    free (quoted_table);
-    free (quoted_column);
-    ret = sqlite3_exec (sqlite, sql_statement, NULL, NULL, &errMsg);
-    sqlite3_free (sql_statement);
-    if (ret != SQLITE_OK)
+/* testing if the GeoTable is already been populated */
+    if (test_populated_geotable (sqlite, (const char *) table, column) > 0)
       {
-	  spatialite_e ("buildSpatialIndex error: \"%s\"\n", errMsg);
-	  sqlite3_free (errMsg);
-	  return -1;
+	  if (metadata_version == 3
+	      && test_populated_geotable (sqlite, (const char *) table,
+					  column) > 0)
+	    {
+		/* using the fast RTree Bulk Loader */
+		int ret = RTreeBulkLoad (sqlite, (const char *) table, column);
+		if (!ret)
+		    return -1;
+	    }
+	  else
+	    {
+		/* using the old slow method */
+		char *sql;
+		sqlite3_stmt *stmt = NULL;
+		sqlite3_stmt *stmt_ins = NULL;
+		int ret;
+		char *quoted_table;
+		char *quoted_column;
+		char *rtree_name;
+		int is_savepoint = 0;
+		char *error_msg;
+
+		/* setting a Savepoint */
+		sql = "SAVEPOINT build_spatial_index";
+		ret = sqlite3_exec (sqlite, sql, NULL, NULL, &error_msg);
+		if (ret != SQLITE_OK)
+		  {
+		      spatialite_e
+			  ("BuildSpatialIndex SAVEPOINT error: \"%s\"\n",
+			   error_msg);
+		      sqlite3_free (error_msg);
+		      goto stop;
+		  }
+		is_savepoint = 1;
+
+		quoted_table = gaiaDoubleQuotedSql ((const char *) table);
+		quoted_column = gaiaDoubleQuotedSql (column);
+		rtree_name = sqlite3_mprintf ("idx_%s_%s", table, column);
+		sql =
+		    sqlite3_mprintf
+		    ("INSERT INTO \"%s\" VALUES (?, ?, ?, ?, ?)", rtree_name);
+		ret =
+		    sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt_ins,
+					NULL);
+		sqlite3_free (sql);
+		sqlite3_free (rtree_name);
+		if (ret != SQLITE_OK)
+		  {
+		      spatialite_e ("LoadSpatialIndex: error %d \"%s\"\n",
+				    sqlite3_errcode (sqlite),
+				    sqlite3_errmsg (sqlite));
+		      goto stop;
+		  }
+		sql =
+		    sqlite3_mprintf
+		    ("SELECT ROWID, MbrMinX(\"%s\"), MbrMaxX(\"%s\"), MbrMinY(\"%s\"), MbrMaxY(\"%s\") "
+		     "FROM \"%s\" WHERE MbrMinX(\"%s\") IS NOT NULL",
+		     quoted_column, quoted_column, quoted_column, quoted_column,
+		     quoted_table, quoted_column);
+		free (quoted_table);
+		free (quoted_column);
+		ret =
+		    sqlite3_prepare_v2 (sqlite, sql, strlen (sql), &stmt, NULL);
+		sqlite3_free (sql);
+		if (ret != SQLITE_OK)
+		  {
+		      spatialite_e ("LoadSpatialIndex: error %d \"%s\"\n",
+				    sqlite3_errcode (sqlite),
+				    sqlite3_errmsg (sqlite));
+		      goto stop;
+		  }
+		while (1)
+		  {
+		      /* scrolling the result set rows */
+		      ret = sqlite3_step (stmt);
+		      if (ret == SQLITE_DONE)
+			  break;	/* end of result set */
+		      if (ret == SQLITE_ROW)
+			{
+			    /* inserting a BBOX into the fast RTree Bulk Loader object */
+			    sqlite3_int64 id = sqlite3_column_int64 (stmt, 0);
+			    const double minx = sqlite3_column_double (stmt, 1);
+			    const double maxx = sqlite3_column_double (stmt, 2);
+			    const double miny = sqlite3_column_double (stmt, 3);
+			    const double maxy = sqlite3_column_double (stmt, 4);
+			    sqlite3_reset (stmt_ins);
+			    sqlite3_clear_bindings (stmt_ins);
+			    sqlite3_bind_int64 (stmt_ins, 1, id);
+			    sqlite3_bind_double (stmt_ins, 2, minx);
+			    sqlite3_bind_double (stmt_ins, 3, maxx);
+			    sqlite3_bind_double (stmt_ins, 4, miny);
+			    sqlite3_bind_double (stmt_ins, 5, maxy);
+			    ret = sqlite3_step (stmt_ins);
+			    if (ret == SQLITE_DONE || ret == SQLITE_ROW)
+				;
+			    else
+			      {
+				  spatialite_e
+				      ("LoadSpatialIndex: error %d \"%s\"\n",
+				       sqlite3_errcode (sqlite),
+				       sqlite3_errmsg (sqlite));
+				  goto stop;
+			      }
+			}
+		      else
+			{
+			    spatialite_e ("LoadSpatialIndex: error %d \"%s\"\n",
+					  sqlite3_errcode (sqlite),
+					  sqlite3_errmsg (sqlite));
+			    goto stop;
+			}
+		  }
+		sqlite3_finalize (stmt);
+		sqlite3_finalize (stmt_ins);
+
+		/* releasing the Savepoint */
+		sql = "RELEASE SAVEPOINT build_spatial_index";
+		ret = sqlite3_exec (sqlite, sql, NULL, NULL, &error_msg);
+		if (ret != SQLITE_OK)
+		  {
+		      spatialite_e
+			  ("BuildSpatialIndex RELEASE SAVEPOINT error: \"%s\"\n",
+			   error_msg);
+		      sqlite3_free (error_msg);
+		      goto stop;
+		  }
+		return 0;
+
+	      stop:
+		if (stmt != NULL)
+		    sqlite3_finalize (stmt);
+		if (stmt_ins != NULL)
+		    sqlite3_finalize (stmt_ins);
+
+		if (is_savepoint)
+		  {
+		      /* rolling back the Savepoint */
+		      sql = "ROLLBACK TO build_spatial_index";
+		      ret = sqlite3_exec (sqlite, sql, NULL, NULL, &error_msg);
+		      if (ret != SQLITE_OK)
+			{
+			    spatialite_e
+				("BuildSpatialIndex ROLLBACK TO SAVEPOINT error: \"%s\"\n",
+				 error_msg);
+			    sqlite3_free (error_msg);
+			}
+		      /* releasing the Savepoint */
+		      sql = "RELEASE SAVEPOINT build_spatial_index";
+		      ret = sqlite3_exec (sqlite, sql, NULL, NULL, &error_msg);
+		      if (ret != SQLITE_OK)
+			{
+			    spatialite_e
+				("BuildSpatialIndex RELEASE SAVEPOINT error: \"%s\"\n",
+				 error_msg);
+			    sqlite3_free (error_msg);
+			}
+		  }
+		return -1;
+	    }
       }
     return 0;
 }
@@ -7883,8 +8130,7 @@ do_set_multiple_points (sqlite3 * db_handle, void *xline,
 	sqlite3_mprintf
 	("SELECT geometry_type, srid FROM MAIN.geometry_columns "
 	 "WHERE Upper(f_table_name) = Upper(%Q) AND "
-	 "Upper(f_geometry_column) = Upper(%Q)", table_name,
-	 point_name);
+	 "Upper(f_geometry_column) = Upper(%Q)", table_name, point_name);
     ret = sqlite3_get_table (db_handle, sql, &results, &rows, &columns, NULL);
     sqlite3_free (sql);
     if (ret != SQLITE_OK)

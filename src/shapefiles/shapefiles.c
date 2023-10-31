@@ -1372,25 +1372,6 @@ load_shapefile_common (struct zip_mem_shapefile *mem_shape, sqlite3 * sqlite,
 		sqlError = 1;
 		goto clean_up;
 	    }
-	  if (spatial_index)
-	    {
-		/* creating the Spatial Index */
-		sql = sqlite3_mprintf ("SELECT CreateSpatialIndex(%Q, %Q)",
-				       table, geo_column);
-		ret = sqlite3_exec (sqlite, sql, NULL, 0, &errMsg);
-		sqlite3_free (sql);
-		if (ret != SQLITE_OK)
-		  {
-		      if (!err_msg)
-			  spatialite_e ("load shapefile error: <%s>\n", errMsg);
-		      else
-			  sprintf (err_msg, "load shapefile error: <%s>\n",
-				   errMsg);
-		      sqlite3_free (errMsg);
-		      sqlError = 1;
-		      goto clean_up;
-		  }
-	    }
       }
     else
       {
@@ -1624,6 +1605,25 @@ load_shapefile_common (struct zip_mem_shapefile *mem_shape, sqlite3 * sqlite,
       }
     else
       {
+	  if (spatial_index)
+	    {
+		/* creating the Spatial Index */
+		sql = sqlite3_mprintf ("SELECT CreateSpatialIndex(%Q, %Q)",
+				       table, geo_column);
+		ret = sqlite3_exec (sqlite, sql, NULL, 0, &errMsg);
+		sqlite3_free (sql);
+		if (ret != SQLITE_OK)
+		  {
+		      if (!err_msg)
+			  spatialite_e ("load shapefile error: <%s>\n", errMsg);
+		      else
+			  sprintf (err_msg, "load shapefile error: <%s>\n",
+				   errMsg);
+		      sqlite3_free (errMsg);
+		      sqlError = 1;
+		      goto clean_up;
+		  }
+	    }
 	  /* ok - confirming pending transaction - COMMIT */
 	  if (verbose)
 	      spatialite_e ("COMMIT;\n");

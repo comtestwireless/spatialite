@@ -16,7 +16,8 @@ SUBDIRS = headers \
 	control_points \
 	cutter \
 	topology \
-	stored_procedures
+	stored_procedures \
+	sqlite_bulk_rtree
 
 AM_CPPFLAGS = @CFLAGS@ @CPPFLAGS@
 AM_CPPFLAGS += -I$(top_srcdir)/src/headers
@@ -43,6 +44,7 @@ libspatialite_la_LIBADD = ./gaiaaux/libgaiaaux.la \
 	./topology/libtopology.la \
 	./srsinit/libsrsinit.la \
 	./stored_procedures/libstored_procedures.la \
+	./sqlite_bulk_rtree/libbulkrtreeload.la \
 	./connection_cache/libconnection_cache.la \
 	./virtualtext/libvirtualtext.la \
 	./wfs/libwfs.la @LIBXML2_LIBS@ @SQLITE3_LIBS@
@@ -75,6 +77,7 @@ mod_spatialite_la_LIBADD = ./gaiaaux/gaiaaux.la \
 	./topology/topology.la \
 	./srsinit/srsinit.la \
 	./stored_procedures/stored_procedures.la \
+	./sqlite_bulk_rtree/bulkrtreeload.la \
 	./connection_cache/connection_cache.la \
 	./virtualtext/virtualtext.la \
 	./wfs/wfs.la @LIBXML2_LIBS@

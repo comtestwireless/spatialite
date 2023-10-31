@@ -886,6 +886,14 @@ mbrc_create (sqlite3 * db, void *pAux, int argc, const char *const *argv,
     int ok_col;
     MbrCachePtr p_vt;
     char *xname;
+    
+    /*
+     * Note: only for VirtualMbrCache the INNOCUOUS
+     * flag to be really effective must be declared
+     * within Create() and not within Connect()
+     */
+	sqlite3_vtab_config(db, SQLITE_VTAB_INNOCUOUS);
+	
     if (pAux)
 	pAux = pAux;		/* unused arg warning suppression */
     p_vt = (MbrCachePtr) sqlite3_malloc (sizeof (MbrCache));
@@ -1024,7 +1032,12 @@ mbrc_connect (sqlite3 * db, void *pAux, int argc, const char *const *argv,
 	      sqlite3_vtab ** ppVTab, char **pzErr)
 {
 /* connects the virtual table - simply aliases mbrc_create() */
-	sqlite3_vtab_config(db, SQLITE_VTAB_INNOCUOUS);
+
+    /*
+     * Note: only for VirtualMbrCache the INNOCUOUS
+     * flag to be really effective must be declared
+     * within Create() and not within Connect()
+     */
     return mbrc_create (db, pAux, argc, argv, ppVTab, pzErr);
 }
 

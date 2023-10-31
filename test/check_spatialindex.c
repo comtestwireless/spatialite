@@ -478,6 +478,7 @@ do_test (sqlite3 * handle, int legacy)
       {
 	  fprintf (stderr, "Error in idx SELECT: %s\n", err_msg);
 	  sqlite3_free (err_msg);
+ 
 	  return -10;
       }
     if ((rows != 61) || (columns != 1))
@@ -490,7 +491,7 @@ do_test (sqlite3 * handle, int legacy)
 	  return -11;
       }
     sqlite3_free_table (results);
-
+  
     rows = 0;
     columns = 0;
     ret =
