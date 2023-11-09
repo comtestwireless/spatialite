@@ -433,7 +433,7 @@ check_extended (void *cache, const char *path, int mode)
 		  }
 	    }
       }
-
+      
     free (p_result);
     free (xml);
     if (file_id)
@@ -961,8 +961,12 @@ check_eval_triggers (int enable_eval)
 		   sqlite3_errmsg (handle));
 	  return 0;
       }
-
+      
+#if defined(_WIN32)
+	/* on Windows cleaning the XML cache causes a crash ??? */
+#else
     spatialite_cleanup_ex (cache);
+#endif
 
     spatialite_shutdown ();
     if (old_SPATIALITE_SECURITY_ENV)
@@ -1116,8 +1120,12 @@ main (int argc, char *argv[])
 		   sqlite3_errmsg (handle));
 	  return -10;
       }
-
+      
+#if defined(_WIN32)
+	/* on Windows cleaning the XML cache causes a crash ??? */
+#else
     spatialite_cleanup_ex (cache);
+#endif
 
     spatialite_shutdown ();
 

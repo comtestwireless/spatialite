@@ -67,7 +67,7 @@ the terms of any one of the MPL, the GPL or the LGPL.
 
 #include <librttopo.h>
 
-#include <lwn_network.h>
+#include "lwn_network.h"
 
 #include "network_private.h"
 #include "topology_private.h"

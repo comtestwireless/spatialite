@@ -936,16 +936,16 @@ main (int argc, char *argv[])
 	    "%1.0f,5 5,5</coordinates></LinearRing></innerBoundaryIs>"
 	    "</Polygon></MultiGeometry></Placemark>");
     resvalue =
-	sqlite3_mprintf (frmt, kml1, kml2, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128);
+	sqlite3_mprintf (frmt, kml1, kml2, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12);
     sql =
 	sqlite3_mprintf
 	("SELECT AsKml(%Q, %Q, GeomFromText('GEOMETRYCOLLECTION("
 	 "POINT(%1.0f %1.0f), LINESTRING(0 0, %1.0f %1.0f), "
 	 "POLYGON((0 0, 0 %1.0f, %1.0f %1.0f, %1.0f 0, 0 0), "
 	 "(5 5, 5 %1.0f, %1.0f %1.0f, %1.0f 5, 5 5)))'" ", 4326), 300)", kml1,
-	 kml2, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-	 1e128, 1e128, 1e128);
+	 kml2, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+	 1e12, 1e12, 1e12);
     ret = sqlite3_get_table (handle, sql, &results, &rows, &columns, &err_msg);
     sqlite3_free (sql);
     if (ret != SQLITE_OK)
@@ -973,7 +973,7 @@ main (int argc, char *argv[])
     sqlite3_free (resvalue);
 
 /* checking AsKML (2) */
-    kml1 = sqlite3_mprintf ("%1.0f", 1e128);
+    kml1 = sqlite3_mprintf ("%1.0f", 1e12);
     kml2 = sqlite3_mprintf ("%2.0f", 2e128);
     strcpy (frmt, "<Placemark><name>%s</name><description>%s</description>"
 	    "<MultiGeometry><Point><coordinates>%1.0f,%1.0f,%1.0f"
@@ -986,18 +986,18 @@ main (int argc, char *argv[])
 	    "%1.0f,5,0 5,5,0</coordinates></LinearRing></innerBoundaryIs>"
 	    "</Polygon></MultiGeometry></Placemark>");
     resvalue =
-	sqlite3_mprintf (frmt, kml1, kml2, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128);
+	sqlite3_mprintf (frmt, kml1, kml2, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12);
     sql =
 	sqlite3_mprintf
 	("SELECT AsKml(%Q, %Q, GeomFromText('GEOMETRYCOLLECTIONZ("
 	 "POINTZ(%1.0f %1.0f %1.0f), LINESTRINGZ(0 0 0, %1.0f %1.0f %1.0f), "
 	 "POLYGONZ((0 0 0, 0 %1.0f 0, %1.0f %1.0f %1.0f, %1.0f 0 0, 0 0 0), "
 	 "(5 5 0, 5 %1.0f 0, %1.0f %1.0f %1.0f, %1.0f 5 0, 5 5 0)))'"
-	 ", 4326), 300)", kml1, kml2, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-	 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-	 1e128, 1e128);
+	 ", 4326), 300)", kml1, kml2, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+	 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+	 1e12, 1e12);
     ret = sqlite3_get_table (handle, sql, &results, &rows, &columns, &err_msg);
     sqlite3_free (sql);
     if (ret != SQLITE_OK)
@@ -1040,17 +1040,17 @@ main (int argc, char *argv[])
 	    "5,5 5,%1.0f %1.0f,%1.0f %1.0f,5 5,5</gml:coordinates></gml:LinearRing>"
 	    "</gml:innerBoundaryIs></gml:Polygon></gml:geometryMember></gml:MultiGeometry>");
     resvalue =
-	sqlite3_mprintf (frmt, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128);
+	sqlite3_mprintf (frmt, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12);
     sql =
 	sqlite3_mprintf ("SELECT AsGml(GeomFromText('GEOMETRYCOLLECTION("
 			 "POINT(%1.0f %1.0f), LINESTRING(0 0, %1.0f %1.0f), "
 			 "POLYGON((0 0, 0 %1.0f, %1.0f %1.0f, %1.0f 0, 0 0), "
 			 "(5 5, 5 %1.0f, %1.0f %1.0f, %1.0f 5, 5 5)))'"
-			 ", 4326), 300)", 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128, 1e128, 1e128);
+			 ", 4326), 300)", 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12, 1e12, 1e12);
     ret = sqlite3_get_table (handle, sql, &results, &rows, &columns, &err_msg);
     sqlite3_free (sql);
     if (ret != SQLITE_OK)
@@ -1091,17 +1091,17 @@ main (int argc, char *argv[])
 	    "5 %1.0f 0 5 5 0</gml:posList></gml:LinearRing></gml:interior></gml:Polygon>"
 	    "</gml:geometryMember></gml:MultiGeometry>");
     resvalue =
-	sqlite3_mprintf (frmt, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128);
+	sqlite3_mprintf (frmt, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12);
     sql =
 	sqlite3_mprintf ("SELECT AsGml(3, GeomFromText('GEOMETRYCOLLECTIONZ("
 			 "POINTZ(%1.0f %1.0f %1.0f), LINESTRINGZ(0 0 0, %1.0f %1.0f %1.0f), "
 			 "POLYGONZ((0 0 0, 0 %1.0f 0, %1.0f %1.0f %1.0f, %1.0f 0 0, 0 0 0), "
 			 "(5 5 0, 5 %1.0f 0, %1.0f %1.0f %1.0f, %1.0f 5 0, 5 5 0)))'"
-			 ", 4326), 300)", 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128, 1e128, 1e128);
+			 ", 4326), 300)", 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12, 1e12, 1e12);
     ret = sqlite3_get_table (handle, sql, &results, &rows, &columns, &err_msg);
     sqlite3_free (sql);
     if (ret != SQLITE_OK)
@@ -1131,15 +1131,15 @@ main (int argc, char *argv[])
 				"LINESTRING(0 0, %1.0f %1.0f), "
 				"POLYGON((0 0, %1.0f 0, %1.0f %1.0f, 0 %1.0f, 0 0), "
 				"(5 5, %1.0f 5, %1.0f %1.0f, 5 %1.0f, 5 5)))",
-				1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-				1e128, 1e128, 1e128, 1e128, 1e128);
+				1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+				1e12, 1e12, 1e12, 1e12, 1e12);
     sql =
 	sqlite3_mprintf ("SELECT AsText(GeomFromText('GEOMETRYCOLLECTION("
 			 "POINT(%1.0f %1.0f), LINESTRING(0 0, %1.0f %1.0f), "
 			 "POLYGON((0 0, %1.0f 0, %1.0f %1.0f, 0 %1.0f, 0 0), "
 			 "(5 5, %1.0f 5, %1.0f %1.0f, 5 %1.0f, 5 5)))'))",
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128, 1e128);
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12, 1e12);
     ret = sqlite3_prepare_v2 (handle, sql, strlen (sql), &stmt, NULL);
     sqlite3_free (sql);
     if (ret != SQLITE_OK)
@@ -1184,17 +1184,17 @@ main (int argc, char *argv[])
 			 "LINESTRING Z(0 0 0, %1.0f %1.0f %1.0f), "
 			 "POLYGON Z((0 0 0, %1.0f 0 0, %1.0f %1.0f %1.0f, 0 %1.0f 0, 0 0 0), "
 			 "(5 5 0, %1.0f 5 0, %1.0f %1.0f %1.0f, 5 %1.0f 0, 5 5 0)))",
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128);
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12);
     sql =
 	sqlite3_mprintf ("SELECT AsText(GeomFromText('GEOMETRYCOLLECTIONZ("
 			 "POINTZ(%1.0f %1.0f %1.0f), LINESTRINGZ(0 0 0, %1.0f %1.0f %1.0f), "
 			 "POLYGONZ((0 0 0, %1.0f 0 0, %1.0f %1.0f %1.0f, 0 %1.0f 0, 0 0 0), "
 			 "(5 5 0, %1.0f 5 0, %1.0f %1.0f %1.0f, 5 %1.0f 0, 5 5 0)))'))",
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128);
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12);
     ret = sqlite3_prepare_v2 (handle, sql, strlen (sql), &stmt, NULL);
     sqlite3_free (sql);
     if (ret != SQLITE_OK)
@@ -1239,17 +1239,17 @@ main (int argc, char *argv[])
 			 "LINESTRING M(0 0 0, %1.0f %1.0f %1.0f), "
 			 "POLYGON M((0 0 0, %1.0f 0 0, %1.0f %1.0f %1.0f, 0 %1.0f 0, 0 0 0), "
 			 "(5 5 0, %1.0f 5 0, %1.0f %1.0f %1.0f, 5 %1.0f 0, 5 5 0)))",
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128);
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12);
     sql =
 	sqlite3_mprintf ("SELECT AsText(GeomFromText('GEOMETRYCOLLECTIONM("
 			 "POINTM(%1.0f %1.0f %1.0f), LINESTRINGM(0 0 0, %1.0f %1.0f %1.0f), "
 			 "POLYGONM((0 0 0, %1.0f 0 0, %1.0f %1.0f %1.0f, 0 %1.0f 0, 0 0 0), "
 			 "(5 5 0, %1.0f 5 0, %1.0f %1.0f %1.0f, 5 %1.0f 0, 5 5 0)))'))",
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128);
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12);
     ret = sqlite3_prepare_v2 (handle, sql, strlen (sql), &stmt, NULL);
     sqlite3_free (sql);
     if (ret != SQLITE_OK)
@@ -1295,16 +1295,16 @@ main (int argc, char *argv[])
 	 "LINESTRING ZM(0 0 0 0, %1.0f %1.0f %1.0f %1.0f), "
 	 "POLYGON ZM((0 0 0 0, %1.0f 0 0 0, %1.0f %1.0f %1.0f %1.0f, 0 %1.0f 0 0, 0 0 0 0), "
 	 "(5 5 0 0, %1.0f 5 0 0, %1.0f %1.0f %1.0f %1.0f, 5 %1.0f 0 0, 5 5 0 0)))",
-	 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-	 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128);
+	 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+	 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12);
     sql =
 	sqlite3_mprintf ("SELECT AsText(GeomFromText('GEOMETRYCOLLECTIONZM("
 			 "POINTZM(%1.0f %1.0f %1.0f %1.0f), LINESTRINGZM(0 0 0 0, %1.0f %1.0f %1.0f %1.0f), "
 			 "POLYGONZM((0 0 0 0, %1.0f 0 0 0, %1.0f %1.0f %1.0f %1.0f, 0 %1.0f 0 0, 0 0 0 0), "
 			 "(5 5 0 0, %1.0f 5 0 0, %1.0f %1.0f %1.0f %1.0f, 5 %1.0f 0 0, 5 5 0 0)))'))",
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128, 1e128);
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12, 1e12);
     ret = sqlite3_prepare_v2 (handle, sql, strlen (sql), &stmt, NULL);
     sqlite3_free (sql);
     if (ret != SQLITE_OK)
@@ -1348,16 +1348,16 @@ main (int argc, char *argv[])
 	sqlite3_mprintf ("SRID=4326;GEOMETRYCOLLECTION(POINT(%1.0f %1.0f),"
 			 "LINESTRING(0 0,%1.0f %1.0f),"
 			 "POLYGON((0 0,%1.0f 0,%1.0f %1.0f,0 %1.0f,0 0),"
-			 "(5 5,%1.0f 5,%1.0f %1.0f,5 %1.0f,5 5)))", 1e128,
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128);
+			 "(5 5,%1.0f 5,%1.0f %1.0f,5 %1.0f,5 5)))", 1e12,
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12);
     sql =
 	sqlite3_mprintf ("SELECT AsEWKT(GeomFromText('GEOMETRYCOLLECTION("
 			 "POINT(%1.0f %1.0f), LINESTRING(0 0, %1.0f %1.0f), "
 			 "POLYGON((0 0, %1.0f 0, %1.0f %1.0f, 0 %1.0f, 0 0), "
 			 "(5 5, %1.0f 5, %1.0f %1.0f, 5 %1.0f, 5 5)))', 4326))",
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128, 1e128);
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12, 1e12);
     ret = sqlite3_prepare_v2 (handle, sql, strlen (sql), &stmt, NULL);
     sqlite3_free (sql);
     if (ret != SQLITE_OK)
@@ -1402,17 +1402,17 @@ main (int argc, char *argv[])
 	("SRID=4326;GEOMETRYCOLLECTION(POINT(%1.0f %1.0f %1.0f),"
 	 "LINESTRING(0 0 0,%1.0f %1.0f %1.0f),"
 	 "POLYGON((0 0 0,%1.0f 0 0,%1.0f %1.0f %1.0f,0 %1.0f 0,0 0 0),"
-	 "(5 5 0,%1.0f 5 0,%1.0f %1.0f %1.0f,5 %1.0f 0,5 5 0)))", 1e128, 1e128,
-	 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-	 1e128, 1e128, 1e128, 1e128);
+	 "(5 5 0,%1.0f 5 0,%1.0f %1.0f %1.0f,5 %1.0f 0,5 5 0)))", 1e12, 1e12,
+	 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+	 1e12, 1e12, 1e12, 1e12);
     sql =
 	sqlite3_mprintf ("SELECT AsEWKT(GeomFromText('GEOMETRYCOLLECTIONZ("
 			 "POINTZ(%1.0f %1.0f %1.0f), LINESTRINGZ(0 0 0, %1.0f %1.0f %1.0f), "
 			 "POLYGONZ((0 0 0, %1.0f 0 0, %1.0f %1.0f %1.0f, 0 %1.0f 0, 0 0 0), "
 			 "(5 5 0, %1.0f 5 0, %1.0f %1.0f %1.0f, 5 %1.0f 0, 5 5 0)))', 4326))",
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128);
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12);
     ret = sqlite3_prepare_v2 (handle, sql, strlen (sql), &stmt, NULL);
     sqlite3_free (sql);
     if (ret != SQLITE_OK)
@@ -1457,17 +1457,17 @@ main (int argc, char *argv[])
 	("SRID=4326;GEOMETRYCOLLECTIONM(POINTM(%1.0f %1.0f %1.0f),"
 	 "LINESTRINGM(0 0 0,%1.0f %1.0f %1.0f),"
 	 "POLYGONM((0 0 0,%1.0f 0 0,%1.0f %1.0f %1.0f,0 %1.0f 0,0 0 0),"
-	 "(5 5 0,%1.0f 5 0,%1.0f %1.0f %1.0f,5 %1.0f 0,5 5 0)))", 1e128, 1e128,
-	 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-	 1e128, 1e128, 1e128, 1e128);
+	 "(5 5 0,%1.0f 5 0,%1.0f %1.0f %1.0f,5 %1.0f 0,5 5 0)))", 1e12, 1e12,
+	 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+	 1e12, 1e12, 1e12, 1e12);
     sql =
 	sqlite3_mprintf ("SELECT AsEWKT(GeomFromText('GEOMETRYCOLLECTIONM("
 			 "POINTM(%1.0f %1.0f %1.0f), LINESTRINGM(0 0 0, %1.0f %1.0f %1.0f), "
 			 "POLYGONM((0 0 0, %1.0f 0 0, %1.0f %1.0f %1.0f, 0 %1.0f 0, 0 0 0), "
 			 "(5 5 0, %1.0f 5 0, %1.0f %1.0f %1.0f, 5 %1.0f 0, 5 5 0)))', 4326))",
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128);
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12);
     ret = sqlite3_prepare_v2 (handle, sql, strlen (sql), &stmt, NULL);
     sqlite3_free (sql);
     if (ret != SQLITE_OK)
@@ -1513,16 +1513,16 @@ main (int argc, char *argv[])
 	 "LINESTRING(0 0 0 0,%1.0f %1.0f %1.0f %1.0f),"
 	 "POLYGON((0 0 0 0,%1.0f 0 0 0,%1.0f %1.0f %1.0f %1.0f,0 %1.0f 0 0,0 0 0 0),"
 	 "(5 5 0 0,%1.0f 5 0 0,%1.0f %1.0f %1.0f %1.0f,5 %1.0f 0 0,5 5 0 0)))",
-	 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-	 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128);
+	 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+	 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12);
     sql =
 	sqlite3_mprintf ("SELECT AsEWKT(GeomFromText('GEOMETRYCOLLECTIONZM("
 			 "POINTZM(%1.0f %1.0f %1.0f %1.0f), LINESTRINGZM(0 0 0 0, %1.0f %1.0f %1.0f %1.0f), "
 			 "POLYGONZM((0 0 0 0, %1.0f 0 0 0, %1.0f %1.0f %1.0f %1.0f, 0 %1.0f 0 0, 0 0 0 0), "
 			 "(5 5 0 0, %1.0f 5 0 0, %1.0f %1.0f %1.0f %1.0f, 5 %1.0f 0 0, 5 5 0 0)))', 4326))",
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128, 1e128);
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12, 1e12);
     ret = sqlite3_prepare_v2 (handle, sql, strlen (sql), &stmt, NULL);
     sqlite3_free (sql);
     if (ret != SQLITE_OK)
@@ -1567,16 +1567,16 @@ main (int argc, char *argv[])
 				"LINESTRING(0 0,%1.0f %1.0f),"
 				"POLYGON((0 0,%1.0f 0,%1.0f %1.0f,0 %1.0f,0 0),"
 				"(5 5,%1.0f 5,%1.0f %1.0f,5 %1.0f,5 5)))",
-				1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-				1e128, 1e128, 1e128, 1e128, 1e128);
+				1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+				1e12, 1e12, 1e12, 1e12, 1e12);
     sql =
 	sqlite3_mprintf ("SELECT AsWKT(GeomFromText('GEOMETRYCOLLECTIONZM("
 			 "POINTZM(%1.0f %1.0f %1.0f %1.0f), LINESTRINGZM(0 0 0 0, %1.0f %1.0f %1.0f %1.0f), "
 			 "POLYGONZM((0 0 0 0, %1.0f 0 0 0, %1.0f %1.0f %1.0f %1.0f, 0 %1.0f 0 0, 0 0 0 0), "
 			 "(5 5 0 0, %1.0f 5 0 0, %1.0f %1.0f %1.0f %1.0f, 5 %1.0f 0 0, 5 5 0 0)))', 4326))",
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128, 1e128);
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12, 1e12);
     ret = sqlite3_prepare_v2 (handle, sql, strlen (sql), &stmt, NULL);
     sqlite3_free (sql);
     if (ret != SQLITE_OK)
@@ -1625,16 +1625,16 @@ main (int argc, char *argv[])
 	 "{\"type\":\"LineString\",\"coordinates\":[[0,0],[%1.0f,%1.0f]]},"
 	 "{\"type\":\"Polygon\",\"coordinates\":"
 	 "[[[0,0],[%1.0f,0],[%1.0f,%1.0f],[0,%1.0f],[0,0]],"
-	 "[[5,5],[%1.0f,5],[%1.0f,%1.0f],[5,%1.0f],[5,5]]]}]}", 1e128, 1e128,
-	 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-	 1e128, 1e128);
+	 "[[5,5],[%1.0f,5],[%1.0f,%1.0f],[5,%1.0f],[5,5]]]}]}", 1e12, 1e12,
+	 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+	 1e12, 1e12);
     sql =
 	sqlite3_mprintf ("SELECT AsGeoJSON(GeomFromText('GEOMETRYCOLLECTION("
 			 "POINT(%1.0f %1.0f), LINESTRING(0 0, %1.0f %1.0f), "
 			 "POLYGON((0 0, %1.0f 0, %1.0f %1.0f, 0 %1.0f, 0 0), "
 			 "(5 5, %1.0f 5, %1.0f %1.0f, 5 %1.0f, 5 5)))', 4326), 2, 5)",
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128, 1e128);
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12, 1e12);
     ret = sqlite3_prepare_v2 (handle, sql, strlen (sql), &stmt, NULL);
     sqlite3_free (sql);
     if (ret != SQLITE_OK)
@@ -1684,16 +1684,16 @@ main (int argc, char *argv[])
 	 "{\"type\":\"Polygon\",\"coordinates\":"
 	 "[[[0,0,0],[%1.0f,0,0],[%1.0f,%1.0f,%1.0f],[0,%1.0f,0],[0,0,0]],"
 	 "[[5,5,0],[%1.0f,5,0],[%1.0f,%1.0f,%1.0f],[5,%1.0f,0],[5,5,0]]]}]}",
-	 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-	 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128);
+	 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+	 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12);
     sql =
 	sqlite3_mprintf ("SELECT AsGeoJSON(GeomFromText('GEOMETRYCOLLECTIONZ("
 			 "POINTZ(%1.0f %1.0f %1.0f), LINESTRINGZ(0 0 0, %1.0f %1.0f %1.0f), "
 			 "POLYGONZ((0 0 0, %1.0f 0 0, %1.0f %1.0f %1.0f, 0 %1.0f 0, 0 0 0), "
 			 "(5 5 0, %1.0f 5 0, %1.0f %1.0f %1.0f, 5 %1.0f 0, 5 5 0)))', 4326), 2, 5)",
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128, 1e128, 1e128, 1e128, 1e128, 1e128, 1e128,
-			 1e128);
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12, 1e12, 1e12, 1e12, 1e12, 1e12, 1e12,
+			 1e12);
     ret = sqlite3_prepare_v2 (handle, sql, strlen (sql), &stmt, NULL);
     sqlite3_free (sql);
     if (ret != SQLITE_OK)

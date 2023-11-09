@@ -80,7 +80,7 @@ mod_spatialite_la_LIBADD = ./gaiaaux/gaiaaux.la \
 	./sqlite_bulk_rtree/bulkrtreeload.la \
 	./connection_cache/connection_cache.la \
 	./virtualtext/virtualtext.la \
-	./wfs/wfs.la @LIBXML2_LIBS@
+	./wfs/wfs.la @LIBXML2_LIBS@ @SQLITE3_LIBS@
 
 mod_spatialite_la_CPPFLAGS = @CFLAGS@ @CPPFLAGS@
 mod_spatialite_la_CPPFLAGS += -I$(top_srcdir)/src/headers -I.

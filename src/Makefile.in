@@ -476,7 +476,7 @@ mod_spatialite_la_LIBADD = ./gaiaaux/gaiaaux.la ./gaiaexif/gaiaexif.la \
 	./sqlite_bulk_rtree/bulkrtreeload.la \
 	./connection_cache/connection_cache.la \
 	./virtualtext/virtualtext.la ./wfs/wfs.la @LIBXML2_LIBS@ \
-	$(am__append_4) $(am__append_5) $(am__append_6)
+	@SQLITE3_LIBS@ $(am__append_4) $(am__append_5) $(am__append_6)
 mod_spatialite_la_CPPFLAGS = @CFLAGS@ @CPPFLAGS@ \
 	-I$(top_srcdir)/src/headers -I. -DLOADABLE_EXTENSION
 mod_spatialite_la_LIBTOOLFLAGS = --tag=disable-static

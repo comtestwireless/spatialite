@@ -88,7 +88,7 @@ CIG: 6038019AE5
 
 #include <librttopo.h>
 
-#include <lwn_network.h>
+#include "lwn_network.h"
 
 #include "topology_private.h"
 #include "network_private.h"
